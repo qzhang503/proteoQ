@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{ok_min_size}
 \alias{ok_min_size}
-\title{check the size of a gene set}
+\title{checks the size of a gene set}
 \usage{
 ok_min_size(df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0)
 }
@@ -41,5 +41,5 @@ greater than the threshold will be reported. The default magnitude is
 of absolute values in \code{log2FC}.}
 }
 \description{
-check the size of a gene set
+checks the size of a gene set
 }

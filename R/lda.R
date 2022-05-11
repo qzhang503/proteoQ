@@ -36,8 +36,10 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 {
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, show_ids,
                      center_features, scale_features),
-                   rlang::is_logical, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+                   rlang::is_logical, logical(1L)))
+  
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata not allowed.")
 
   col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
@@ -49,7 +51,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
   if (complete_cases) 
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
 
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
@@ -131,8 +133,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       col_group = !!col_group,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
-      !!!anal_dots
-      )
+      !!!anal_dots)
 
   df <- res$x
 
@@ -144,16 +145,21 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     df$df[, 1, drop = FALSE]
 
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
+	nms <- names(df)
 
-	if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% names(df))
+	if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-	if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% names(df))
+	
+	if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-	if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df))
+	
+	if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-	if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df))
+	
+	if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-	if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df))
+	
+	if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
 
 	if (!is.na(map_color)) col_color <- NULL
@@ -162,7 +168,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if (!is.na(map_size)) col_size <- NULL
 	if (!is.na(map_alpha)) col_alpha <- NULL
 
-	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
 	suppressWarnings(rm(list = c("map_.")))
 
 	color_brewer <- rlang::enexpr(color_brewer)
@@ -194,25 +200,26 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 		 legend.text.align = 0,
 		 legend.box = NULL
 	)
+	
 	if (is.null(theme)) theme <- proteoq_pca_theme
 
 	# --- check dimension ---
-	if (dimension < 2) {
-	  warning("The `dimension` increased from ", dimension, " to a minimum of 2.", 
-	          call. = FALSE)
-	  dimension <- 2
+	if (dimension < 2L) {
+	  warning("The `dimension` increased from ", dimension, " to a minimum of 2.")
+	  dimension <- 2L
 	}
 
 	ranges <- seq_len(dimension)
 	cols <- names(df) %>% .[. %in% paste0("LD", ranges)]
 
 	max_dim <- names(df) %>% .[grepl("^LD[0-9]+", .)] %>% length()
+	
 	if (dimension > max_dim) {
 	  warning("The `dimension` decreased from ", dimension, 
-	          " to a maximum of ", max_dim, ".",
-	          call. = FALSE)
+	          " to a maximum of ", max_dim, ".")
 	  dimension <- max_dim
 	}
+	
 	rm(list = c("max_dim"))
 
 	# --- set up aes ---
@@ -227,13 +234,20 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
 	  col_alpha <- NULL
 	
-	if (dimension > 2) {
-	  mapping <- ggplot2::aes(colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
-	                          size = !!col_size, alpha = !!col_alpha)
-	} else {
+	if (dimension > 2L) {
+	  mapping <- ggplot2::aes(colour = !!col_color, 
+	                          fill = !!col_fill, 
+	                          shape = !!col_shape,
+	                          size = !!col_size, 
+	                          alpha = !!col_alpha)
+	} 
+	else {
 	  mapping <- ggplot2::aes(x = LD1, y = LD2,
-	                          colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
-	                          size = !!col_size, alpha = !!col_alpha)
+	                          colour = !!col_color, 
+	                          fill = !!col_fill, 
+	                          shape = !!col_shape,
+	                          size = !!col_size, 
+	                          alpha = !!col_alpha)
 	}
 
 	idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
@@ -251,10 +265,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    for (var in vars) {
 	      col <- quo_name(var)
 	      
-	      if (anyNA(df[[col]])) {
-	        warning("NA/incomplete aesthetics in column `", col, "`.\n", 
-	                call. = FALSE)
-	      }
+	      if (anyNA(df[[col]]))
+	        warning("NA/incomplete aesthetics in column `", col, "`.\n")
 	    }
 	  }
 	})
@@ -262,13 +274,14 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>%
 	  .[names(.) %in% names(mapping_fix)] %>%
 	  .[!is.na(.)]
+	
 	fix_args$stroke <- 0.02
 
 	# --- set up axis labels ---
 	col_labs <- cols
 
 	# --- plots ---
-	if (dimension > 2) {
+	if (dimension > 2L) {
 	  p <- GGally::ggpairs(df,
 	                       axisLabels = "internal",
 	                       columns = cols,
@@ -300,8 +313,9 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_size)) & (!is.null(size_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+	  if ((!is.null(col_size)) && (!is.null(size_manual))) {
+	    check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
@@ -309,8 +323,9 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+	  if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+	    check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
@@ -318,8 +333,9 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+	  if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+	    check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
@@ -328,10 +344,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  }
 
 	  if (show_ellipses) {
-	    if (anyNA(label_scheme_sub[[col_group]])) {
-	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx",
-	              call. = FALSE)
-	    }
+	    if (anyNA(label_scheme_sub[[col_group]]))
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
 
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
@@ -347,7 +361,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	      }
 	    }
 	  }
-	} else if (dimension == 2) {
+	} 
+	else if (dimension == 2L) {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, 
 	                                           mapping = mapping_var, 
@@ -357,11 +372,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  check_ggplot_aes(p)
 
 	  if (show_ellipses) {
-	    if (anyNA(label_scheme_sub[[col_group]])) {
-	      warning("(Partial) NA aesthetics under column `", col_group, 
-	              "` in expt_smry.xlsx",
-	              call. = FALSE)
-	    }
+	    if (anyNA(label_scheme_sub[[col_group]]))
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
 
 	    p <- p + ggplot2::stat_ellipse(
 	      data = df,
@@ -385,30 +397,31 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   	if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
   	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
 
-  	if ((!is.null(col_size)) & (!is.null(size_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+  	if ((!is.null(col_size)) && (!is.null(size_manual))) {
+  	  check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
   	  p <- p + scale_size_manual(values = size_manual)
   	}
 
-  	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+  	if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+  	  check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
   	  p <- p + scale_shape_manual(values = shape_manual)
   	}
 
-  	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+  	if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+  	  check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
   	  p <- p + scale_shape_manual(values = alpha_manual)
   	}
-	} else if (dimension == 1) {
+	}
+	else if (dimension == 1) {
 	  p <- ggplot(data = df, aes(x = Label, y = LD1)) +
 	    geom_bar(stat="identity") +
 	    theme(axis.text.x  = element_text(angle=60, vjust=0.5, size=8))
 	}
 
 	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
-	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-	                                   plot = p, 
-	                                   !!!ggsave_dots)))
+	rlang::eval_tidy(rlang::quo(ggsave(filename = 
+	                                     file.path(filepath, gg_imgname(filename)),
+	                                   plot = p, !!!ggsave_dots)))
 
 	invisible(res)
 }
@@ -426,15 +439,15 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       center_features, scale_features,
                       choice = "lda", method = "moment",
-                      type, col_group,
-                      folds, out_file, ...) {
+                      type, col_group = "Group",
+                      folds, out_file, ...) 
+{
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
   col_group <- rlang::enexpr(col_group)
 
-  if (rlang::as_string(col_group) == "Select") {
+  if (rlang::as_string(col_group) == "Select")
     stop("Specify a `col_group` column other than `Select.`", call. = FALSE)
-  }
 
   df_orig <- df
 
@@ -446,9 +459,8 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   nms <- names(df)
   n_rows <- nrow(df)
 
-  if (n_rows <= 50) {
+  if (n_rows <= 50L)
     stop("Need 50 or more data rows for LDA.", call. = FALSE)
-  }
 
   label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
 
@@ -456,24 +468,24 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
     res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
     df_t <- res$df_t
     ls_sub <- res$ls_sub
-    rm(res)
+    rm(list = "res")
 
     lda_out <- local({
       message("Class labels according to the column `", col_group, 
               "` in metadata file.")
 
       dm_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
-      if (scale_features) {
-        dm_t <- dm_t %>% scale(center = center_features, scale = TRUE)
-      } else if (center_features) {
-        dm_t <- dm_t %>% sweep(., 2, colMeans(., na.rm = TRUE), "-")
-      }
+
+      dm_t <- if (scale_features)
+        scale(dm_t, center = center_features, scale = TRUE)
+      else if (center_features)
+        sweep(dm_t, 2, colMeans(., na.rm = TRUE), "-")
 
       grps <- df_t[[col_group]]
 
       if (choice == "lda") {
         rlang::expr(MASS::lda(x = !!dm_t, grouping = !!grps, !!!dots)) %>%
-          rlang::eval_bare(env = caller_env()) %>%
+          rlang::eval_bare(env = rlang::caller_env()) %>%
           predict(df_t %>% dplyr::select(-!!rlang::sym(col_group)))
       }
     })
@@ -483,21 +495,26 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
       cmbn_meta(ls_sub) %T>%
       readr::write_tsv(out_file)
 
-  } else if (type == "feats") {
-    stop("LDA by features (proteins/peptides) not currently available.", call. = FALSE)
+  }
+  else if (type == "feats") {
+    stop("LDA by features (proteins/peptides) not currently available.")
 
-    if (folds > 1) {
+    if (folds > 1)
       message("Coerce to `folds = 1` at `type = feats`.")
-    }
-  } else {
+  } 
+  else {
     stop("Unkown `type` for LDA.", call. = FALSE)
   }
 
-  if (names(lda_out$x) %>% .[grepl("^LD\\d+$", .)] %>% length() == 1) {
-    warning("2-D LDA plots not available with only two classes under column `",
-            col_group, "` in expt_smry.xlsx.", call. = FALSE)
-  }
-
+  local({
+    nms <- names(lda_out$x)
+    len <- length(nms[grepl("^LD\\d+$", nms)])
+    
+    if (len == 1L)
+      warning("2-D LDA plots not available with only two classes under column `",
+              col_group, "` in expt_smry.xlsx.", call. = FALSE)
+  })
+  
   invisible(lda_out)
 }
 
@@ -528,8 +545,8 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     x = NULL, grouping = NULL, 
                     prior = NULL, subset = NULL, CV = NULL, 
                     na.action = NULL, nu = NULL, 
-                    ...) {
-
+                    ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -537,30 +554,18 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_dots(c("id", "df2", "anal_type"), ...)
 
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "lda"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
-  
+  choice <- if (length(choice) > 1L) "lda" else rlang::as_string(choice)
+
   method <- rlang::enexpr(method)
-  if (length(method) > 1) {
-    method <- "moment"
-  } else {
-    method <- rlang::as_string(method)
-  }
+  method <- if (length(method) > 1L) "moment" else rlang::as_string(method)
   
   type <- rlang::enexpr(type)
-  if (length(type) > 1) {
-    type <- "obs"
-  } else {
-    type <- rlang::as_string(type)
-    stopifnot(type %in% c("obs", "feats"))
-  }  
+  type <- if (length(type) > 1L) "obs" else rlang::as_string(type)
+  stopifnot(type %in% c("obs", "feats"))
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -758,30 +763,18 @@ prnLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_dots(c("id", "df2", "anal_type"), ...)
 
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "lda"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
-  
+  choice <- if (length(choice) > 1L) "lda" else rlang::as_string(choice)
+
   method <- rlang::enexpr(method)
-  if (length(method) > 1) {
-    method <- "moment"
-  } else {
-    method <- rlang::as_string(method)
-  }
-  
+  method <- if (length(method) > 1L) "moment" else rlang::as_string(method)
+
   type <- rlang::enexpr(type)
-  if (length(type) > 1) {
-    type <- "obs"
-  } else {
-    type <- rlang::as_string(type)
-    stopifnot(type %in% c("obs", "feats"))
-  }  
-  
+  type <- if (length(type) > 1L) "obs" else rlang::as_string(type)
+  stopifnot(type %in% c("obs", "feats"))
+
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 

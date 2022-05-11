@@ -2,7 +2,8 @@
 #' 
 #' @param fn_prefix The base name of a file.
 #' @inheritParams info_anal
-make_gct <- function(df, filepath, fn_prefix) {
+make_gct <- function(df, filepath, fn_prefix) 
+{
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   
   df <- df %>% 
@@ -24,8 +25,9 @@ make_gct <- function(df, filepath, fn_prefix) {
   header <- paste0(hr_l1, hr_l2, hr_nms)
   file <- file.path(filepath, paste0(fn_prefix, ".gct"))
   cat(header, file = file)
-  df %>% write.table(file, append = TRUE, sep = '\t', na = "", 
-                     col.names = FALSE, row.names = FALSE, quote = FALSE)
+  
+  write.table(df, file, append = TRUE, sep = '\t', na = "", 
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
 }
 
 
@@ -34,7 +36,8 @@ make_gct <- function(df, filepath, fn_prefix) {
 #' @param nms The names of sample groups.
 #' @inheritParams info_anal
 #' @inheritParams make_gct
-make_cls <- function(df, nms, filepath, fn_prefix) {
+make_cls <- function(df, nms, filepath, fn_prefix) 
+{
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   
   cls_l1 <- paste0(c(length(nms), length(unique(nms)), "1"), collapse = "\t") %>% 
@@ -53,6 +56,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
   
   cls <- paste0(cls_l1, grps, smpls)
   fn_cls <- file.path(filepath, paste0(fn_prefix, ".cls"))
+  
   cat(cls, file = fn_cls)  
 }
 
@@ -160,14 +164,15 @@ prnGSEA <- function (gset_nms = "go_sets",
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, filepath = NULL, filename = NULL, 
                      var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     fml_nms = NULL, ...) {
-
+                     fml_nms = NULL, ...) 
+{
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("pepGSEA")
-    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+    } 
+    else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("prnGSEA")
@@ -181,17 +186,22 @@ prnGSEA <- function (gset_nms = "go_sets",
   dir.create(file.path(dat_dir, "Protein/GSEA/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), rlang::is_logical, logical(1)))
-  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, logical(1)))
+  
+  stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), rlang::is_logical, 
+                   logical(1L)))
+  
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, 
+                   logical(1L)))
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
   dots <- rlang::enexprs(...)
+  
   dots <- concat_fml_dots(
     fmls = dots %>% .[grepl("^\\s*~", .)], 
     fml_nms = fml_nms, 
@@ -205,7 +215,8 @@ prnGSEA <- function (gset_nms = "go_sets",
   #   !is_reference under "Reference"
   #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
   
-  message("`prnGSEA` compiles data for online GSEA and argument `gset_nms` not currently used.")
+  message("`prnGSEA` compiles data for online GSEA; ", 
+          "parameter \"gset_nms\" not currently used.")
   
   info_anal(df = !!df, 
             df2 = NULL, 
@@ -234,12 +245,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
                       min_size, max_size, 
                       df, col_ind, id, gsets, label_scheme_sub, 
                       complete_cases, scale_log2r, 
-                      filepath, filename, ...) {
-  
+                      filepath, filename, ...) 
+{
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
   
-  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  NorZ_ratios <- find_NorZ(scale_log2r)
   
   df <- local({
     ids <- df %>% 
@@ -254,7 +265,9 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
       unique()
     
     df <- df %>% dplyr::filter(!!sym(id) %in% ids)
-    stopifnot(nrow(df) > 0)
+    
+    if (!nrow(df))
+      stop("Empty data not allowed.")
 
     ids <- df %>% 
       `rownames<-`(.[[id]]) %>% 
@@ -267,11 +280,10 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     df <- df %>% dplyr::filter(!!sym(id) %in% ids)
     
     # No `lm` so `complete_cases` applied to all samples in label_scheme_sub
-    if (complete_cases) {
-      df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-    }
+    if (complete_cases)
+      df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
 
-    return(df)
+    df
   })
   
   if (id != "gene") {
@@ -293,6 +305,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   make_gct(df = df_log2r, 
            filepath = filepath, 
            fn_prefix = fn_prefix)
+  
   make_cls(df = df_log2r, 
            nms = label_scheme_sub$Group, 
            filepath = filepath, 
@@ -308,8 +321,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   df <- df %>% 
     `rownames<-`(NULL) %>% 
     tibble::column_to_rownames(id) %>% 
-    `names<-`(gsub(paste0(NorZ_ratios, "[0-9]{3}[NC]*\\s+\\((.*)\\)$"), "\\1", 
-                   names(.))) %>% 
+    `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
     dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
 
   nms <- purrr::map(1:ncol(contr_mat), ~ {
@@ -342,7 +354,8 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   n_col2 <- ncol(contr_identity)
   pos <- neg <- both <- rep(list(NULL), n_col2)
   
-  for (i in 1:n_col) df_sub[[i]] <- df[, which(design[, i] == 1), drop = FALSE]
+  for (i in 1:n_col) 
+    df_sub[[i]] <- df[, which(design[, i] == 1), drop = FALSE]
   
   for (i in 1:n_col2) {
     filepath_i <- file.path(filepath, fml_nm)
@@ -351,12 +364,9 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
       do.call(cbind, .) %>% 
       .[, names(df), drop = FALSE]
     
-    idx_pos <- design[, contr_mat[, i] > 0, drop = FALSE] %>% 
-      rowSums()
+    idx_pos <- rowSums(design[, contr_mat[, i] > 0, drop = FALSE])
     pos[[i]] <- both[[i]][, which(idx_pos == 1), drop = FALSE]
-    
-    idx_neg <- design[, contr_mat[, i] < 0, drop = FALSE] %>% 
-      rowSums()
+    idx_neg <- rowSums(design[, contr_mat[, i] < 0, drop = FALSE])
     neg[[i]] <- both[[i]][, which(idx_neg == 1), drop = FALSE]
     
     df_i <- cbind(pos[[i]], neg[[i]])
@@ -366,6 +376,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     nms_pos_i <- rep(nms$pos[i], ncol(pos[[i]])) %>% as.character()
     nms_neg_i <- rep(nms$neg[i], ncol(neg[[i]])) %>% as.character()
     nms_both <- c(nms_pos_i, nms_neg_i)
+    
     make_cls(df = df_i, 
              nms = nms_both, 
              filepath = filepath_i, 

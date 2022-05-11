@@ -38,7 +38,9 @@ custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
@@ -111,9 +113,9 @@ threshold is allowed by supplying a vector of absolute values in
  bases.}
 
 \item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-theme will be applied.}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

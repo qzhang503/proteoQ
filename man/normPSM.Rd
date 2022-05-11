@@ -21,6 +21,7 @@ normPSM(
   rm_krts = FALSE,
   rm_outliers = FALSE,
   rm_allna = FALSE,
+  type_sd = c("log2_R", "N_log2_R", "Z_log2_R"),
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
@@ -134,6 +135,9 @@ used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
+\item{type_sd}{Character string; the type of log2Ratios for SD calculations.
+The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
+
 \item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
 variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
@@ -145,8 +149,8 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
-\code{log2FC} will be plotted. The default is TRUE.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
@@ -168,20 +172,20 @@ data rows. Each statement contains to a list of logical expression(s). The
 \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
 the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
 For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
-exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
-entries with \code{pep_expect > 0.1}.}
+exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove
+PSM entries with \code{pep_expect > 0.1}.}
 }
 \value{
 Outputs are interim and final PSM tables under the directory of
- \code{PSM} sub to \code{dat_dir}. Primary results are in \emph{standardized}
- PSM tables of \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt,
- etc.} The indexes of TMT experiment and LC/MS injection are indicated in the
- file names.
+  \code{PSM} sub to \code{dat_dir}. Primary results are in
+  \emph{standardized} PSM tables of \code{TMTset1_LCMSinj1_PSM_N.txt,
+  TMTset2_LCMSinj1_PSM_N.txt, etc.} The indexes of TMT experiment and LC/MS
+  injection are indicated in the file names.
 }
 \description{
 \code{normPSM} standardizes
-\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
-results from database search engines.
+\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM} results
+from database search engines.
 }
 \details{
 In each primary output file, "\code{...PSM_N.txt}", values under columns
@@ -192,8 +196,8 @@ Values under columns \code{N_log2_R...} are \code{log2_R...} with
 median-centering alignment. Values under columns \code{I...} are raw
 \code{reporter-ion intensity} from database searches. Values under columns
 \code{N_I...} are normalized \code{reporter-ion intensity}. Values under
-columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
-peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
+columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC}
+of peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
 denote peptide sequences with applicable variable modifications.
 
 \cr \strong{Nomenclature of \code{pep_seq_mod}}:
@@ -203,61 +207,61 @@ Non-terminal \tab A letter from upper to lower case, e.g., \code{mtFPEADILLK}
 \cr N-term \tab A hat to the left of a peptide sequence, e.g.,
 \code{^QDGTHVVEAVDATHIGK} \cr C-term \tab A hat to the right of a peptide
 sequence, e.g., \code{DAYYNLCLPQRPnMI^} \cr Acetyl (Protein N-term) \tab A
-underscore to the left of a peptide sequence, e.g., \code{_mAsGVAVSDGVIK}. \cr
-Amidated (Protein C-term) \tab A underscore to the right of a peptide
+underscore to the left of a peptide sequence, e.g., \code{_mAsGVAVSDGVIK}.
+\cr Amidated (Protein C-term) \tab A underscore to the right of a peptide
 sequence, e.g., \code{DAYYNLCLPQRPnMI_}. \cr Other (Protein N-term) \tab A
-tilde to the left of a peptide sequence, e.g., \code{~mAsGVAVSDGVIK} \cr Other
-(Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
+tilde to the left of a peptide sequence, e.g., \code{~mAsGVAVSDGVIK} \cr
+Other (Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
 \code{DAYYNLCLPQRPnMI~} \cr }
 }
 \section{\code{Mascot}}{
  Users will export \code{PSM} data from
- \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv} format
- and store them under the file folder indicated by \code{dat_dir}. The header
- information should be included during the \code{.csv} export. The file
- name(s) should start with the letter \code{'F'} and ended with a
- \code{'.csv'} extension \code{(e.g., F004452.csv, F004453_this.csv etc.)}.
+  \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
+  format and store them under the file folder indicated by \code{dat_dir}.
+  The header information should be included during the \code{.csv} export.
+  The file name(s) should start with the letter \code{'F'} and ended with a
+  \code{'.csv'} extension \code{(e.g., F004452.csv, F004453_this.csv etc.)}.
 }
 
 \section{\code{MaxQuant}}{
  Users will copy over \code{msms.txt} file(s) from
- \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir} directory.
- The file name(s) should start with \code{'msms'} and end with a
- \code{'.txt'} extension \code{(e.g., msms.txt, msms_this.txt etc.)}.
+  \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir} directory.
+  The file name(s) should start with \code{'msms'} and end with a
+  \code{'.txt'} extension \code{(e.g., msms.txt, msms_this.txt etc.)}.
 }
 
 \section{\code{MSFragger}}{
- Users will copy over \code{psm.tsv} file(s)
- from \href{http://msfragger.nesvilab.org/}{MSFragger} to the \code{dat_dir}
- directory. The file name(s) should start with \code{'psm'} and end with a
- \code{'.tsv'} extension \code{(e.g., psm.tsv, psm_this.tsv etc.)}.
+ Users will copy over \code{psm.tsv} file(s) from
+  \href{http://msfragger.nesvilab.org/}{MSFragger} to the \code{dat_dir}
+  directory. The file name(s) should start with \code{'psm'} and end with a
+  \code{'.tsv'} extension \code{(e.g., psm.tsv, psm_this.tsv etc.)}.
 }
 
 \section{\code{Spectrum Mill}}{
  Users will copy over \code{PSMexport.1.ssv}
- file(s) from
- \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
-  Mill} to the \code{dat_dir} directory. The file name(s) should start with
- \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
- PSMexport.ssv, PSMexport_this.ssv etc.)}.
+  file(s) from
+  \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
+   Mill} to the \code{dat_dir} directory. The file name(s) should start with
+  \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
+  PSMexport.ssv, PSMexport_this.ssv etc.)}.
 }
 
 \section{\code{Variable arguments and data files}}{
  Variable argument (vararg)
- statements of \code{filter_} and \code{arrange_} are available in
- \code{proteoQ} for flexible filtration and ordering of data rows, via
- functions at users' interface. To take advantage of the feature, users need
- to be aware of the column keys in input files. As indicated by their names,
- \code{filter_} and \code{filter2_} perform row filtration against column
- keys from a primary data file, \code{df}, and secondary data file(s),
- \code{df2}, respectively. The same correspondence is applicable for
- \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
- employ either primary or secondary vararg statements, but not both. In the
- more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
- findings in \code{df2} to the significance \code{pVals} and abundance fold
- changes in \code{df} for volcano plot visualizations by gene sets. The table
- below summarizes the \code{df} and the \code{df2} for varargs in
- \code{proteoQ}.
+  statements of \code{filter_} and \code{arrange_} are available in
+  \code{proteoQ} for flexible filtration and ordering of data rows, via
+  functions at users' interface. To take advantage of the feature, users need
+  to be aware of the column keys in input files. As indicated by their names,
+  \code{filter_} and \code{filter2_} perform row filtration against column
+  keys from a primary data file, \code{df}, and secondary data file(s),
+  \code{df2}, respectively. The same correspondence is applicable for
+  \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
+  employ either primary or secondary vararg statements, but not both. In the
+  more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
+  findings in \code{df2} to the significance \code{pVals} and abundance fold
+  changes in \code{df} for volcano plot visualizations by gene sets. The
+  table below summarizes the \code{df} and the \code{df2} for varargs in
+  \code{proteoQ}.
 
  \tabular{lllll}{ 
  \strong{Utility} \tab \strong{Vararg_} \tab \strong{df} \tab \strong{Vararg2_} \tab \strong{df2} \cr

@@ -1700,7 +1700,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
     dplyr::mutate_at(vars(grep("^I[0-9]{3}[NC]{0,1}", names(.))), ~ {
       x <- .x
       qts <- quantile(x, probs = rptr_intrange/100, na.rm = TRUE)
-      x <- ifelse((x < qts[1]) | (x > qts[2]), NA, .x)
+      x <- ifelse((x < qts[1]) | (x > qts[2]), NA_real_, .x)
     }) %>% 
     dplyr::arrange(RAW_File, pep_seq, prot_acc) 
   
@@ -2971,46 +2971,47 @@ mcPSM <- function(df = NULL, set_idx = 1L, injn_idx = 1L, mc_psm_by = "peptide",
 }
 
 
-#'Annotates PSM results
+#' Annotates PSM results
 #'
-#'\code{annotPSM} adds fields of annotation to Mascot PSM tables after
-#'\code{rmPSMHeaders}, \code{splitPSM} and \code{cleanupPSM}.
+#' \code{annotPSM} adds fields of annotation to Mascot PSM tables after
+#' \code{rmPSMHeaders}, \code{splitPSM} and \code{cleanupPSM}.
 #'
-#'@param group_psm_by A character string specifying the method in PSM grouping.
-#'  At the \code{pep_seq} default, descriptive statistics will be calculated
-#'  based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-#'  alternative, peptides with different variable modifications will be treated
-#'  as different species and descriptive statistics will be calculated based on
-#'  the same \code{pep_seq_mod} groups.
-#'@param group_pep_by A character string specifying the method in peptide
-#'  grouping. At the \code{prot_acc} default, descriptive statistics will be
-#'  calculated based on the same \code{prot_acc} groups. At the \code{gene}
-#'  alternative, proteins with the same gene name but different accession
-#'  numbers will be treated as one group.
-#'@param mc_psm_by A character string specifying the method in the median
-#'  centering of PSM \code{log2FC} across samples. At the \code{peptide}
-#'  default, the median description of PSMs (grouped by \code{pep_seq} or
-#'  \code{pep_seq_mod} according to \code{group_psm_by}) will be first
-#'  calculated and the offsets to zero (of logarithmic 2) will be used for the
-#'  centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
-#'  description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
-#'  \code{group_pep_by}) will be calculated and the corresponding offsets to
-#'  zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
-#'  centered without grouping.
-#'@param plot_log2FC_cv Logical; if TRUE, the distributions of the CV of peptide
-#'  \code{log2FC} will be plotted. The default is TRUE.
-#'@param ... Not currently used.
-#'@inheritParams load_expts
-#'@inheritParams splitPSM
-#'@import dplyr tidyr purrr ggplot2 RColorBrewer
-#'@importFrom stringr str_split
-#'@importFrom tidyr gather
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#' @param group_psm_by A character string specifying the method in PSM grouping.
+#'   At the \code{pep_seq} default, descriptive statistics will be calculated
+#'   based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+#'   alternative, peptides with different variable modifications will be treated
+#'   as different species and descriptive statistics will be calculated based on
+#'   the same \code{pep_seq_mod} groups.
+#' @param group_pep_by A character string specifying the method in peptide
+#'   grouping. At the \code{prot_acc} default, descriptive statistics will be
+#'   calculated based on the same \code{prot_acc} groups. At the \code{gene}
+#'   alternative, proteins with the same gene name but different accession
+#'   numbers will be treated as one group.
+#' @param mc_psm_by A character string specifying the method in the median
+#'   centering of PSM \code{log2FC} across samples. At the \code{peptide}
+#'   default, the median description of PSMs (grouped by \code{pep_seq} or
+#'   \code{pep_seq_mod} according to \code{group_psm_by}) will be first
+#'   calculated and the offsets to zero (of logarithmic 2) will be used for the
+#'   centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
+#'   description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
+#'   \code{group_pep_by}) will be calculated and the corresponding offsets to
+#'   zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
+#'   centered without grouping.
+#' @param plot_log2FC_cv Logical; if TRUE, the distributions of the CV of
+#'   peptide \code{log2FC} will be plotted. The default is TRUE.
+#' @param ... Not currently used.
+#' @inheritParams load_expts
+#' @inheritParams splitPSM
+#' @inheritParams normPSM
+#' @import dplyr tidyr purrr ggplot2 RColorBrewer
+#' @importFrom stringr str_split
+#' @importFrom tidyr gather
+#' @importFrom magrittr %>% %T>% %$% %<>%
 annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                      mc_psm_by = "peptide", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
-                     rm_allna = FALSE, ...) 
+                     rm_allna = FALSE, type_sd = "log2_R", ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -3075,8 +3076,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       
       df <- df %>% 
         dplyr::mutate(!!group_psm_by := as.character(!!rlang::sym(group_psm_by))) %>% 
-        calcSD_Splex(id = group_psm_by, type = "log2_R") %>% 
-        `names<-`(gsub("^log2_R", "sd_log2_R", names(.))) %>% 
+        calcSD_Splex(id = group_psm_by, type = type_sd) %>% 
+        `names<-`(gsub(paste0("^", type_sd), "sd_log2_R", names(.))) %>% 
         dplyr::right_join(df, by = group_psm_by) %>% 
         dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 
                          ~ round(.x, digits = 0)) %>% 
@@ -3136,79 +3137,81 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 }
 
 
-#'Standardization of PSM
+#' Standardization of PSM
 #'
-#'\code{normPSM} standardizes
-#'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
-#'results from database search engines.
+#' \code{normPSM} standardizes
+#' \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM} results
+#' from database search engines.
 #'
-#'In each primary output file, "\code{...PSM_N.txt}", values under columns
-#'\code{log2_R...} are logarithmic ratios at base 2 in relative to the average
-#'intensity of \code{reference(s)} within each multiplex TMT set, or to the
-#'row-mean intensity within each plex if no \code{reference(s)} are present.
-#'Values under columns \code{N_log2_R...} are \code{log2_R...} with
-#'median-centering alignment. Values under columns \code{I...} are raw
-#'\code{reporter-ion intensity} from database searches. Values under columns
-#'\code{N_I...} are normalized \code{reporter-ion intensity}. Values under
-#'columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
-#'peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
-#'denote peptide sequences with applicable variable modifications.
+#' In each primary output file, "\code{...PSM_N.txt}", values under columns
+#' \code{log2_R...} are logarithmic ratios at base 2 in relative to the average
+#' intensity of \code{reference(s)} within each multiplex TMT set, or to the
+#' row-mean intensity within each plex if no \code{reference(s)} are present.
+#' Values under columns \code{N_log2_R...} are \code{log2_R...} with
+#' median-centering alignment. Values under columns \code{I...} are raw
+#' \code{reporter-ion intensity} from database searches. Values under columns
+#' \code{N_I...} are normalized \code{reporter-ion intensity}. Values under
+#' columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC}
+#' of peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
+#' denote peptide sequences with applicable variable modifications.
+#' 
+#' \cr \strong{Nomenclature of \code{pep_seq_mod}}:
+#' 
+#' \tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
+#' Non-terminal \tab A letter from upper to lower case, e.g., \code{mtFPEADILLK}
+#' \cr N-term \tab A hat to the left of a peptide sequence, e.g.,
+#' \code{^QDGTHVVEAVDATHIGK} \cr C-term \tab A hat to the right of a peptide
+#' sequence, e.g., \code{DAYYNLCLPQRPnMI^} \cr Acetyl (Protein N-term) \tab A
+#' underscore to the left of a peptide sequence, e.g., \code{_mAsGVAVSDGVIK}.
+#' \cr Amidated (Protein C-term) \tab A underscore to the right of a peptide
+#' sequence, e.g., \code{DAYYNLCLPQRPnMI_}. \cr Other (Protein N-term) \tab A
+#' tilde to the left of a peptide sequence, e.g., \code{~mAsGVAVSDGVIK} \cr
+#' Other (Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
+#' \code{DAYYNLCLPQRPnMI~} \cr }
 #'
-#'\cr \strong{Nomenclature of \code{pep_seq_mod}}:
+#' @section \code{Mascot}: Users will export \code{PSM} data from
+#'   \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
+#'   format and store them under the file folder indicated by \code{dat_dir}.
+#'   The header information should be included during the \code{.csv} export.
+#'   The file name(s) should start with the letter \code{'F'} and ended with a
+#'   \code{'.csv'} extension \code{(e.g., F004452.csv, F004453_this.csv etc.)}.
 #'
-#'\tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
-#'Non-terminal \tab A letter from upper to lower case, e.g., \code{mtFPEADILLK}
-#'\cr N-term \tab A hat to the left of a peptide sequence, e.g.,
-#'\code{^QDGTHVVEAVDATHIGK} \cr C-term \tab A hat to the right of a peptide
-#'sequence, e.g., \code{DAYYNLCLPQRPnMI^} \cr Acetyl (Protein N-term) \tab A
-#'underscore to the left of a peptide sequence, e.g., \code{_mAsGVAVSDGVIK}. \cr
-#'Amidated (Protein C-term) \tab A underscore to the right of a peptide
-#'sequence, e.g., \code{DAYYNLCLPQRPnMI_}. \cr Other (Protein N-term) \tab A
-#'tilde to the left of a peptide sequence, e.g., \code{~mAsGVAVSDGVIK} \cr Other
-#'(Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
-#'\code{DAYYNLCLPQRPnMI~} \cr }
+#' @section \code{MaxQuant}: Users will copy over \code{msms.txt} file(s) from
+#'   \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir} directory.
+#'   The file name(s) should start with \code{'msms'} and end with a
+#'   \code{'.txt'} extension \code{(e.g., msms.txt, msms_this.txt etc.)}.
 #'
-#'@section \code{Mascot}: Users will export \code{PSM} data from
-#'  \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv} format
-#'  and store them under the file folder indicated by \code{dat_dir}. The header
-#'  information should be included during the \code{.csv} export. The file
-#'  name(s) should start with the letter \code{'F'} and ended with a
-#'  \code{'.csv'} extension \code{(e.g., F004452.csv, F004453_this.csv etc.)}.
+#' @section \code{MSFragger}: Users will copy over \code{psm.tsv} file(s) from
+#'   \href{http://msfragger.nesvilab.org/}{MSFragger} to the \code{dat_dir}
+#'   directory. The file name(s) should start with \code{'psm'} and end with a
+#'   \code{'.tsv'} extension \code{(e.g., psm.tsv, psm_this.tsv etc.)}.
 #'
-#'@section \code{MaxQuant}: Users will copy over \code{msms.txt} file(s) from
-#'  \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir} directory.
-#'  The file name(s) should start with \code{'msms'} and end with a
-#'  \code{'.txt'} extension \code{(e.g., msms.txt, msms_this.txt etc.)}.
-#'  
-#'@section \code{MSFragger}: Users will copy over \code{psm.tsv} file(s)
-#'  from \href{http://msfragger.nesvilab.org/}{MSFragger} to the \code{dat_dir}
-#'  directory. The file name(s) should start with \code{'psm'} and end with a
-#'  \code{'.tsv'} extension \code{(e.g., psm.tsv, psm_this.tsv etc.)}. 
-#'
-#'@section \code{Spectrum Mill}: Users will copy over \code{PSMexport.1.ssv}
-#'  file(s) from
-#'  \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
-#'   Mill} to the \code{dat_dir} directory. The file name(s) should start with
-#'  \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
-#'  PSMexport.ssv, PSMexport_this.ssv etc.)}.
-#'
-#'@param rm_allna Logical; if TRUE, removes data rows that are exclusively NA
+#' @section \code{Spectrum Mill}: Users will copy over \code{PSMexport.1.ssv}
+#'   file(s) from
+#'   \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
+#'    Mill} to the \code{dat_dir} directory. The file name(s) should start with
+#'   \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
+#'   PSMexport.ssv, PSMexport_this.ssv etc.)}.
+#' 
+#' @param rm_allna Logical; if TRUE, removes data rows that are exclusively NA
 #'   across ratio columns of \code{log2_R126} etc. The setting also applies to
 #'   \code{log2_R000} in LFQ.
-#'@param ... \code{filter_}: Variable argument statements for the filtration of
-#'  data rows. Each statement contains to a list of logical expression(s). The
-#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'  For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
-#'  exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
-#'  entries with \code{pep_expect > 0.1}.
-#'@inheritParams load_expts
-#'@inheritParams splitPSM
-#'@inheritParams splitPSM_mq
-#'@inheritParams splitPSM_mf
-#'@inheritParams cleanupPSM
-#'@inheritParams annotPSM
-#'@seealso 
+#' @param type_sd Character string; the type of log2Ratios for SD calculations.
+#'   The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.
+#' @param ... \code{filter_}: Variable argument statements for the filtration of
+#'   data rows. Each statement contains to a list of logical expression(s). The
+#'   \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+#'   the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'   For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
+#'   exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove
+#'   PSM entries with \code{pep_expect > 0.1}.
+#' @inheritParams load_expts
+#' @inheritParams splitPSM
+#' @inheritParams splitPSM_mq
+#' @inheritParams splitPSM_mf
+#' @inheritParams cleanupPSM
+#' @inheritParams annotPSM
+#' @seealso
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
@@ -3265,21 +3268,21 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'@section \code{Variable arguments and data files}: Variable argument (vararg)
-#'  statements of \code{filter_} and \code{arrange_} are available in
-#'  \code{proteoQ} for flexible filtration and ordering of data rows, via
-#'  functions at users' interface. To take advantage of the feature, users need
-#'  to be aware of the column keys in input files. As indicated by their names,
-#'  \code{filter_} and \code{filter2_} perform row filtration against column
-#'  keys from a primary data file, \code{df}, and secondary data file(s),
-#'  \code{df2}, respectively. The same correspondence is applicable for
-#'  \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
-#'  employ either primary or secondary vararg statements, but not both. In the
-#'  more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
-#'  findings in \code{df2} to the significance \code{pVals} and abundance fold
-#'  changes in \code{df} for volcano plot visualizations by gene sets. The table
-#'  below summarizes the \code{df} and the \code{df2} for varargs in
-#'  \code{proteoQ}.
+#' @section \code{Variable arguments and data files}: Variable argument (vararg)
+#'   statements of \code{filter_} and \code{arrange_} are available in
+#'   \code{proteoQ} for flexible filtration and ordering of data rows, via
+#'   functions at users' interface. To take advantage of the feature, users need
+#'   to be aware of the column keys in input files. As indicated by their names,
+#'   \code{filter_} and \code{filter2_} perform row filtration against column
+#'   keys from a primary data file, \code{df}, and secondary data file(s),
+#'   \code{df2}, respectively. The same correspondence is applicable for
+#'   \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
+#'   employ either primary or secondary vararg statements, but not both. In the
+#'   more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
+#'   findings in \code{df2} to the significance \code{pVals} and abundance fold
+#'   changes in \code{df} for volcano plot visualizations by gene sets. The
+#'   table below summarizes the \code{df} and the \code{df2} for varargs in
+#'   \code{proteoQ}.
 #'
 #'  \tabular{lllll}{ 
 #'  \strong{Utility} \tab \strong{Vararg_} \tab \strong{df} \tab \strong{Vararg2_} \tab \strong{df2} \cr
@@ -3325,16 +3328,16 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  anal_prnString \tab filter_\tab \code{Protein[_impNA][_pVals].tx}t \tab NA \tab NA \cr 
 #'  }
 #'
-#'@return Outputs are interim and final PSM tables under the directory of
-#'  \code{PSM} sub to \code{dat_dir}. Primary results are in \emph{standardized}
-#'  PSM tables of \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt,
-#'  etc.} The indexes of TMT experiment and LC/MS injection are indicated in the
-#'  file names.
-#'@example inst/extdata/examples/normPSM_.R
-#'@import dplyr purrr ggplot2 RColorBrewer
-#'@importFrom stringr str_split
-#'@importFrom magrittr %>% %T>% %$% %<>% 
-#'@export
+#' @return Outputs are interim and final PSM tables under the directory of
+#'   \code{PSM} sub to \code{dat_dir}. Primary results are in
+#'   \emph{standardized} PSM tables of \code{TMTset1_LCMSinj1_PSM_N.txt,
+#'   TMTset2_LCMSinj1_PSM_N.txt, etc.} The indexes of TMT experiment and LC/MS
+#'   injection are indicated in the file names.
+#' @example inst/extdata/examples/normPSM_.R
+#' @import dplyr purrr ggplot2 RColorBrewer
+#' @importFrom stringr str_split
+#' @importFrom magrittr %>% %T>% %$% %<>%
+#' @export
 normPSM <- function(dat_dir = NULL, 
                     expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
                     fasta = NULL, entrez = NULL, 
@@ -3345,7 +3348,7 @@ normPSM <- function(dat_dir = NULL,
                     scale_rptr_int = FALSE, 
                     rptr_intco = 0, rptr_intrange = c(0, 100), 
                     rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
-                    rm_allna = FALSE, 
+                    rm_allna = FALSE, type_sd = c("log2_R", "N_log2_R", "Z_log2_R"), 
                     purge_phosphodata = TRUE, 
                     annot_kinases = FALSE, 
                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
@@ -3421,6 +3424,17 @@ normPSM <- function(dat_dir = NULL,
     stop("Length of \"group_pep_by\" is not one.", call. = FALSE)
   
   rm(list = c("oks"))
+  
+  # ---
+  type_sd <- rlang::enexpr(type_sd)
+  
+  if (length(type_sd) > 1L) 
+    type_sd <- "log2_R"
+  else
+    type_sd <- rlang::as_string(type_sd)
+  
+  stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
+            length(type_sd) == 1L)
 
   # ---
   dir.create(file.path(dat_dir, "PSM/cache"), 
@@ -3612,6 +3626,7 @@ normPSM <- function(dat_dir = NULL,
            plot_rptr_int = plot_rptr_int, 
            plot_log2FC_cv = plot_log2FC_cv, 
            rm_allna = rm_allna, 
+           type_sd = type_sd, 
            ...)
   
   .savecall <- TRUE
@@ -3735,7 +3750,8 @@ rm_cols_mqpsm <- function(df = NULL, group_psm_by = "pep_seq", set_idx = 1L)
 calcPeptide <- function(df = NULL, group_psm_by = "pep_seq", 
                         method_psm_pep = "median", group_pep_by = "prot_acc", 
                         dat_dir = NULL, set_idx = 1L, injn_idx = 1L, 
-                        TMT_plex = 10L, lfq_ret_tol = 60L, rm_allna = FALSE) 
+                        TMT_plex = 10L, lfq_ret_tol = 60L, rm_allna = FALSE, 
+                        type_sd = "log2_R") 
 {
   nms <- names(df)
   
@@ -4080,8 +4096,8 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   
   df <- local({
     res <- df %>% 
-      calcSD_Splex(group_pep_by) %>% 
-      `names<-`(gsub("^log2_R", "sd_log2_R", names(.)))
+      calcSD_Splex(id = group_pep_by, type = type_sd) %>% 
+      `names<-`(gsub(paste0("^", type_sd), "sd_log2_R", names(.)))
     
     res %>% 
       dplyr::right_join(df, by = group_pep_by) %>% 
@@ -4100,12 +4116,12 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' @inheritParams PSM2Pep
 #' @inheritParams load_expts
 #' @inheritParams n_TMT_sets
-#' @inheritParams calcPeptide
+#' @inheritParams normPSM
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL, 
                         group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                         method_psm_pep = "median", lfq_ret_tol = 60L, 
-                        rm_allna = FALSE, ...) 
+                        rm_allna = FALSE, type_sd = "log2_R", ...) 
 {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
@@ -4147,7 +4163,8 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
                       group_pep_by = group_pep_by, dat_dir = dat_dir, 
                       set_idx = set_idx, injn_idx = injn_idx, 
                       TMT_plex = TMT_plex, 
-                      lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna)
+                      lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna, 
+                      type_sd = type_sd)
   }
   
   df <- dplyr::bind_cols(
@@ -4168,31 +4185,32 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
 }
 
 
-#'Interim peptide tables
-#'
-#'\code{PSM2Pep} summarizes
-#'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
-#'peptides by individual TMT (or LFQ) experiments and LC/MS series.
-#'
-#'In general, fields other than \code{log2FC} and \code{intensity} are
-#'summarized with median statistics. One exception is with \code{pep_expect} in
-#'Mascot or \code{PEP} in MaxQuant where geometric mean is applied.
-#'
-#'@param method_psm_pep Character string; the method to summarize the
-#'  \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-#'  The descriptive statistics includes \code{c("mean", "median",
-#'  "weighted_mean", "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum",
-#'  "lfq_all")} with \code{median} being the default for TMT and
-#'  \code{lfq_top_2_sum} for LFQ. The \code{log10-intensity} of reporter (or
-#'  LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
-#'  \code{log2FC} with various \code{"top_n"} statistics or
-#'  \code{"weighted_mean"}.
-#'@param lfq_ret_tol The tolerance of retention time (in seconds) for the
-#'  aggregation of LFQ data.
-#'@inheritParams normPSM
-#'@param ... \code{filter_}: Variable argument statements for the filtration of
-#'  data rows. See also \code{\link{normPSM}}.
-#'@seealso 
+#' Interim peptide tables
+#' 
+#' \code{PSM2Pep} summarizes
+#' \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
+# 'peptides by individual TMT (or LFQ) experiments and LC/MS series.
+#' 
+#' In general, fields other than \code{log2FC} and \code{intensity} are
+#' summarized with median statistics. One exception is with \code{pep_expect} in
+#' Mascot or \code{PEP} in MaxQuant where geometric mean is applied.
+#' 
+#' @param method_psm_pep Character string; the method to summarize the
+#'   \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+#'   The descriptive statistics includes \code{c("mean", "median",
+#'   "weighted_mean", "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum",
+#'   "lfq_all")} with \code{median} being the default for TMT and
+#'   \code{lfq_top_2_sum} for LFQ. The \code{log10-intensity} of reporter (or
+#'   LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
+#'   \code{log2FC} with various \code{"top_n"} statistics or
+#'   \code{"weighted_mean"}.
+#' @param lfq_ret_tol The tolerance of retention time (in seconds) for the
+#'   aggregation of LFQ data.
+#' @inheritParams normPSM
+#' @inheritParams calcPeptide
+#' @param ... \code{filter_}: Variable argument statements for the filtration of
+#'   data rows. See also \code{\link{normPSM}}.
+#' @seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
@@ -4235,8 +4253,8 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
-#'@family custom database preparation
-#'@seealso 
+#' @family custom database preparation
+#' @seealso 
 #'  \emph{Custom databases} \cr 
 #'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
 #'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
@@ -4251,17 +4269,18 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'@return Tables under \code{Peptide} folder for each TMT experiment and LC/MS
-#'  series: \code{TMTset1_LCMSinj1_Peptide_N.txt} etc.
+#' @return Tables under \code{Peptide} folder for each TMT experiment and LC/MS
+#'   series: \code{TMTset1_LCMSinj1_Peptide_N.txt} etc.
 #'
-#'@example inst/extdata/examples/PSM2Pep_.R
-#'@import stringr dplyr purrr 
-#'@importFrom magrittr %>% %T>% %$% %<>% 
-#'@export
+#' @example inst/extdata/examples/PSM2Pep_.R
+#' @import stringr dplyr purrr
+#' @importFrom magrittr %>% %T>% %$% %<>%
+#' @export
 PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", 
                                        "top_3_mean", "lfq_max", "lfq_top_2_sum", 
                                        "lfq_top_3_sum", "lfq_all"), 
-                    lfq_ret_tol = 60L, rm_allna = FALSE, ...) 
+                    lfq_ret_tol = 60L, rm_allna = FALSE, 
+                    type_sd = c("log2_R", "N_log2_R", "Z_log2_R"), ...) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -4286,6 +4305,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
+  # ---
   method_psm_pep <- rlang::enexpr(method_psm_pep)
   
   if (TMT_plex) {
@@ -4315,6 +4335,18 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
                                   "lfq_all"), 
             length(method_psm_pep) == 1L)
   
+  # ---
+  type_sd <- rlang::enexpr(type_sd)
+  
+  if (length(type_sd) > 1L) 
+    type_sd <- "log2_R"
+  else
+    type_sd <- rlang::as_string(type_sd)
+  
+  stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
+            length(type_sd) == 1L)
+  
+  # ---
   stopifnot(vapply(c(lfq_ret_tol), is.numeric, logical(1)))
   stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1)))
   
@@ -4350,7 +4382,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
         dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-        rm_allna = rm_allna, ...)
+        rm_allna = rm_allna, type_sd = type_sd, ...)
     )
     
     parallel::stopCluster(cl)
@@ -4359,7 +4391,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
     psm_to_pep(filelist, dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
                group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
                method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-               rm_allna = rm_allna, ...)
+               rm_allna = rm_allna, type_sd = type_sd, ...)
   }
   
   .saveCall <- TRUE

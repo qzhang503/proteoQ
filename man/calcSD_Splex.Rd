@@ -20,7 +20,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
-\item{type}{Character string; the type of data.}
+\item{type}{Character string; the type of data for SD calculations.}
 }
 \description{
 Calculates CV per TMT_Set and LCMS_injection

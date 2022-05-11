@@ -4,17 +4,20 @@
 #' @param range_colRatios The range of columns.
 #' @return A data frame.
 #' @examples \donttest{locate_outliers(df, 2:3)}
-locate_outliers <- function (df, range_colRatios) {
+locate_outliers <- function (df, range_colRatios) 
+{
   for(col_index in range_colRatios) {
     n <- colSums(!is.na(df[col_index]))
+    
     if (n > 25) {
       df[, col_index] <- Rosner_outliers(df[, col_index])
-    } else if (n > 2) {
+    } 
+    else if (n > 2) {
       df[, col_index] <- Dixon_outliers(df[, col_index])
     }
   }
   
-  return(df)
+  invisible(df)
 }
 
 
@@ -25,22 +28,29 @@ locate_outliers <- function (df, range_colRatios) {
 #' @param opposite The high or low. See also outliers::dixon.test.
 #' @param two.sided Logical; is two-sided or not. See also
 #'   outliers::dixon.test.
-dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) {
+dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) 
+{
   x <- sort(x[complete.cases(x)])
   n <- length(x)
   
   if ((type == 10 || type == 0) && (n < 3 || n > 30)) 
     stop("Sample size must be in range 3-30")
+  
   if (type == 11 && (n < 4 || n > 30)) 
     stop("Sample size must be in range 4-30")
+  
   if (type == 12 && (n < 5 || n > 30)) 
     stop("Sample size must be in range 5-30")
+  
   if (type == 20 && (n < 4 || n > 30)) 
     stop("Sample size must be in range 4-30")
+  
   if (type == 21 && (n < 5 || n > 30)) 
     stop("Sample size must be in range 5-30")
+  
   if (type == 22 && (n < 6 || n > 30)) 
     stop("Sample size must be in range 6-30")
+  
   if (sum(c(0, 10, 11, 12, 20, 21, 22) == type) == 0) 
     stop("Incorrect type")
   
@@ -51,7 +61,8 @@ dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) {
       type <- 11
     else if (n > 10 & n <= 13) 
       type <- 21
-    else type <- 22
+    else 
+      type <- 22
   }
   
   if (xor(((x[n] - mean(x)) < (mean(x) - x[1])), opposite)) {
@@ -103,13 +114,14 @@ dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) {
   
   if (two.sided) {
     pval <- 2 * pval
+    
     if (pval > 1) 
       pval <- 2 - pval
   }
   
   out <- list(statistic = c(Q = Q), alternative = alt, p.value = pval)
 
-  return(out)
+  invisible(out)
 }
 
 
@@ -123,18 +135,25 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
 {
   if ((type == 10 || type == 0) & (n < 3 || n > 30)) 
     stop("Sample size must be in range 3-30")
+  
   if (type == 11 & (n < 4 || n > 30)) 
     stop("Sample size must be in range 4-30")
+  
   if (type == 12 & (n < 5 || n > 30)) 
     stop("Sample size must be in range 5-30")
+  
   if (type == 20 & (n < 4 || n > 30)) 
     stop("Sample size must be in range 4-30")
+  
   if (type == 21 & (n < 5 || n > 30)) 
     stop("Sample size must be in range 5-30")
+  
   if (type == 22 & (n < 6 || n > 30)) 
     stop("Sample size must be in range 6-30")
+  
   if (sum(c(0, 10, 11, 12, 20, 21, 22) == type) == 0) 
     stop("Incorrect type")
+  
   if (type == 0) {
     if (n <= 7) 
       type <- 10
@@ -142,10 +161,13 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
       type <- 11
     else if (n > 10 & n <= 13) 
       type <- 21
-    else type <- 22
+    else 
+      type <- 22
   }
+  
   pp <- c(0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 
           0.5, 0.6, 0.7, 0.8, 0.9, 0.95)
+  
   q10 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, 0.994, 0.988, 0.976, 0.97, 0.941, 0.886, 
@@ -201,6 +223,7 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.105, 0.083, 0.063, 0.046, 0.03, 0.014, 0.007, 0.372, 
            0.341, 0.309, 0.298, 0.26, 0.215, 0.164, 0.13, 0.103, 
            0.082, 0.062, 0.045, 0.029, 0.014, 0.007)
+  
   q11 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -255,6 +278,7 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.116, 0.092, 0.07, 0.051, 0.033, 0.016, 0.008, 0.399, 
            0.369, 0.336, 0.324, 0.283, 0.236, 0.182, 0.144, 0.115, 
            0.09, 0.069, 0.05, 0.032, 0.016, 0.008)
+  
   q12 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -309,6 +333,7 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.017, 0.009, 0.42, 0.389, 0.355, 0.343, 0.301, 0.251, 
            0.194, 0.154, 0.124, 0.098, 0.075, 0.054, 0.035, 0.017, 
            0.009)
+  
   q20 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -363,6 +388,7 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.151, 0.128, 0.106, 0.083, 0.057, 0.039, 0.428, 0.402, 
            0.372, 0.361, 0.326, 0.285, 0.236, 0.202, 0.175, 0.149, 
            0.126, 0.104, 0.082, 0.056, 0.039)
+  
   q21 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -416,6 +442,7 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.227, 0.197, 0.17, 0.144, 0.119, 0.092, 0.062, 0.04, 
            0.46, 0.433, 0.401, 0.391, 0.355, 0.312, 0.261, 0.224, 
            0.194, 0.167, 0.142, 0.117, 0.091, 0.061, 0.04)
+  
   q22 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -468,12 +495,14 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
            0.243, 0.211, 0.183, 0.155, 0.128, 0.1, 0.068, 0.041, 
            0.483, 0.457, 0.425, 0.414, 0.376, 0.332, 0.278, 0.239, 
            0.208, 0.18, 0.153, 0.126, 0.098, 0.067, 0.041)
+  
   dim(q10) <- c(15, 30)
   dim(q11) <- c(15, 30)
   dim(q12) <- c(15, 30)
   dim(q20) <- c(15, 30)
   dim(q21) <- c(15, 30)
   dim(q22) <- c(15, 30)
+  
   if (type == 10) 
     q0 <- q10[, n]
   else if (type == 11) 
@@ -484,16 +513,20 @@ q_dixon <- function (p, n, type = 10, rev = FALSE)
     q0 <- q20[, n]
   else if (type == 21) 
     q0 <- q21[, n]
-  else q0 <- q22[, n]
+  else 
+    q0 <- q22[, n]
+  
   if (rev) {
     res <- q_table(p, q0, pp)
   }
   else {
     res <- q_table(p, pp, q0)
   }
+  
   res[res < 0] <- 0
   res[res > 1] <- 1
-  return(res)
+  
+  invisible(res)
 }
 
 
@@ -512,10 +545,12 @@ p_dixon <- function (q, n, type = 10)
 #' @param probs Vector of given probabilities.
 #' @param quants Vector of given corresponding quantiles.
 #' @inheritParams q_dixon
-q_table <- function (p, probs, quants) {
+q_table <- function (p, probs, quants) 
+{
   quants <- quants[order(probs)]
   probs <- sort(probs)
   res <- vector()
+  
   for (n in 1:length(p)) {
     pp <- p[n]
     if (pp <= probs[1]) {
@@ -541,16 +576,19 @@ q_table <- function (p, probs, quants) {
       p0 <- probs[i]
       fit <- lm(q0 ~ poly(p0, 3))
     }
+    
     res <- c(res, predict(fit, newdata = list(p0 = pp)))
   }
-  return(res)
+  
+  invisible(res)
 }
 
 
 #' Outlier removals with Dixon's method
 #' 
 #' @param x A numeric vector.
-Dixon_outliers <- function(x) {
+Dixon_outliers <- function(x) 
+{
   # x = c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
   # x = c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
   # x = c(0.0000000, 0.0000000, 0.0000000, 0.2080097)
@@ -558,7 +596,7 @@ Dixon_outliers <- function(x) {
   
   x2 <- x[!is.na(x)]
   
-  if (length(x2) > 2 && length(unique(x2)) > 1) {
+  if (length(x2) > 2L && length(unique(x2)) > 1L) {
     out <- dixon_test(as.numeric(x), type = 0)
     
     while(out$p.value < 0.05) {
@@ -578,7 +616,7 @@ Dixon_outliers <- function(x) {
     }
   }
   
-  return (x)
+  invisible(x)
 }
 
 
@@ -586,7 +624,8 @@ Dixon_outliers <- function(x) {
 #' 
 #' @param x A data frame.
 #' @param type Type for grubbs.test.
-Grubbs_outliers <- function(x, type = 10) {
+Grubbs_outliers <- function(x, type = 10) 
+{
   x2 <- x[!is.na(x)]
   
   if (length(x2) > 2 && length(unique(x2)) > 1) {
@@ -595,7 +634,8 @@ Grubbs_outliers <- function(x, type = 10) {
     while(out$p.value < 0.05) {
       if (grepl("^highest", out$alternative)) {
         x[which.max(x)] <- NA
-      } else {
+      } 
+      else {
         x[which.min(x)] <- NA
       }
       
@@ -603,13 +643,14 @@ Grubbs_outliers <- function(x, type = 10) {
       
       if (length(x2) > 2 && length(unique(x2)) > 1) {
         out <- grubbs.test(as.numeric(x), type = type)
-      } else {
+      } 
+      else {
         out$p.value <- 1
       }
     }
   }
   
-  return (x)
+  invisible(x)
 }
 
 
@@ -618,7 +659,8 @@ Grubbs_outliers <- function(x, type = 10) {
 #' See also outliers::grubbs.test.
 #' 
 #' @inheritParams dixon_test
-grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
+grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) 
+{
   if (sum(c(10, 11, 20) == type) == 0) {
     stop("Incorrect type", call. = FALSE)
   }
@@ -633,12 +675,14 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
     pval = 1 - p_grubbs(g, n, type = 11)
     method <- "Grubbs test for two opposite outliers"
     alt = paste(x[1], "and", x[n], "are outliers")
-  } else if (type == 10) {
+  } 
+  else if (type == 10) {
     if (xor(((x[n] - mean(x)) < (mean(x) - x[1])), opposite)) {
       alt = paste("lowest value", x[1], "is an outlier")
       o <- x[1]
       d <- x[2:n]
-    } else {
+    } 
+    else {
       alt = paste("highest value", x[n], "is an outlier")
       o <- x[n]
       d <- x[1:(n - 1)]
@@ -648,12 +692,14 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
     u <- var(d)/var(x) * (n - 2)/(n - 1)
     pval <- 1 - p_grubbs(g, n, type = 10)
     method <- "Grubbs test for one outlier"
-  } else {
+  } 
+  else {
     if (xor(((x[n] - mean(x)) < (mean(x) - x[1])), opposite)) {
       alt = paste("lowest values", x[1], ",", 
                   x[2], "are outliers")
       u <- var(x[3:n])/var(x) * (n - 3)/(n - 1)
-    } else {
+    } 
+    else {
       alt = paste("highest values", x[n - 1], ",", 
                   x[n], "are outliers")
       u <- var(x[1:(n - 2)])/var(x) * (n - 3)/(n - 1)
@@ -666,6 +712,7 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
   
   if (two.sided) {
     pval <- 2 * pval
+    
     if (pval > 1) 
       pval <- 2 - pval
   }
@@ -673,7 +720,8 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
   RVAL <- list(statistic = c(G = g, U = u), alternative = alt, 
                p.value = pval, method = method, data.name = DNAME)
   class(RVAL) <- "htest"
-  return(RVAL)
+  
+  invisible(RVAL)
 }
 
 
@@ -683,7 +731,8 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
 #' @param n Length of sample Length of sample. 
 #' @param rev Logical; if TRUE, acts as p_dixon.
 #' @inheritParams dixon_test
-q_grubbs <- function (p, n, type = 10, rev = FALSE) {
+q_grubbs <- function (p, n, type = 10, rev = FALSE) 
+{
   if (type == 10) {
     if (!rev) {
       return(((n - 1)/sqrt(n)) * 
@@ -692,6 +741,7 @@ q_grubbs <- function (p, n, type = 10, rev = FALSE) {
     else {
       s <- (p^2 * n * (2 - n))/(p^2 * n - (n - 1)^2)
       t <- sqrt(s)
+      
       if (is.nan(t)) {
         res <- 0
       }
@@ -699,6 +749,7 @@ q_grubbs <- function (p, n, type = 10, rev = FALSE) {
         res <- n * (1 - pt(t, n - 2))
         res[res > 1] <- 1
       }
+      
       return(1 - res)
     }
   }
@@ -727,14 +778,17 @@ q_grubbs <- function (p, n, type = 10, rev = FALSE) {
         }
         p <- c(p, pp)
       }
+      
       return(p)
     }
   }
   else {
     if (n > 30) 
       stop("n must be in range 3-30")
+    
     pp <- c(0.01, 0.025, 0.05, 0.1, 0.15, 0.2, 0.4, 0.6, 
             0.8, 0.9, 0.95, 0.975, 0.99)
+    
     gtwo <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
               NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
               NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
@@ -787,13 +841,18 @@ q_grubbs <- function (p, n, type = 10, rev = FALSE) {
               0.672, 0.722, 0.76, 0.798, 0.822, 0.84, 0.854, 0.869, 
               0.528, 0.568, 0.602, 0.638, 0.661, 0.679, 0.728, 
               0.765, 0.802, 0.826, 0.842, 0.856, 0.87)
+    
     dim(gtwo) <- c(13, 30)
+    
     if (!rev) 
       res <- qtable(p, pp, gtwo[, n])
-    else res <- qtable(p, gtwo[, n], pp)
+    else 
+      res <- qtable(p, gtwo[, n], pp)
+    
     res[res < 0] <- 0
     res[res > 1] <- 1
-    return(res)
+    
+    invisible(res)
   }
 }
 
@@ -811,8 +870,10 @@ p_grubbs <- function (q, n, type = 10)
 #' Outlier removals with Rosner's method
 #' 
 #' @param x A matrix or data.frame.
-Rosner_outliers <- function(x) {
-  if (length(unique(x)) < 5) return(x)
+Rosner_outliers <- function(x) 
+{
+  if (length(unique(x)) < 5) 
+    return(x)
   
   # up to 9-number outliers; may get warnings with NA being an outlier
   suppressWarnings(gofOutlier_obj <- EnvStats::rosnerTest(as.numeric(x), 9))
@@ -822,6 +883,7 @@ Rosner_outliers <- function(x) {
     x[Index] <- NA
   }
   
-  return(x)
+  invisible(x)
 }
+
 

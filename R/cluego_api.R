@@ -33,9 +33,10 @@
 #'   n_clust = c(3:4)
 #' )
 #' }
-cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "Homo Sapiens"), 
-                    n_clust = 3) {
-  
+cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", 
+                    species = c("human" = "Homo Sapiens"), 
+                    n_clust = 3L) 
+{
   if (!requireNamespace("RJSONIO", quietly = TRUE)) {
     stop("\n====================================================================", 
          "\nNeed package \"RJSONIO\" for this function to work.",
@@ -55,30 +56,26 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   dat_dir <- get_gl_dat_dir()
   filepath <- file.path(dat_dir, "Protein", "Trend")
 
-  if (length(species) > 1) {
+  if (length(species) > 1L)
     stop("Only one species at a time.", call. = FALSE)
-  }
-  
-  if (!rlang::is_integerish(n_clust)) {
+
+  if (!rlang::is_integerish(n_clust))
     stop("`n_clust` needs to be integers.", call. = FALSE)
-  }
-  
+
   df <- tryCatch(
     readr::read_tsv(file.path(filepath, df2), col_types = cols(group = col_factor())), 
-    error = function(e) NA
-  )
-  
-  if (is.null(dim(df))) stop("File `", df2, "` not found.", call. = FALSE)
+    error = function(e) NA)
+
+  if (is.null(dim(df))) 
+    stop("File `", df2, "` not found.", call. = FALSE)
   
   df <- df %>% 
     dplyr::filter(.data$species == names(.env$species), cluster %in% n_clust)
   
-  if (nrow(df) == 0) {
+  if (!nrow(df))
     stop("Zero data entries at species `", species, 
-         "` and clusters ", purrr::reduce(n_clust, paste, sep = ", "), 
-         call. = FALSE)
-  }
-  
+         "` and clusters ", purrr::reduce(n_clust, paste, sep = ", "))
+
   n_clust <- unique(df$cluster)
 
   # 0 --- start up
@@ -88,10 +85,10 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   response <- tryCatch(
     httr::POST(url = paste(cytoscape_base_url, "apps", "cluego", "start-up-cluego", sep = "/"), 
                encode = "json"), 
-    error = function(e) NA
-  )
-  
-  if (all(is.na(response))) stop("Start Cytoscape first!", call. = FALSE)
+    error = function(e) NA)
+
+  if (all(is.na(response))) 
+    stop("Start Cytoscape first!", call. = FALSE)
   
   if (grepl("HTTP ERROR 500",response)) {
     message("Initiating ClueGO...")
@@ -101,15 +98,14 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   # 1 --- "organisms"
   response <- httr::PUT(
     url = paste(cluego_base_url, "organisms", "set-organism", 
-                URLencode(species), sep = "/"), encode = "json"
-  )
+                URLencode(species), sep = "/"), encode = "json")
 
   # 2 --- "max-input-panel"
   max_input_panel_number <- length(n_clust)
+  
   response <- httr::PUT(
     url = paste(cluego_base_url, "cluster", "max-input-panel", max_input_panel_number, sep = "/"), 
-    encode = "json"
-  )
+    encode = "json")
 
   # 3 --- "set-analysis-properties"
   input_panel_indexes <- as.character(seq_along(n_clust)) 
@@ -120,14 +116,13 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   min_percentage_of_genes_mapped <- 4
   no_restrictions <- FALSE  
   
-  purrr::map(input_panel_indexes, ~ {
+  lapply(input_panel_indexes, function (x) {
     response <- httr::PUT(
       url = paste(cluego_base_url, "cluster", "set-analysis-properties", 
-                  .x, node_shape, URLencode(cluster_color, reserved = TRUE), 
+                  x, node_shape, URLencode(cluster_color, reserved = TRUE), 
                   min_number_of_genes_per_term, min_percentage_of_genes_mapped, 
                   no_restrictions, sep = "/"), 
-      encode = "json"
-    )
+      encode = "json")
   })
   
   #  4 --- "upload-ids-list"
@@ -141,30 +136,26 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
     response <- httr::PUT(
       url = paste(cluego_base_url, "cluster", "upload-ids-list", URLencode(.x), 
                   sep = "/"), 
-      body = genes, encode = "json", httr::content_type_json()
-    )
+      body = genes, encode = "json", httr::content_type_json())
   })
 
   # 5 --- select visual style
-  if (max_input_panel_number > 1) {
-    visual_style <- "ShowClusterDifference"
-  } else {
-    visual_style = "ShowGroupDifference"
-  }
-  
+  visual_style <- if (max_input_panel_number > 1L)
+    "ShowClusterDifference"
+  else
+    "ShowGroupDifference"
+
   response <- httr::PUT(
     url = paste(cluego_base_url, "cluster", "select-visual-style", visual_style, sep = "/"), 
-    encode = "json"
-  )
-  
+    encode = "json")
+
   # 6 --- "set-ontologies"
   selected_ontologies <- RJSONIO::toJSON(c("3;Ellipse", "8;Triangle", "9;Rectangle"))
   
   response <- httr::PUT(
     url = paste(cluego_base_url, "ontologies", "set-ontologies", sep = "/"), 
-    body = selected_ontologies, encode = "json", httr::content_type_json()
-  )
-  
+    body = selected_ontologies, encode = "json", httr::content_type_json())
+
   # 7 --- "set-min-max-levels"
   min_level <- 5
   max_level <- 6
@@ -173,9 +164,8 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   response <- httr::PUT(
     url = paste(cluego_base_url, "ontologies", "set-min-max-levels", 
                 min_level, max_level, all_levels, sep = "/"), 
-    encode = "json"
-  )
-  
+    encode = "json")
+
   # # 3.1 Get all available Ontologies
   # response <- httr::GET(paste(cluego_base_url, "ontologies", "get-ontology-info", sep = "/"))
   # content(response)
@@ -185,9 +175,8 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   
   response <- httr::PUT(
     url = paste(cluego_base_url, "ontologies", "set-evidence-codes", sep = "/"), 
-    body = evidence_codes, encode = "json", httr::content_type_json()
-  )
-  
+    body = evidence_codes, encode = "json", httr::content_type_json())
+
   # # 3.3 Get all available Evidence Codes
   # response <- httr::GET(paste(cluego_base_url, "ontologies", "get-evidence-code-info",sep = "/"))
   
@@ -197,17 +186,15 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   
   response <- httr::PUT(
     url = paste(cluego_base_url, "ontologies", use_significance_cutoff, p_value_cutoff, sep = "/"), 
-    encode = "json"
-  )
-  
+    encode = "json")
+
   # 3.6 Use GO term fusion
   use_go_term_fusion <- TRUE
   
   response <- httr::PUT(
     url = paste(cluego_base_url, "ontologies", use_go_term_fusion, sep = "/"), 
-    encode = "json"
-  )
-  
+    encode = "json")
+
   # 3.7 Set statistical parameters
   enrichment_type <- "Enrichment/Depletion (Two-sided hypergeometric test)" 
   multiple_testing_correction <- TRUE

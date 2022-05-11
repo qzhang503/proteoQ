@@ -39,7 +39,9 @@ prnSig(
 }
 \arguments{
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}

@@ -13,6 +13,7 @@ psm_to_pep(
   method_psm_pep = "median",
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
+  type_sd = "log2_R",
   ...
 )
 }
@@ -54,6 +55,9 @@ aggregation of LFQ data.}
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{type_sd}{Character string; the type of log2Ratios for SD calculations.
+The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
 \item{...}{filter_dots.}
 }

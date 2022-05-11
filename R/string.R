@@ -4,10 +4,12 @@
 #'@inheritParams anal_prnString
 #'@import dplyr purrr 
 #'@importFrom magrittr %>% %T>% %$% %<>%
-annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filename = NULL, ...) {
+annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, 
+                           filename = NULL, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
-  df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
+  df <- dplyr::mutate(df, !!id := as.character(!!rlang::sym(id)))
   dbs <- load_stringdbs(db_nms)
 
   prn_info <- dbs$info %>% 
@@ -28,12 +30,14 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
       dplyr::select(id) %>% 
       dplyr::left_join(prn_info, by = id) %>% 
       dplyr::filter(!is.na(protein_external_id))
-  } else {
+  } 
+  else {
     string_map <- df %>%
       dplyr::select(id) %>% 
       dplyr::left_join(prn_aliases, by = id) %>% 
       dplyr::filter(!is.na(protein_external_id))
   }
+  
   string_map <- string_map %>% 
     dplyr::mutate(protein_external_id = as.character(protein_external_id))
   
@@ -47,6 +51,7 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
     dplyr::rename(node2 = !!rlang::sym(id))
   
   first_four <- c("node1", "node2", "protein1", "protein2")
+  
   ppi <- dplyr::bind_cols(
     prn_links[, first_four], 
     prn_links[, !names(prn_links) %in% first_four]
@@ -99,29 +104,40 @@ stringTest <- function(df = NULL, id = gene,
                        label_scheme_sub = NULL, 
                        db_nms = NULL, score_cutoff = .7, 
                        scale_log2r = TRUE, complete_cases = FALSE, 
-                       filepath = NULL, filename = NULL, ...) {
+                       filepath = NULL, filename = NULL, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   id <- rlang::as_string(rlang::enexpr(id))
   
   stopifnot(id %in% names(df), 
             nrow(label_scheme_sub) > 0, 
-            vapply(c(score_cutoff), rlang::is_double, logical(1)))
+            vapply(c(score_cutoff), rlang::is_double, logical(1L)))
 
-  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  if (complete_cases) df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   
   dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots)]
 
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots) %>% 
     rm_pval_whitespace()
   
-  if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
+  if (score_cutoff <= 1) 
+    score_cutoff <- score_cutoff * 1000
   
-  dir.create(file.path(dat_dir, "Protein/String/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/String/cache"), recursive = TRUE, 
+             showWarnings = FALSE)
 
   annot_stringdb(df, db_nms, id, score_cutoff, filepath, filename)
 }
@@ -159,15 +175,17 @@ stringTest <- function(df = NULL, id = gene,
 #'@seealso \code{\link{prepString}} for database downloads and preparation. \cr
 #'@import dplyr purrr fs
 #'@export
-anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                            db_nms = NULL, score_cutoff = .7, 
-                            df = NULL, filepath = NULL, filename = NULL, ...) {
+anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, 
+                            impute_na = FALSE, db_nms = NULL, score_cutoff = .7, 
+                            df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(enexprs(...)) %>% 
         save_call(paste0("anal", "_pepString"))
-    } else if (id %in% c("prot_acc", "gene")) {
+    } 
+    else if (id %in% c("prot_acc", "gene")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(enexprs(...)) %>% 
         save_call(paste0("anal", "_prnString"))
@@ -178,7 +196,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -203,9 +221,6 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
                                   score_cutoff = score_cutoff, 
                                   ...)
 }
-
-
-
 
 
 #'Downloads and prepares STRING databases
@@ -258,8 +273,9 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #'@export
 prepString <- function(species = "human", # abbr_species = NULL, 
                        links_url = NULL, aliases_url = NULL, info_url = NULL, 
-                       db_path = "~/proteoQ/dbs/string", filename = NULL, overwrite = FALSE) {
-  
+                       db_path = "~/proteoQ/dbs/string", filename = NULL, 
+                       overwrite = FALSE) 
+{
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -285,7 +301,8 @@ prepString <- function(species = "human", # abbr_species = NULL,
                         stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of `links` files.", call. = FALSE))
     fn_links <- names(links_url)
     taxid_links <- fn_links %>% gsub("^([0-9]+)\\..*", "\\1", .)
-  } else {
+  } 
+  else {
     fn_links <- links_url %>% gsub("^.*/(.*)$", "\\1", .)
     taxid_links <- fn_links %>% gsub("^([0-9]+)\\..*", "\\1", .)
     
@@ -298,14 +315,14 @@ prepString <- function(species = "human", # abbr_species = NULL,
           dplyr::select(organism) %>% 
           unlist()
         
-        if (is.null(species_string)) {
+        if (is.null(species_string))
           species_string <- "unknown"
-        } else if (species_string != species) {
+        else if (species_string != species)
           message("The species is `", species_string, "`.")
-        }
-        
-        rm(uniprot_species, envir = .GlobalEnv)
-        species <- species_string  
+
+        rm(list = c("uniprot_species"), envir = .GlobalEnv)
+
+        species_string  
       })
     }
   }
@@ -320,9 +337,11 @@ prepString <- function(species = "human", # abbr_species = NULL,
                                     "https://stringdb-static.org/download/protein.aliases.v11.0/10116.protein.aliases.v11.0.txt.gz"), 
                           stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of `alias` files.", call. = FALSE))
     fn_aliases <- names(aliases_url)
-  } else {
+  } 
+  else {
     fn_aliases <- aliases_url %>% gsub("^.*/(.*)$", "\\1", .)
   }
+  
   taxid_aliases <- fn_aliases %>% gsub("^([0-9]+)\\..*", "\\1", .)
   
   if (is.null(info_url)) {
@@ -337,12 +356,14 @@ prepString <- function(species = "human", # abbr_species = NULL,
                             "for an auto lookup of `info` files.", 
                             call. = FALSE))
     fn_info <- names(info_url)
-  } else {
+  } 
+  else {
     fn_info <- info_url %>% gsub("^.*/(.*)$", "\\1", .)
   }
+  
   taxid_info <- fn_info %>% gsub("^([0-9]+)\\..*", "\\1", .)
   
-  if (length(unique(c(taxid_links, taxid_aliases, taxid_info))) > 1) 
+  if (length(unique(c(taxid_links, taxid_aliases, taxid_info))) > 1L) 
     stop("Different `taxid` detected among `links_url`, `aliases_url` and `info_url`", 
          call. = FALSE)
   
@@ -364,26 +385,25 @@ prepString <- function(species = "human", # abbr_species = NULL,
 
   df_links <- local({
     filepath <- file.path(db_path, fn_links)
-    if ((!file.exists(filepath)) || overwrite) {
-      downloader::download(links_url, filepath, mode = "wb")
-    }
     
+    if ((!file.exists(filepath)) || overwrite)
+      downloader::download(links_url, filepath, mode = "wb")
+
     con <- gzfile(path.expand(filepath))
     read.csv(con, sep = " ", check.names = FALSE, header = TRUE, comment.char = "#")
   })
   
   df_aliases <- local({
     filepath <- file.path(db_path, fn_aliases)
-    if ((!file.exists(filepath)) || overwrite) {
-      downloader::download(aliases_url, filepath, mode = "wb")
-    }
     
+    if ((!file.exists(filepath)) || overwrite)
+      downloader::download(aliases_url, filepath, mode = "wb")
+
     con <- gzfile(path.expand(filepath))
     temp <- read.csv(con, sep = "\t", check.names = FALSE, header = TRUE, comment.char = "#")
-    
     col_nms <- c("string_protein_id", "alias", "source")
-    first_row <- names(temp) %>% 
-      data.frame() %>% 
+    
+    first_row <- data.frame(names(temp)) %>% 
       t() %>% 
       `colnames<-`(col_nms)
     
@@ -397,15 +417,15 @@ prepString <- function(species = "human", # abbr_species = NULL,
     filepath <- file.path(db_path, fn_info)
     filepath2 <- file.path(db_path, gsub("\\.gz$", "", fn_info))
     
-    if ((!file.exists(filepath)) || overwrite) {
+    if ((!file.exists(filepath)) || overwrite)
       downloader::download(info_url, filepath, mode = "wb")
-    }
-    
+
     con <- gzfile(path.expand(filepath))
     temp <- readLines(con)
-    for (idx in seq_along(temp)) {
+    
+    for (idx in seq_along(temp))
       temp[idx] <- gsub("^(.*)\t[^\t].*$", "\\1", temp[idx])
-    }
+    
     temp[1] <- "protein_external_id\tpreferred_name\tprotein_size"
     writeLines(temp, filepath2)
     try(close(con))
@@ -414,7 +434,8 @@ prepString <- function(species = "human", # abbr_species = NULL,
              check.names = FALSE, header = TRUE, comment.char = "#")
     
     unlink(filepath2)
-    return(temp)    
+    
+    temp  
   })
   
   filename <- set_db_outname(!!rlang::enexpr(filename), species, "string")
@@ -451,32 +472,31 @@ prepString <- function(species = "human", # abbr_species = NULL,
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@seealso \code{\link{load_dbs}} for loading databases of \code{GO} and
 #'  \code{MSig}.
-load_stringdbs <- function (db_nms = NULL) {
-  if (is.null(db_nms)) stop("`db_nms` cannot be NULL.", call. = FALSE)
+load_stringdbs <- function (db_nms = NULL) 
+{
+  if (is.null(db_nms)) 
+    stop("`db_nms` cannot be NULL.")
   
-  if (!all(grepl("\\.rds$", db_nms))) {
-    stop("Custom gene set files indicated by `db_nms` must end with the `.rds` extension.", 
-         call. = FALSE)
-  }
-  
+  if (!all(grepl("\\.rds$", db_nms)))
+    stop("Custom gene set files indicated by \"db_nms\" must end with ", 
+         "the \".rds\" extension.")
+
   local({
     not_oks <- db_nms %>% .[!file.exists(db_nms)]
-    if (!purrr::is_empty(not_oks)) {
-      stop("File(s) not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), 
-           call. = FALSE)
-    }    
+    
+    if (length(not_oks))
+      stop("File(s) not found: \n", paste(not_oks, collapse = ", \n"))
   })
 
-  dbs <- purrr::map(db_nms, readRDS)
+  dbs <- lapply(db_nms, readRDS)
 
   local({
-    lens <- purrr::map(dbs,length)
-    not_oks <- which(lens != 3)
+    lens <- lapply(dbs, length)
+    not_oks <- which(lens != 3L)
     
-    if (!purrr::is_empty(not_oks)) {
+    if (length(not_oks)) {
       stop("File(s) not containing all three pieces of `links`, `alias` and `info`: \n", 
-           purrr::reduce(db_nms[not_oks], paste, sep = ", \n"), 
-           call. = FALSE)
+           paste(db_nms[not_oks], collapse = ", \n"))
     }
   })
 
@@ -486,6 +506,4 @@ load_stringdbs <- function (db_nms = NULL) {
   
   invisible(list(links = links, aliases = aliases, info = info))
 } 
-
-
 

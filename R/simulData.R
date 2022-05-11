@@ -5,14 +5,15 @@
 #' @import dplyr tidyr stringr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-simulUniprotPSM <- function(type = "Mascot", dat_dir = NULL) {
-  type <- rlang::as_string(rlang::enexpr(type)) %>% 
-    tolower()
+simulUniprotPSM <- function(type = "Mascot", dat_dir = NULL) 
+{
+  type <- tolower(rlang::as_string(rlang::enexpr(type)))
   
-  if (is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
-                                            error = function(e) 1)
-  
-  if (dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
+  if (is.null(dat_dir)) 
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+
+  if (dat_dir == 1) 
+    stop("Set up the working directory first.", call. = FALSE)
   
   switch(type,
          mascot = mascot_refseq2uniprot(dat_dir), 
@@ -24,8 +25,10 @@ simulUniprotPSM <- function(type = "Mascot", dat_dir = NULL) {
 #' Helper function 
 #' 
 #' @inheritParams load_expts
-mascot_refseq2uniprot <- function(dat_dir) {
+mascot_refseq2uniprot <- function(dat_dir) 
+{
   dir.create(file.path(dat_dir, "Mascot_refseq"))
+  
   local({
     filelist <- list.files(path = file.path(dat_dir), pattern = "^F[0-9]+.csv$")
     file.copy(file.path(dat_dir, filelist), file.path(dat_dir, "Mascot_refseq", filelist))
@@ -114,7 +117,8 @@ mascot_refseq2uniprot <- function(dat_dir) {
 #' Helper function 
 #' 
 #' @inheritParams load_expts
-maxquant_refseq2uniprot <- function(dat_dir) {
+maxquant_refseq2uniprot <- function(dat_dir) 
+{
   dir.create(file.path(dat_dir, "Maxquant_refseq"))
   filelist <- list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$")
   file.copy(file.path(dat_dir, filelist), file.path(dat_dir, "Maxquant_refseq", filelist))

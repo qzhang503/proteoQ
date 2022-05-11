@@ -576,14 +576,16 @@ check_empty_rows <- function (df)
 #' @param df A data frame of metadata (e.g., label_scheme_full).
 check_tmt126_row <- function (df) 
 {
+  if (all(is.na(df$TMT_Channel)))
+    return(df)
+  
   tmt126 <- df %>% 
-    dplyr::filter(TMT_Channel == "TMT-126" || TMT_Channel == "126") %>% 
-    dplyr::filter(is.na(TMT_Set) || is.na(LCMS_Injection))
+    dplyr::filter(TMT_Channel == "TMT-126" | TMT_Channel == "126") %>% 
+    dplyr::filter(is.na(TMT_Set) | is.na(LCMS_Injection))
   
   if (nrow(tmt126)) {
     stop("The indexes of `TMT_Set` and/or `LCMS_Injection` corresponding to \n", 
-         "  the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
-         call. = FALSE)
+         "  the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.")
   }
   
   invisible(df)

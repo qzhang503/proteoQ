@@ -113,8 +113,8 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
-\code{log2FC} will be plotted. The default is TRUE.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

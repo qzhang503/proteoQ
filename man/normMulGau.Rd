@@ -64,27 +64,28 @@ cut points correspond to the quantile values under column \code{mean_lint}
 (mean log10 intensity) of input data. Values of \code{log2FC} will be then
 binned from \eqn{-Inf} to \eqn{Inf} according to the cut points. To disable
 data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
-\code{log2FC} can also be achieved through a different numeric column, e.g.,
-\code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
+\code{log2FC} can also be achieved through a different numeric column,
+e.g., \code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
 \code{\link{mergePep}} for data alignment with binning.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt} for peptides or
-\code{Protein.txt} for proteins. Each statement contains to a list of
-logical expression(s). The \code{lhs} needs to start with \code{filter_}.
-The logical condition(s) at the \code{rhs} needs to be enclosed in
-\code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
-a column key in \code{Peptide.txt}. The statement \code{filter_peps_at =
-exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
-with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
-the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
-default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
-scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
-the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
-columns; the default is 1. \cr \code{width}, the width of plot; \cr
-\code{height}, the height of plot. \cr \code{scales}, should the scales be
-fixed across panels; the default is "fixed" and the alternative is "free".}
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration of data against the column keys in \code{Peptide.txt} for
+peptides or \code{Protein.txt} for proteins. Each statement contains to a
+list of logical expression(s). The \code{lhs} needs to start with
+\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. \cr \cr For example,
+\code{pep_len} is a column key in \code{Peptide.txt}. The statement
+\code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
+with \code{pep_len > 50}. See also \code{\link{normPSM}}. \cr \cr
+Additional parameters for plotting with \code{ggplot2}: \cr \code{xmin},
+the minimum \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax},
+the maximum \eqn{x} at a log2 scale; the default is +2. \cr \code{xbreaks},
+the breaks in \eqn{x}-axis at a log2 scale; the default is 1. \cr
+\code{binwidth}, the binwidth of \code{log2FC}; the default is \eqn{(xmax -
+xmin)/80}. \cr \code{ncol}, the number of columns; the default is 1. \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
+\code{scales}, should the scales be fixed across panels; the default is
+"fixed" and the alternative is "free".}
 }
 \value{
 A data frame.

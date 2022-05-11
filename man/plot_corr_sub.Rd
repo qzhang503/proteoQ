@@ -34,9 +34,9 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{ylab}{y-axis label.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
+\item{filename}{A representative file name to outputs. By default, the
+name(s) will be determined automatically. For text files, a typical file
+extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 

@@ -22,9 +22,11 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 {
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, show_ids, 
                      center_features, scale_features),
-                   rlang::is_logical, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+                   rlang::is_logical, logical(1L)))
   
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata.")
+
   col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
@@ -66,28 +68,34 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if (!is.null(anal_dots$scale.)) {
     if (type == "obs") {
       scale_features <- anal_dots$scale.
+      
       warning("Overwrite `scale_features` with `scale.`; ", 
               "suggest use only `scale_features`.", 
               call. = FALSE)
-    } else if (type == "feats") {
+    } 
+    else if (type == "feats") {
       warning("Argument `scale.` not used; ", 
               "data scaling already set by `scale_log2r`.", 
               call. = FALSE)
     }
+    
     anal_dots$scale. <- NULL
   }
   
   if (!is.null(anal_dots$center)) {
     if (type == "obs") {
       center_features <- anal_dots$center
+      
       warning("Overwrite `center_features` with `center`; ", 
               "suggest use only `center_features`.", 
               call. = FALSE)
-    } else if (type == "feats") {
+    } 
+    else if (type == "feats") {
       warning("Argument `center` not used; ", 
               "data already centered with `standPep()` or `standPrn()`.", 
               call. = FALSE)
     }
+    
     anal_dots$center <- NULL
   }
   
@@ -139,26 +147,22 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
   
-  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% names(df)) {
+  nms <- names(df)
+  
+  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
     assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-  }
-  
-  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% names(df)) {
+
+  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
     assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-  }
-  
-  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df)) {
+
+  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
     assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-  }
-  
-  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df)) {
+
+  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
     assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-  }
-  
-  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df)) {
+
+  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
     assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
-  }
 
   if (!is.na(map_color)) col_color <- NULL
   if (!is.na(map_fill)) col_fill <- NULL
@@ -166,7 +170,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if (!is.na(map_size)) col_size <- NULL
   if (!is.na(map_alpha)) col_alpha <- NULL
   
-  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
   suppressWarnings(rm(list = c("map_.")))
 
   color_brewer <- rlang::enexpr(color_brewer)
@@ -197,25 +201,27 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     legend.text.align = 0,
     legend.box = NULL
   )
-  if (is.null(theme)) theme <- proteoq_pca_theme
+  
+  if (is.null(theme)) 
+    theme <- proteoq_pca_theme
   
   # --- check dimension ---
-  if (dimension < 2) {
-    warning("The `dimension` increased from ", dimension, " to a minimum of 2.", 
-            call. = FALSE)
-    dimension <- 2
+  if (dimension < 2L) {
+    warning("The `dimension` increased from ", dimension, " to a minimum of 2.")
+    dimension <- 2L
   }
   
   ranges <- seq_len(dimension)
   cols <- colnames(df) %>% .[. %in% paste0("PC", ranges)]
   
   max_dim <- names(df) %>% .[grepl("^PC[0-9]+", .)] %>% length()
+  
   if (dimension > max_dim) {
     warning("The `dimension` decreased from ", dimension, 
-            " to a maximum of ", max_dim, ".",
-            call. = FALSE)
+            " to a maximum of ", max_dim, ".")
     dimension <- max_dim
   }
+  
   rm(list = "max_dim")
   
   # --- set up aes ---
@@ -230,13 +236,14 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
     col_alpha <- NULL
   
-  if (dimension > 2) {
+  if (dimension > 2L) {
     mapping <- ggplot2::aes(colour = !!col_color, 
                             fill = !!col_fill, 
                             shape = !!col_shape,
                             size = !!col_size, 
                             alpha = !!col_alpha)
-  } else {
+  } 
+  else {
     mapping <- ggplot2::aes(x = PC1, 
                             y = PC2,
                             colour = !!col_color, 
@@ -261,10 +268,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       for (var in vars) {
         col <- quo_name(var)
 
-        if (anyNA(df[[col]])) {
-          warning("NA/incomplete aesthetics in column `", col, "`.\n", 
-                  call. = FALSE)
-        }
+        if (anyNA(df[[col]]))
+          warning("NA/incomplete aesthetics in column `", col, "`.\n")
       }
     }
   })
@@ -275,7 +280,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     dot_alpha <- .9
     dot_stroke <- 0.02
     text_size <- 3
-  } else {
+  } 
+  else {
     dot_shape <- 20
     dot_size <- 2
     dot_alpha <- .6
@@ -290,6 +296,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                    alpha = dot_alpha) %>%
     .[names(.) %in% names(mapping_fix)] %>%
     .[!is.na(.)]
+  
   fix_args$stroke <- dot_stroke
   
   # --- set up axis labels ---
@@ -297,18 +304,19 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     col_labs <-
       purrr::imap_chr(res$prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>%
       .[ranges]
-  } else {
-    if (anal_dots$center) {
-      col_labs <-
-        purrr::imap_chr(res$prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>%
+  } 
+  else {
+    col_labs <- if (anal_dots$center) {
+      purrr::imap_chr(res$prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>%
         .[ranges]
-    } else {
-      col_labs <- cols
+    } 
+    else {
+      cols
     }
   }
   
   # --- plots ---
-  if (dimension > 2) {
+  if (dimension > 2L) {
     p <- GGally::ggpairs(df,
                          axisLabels = "internal",
                          columns = cols,
@@ -340,9 +348,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       }
     }
     
-    if ((!is.null(col_size)) & (!is.null(size_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
-      
+    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+      check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
+
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
@@ -350,9 +358,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       }
     }
     
-    if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
-      
+    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+      check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
+
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
@@ -360,9 +368,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       }
     }
     
-    if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
-      
+    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+      check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
+
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
@@ -371,12 +379,10 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     }
     
     if (show_ellipses) {
-      if (anyNA(label_scheme_sub[[col_group]])) {
+      if (anyNA(label_scheme_sub[[col_group]]))
         warning("(Partial) NA aesthetics under column `", col_group, 
-                "` in expt_smry.xlsx",
-                call. = FALSE)
-      }
-      
+                "` in expt_smry.xlsx")
+
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + stat_ellipse(
@@ -391,7 +397,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
         }
       }
     }
-  } else {
+  } 
+  else {
     p <- ggplot() +
       rlang::eval_tidy(rlang::quo(geom_point(data = df, 
                                              mapping = mapping_var, 
@@ -401,12 +408,10 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     check_ggplot_aes(p)
     
     if (show_ellipses) {
-      if (anyNA(label_scheme_sub[[col_group]])) {
+      if (anyNA(label_scheme_sub[[col_group]]))
         warning("(Partial) NA aesthetics under column `", col_group, 
-                "` in expt_smry.xlsx",
-                call. = FALSE)
-      }
-      
+                "` in expt_smry.xlsx")
+
       p <- p + ggplot2::stat_ellipse(
         data = df,
         aes(x = PC1, y = PC2, fill = !!rlang::sym(col_group)),
@@ -429,18 +434,18 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
     if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
     
-    if ((!is.null(col_size)) & (!is.null(size_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+      check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
       p <- p + scale_size_manual(values = size_manual)
     }
     
-    if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+      check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
       p <- p + scale_shape_manual(values = shape_manual)
     }
     
-    if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-      stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+      check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
       p <- p + scale_shape_manual(values = alpha_manual)
     }
   }
@@ -465,16 +470,16 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, 
                       center_features, scale_features, 
                       choice, type, col_group, 
-                      folds, out_file, ...) {
+                      folds, out_file, ...) 
+{
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
   col_group <- rlang::enexpr(col_group)
   
-  if (! purrr::is_empty(dots$rank.)) {
-    if (dots$rank. < 2) {
-      warning("PCA `rank.` increased from ", dots$rank., " to a minimum of 2.", 
-              call. = FALSE)
-      dots$rank. <- 2
+  if (length(dots$rank.)) {
+    if (dots$rank. < 2L) {
+      warning("PCA `rank.` increased from ", dots$rank., " to a minimum of 2.")
+      dots$rank. <- 2L
     }
   }
   
@@ -488,23 +493,22 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   nms <- names(df)
   n_rows <- nrow(df)
   
-  if (n_rows <= 50) {
+  if (n_rows <= 50L)
     stop("Need 50 or more data rows for PCA.", call. = FALSE)
-  }
-  
+
   label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
   
   if (type == "obs") {
     res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
     df_t <- res$df_t
     ls_sub <- res$ls_sub
-    rm(res)
-    
+    rm(list = "res")
+
     if (rlang::as_string(col_group) %in% names(df_t)) {
       df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
     }
     
-    stopifnot(vapply(df_t, is.numeric, logical(1)))
+    stopifnot(vapply(df_t, is.numeric, logical(1L)))
     
     if (choice == "prcomp") {
       pr_out <- rlang::expr(stats::prcomp(x = !!df_t, 
@@ -512,30 +516,30 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                                           scale. = !!scale_features, 
                                           !!!dots)) %>%
         rlang::eval_bare(env = caller_env())
-    } else {
-      stop("Unknown `choice = ", choice, "`.", 
-           call. = FALSE)
+    } 
+    else {
+      stop("Unknown `choice = ", choice, "`.")
     }
 
     pr_out$pca <- pr_out$x %>%
       data.frame(check.names = FALSE) %>%
       cmbn_meta(ls_sub) %T>%
       readr::write_tsv(out_file)
-  } else if (type == "feats") {
-    if (folds > 1) {
+  } 
+  else if (type == "feats") {
+    if (folds > 1)
       message("Coerce to `k_fold = 1` at `type = feats`.\n")
-    }
+
+    stopifnot(vapply(df, is.numeric, logical(1L)))
     
-    stopifnot(vapply(df, is.numeric, logical(1)))
-    
-    run_scripts <- FALSE
-    if (run_scripts) {
+    if (FALSE) {
       if (scale_features) {
         df <- df %>% 
           t() %>% 
           scale(center = center_features, scale = TRUE) %>% 
           t()
-      } else if (center_features) {
+      } 
+      else if (center_features) {
         df <- df %>% sweep(., 1, rowMeans(., na.rm = TRUE), "-")
       }
     }
@@ -555,9 +559,9 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                                           scale. = !!scale_log2r, 
                                           !!!dots)) %>%
         rlang::eval_bare(env = caller_env())
-    } else {
-      stop("Unknown `choice = ", choice, "`.", 
-           call. = FALSE)
+    } 
+    else {
+      stop("Unknown `choice = ", choice, "`.")
     }
 
     pr_out$pca <- pr_out$x %>%
@@ -565,12 +569,13 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
       tibble::rownames_to_column(id) %>%
       dplyr::left_join(df_orig, by = id) %T>%
       readr::write_tsv(out_file)
-  } else {
-    stop("Unkown `type` for PCA.", call. = FALSE)
+  } 
+  else {
+    stop("Unkown `type` for PCA.")
   }
   
   pr_out$prop_var <- summary(pr_out)$importance[2, ] %>% 
-    round(., digits = 3) %>% 
+    round(., digits = 3L) %>% 
     scales::percent()
   
   invisible(pr_out)
@@ -596,8 +601,8 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     show_ids = TRUE, show_ellipses = FALSE,
                     dimension = 2, folds = 1,
                     df = NULL, filepath = NULL, filename = NULL,
-                    theme = NULL, type = c("obs", "feats"), ...) {
-  
+                    theme = NULL, type = c("obs", "feats"), ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -606,25 +611,18 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_formalArgs(pepPCA, prcomp)
   
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "prcomp"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
+  choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
   
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   type <- rlang::enexpr(type)
-  if (type == rlang::expr(c("obs", "feats"))) {
-    type <- "obs"
-  } else {
-    type <- rlang::as_string(type)
-    stopifnot(type %in% c("obs", "feats"))
-  }
+  type <- if (type == rlang::expr(c("obs", "feats"))) "obs" else rlang::as_string(type)
+  stopifnot(type %in% c("obs", "feats"))
   
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
@@ -799,8 +797,8 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     show_ids = TRUE, show_ellipses = FALSE,
                     dimension = 2, folds = 1,
                     df = NULL, filepath = NULL, filename = NULL,
-                    theme = NULL, type = c("obs", "feats"), ...) {
-
+                    theme = NULL, type = c("obs", "feats"), ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -809,26 +807,19 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_formalArgs(prnPCA, prcomp)
   
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "prcomp"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
-  
+  choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
+
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   type <- rlang::enexpr(type)
-  if (type == rlang::expr(c("obs", "feats"))) {
-    type <- "obs"
-  } else {
-    type <- rlang::as_string(type)
-    stopifnot(type %in% c("obs", "feats"))
-  }
-  
+  type <- if (type == rlang::expr(c("obs", "feats"))) "obs" else rlang::as_string(type)
+  stopifnot(type %in% c("obs", "feats"))
+
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)

@@ -13,8 +13,8 @@ cut points correspond to the quantile values under column \code{mean_lint}
 (mean log10 intensity) of input data. Values of \code{log2FC} will be then
 binned from \eqn{-Inf} to \eqn{Inf} according to the cut points. To disable
 data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
-\code{log2FC} can also be achieved through a different numeric column, e.g.,
-\code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
+\code{log2FC} can also be achieved through a different numeric column,
+e.g., \code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
 \code{\link{mergePep}} for data alignment with binning.}
 
 \item{x}{A sequence of numeric values with probable NA value.}

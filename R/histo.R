@@ -10,27 +10,30 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
                        complete_cases, 
                        cut_points, show_curves, show_vline, scale_y, 
                        filepath = NULL, filename, 
-                       theme, ...) {
-  
+                       theme, ...) 
+{
   stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
-                   rlang::is_logical, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0L)
+                   rlang::is_logical, logical(1L)))
+  
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata (at a data subset).")
 
-  if (complete_cases) {
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
-  
-  if (scale_log2r) {
-    fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
-  } else {
-    fn_par <- file.path(filepath, "MGKernel_params_N.txt")
-  }
-  
+  if (complete_cases)
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+
+  fn_par <- if (is.na(scale_log2r))
+    file.path(filepath, "MGKernel_params_O.txt")
+  else if (scale_log2r)
+    file.path(filepath, "MGKernel_params_Z.txt")
+  else
+    file.path(filepath, "MGKernel_params_N.txt")
+
   if (file.exists(fn_par)) {
-    params <- read.csv(fn_par, check.names = FALSE, header = TRUE, 
-                       sep = "\t", comment.char = "#")
+    params <- read.csv(fn_par, check.names = FALSE, header = TRUE, sep = "\t", 
+                       comment.char = "#")
     params <- within(params, {mean = mean - x})
-  } else {
+  } 
+  else {
     params <- NULL
     show_curves <- FALSE
   }
@@ -82,13 +85,14 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	    filters_in_call(!!!filter_dots) %>% 
 	    arrangers_in_call(!!!arrange_dots)
 	  
-	  stopifnot(nrow(df) > 0)
+	  if (!nrow(df))
+	    stop("Zero row of data.")
 	}
 	
 	by = (xmax - xmin)/200
 	nrow <- nrow(df)
 	x_label <- expression("Ratio ("*log[2]*")")
-	NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+	NorZ_ratios <- find_NorZ(scale_log2r)
 
 	if (!is.null(params)) {
 		n_comp <- max(params$Component)
@@ -98,7 +102,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 		# offset by the percentage of non-NA values
 		perc_nna <- df %>%
 			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
-		  `names<-`(gsub(".*_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+		  `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
 			lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
 
 		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
@@ -126,7 +130,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 			dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
 		myPalette <- c(rep("gray", n_comp), "black")
-	} else {
+	} 
+	else {
 		n_comp <- NA
 		nm_comps <- NA
 		myPalette <- NA
@@ -134,7 +139,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 		perc_nna <- NA
 		fit <- NA
 	}
-
 
 	proteoq_histo_theme <- theme_bw() + theme(
 		axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
@@ -160,7 +164,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 		legend.box = NULL
 	)
 	
-	if (is.null(theme)) theme <- proteoq_histo_theme
+	if (is.null(theme)) 
+	  theme <- proteoq_histo_theme
 
 	if (!scale_y) {
 	  df <- df %>% 
@@ -168,8 +173,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	    arrangers_in_call(!!!arrange_dots)
 	}
 
-	stopifnot(nrow(df) > 0L)
-	
+	if (!nrow(df))
+	  stop("Zero row of data")
+
 	# cut_points = c(prot_icover = seq(.25, .75, .25))
 	# cut_points = c(mean_lint = seq(4, 7, .5)) 
 	# cut_points = c(prot_icover = Inf)
@@ -198,12 +204,11 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	                     breaks = cut_points, 
 	                     labels = cut_points[1:(length(cut_points)-1)]) %>%
 	    dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-	    `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", 
-	                   names(.))) %>%
+	    `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
 	    tidyr::gather(key = Sample_ID, value = value, -col_cut) 
 	  
 	  if (! "Sample_ID" %in% names(df_melt)) 
-	    stop("No ratio fields available after data filtration.", call. = FALSE)
+	    stop("No ratio fields available after data filtration.")
 	  
 	  df_melt <- df_melt %>%
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
@@ -249,9 +254,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 
 	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
 	
-	if (!any(is.na(fit))) {
+	if (!any(is.na(fit)))
 	  readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
-	}
 
 	invisible(list(raw = df_melt, fitted = fit))
 }
@@ -272,6 +276,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
@@ -281,6 +286,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   filename <- rlang::enexpr(filename)
   
   dots <- rlang::enexprs(...)
+  
   if (!is.null(dots$impute_na)) {
     dots$impute_na <- NULL
     rlang::warn("No NA imputation with histograms.")
@@ -306,76 +312,79 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 }
 
 
-#'Histogram visualization
+#' Histogram visualization
 #'
-#'\code{prnHist} plots the histograms of protein \code{log2FC}.
-#'
-#'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
-#'their contributing reporter-ion or LFQ intensity.
-#'
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
-#'  of standard deviation across all samples. The default is TRUE.
-#'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used. The default is FALSE.
-#'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE
-#'  default, the curve parameters are based on the latest call to
-#'  \code{\link{standPep}} or \code{\link{standPrn}} with \code{method_align =
-#'  MGKernel}. This feature can inform the effects of data filtration on the
-#'  alignment of \code{logFC} profiles. Also see \code{\link{standPep}} and
-#'  \code{\link{standPrn}} for more examples.
-#'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
-#'  The default is TRUE.
-#'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
-#'  is TRUE.
-#'@param cut_points A named, numeric vector defines the cut points (knots) in
-#'  histograms. The default is \code{cut_points = c(mean_lint = NA)} where the
-#'  cut points correspond to the quantile values under column \code{mean_lint}
-#'  (mean log10 intensity) of input data. Values of \code{log2FC} will be then
-#'  binned from \eqn{-Inf} to \eqn{Inf} according to the cut points. To disable
-#'  data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
-#'  \code{log2FC} can also be achieved through a different numeric column, e.g.,
-#'  \code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
-#'  \code{\link{mergePep}} for data alignment with binning.
-#'@param df The name of a primary data file. By default, it will be determined
-#'  automatically after matching the types of data and analysis with an
-#'  \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
-#'  primary file contains normalized peptide or protein data and is among
-#'  \code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
-#'  "Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
-#'  require the fields of significance p-values, the \code{df} will be one of
-#'  \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
-#'  "protein_impNA_pVal.txt")}.
-#'@param filepath A file path to output results. By default, it will be
-#'  determined automatically by the name of the calling function and the value
-#'  of \code{id} in the \code{call}.
-#'@param filename A representative file name to outputs. By default, the name(s)
-#'  will be determined automatically. For text files, a typical file extension
-#'  is \code{.txt}. For image files, they are typically saved via
-#'  \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
-#'  image type will be determined by the extension of the file name.
-#'@param theme A
-#'  \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-#'  theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-#'  theme will be applied.
-#'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt} for peptides or
-#'  \code{Protein.txt} for proteins. Each statement contains to a list of
-#'  logical expression(s). The \code{lhs} needs to start with \code{filter_}.
-#'  The logical condition(s) at the \code{rhs} needs to be enclosed in
-#'  \code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
-#'  a column key in \code{Peptide.txt}. The statement \code{filter_peps_at =
-#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-#'  See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
-#'  with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
-#'  the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
-#'  default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
-#'  scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
-#'  the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
-#'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
-#'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
-#'  fixed across panels; the default is "fixed" and the alternative is "free".
-#'@inheritParams standPep
-#'@seealso 
+#' \code{prnHist} plots the histograms of protein \code{log2FC}.
+#' 
+#' In the histograms, the \code{log2FC} under each TMT channel are color-coded by
+#' their contributing reporter-ion or LFQ intensity.
+#' 
+#' @param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
+#'   of standard deviation across all samples. The default is TRUE. At
+#'   \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+#'   be used.
+#' @param complete_cases Logical; if TRUE, only cases that are complete with no
+#'   missing values will be used. The default is FALSE.
+#' @param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE
+#'   default, the curve parameters are based on the latest call to
+#'   \code{\link{standPep}} or \code{\link{standPrn}} with \code{method_align =
+#'   MGKernel}. This feature can inform the effects of data filtration on the
+#'   alignment of \code{logFC} profiles. Also see \code{\link{standPep}} and
+#'   \code{\link{standPrn}} for more examples.
+#' @param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
+#'   The default is TRUE.
+#' @param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
+#'   is TRUE.
+#' @param cut_points A named, numeric vector defines the cut points (knots) in
+#'   histograms. The default is \code{cut_points = c(mean_lint = NA)} where the
+#'   cut points correspond to the quantile values under column \code{mean_lint}
+#'   (mean log10 intensity) of input data. Values of \code{log2FC} will be then
+#'   binned from \eqn{-Inf} to \eqn{Inf} according to the cut points. To disable
+#'   data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
+#'   \code{log2FC} can also be achieved through a different numeric column,
+#'   e.g., \code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
+#'   \code{\link{mergePep}} for data alignment with binning.
+#' @param df The name of a primary data file. By default, it will be determined
+#'   automatically after matching the types of data and analysis with an
+#'   \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+#'   primary file contains normalized peptide or protein data and is among
+#'   \code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+#'   "Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+#'   require the fields of significance p-values, the \code{df} will be one of
+#'   \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+#'   "protein_impNA_pVal.txt")}.
+#' @param filepath A file path to output results. By default, it will be
+#'   determined automatically by the name of the calling function and the value
+#'   of \code{id} in the \code{call}.
+#' @param filename A representative file name to outputs. By default, the
+#'   name(s) will be determined automatically. For text files, a typical file
+#'   extension is \code{.txt}. For image files, they are typically saved via
+#'   \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+#'   image type will be determined by the extension of the file name.
+#' @param theme A
+#'   \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+#'   i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+#'   will be applied.
+#' @param ... \code{filter_}: Variable argument statements for the row
+#'   filtration of data against the column keys in \code{Peptide.txt} for
+#'   peptides or \code{Protein.txt} for proteins. Each statement contains to a
+#'   list of logical expression(s). The \code{lhs} needs to start with
+#'   \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+#'   enclosed in \code{exprs} with round parenthesis. \cr \cr For example,
+#'   \code{pep_len} is a column key in \code{Peptide.txt}. The statement
+#'   \code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
+#'   with \code{pep_len > 50}. See also \code{\link{normPSM}}. \cr \cr
+#'   Additional parameters for plotting with \code{ggplot2}: \cr \code{xmin},
+#'   the minimum \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax},
+#'   the maximum \eqn{x} at a log2 scale; the default is +2. \cr \code{xbreaks},
+#'   the breaks in \eqn{x}-axis at a log2 scale; the default is 1. \cr
+#'   \code{binwidth}, the binwidth of \code{log2FC}; the default is \eqn{(xmax -
+#'   xmin)/80}. \cr \code{ncol}, the number of columns; the default is 1. \cr
+#'   \code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
+#'   \code{scales}, should the scales be fixed across panels; the default is
+#'   "fixed" and the alternative is "free".
+#' @inheritParams standPep
+#' @seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
@@ -431,24 +440,26 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
-#'@import dplyr ggplot2
-#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
-#'@example inst/extdata/examples/prnHist_.R
+#' @import dplyr ggplot2
+#' @importFrom magrittr %>% %T>% %$% %<>%
 #'
-#'@return Histograms of \code{log2FC}; raw histogram data: \code{[...]_raw.txt};
-#'  fitted data for curves: \code{[...]_fitted.txt}
-#'@export
+#' @example inst/extdata/examples/prnHist_.R
+#'
+#' @return Histograms of \code{log2FC}; raw histogram data:
+#'   \code{[...]_raw.txt}; fitted data for curves: \code{[...]_fitted.txt}
+#' @export
 prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                      cut_points = c(mean_lint = NA), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
-                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
+                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
+{
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
@@ -456,9 +467,10 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   filename <- rlang::enexpr(filename)
 
   dots <- rlang::enexprs(...)
+  
   if (!is.null(dots$impute_na)) {
     dots$impute_na <- NULL
-    rlang::warn("No NA imputation with histograms.")
+    warning("No NA imputation with histograms.", call. = FALSE)
   }
 
   reload_expts()

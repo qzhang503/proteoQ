@@ -40,9 +40,9 @@ protein-protein interaction. The default is 0.7.}
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
+\item{filename}{A representative file name to outputs. By default, the
+name(s) will be determined automatically. For text files, a typical file
+extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 

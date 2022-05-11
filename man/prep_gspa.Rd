@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{prep_gspa}
 \alias{prep_gspa}
-\title{A helper function for GSPA}
+\title{Helper of GSPA}
 \usage{
 prep_gspa(
   df,
@@ -49,5 +49,5 @@ of absolute values in \code{log2FC}.}
 FALSE.}
 }
 \description{
-A helper function for GSPA
+Helper of GSPA
 }

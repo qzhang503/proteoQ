@@ -2790,7 +2790,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
       dplyr::mutate(mean_lint = 
                       log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), drop = FALSE], 
                                               na.rm = TRUE)), 
-                    mean_lint = round(mean_lint, digits = 2))
+                    mean_lint = round(mean_lint, digits = 2L))
     
     count_nna <- df_num %>% 
       dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 

@@ -6,12 +6,11 @@
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 GGally 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotCorr <- function (df = NULL, id, anal_type, data_select, 
-                      col_select = NULL, col_order = NULL,
-                      label_scheme_sub = label_scheme_sub, 
-                      scale_log2r = scale_log2r, complete_cases = complete_cases, 
-                      filepath = filepath, filename = filename, 
-                      cor_method = cor_method, ...) 
+plotCorr <- function (df = NULL, id = NULL, anal_type, data_select, 
+                      col_select = NULL, col_order = NULL, label_scheme_sub = NULL, 
+                      scale_log2r = TRUE, complete_cases = FALSE, 
+                      filepath = NULL, filename = NULL, 
+                      cor_method = "pearson", ...) 
 {
   if (complete_cases) 
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
@@ -49,7 +48,9 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+	df <- prepDM(df = df, 
+	             id = !!id, 
+	             scale_log2r = scale_log2r, 
 	             sub_grp = label_scheme_sub$Sample_ID, 
 	             anal_type = anal_type, 
 	             rm_allna = TRUE) 
@@ -69,8 +70,7 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	  if (is.null(xbreaks)) xbreaks <- 1
 	} 
 	else {
-	  stop("`data_select` nees to be either`logFC` or `logInt`.", 
-	       call. = FALSE)
+	  stop("`data_select` nees to be either`logFC` or `logInt`.")
 	}
 	
 	label_scheme_sub <- label_scheme_sub %>% 
@@ -78,15 +78,15 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	
 	if (is.null(width)) 
 	  width <- 1.4 * length(label_scheme_sub$Sample_ID)
+	
 	if (is.null(height)) 
 	  height <- width
+	
 	if (ncol(df) > 44) 
-	  stop("Maximum number of samples for correlation plots is 44.", 
-	       call. = FALSE)
+	  stop("Maximum number of samples for correlation plots is 44.")
 
-	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L) {
+	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L)
 		df <- df[, order(names(df))]
-	} 
 	else {
 	  corrplot_orders <- label_scheme_sub %>%
 	    dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
@@ -118,16 +118,14 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 #' \donttest{
 #' my_custom_cor(data, aes(x = col_nm_1, y = col_nm_1))
 #' }
-my_custom_cor <- function(data, mapping, color = I("grey50"), 
-                          sizeRange = c(1, 4), 
-                          cor_method = "pearson", 
-                          ...) 
+my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4), 
+                          cor_method = "pearson", ...) 
 {
   x <- GGally::eval_data_col(data, mapping$x)
   y <- GGally::eval_data_col(data, mapping$y)
   
-  x[is.infinite(x)] <- NA
-  y[is.infinite(y)] <- NA
+  x[is.infinite(x)] <- NA_real_
+  y[is.infinite(y)] <- NA_real_
   
   ct <- cor.test(x, y, method = cor_method)
   
@@ -310,7 +308,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
 
   ncol <- ncol(df)
   
-  df <- df %>% dplyr::mutate_all(~ replace(.x, is.infinite(.), NA))
+  df <- df %>% dplyr::mutate_all(~ replace(.x, is.infinite(.), NA_real_))
   
   p1 <- ggpairs(df, columnLabels = as.character(names(df)), 
                 labeller = label_wrap_gen(10),
@@ -318,6 +316,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
                 lower = list(continuous = my_lower_no_sm),
                 upper = list(continuous = wrap(my_custom_cor, 
                                                cor_method = cor_method)))
+  
   p2 <- ggcorr(df, label = TRUE, label_round = 2)
   
   local({
@@ -327,19 +326,21 @@ plot_corr_sub <- function (df, cor_method = "pearson",
       tibble::rownames_to_column("Sample_ID")
 
     filename <- gsub("(.*\\.)[^.]*$", paste0("\\1", "txt"), filename)
+    
     readr::write_delim(cors,file.path(filepath, filename), 
                        delim = find_delim(filename))
   })
 
   g2 <- ggplotGrob(p2)
   colors <- g2$grobs[[6]]$children[[3]]$gp$fill
-
+  
   idx <- 1
   for (k1 in 1:(ncol-1)) { # row
     for (k2 in (k1+1):ncol) { # column
       plt <- getPlot(p1, k1, k2) +
         theme(panel.background = element_rect(fill = colors[idx], color = "white"),
               panel.grid.major = element_line(color = colors[idx]))
+      
       p1 <- putPlot(p1, plt, k1, k2)
       idx <- idx + 1
     }
@@ -356,6 +357,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
                 panel.grid.major.y = element_blank(),
                 panel.grid.minor.y = element_blank()
         )
+      
       p1 <- putPlot(p1, plt, k2, k1)
       idx <- idx + 1
     }
@@ -371,6 +373,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
               panel.grid.major.y = element_blank(),
               panel.grid.minor.y = element_blank()
       )
+    
     p1 <- putPlot(p1, plt, k1, k1)
     idx <- idx + 1
   }
@@ -416,15 +419,15 @@ plot_corr_sub <- function (df, cor_method = "pearson",
 #'@export
 pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
-                           impute_na = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, 
-                           cor_method = "pearson", ...) 
+                           impute_na = FALSE, df = NULL, filepath = NULL, 
+                           filename = NULL, cor_method = "pearson", ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -465,15 +468,15 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'@export
 pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
-                            impute_na = FALSE, 
-                            df = NULL, filepath = NULL, filename = NULL, 
-                            cor_method = "pearson", ...) 
+                            impute_na = FALSE, df = NULL, filepath = NULL, 
+                            filename = NULL, cor_method = "pearson", ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -599,15 +602,15 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'@export
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
-                           impute_na = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, 
-                           cor_method = "pearson", ...) 
+                           impute_na = FALSE, df = NULL, filepath = NULL, 
+                           filename = NULL, cor_method = "pearson", ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -649,15 +652,15 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'@export
 prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
-                            impute_na = FALSE, 
-                            df = NULL, filepath = NULL, filename = NULL, 
-                            cor_method = "pearson", ...) 
+                            impute_na = FALSE, df = NULL, filepath = NULL, 
+                            filename = NULL, cor_method = "pearson", ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   

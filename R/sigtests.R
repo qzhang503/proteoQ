@@ -2,14 +2,12 @@
 #' 
 #' @param x A data frame.
 #' @param na.rm The same as in \code{mean}.
-#' @importFrom magrittr %>% %T>% %$% %<>% 
 rowVars <- function (x, na.rm = TRUE) 
 {
-  sqr <- function(x) x * x
   n <- rowSums(!is.na(x))
-  n[n <= 1] <- NA
+  n[n <= 1] <- NA_real_
   
-  rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1)
+  rowSums((x - rowMeans(x, na.rm = na.rm))^2, na.rm = na.rm)/(n - 1)
 }
 
 
@@ -22,7 +20,8 @@ rowVars <- function (x, na.rm = TRUE)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) 
 {
-  if (is.null(cols)) cols <- 1:ncol(df)
+  if (is.null(cols)) 
+    cols <- 1:ncol(df)
   
   if (length(cols) > 1L) {
     df <- df %>% 
@@ -134,11 +133,9 @@ prepFml <- function(formula, label_scheme_sub, ...)
 		dplyr::filter(!!sym(key_col) %in% elements) %>%
 		dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
 	
-	if (nrow(label_scheme_sub_sub) == 0) {
+	if (!nrow(label_scheme_sub_sub))
 	  stop("No samples were found for formula ", formula, 
-	       "\nCheck the terms under column ", key_col, 
-	       call. = FALSE)
-	}
+	       "\nCheck the terms under column ", key_col)
 
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
 		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
@@ -166,7 +163,7 @@ prepFml <- function(formula, label_scheme_sub, ...)
 		.[grepl("\\|", .)] %>%
 		gsub("1\\s*\\|\\s*(.*)", "\\1", .)
 
-	message("random_vars: ", random_vars %>% as.character, "\n\n")
+	message("random_vars: ", as.character(random_vars), "\n\n")
 	
 	invisible(list(design = design, 
 	               contr_mat = contr_mat, 
@@ -212,8 +209,9 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 {
 	nms <- rownames(pvals)
 
-	pass_pvals <- pvals %>% purrr::map(~ .x <= pval_cutoff)
-	pass_fcs <- log2rs %>% purrr::map(~ abs(.x) >= log2(logFC_cutoff))
+	pass_pvals <- purrr::map(pvals, ~ .x <= pval_cutoff)
+	pass_fcs <- purrr::map(log2rs, ~ abs(.x) >= log2(logFC_cutoff))
+	
 	pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
 	  purrr::map(~ ifelse(!.x, NA, .x))
 
@@ -226,9 +224,9 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 	  tibble::rownames_to_column() %>% 
 		dplyr::bind_cols(pvals, .) %>%
 	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
-	                   scientific = TRUE, digits = 2) %>%
+	                   scientific = TRUE, digits = 2L) %>%
 	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
-	                   scientific = TRUE, digits = 2) %>% 
+	                   scientific = TRUE, digits = 2L) %>% 
 	  tibble::remove_rownames() %>% 
 	  tibble::column_to_rownames()
 
@@ -236,7 +234,7 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 		to_linfc() %>%
 		`colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
 		dplyr::bind_cols(log2rs, .) %>%
-		dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2) %>%
+		dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2L) %>%
 		`rownames<-`(nms)
 
 	cbind.data.frame(res_padj, log2rs)
@@ -288,8 +286,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 	  if (length(bads)) 
 	    warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
-	            " under `", formula, "`.", 
-	            call. = FALSE)
+	            " under `", formula, "`.")
 	})
 
 	# keep the name list as rows may drop in filtration
@@ -297,7 +294,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		tibble::rownames_to_column(id) %>%
 		dplyr::select(id)
 
-	if (complete_cases) df <- df[complete.cases(df), ]
+	if (complete_cases) 
+	  df <- df[complete.cases(df), ]
 	
 	df <- df %>% 
 	  filterData(var_cutoff = var_cutoff) %>% 
@@ -308,14 +306,12 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	  
 	  if (ncol < 4L) 
 	    warning(formula, ": the total number of samples is ", ncol, ".\n", 
-	            "May need more samples for statistical tests.", 
-	            call. = FALSE)
+	            "May need more samples for statistical tests.")
 	})
 
 	if (length(random_vars)) {
-	  if (length(random_vars) > 1) {
-	    warning("Uses only the first random variable: ", random_vars[1], 
-	            call. = FALSE)
+	  if (length(random_vars) > 1L) {
+	    warning("Uses only the first random variable: ", random_vars[1])
 	  }
 	  
 	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
@@ -329,7 +325,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		    contrasts.fit(contr_mat) %>%
 		    eBayes()
 		)
-	} else {
+	} 
+	else {
 	  fit <- suppressWarnings(
 	    df %>%
 	      lmFit(design = design) %>%
@@ -360,6 +357,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			MASS::ginv() %>%
 			`colnames<-`(colnames(contr_mat)) %>%
 			`rownames<-`(rownames(contr_mat))
+		
 		names(dimnames(contr_mat_lm)) <- c("Levels", "Contrasts")
 		contr_mat_lm <- list(Cdn = contr_mat_lm) %>% `names<-`(key_col)
 
@@ -408,7 +406,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				tibble::column_to_rownames(id) %>%
 				`names<-`(paste0("pVal (", names(.), ")")) %>%
 				lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
-		} else {
+		} 
+		else {
 		  if (!requireNamespace("broom", quietly = TRUE)) {
 		    stop("\n============================================================", 
 		         "\nNeed package \"broom\" for this function to work.",
@@ -442,7 +441,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 }
 
 
-#' Perform significance tests
+#' Significance tests
 #' 
 #' @param data_type The type of data being either \code{Peptide} or \code{Protein}.
 #' @inheritParams info_anal
@@ -483,21 +482,22 @@ sigTest <- function(df, id, label_scheme_sub,
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
 	  save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
-	  rm(pepSig_formulas)
+	  rm(list = "pepSig_formulas")
 	} 
 	else if (id %in% c("prot_acc", "gene")) {
-	  if (rlang::is_empty(dots)) {
+	  if (!length(dots)) {
 	    prnSig_formulas <- dots <- concat_fml_dots()
 	  } 
 	  else {
 	    prnSig_formulas <- dots
 	  }
+	  
 	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
-	  rm(prnSig_formulas)
+	  rm(list = "prnSig_formulas")
 	}	
 
-	fn_prefix2 <- ifelse(impute_na, "_impNA_pVals.txt", "_pVals.txt")
-	
+	fn_prefix2 <- if (impute_na) "_impNA_pVals.txt" else "_pVals.txt"
+
 	df_op <- local({
 	  dfw <- df %>% 
 	    filters_in_call(!!!filter_dots) %>% 
@@ -523,15 +523,13 @@ sigTest <- function(df, id, label_scheme_sub,
 	local({
   	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
 	  
-	  if (data_type == "Peptide") {
-	    type <- "pep"
-	  } else if (data_type == "Protein") {
-	    type <- "prn"
-	  } else {
-	    stop("`data_type` needs to be either `Peptide` or `Protein`.", 
-	         call. = FALSE)
-	  }
-	  
+	  type <- if (data_type == "Peptide")
+	    "pep"
+	  else if (data_type == "Protein")
+	    "prn"
+	  else
+	    stop("`data_type` needs to be either `Peptide` or `Protein`.")
+
 	  file <- paste0(type, "Sig_imp", ifelse(impute_na, "TRUE", "FALSE"), ".rda")
 	  
 	  call_pars <- c(scale_log2r = scale_log2r, 
@@ -561,14 +559,14 @@ sigTest <- function(df, id, label_scheme_sub,
 }
 
 
-#'Significance tests of peptide/protein log2FC
+#' Significance tests of peptide/protein log2FC
+#' 
+#' \code{pepSig} performs significance tests against peptide log2FC. 
 #'
-#'\code{pepSig} performs significance tests against peptide log2FC. 
-#'
-#'@rdname prnSig
-#'
-#'@import purrr
-#'@export
+#' @rdname prnSig
+#' 
+#' @import purrr
+#' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
@@ -583,18 +581,20 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   method <- rlang::enexpr(method)
-  if (method == rlang::expr(c("limma", "lm"))) {
-    method <- "limma"
-  } else {
-    method <- rlang::as_string(method)
-    stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
-  }
+  
+  method <- if (method == rlang::expr(c("limma", "lm")))
+    "limma"
+  else
+    rlang::as_string(method)
+  
+  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -605,12 +605,11 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, 
-            call. = FALSE)
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method)
   }
   
   stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
-                   rlang::is_logical, logical(1)))
+                   rlang::is_logical, logical(1L)))
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
                    is.numeric, logical(1L)))
@@ -773,12 +772,13 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   method <- rlang::enexpr(method)
-  if (method == rlang::expr(c("limma", "lm"))) {
-    method <- "limma"
-  } else {
-    method <- rlang::as_string(method)
-    stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
-  }
+  
+  method <- if (method == rlang::expr(c("limma", "lm")))
+    "limma"
+  else
+    rlang::as_string(method)
+  
+  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -788,8 +788,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, 
-            call. = FALSE)
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method)
   }
   
   stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 

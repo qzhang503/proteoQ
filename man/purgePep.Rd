@@ -57,16 +57,16 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
+\item{filename}{A representative file name to outputs. By default, the
+name(s) will be determined automatically. For text files, a typical file
+extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
 \item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-theme will be applied.}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
 \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a

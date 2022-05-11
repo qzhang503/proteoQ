@@ -100,11 +100,10 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     } 
   })
   
-
   stopifnot(vapply(c(xmin, xmax, xmargin, p_dist_rows, p_dist_cols), 
-                   is.numeric, logical(1)))
+                   is.numeric, logical(1L)))
   stopifnot(vapply(c(hc_method_rows, hc_method_cols), 
-                   rlang::is_string, logical(1)))
+                   rlang::is_string, logical(1L)))
   stopifnot(xmin < xmax, xmargin >= 0, xmargin <= abs(xmax))
   stopifnot(p_dist_rows > 0, p_dist_cols > 0)
   
@@ -135,68 +134,58 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
-  # needed defaults before calling `pheatmap`
-  if (is.null(dots$cluster_rows)) {
-    cluster_rows <- TRUE
-  } else {
-    cluster_rows <- dots$cluster_rows
-  }
+  # needed defaults before calling pheatmap
+  cluster_rows <- if (is.null(dots$cluster_rows)) TRUE else dots$cluster_rows
+  cluster_cols <- if (is.null(dots$cluster_cols)) TRUE else dots$cluster_cols
+
+  clustering_distance_rows <- if (is.null(dots$clustering_distance_rows))
+    "euclidean"
+  else
+    dots$clustering_distance_rows
+
   
-  if (is.null(dots$cluster_cols)) {
-    cluster_cols <- TRUE
-  } else {
-    cluster_cols <- dots$cluster_cols
-  }
-  
-  if (is.null(dots$clustering_distance_rows)) {
-    clustering_distance_rows <- "euclidean"
-  } else {
-    clustering_distance_rows <- dots$clustering_distance_rows
-  }
-  
-  if (is.null(dots$clustering_distance_cols)) {
-    clustering_distance_cols <- "euclidean"
-  } else {
-    clustering_distance_cols <- dots$clustering_distance_cols
-  }
-  
+  clustering_distance_cols <- if (is.null(dots$clustering_distance_cols))
+    "euclidean"
+  else
+    dots$clustering_distance_cols
+
   if (!is.null(dots$clustering_method)) {
     dots$clustering_method <- NULL
+    
     warning("Argument `clustering_method` disabled; 
             use `hc_method_rows` and `hc_method_cols` instead.", 
             call. = FALSE)    
   }
 
   n_color <- 500
+  
   if (is.null(dots$breaks)) {
     color_breaks <- c(seq(xmin, -xmargin, length.out = n_color/2)[1:(n_color/2-1)],
                       seq(-xmargin, xmargin, length.out = 3),
                       seq(xmargin, xmax, length.out = n_color/2)[2:(n_color/2)])
     
-    color_breaks <- color_breaks %>% 
-      .[. >= xmin] %>% 
-      unique()
-  } else if (is.na(dots$breaks)) {
+    color_breaks <- unique(color_breaks[color_breaks >= xmin])
+  } 
+  else if (is.na(dots$breaks)) {
     color_breaks <- NA
-  } else {
+  } 
+  else {
     color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
-  mypalette <- if (is.null(dots$color)) {
+  mypalette <- if (is.null(dots$color))
     grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
-  } else if (is.na(dots$color)) {
+  else if (is.na(dots$color))
     grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
-  } else {
+  else
     eval(dots$color, envir = rlang::caller_env())
-  }
-  
+
   x_label <- expression("Ratio ("*log[2]*")")
-  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  NorZ_ratios <- find_NorZ(scale_log2r)
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
   
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
-  
   sample_ids <- label_scheme_sub$Sample_ID
   
   pattern <- 
@@ -244,34 +233,31 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
             call. = FALSE)
   }
 
-  annotation_col <- if (is.null(annot_cols)) {
+  annotation_col <- if (is.null(annot_cols))
     NA
-  } else {
+  else
     colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
-  }
-  
-  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols))) {
+
+  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols)))
     colnames(annotation_col) <- annot_colnames
-  }
-  
-  annotation_row <- if (is.null(annot_rows)) {
+
+  annotation_row <- if (is.null(annot_rows)) 
     NA
-  } else {
-    df %>% dplyr::select(annot_rows)
-  }
-  
-  annotation_colors <- if (is.null(dots$annotation_colors)) {
+  else
+    dplyr::select(df, annot_rows)
+
+  annotation_colors <- if (is.null(dots$annotation_colors)) 
     setHMColor(annotation_col)
-  } else if (suppressWarnings(is.na(dots$annotation_colors))) {
+  else if (suppressWarnings(is.na(dots$annotation_colors))) 
     NA
-  } else {
+  else
     eval(dots$annotation_colors, envir = rlang::caller_env())
-  }
-  
+
   if (complete_cases) {
     df_hm <- df %>%
       dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
-  } else {
+  } 
+  else {
     df_hm <- df
   }
 
@@ -280,10 +266,9 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     dplyr::select(which(names(.) %in% sample_ids)) %>% 
     { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
   
-  if (!nrow(df_hm)) {
+  if (!nrow(df_hm))
     stop("Zero data rows after removing all-NA rows.", call. = FALSE)
-  }
-  
+
   # sample orders
   if (cluster_cols && (!is.null(col_order))) {
     message("No column-ordering of samples at `cluster_cols = TRUE`.")
@@ -307,9 +292,6 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
       
       df_hm <- df_hm[, as.character(plot_orders$Sample_ID), drop = FALSE]
     })
-    
-    # cluster_cols <- FALSE
-    # warning("Coerce `cluster_cols` to FALSE", call. = FALSE)
   }
 
   if (cluster_rows) {
@@ -328,7 +310,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
 
     dots$cluster_rows <- h
     rm(list = c("d", "h"))
-  } else {
+  } 
+  else {
     dots$cluster_rows <- FALSE
     h <- FALSE
   }
@@ -349,7 +332,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     
     dots$cluster_cols <- h_cols
     # rm(list = c("d_cols", "h_cols")) # h_cols also for subtrees
-  } else {
+  } 
+  else {
     dots$cluster_cols <- FALSE
     h_cols <- FALSE
   }
@@ -407,26 +391,29 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
           d_sub <- stats::dist(df_sub, 
                                method = clustering_distance_rows, 
                                p = p_dist_rows)
+          
           max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
           
           if ((!length(d_sub)) || is.infinite(max_d_row)) {
             h_sub <- FALSE
-          } else {
+          }
+          else {
             d_sub[is.na(d_sub)] <- .5 * max_d_row
             
             if (nrow <= 2L) {
               h_sub <- FALSE
-            } else {
+            } 
+            else {
               h_sub <- tryCatch(
                 hclust(d_sub, hc_method_rows),
                 error = function(e) 1L
               )
               
               if (class(h_sub) != "hclust" && h_sub == 1L) {
-                warning("No row clustering for subtree: ", cluster_id, call. = FALSE)
+                warning("No row clustering for subtree: ", cluster_id)
                 h_sub <- FALSE
               }
-            }    
+            }
           }
         }
         
@@ -437,29 +424,32 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
           d_sub_col <- stats::dist(t_df_sub, 
                                    method = clustering_distance_cols, 
                                    p = p_dist_cols)
+          
           max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
           
-          if (!length(d_sub_col)) next
+          if (!length(d_sub_col)) 
+            next
           
           if (is.infinite(max_d_col)) {
             v_sub <- FALSE
-          } else {
+          } 
+          else {
             d_sub_col[is.na(d_sub_col)] <- .5 * max_d_col
   
             if (nrow_trans <= 2L) {
               v_sub <- FALSE
-            } else {
+            } 
+            else {
               v_sub <- tryCatch(
                 hclust(d_sub_col, hc_method_cols),
                 error = function(e) 1
               )
               
               if ((class(v_sub) != "hclust") && (v_sub == 1)) {
-                warning("No column clustering for subtree: ", cluster_id, 
-                        call. = FALSE)
+                warning("No column clustering for subtree: ", cluster_id)
                 v_sub <- FALSE
               }
-            }            
+            }  
           }
         }
         
@@ -468,7 +458,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
           fontsize_row <- 5
           show_rownames <- TRUE
           height <- NA
-        } else {
+        } 
+        else {
           cellheight <- NA
           fontsize_row <- NA
           show_rownames <- FALSE
@@ -499,7 +490,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
           )
         )
 
-        rm(d_sub, h_sub)
+        rm(list = c("d_sub", "h_sub"))
       }
     }
   }
@@ -537,6 +528,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
   check_dots(c("id", "anal_type", "df2"), ...)
 
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
@@ -759,6 +751,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
   check_dots(c("id", "anal_type", "df2"), ...)
 
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
 

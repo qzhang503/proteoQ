@@ -41,7 +41,7 @@ of \code{id} in the \code{call}.}
 
 \item{height}{The height of a plot.}
 
-\item{type}{Character string; the type of data.}
+\item{type}{Character string; the type of data for SD calculations.}
 
 \item{adjSD}{Not currently used. If TRUE, adjust the standard deviation in
 relative to the width of ratio profiles.}
@@ -62,9 +62,9 @@ the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-theme will be applied.}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
 \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
