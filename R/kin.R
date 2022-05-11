@@ -26,10 +26,12 @@ annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL,
   # --- add GENE_ID to the PSP table ---
   ok <- tryCatch(load(file = file.path(dat_dir, "acc_lookup.rda")),
                  error = function(e) "e")
+  
   if (ok != "acc_lookup") {
     stop("`acc_lookup.rda` not found under ", dat_dir, ".", 
          call. = FALSE)
   }
+  
   rm(list = "ok")
 
   acc_lookup <- acc_lookup %>% 
@@ -86,17 +88,19 @@ KinSubTest <- function(df = NULL, id = gene, label_scheme_sub = NULL,
   
   stopifnot(id %in% names(df), nrow(label_scheme_sub) > 0L)
 
-  if (complete_cases) {
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
-  
+  if (complete_cases)
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+
   dots <- rlang::enexprs(...)
+  
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
+  
   arrange_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^arrange_", names(.))]
+  
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots)]
   
@@ -147,7 +151,8 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call("pepKinSub")
-    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+    } 
+    else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call("prnKinSub")
@@ -158,6 +163,7 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
   check_dots(c("id", "anal_type", "df2"), ...)
   
   type <- rlang::enexpr(type)
+  
   if (length(type) > 1) {
     type <- "peptide"
   } 
@@ -177,8 +183,9 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
              recursive = TRUE, showWarnings = FALSE)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), 
-                   rlang::is_logical, logical(1)))
+                   rlang::is_logical, logical(1L)))
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -196,8 +203,5 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
             filename = !!filename, 
             anal_type = "KinSub")(db_nms = db_nms, match_orgs = match_orgs, ...)
 }
-
-
-
 
 

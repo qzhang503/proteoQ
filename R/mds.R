@@ -6,7 +6,8 @@
 #' @inheritParams prnPCA
 #' @import dplyr ggplot2 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-geom_lower_text <- function(data, mapping, params, show_ids, ...) {
+geom_lower_text <- function(data, mapping, params, show_ids, ...) 
+{
   mapping_xy <- mapping %>% .[names(.) %in% c("x", "y")]
 
   p <- ggplot() +
@@ -52,9 +53,12 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   stopifnot(vapply(c(scale_log2r, complete_cases, adjEucDist, 
                      show_ids, 
                      center_features, scale_features),
-                   rlang::is_logical, logical(1)))
-  stopifnot(vapply(c(p, k), is.numeric, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+                   rlang::is_logical, logical(1L)))
+  
+  stopifnot(vapply(c(p, k), is.numeric, logical(1L)))
+  
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata.")
 
   col_group <- rlang::enexpr(col_group)
   col_fill <- rlang::enexpr(col_fill)
@@ -166,16 +170,21 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     df[, 1, drop = FALSE]
 
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
+	nms <- names(df)
 
-	if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% names(df))
+	if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-	if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% names(df))
+	
+	if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-	if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df))
+	
+	if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-	if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df))
+	
+	if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-	if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df))
+	
+	if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
 	  assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
 
 	if (!is.na(map_color)) col_color <- NULL
@@ -184,7 +193,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if (!is.na(map_size)) col_size <- NULL
 	if (!is.na(map_alpha)) col_alpha <- NULL
 
-	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
 	suppressWarnings(rm(list = c("map_.")))
 
 	color_brewer <- rlang::enexpr(color_brewer)
@@ -220,23 +229,23 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if (is.null(theme)) theme <- proteoq_mds_theme
 
 	# --- check dimension ---
-	if (dimension < 2) {
+	if (dimension < 2L) {
 	  warning("The `dimension` increased from ", dimension, 
-	          " to a minimum of 2.", 
-	          call. = FALSE)
-	  dimension <- 2
+	          " to a minimum of 2.")
+	  dimension <- 2L
 	}
 
 	ranges <- seq_len(dimension)
 	cols <- names(df) %>% .[. %in% paste0("Coordinate.", ranges)]
 
 	max_dim <- names(df) %>% .[grepl("^Coordinate\\.[0-9]+", .)] %>% length()
+	
 	if (dimension > max_dim) {
 	  warning("The `dimension` decreased from ", dimension, 
-	          " to a maximum of ", max_dim, ".",
-	          call. = FALSE)
+	          " to a maximum of ", max_dim, ".")
 	  dimension <- max_dim
 	}
+	
 	rm(list = c("max_dim"))
 
 	# --- set up aes ---
@@ -251,13 +260,14 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
 	  col_alpha <- NULL
 	
-	if (dimension > 2) {
+	if (dimension > 2L) {
 	  mapping <- ggplot2::aes(colour = !!col_color, 
 	                          fill = !!col_fill, 
 	                          shape = !!col_shape,
 	                          size = !!col_size, 
 	                          alpha = !!col_alpha)
-	} else {
+	} 
+	else {
 	  mapping <- ggplot2::aes(x = Coordinate.1, 
 	                          y = Coordinate.2,
 	                          colour = !!col_color, 
@@ -283,8 +293,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	      col <- quo_name(var)
 	      
 	      if (anyNA(df[[col]])) {
-	        warning("NA/incomplete aesthetics in column `", col, "`.\n", 
-	                call. = FALSE)
+	        warning("NA/incomplete aesthetics in column `", col, "`.\n")
 	      }
 	    }
 	  }
@@ -297,13 +306,14 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	                 alpha = 0.9) %>%
 	  .[names(.) %in% names(mapping_fix)] %>%
 	  .[!is.na(.)]
+	
 	fix_args$stroke <- 0.02
 
 	# --- set up axis labels ---
 	col_labs <- cols %>% gsub("\\.", " ", .)
 
 	# --- plots ---
-	if (dimension > 2) {
+	if (dimension > 2L) {
 	  p <- GGally::ggpairs(df,
 	                       axisLabels = "internal",
 	                       columns = cols,
@@ -335,8 +345,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_size)) & (!is.null(size_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+	  if ((!is.null(col_size)) && (!is.null(size_manual))) {
+	    check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
@@ -344,8 +355,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+	  if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+	    check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
@@ -353,8 +365,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	  if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-	    stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+	  if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+	    check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
+
 	    for (x in 2:dimension) {
 	      for (y in 1:(x-1)) {
 	        p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
@@ -384,7 +397,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 
-	} else {
+	}
+	else {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, 
 	                                           mapping = mapping_var, 
@@ -396,8 +410,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  if (show_ellipses) {
 	    if (anyNA(label_scheme_sub[[col_group]])) {
 	      warning("(Partial) NA aesthetics under column `", col_group, 
-	              "` in expt_smry.xlsx",
-	              call. = FALSE)
+	              "` in expt_smry.xlsx")
 	    }
 
 	    p <- p + stat_ellipse(
@@ -422,18 +435,18 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   	if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
   	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
 
-  	if ((!is.null(col_size)) & (!is.null(size_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+  	if ((!is.null(col_size)) && (!is.null(size_manual))) {
+  	  check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
   	  p <- p + scale_size_manual(values = size_manual)
   	}
 
-  	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+  	if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+  	  check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
   	  p <- p + scale_shape_manual(values = shape_manual)
   	}
 
-  	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-  	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+  	if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+  	  check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
   	  p <- p + scale_shape_manual(values = alpha_manual)
   	}
 	}
@@ -458,12 +471,16 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
                          scale_log2r = TRUE, complete_cases = FALSE,
                          annot_cols, annot_colnames,
                          filepath = NULL, filename = NULL, anal_type = "EucDist",
-                         ...) {
+                         ...) 
+{
   stopifnot(vapply(c(scale_log2r, complete_cases, adjEucDist),
-                   rlang::is_logical, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+                   rlang::is_logical, logical(1L)))
+  
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata.")
 
-  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  if (complete_cases) 
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
 
   id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
@@ -501,15 +518,17 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
 	                  seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
 
-	if (is.null(dots$color)) {
-	  mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
-	} else {
-	  mypalette <- eval(dots$color, envir = rlang::caller_env())
+	mypalette <- if (is.null(dots$color)) {
+	  colorRampPalette(c("blue", "white", "red"))(n_color)
+	} 
+	else {
+	  eval(dots$color, envir = rlang::caller_env())
 	}
 
 	if (is.null(annot_cols)) {
 	  annotation_col <- NA
-	} else {
+	} 
+	else {
 	  annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = rownames(D))
 	  idx <- which(annot_cols %in% colnames(annotation_col))
 
@@ -517,16 +536,18 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	  annot_colnames <- annot_colnames[idx]
 	}
 
-	if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	if (!is.null(annot_colnames) && length(annot_colnames) == length(annot_cols)) {
 	  colnames(annotation_col) <- annot_colnames
 	}
 
-	if (is.null(dots$annotation_colors)) {
-		annotation_colors <- setHMColor(annotation_col)
-	} else if (is.na(dots$annotation_colors)) {
-		annotation_colors <- NA
-	} else {
-		annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
+	annotation_colors <- if (is.null(dots$annotation_colors)) {
+		setHMColor(annotation_col)
+	} 
+	else if (is.na(dots$annotation_colors)) {
+		NA
+	} 
+	else {
+		eval(dots$annotation_colors, envir = rlang::caller_env())
 	}
 
 	nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color",
@@ -536,7 +557,8 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	n_TMT_sets <- n_TMT_sets(label_scheme_sub)
 	max_width <- 77
 
-	if (is.null(dots$width)) dots$width <- pmin(10*n_TMT_sets*1.2, max_width)
+	if (is.null(dots$width)) 
+	  dots$width <- min(10*n_TMT_sets*1.2, max_width)
 
 	if (dots$width >= max_width) {
 		message("The width for the graphic device is", dots$width, "inches or more.")
@@ -572,15 +594,17 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       dist_co = log2(1), adjEucDist = FALSE, 
                       choice = "cmdscale", 
                       method = "euclidean",
-                      p = 2, k = 3, col_group, folds, out_file, ...) {
-
+                      p = 2L, k = 3L, col_group, folds, out_file, ...) 
+{
 	dots <- rlang::enexprs(...)
 	id <- rlang::as_string(rlang::enexpr(id))
 	col_group <- rlang::enexpr(col_group)
 
-	stopifnot(nrow(df) > 50)
+	if (nrow(df) <= 50L)
+	  stop("Need more than 50 entries for MDS.")
 
-	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
+	df <- prepDM(df = df, id = !!id, 
+	             scale_log2r = scale_log2r,
 	             sub_grp = label_scheme_sub$Sample_ID, 
 	             anal_type = anal_type, 
 	             rm_allna = TRUE) %>%
@@ -595,18 +619,19 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
 	df_t <- res$df_t
 	ls_sub <- res$ls_sub
-	rm(res)
+	rm(list = "res")
 
 	if (rlang::as_string(col_group) %in% names(df_t)) {
 	  df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
 	}
 
-	stopifnot(vapply(df_t, is.numeric, logical(1)))
+	stopifnot(vapply(df_t, is.numeric, logical(1L)))
 	
 	# `center_features` not affect `dist` but `scale` calculation
 	if (scale_features) {
 	  df_t <- df_t %>% scale(center = center_features, scale = TRUE)
-	} else if (center_features) {
+	} 
+	else if (center_features) {
 	  message("Distance measures not affected by data centering.")
 	  df_t <- df_t %>% sweep(., 2, colMeans(., na.rm = TRUE), "-")
 	}
@@ -636,10 +661,11 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	    
 	    invisible(D)
 	  })
-	} else if (identical(dist_co, 0)) {
-	  D <- dist(x = df_t, method = method, diag = TRUE, upper = TRUE, p = p) %>%
-	    as.matrix()
-	} else {
+	} 
+	else if (identical(dist_co, 0)) {
+	  D <- as.matrix(dist(x = df_t, method = method, diag = TRUE, upper = TRUE, p = p))
+	} 
+	else {
 	  stop("`dist_co` cannot be negative.", call. = FALSE)
 	}
 	
@@ -663,7 +689,7 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	      }
 	    }
 
-	    return(D)
+	    D
 	  })
 	}
   
@@ -675,7 +701,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	    rlang::eval_bare(env = caller_env()) %>%
 	    .$points %>%
 	    data.frame()
-	} else if (choice == "isoMDS") {
+	} 
+	else if (choice == "isoMDS") {
 	  isomds_dots <- dots %>% .[names(.) %in% c("y", "maxit", "trace", "tol")]
 	  isomds_dots$y <- NULL
 	  
@@ -683,7 +710,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	    rlang::eval_bare(env = caller_env()) %>%
 	    .$points %>%
 	    data.frame()
-	} else {
+	} 
+	else {
 	  stop("Unknown choice = ", choice, call. = FALSE)
 	}
 	
@@ -698,8 +726,6 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 }
 
 
-
-
 #' Prepares folded, transposed data
 #'
 #' @param df Input data frame
@@ -708,7 +734,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #' @inheritParams anal_pepNMF
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
+prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) 
+{
   nms <- names(df)
   n_rows <- nrow(df)
 
@@ -720,10 +747,12 @@ prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
     nms_smpl <- nms
     ls_sub <- label_scheme_sub
     df_t <- df %>% t()
-  } else {
+  } 
+  else {
     n_feats <- floor(n_rows/folds)
     nms_feat <- paste("x", seq_len(n_feats), sep = ".")
     nms_smpl <- paste(rep(nms, folds), rep(seq_len(folds), each = length(nms)), sep = ".")
+    
     ls_sub <- label_scheme_sub %>%
       .[rep(seq_len(nrow(.)), folds), , drop = FALSE] %>%
       dplyr::mutate(Sample_ID = nms_smpl)
@@ -747,7 +776,7 @@ prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
 
     `rownames<-`(nms_smpl)
 
-  return(list(df_t = df_t, ls_sub = ls_sub))
+  invisible(list(df_t = df_t, ls_sub = ls_sub))
 }
 
 
@@ -760,20 +789,23 @@ prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 scoreEucDist <- function (df, id, label_scheme_sub, anal_type, 
-                          scale_log2r, adjEucDist = FALSE, ...) {
-
+                          scale_log2r, adjEucDist = FALSE, ...) 
+{
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
 
-  stopifnot(nrow(df) > 50)
-
+  if (nrow(df) <= 50L)
+    stop("Need more than 50 entries for distance calculations.")
+  
   df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type, 
                rm_allna = TRUE) %>%
     .$log2R
 
   D <- dist(t(df), method = "euclidean", diag = TRUE, upper = TRUE)
-  if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.")
+  
+  if (anyNA(D)) 
+    stop("Distance cannot be calculated for one more sample pairs.")
 
   D <- as.matrix(D)
 
@@ -788,11 +820,11 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type,
         }
       }
 
-      return(D)
+      D
     })
   }
 
-  return(D)
+  invisible(D)
 }
 
 
@@ -816,8 +848,8 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
                     df = NULL, filepath = NULL, filename = NULL,
-                    theme = NULL, ...) {
-  
+                    theme = NULL, ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -832,15 +864,12 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_formalArgs(pepMDS, dist, c("method", "p"))
   
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "cmdscale"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
+  choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
 
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -859,11 +888,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   alpha_manual <- rlang::enexpr(alpha_manual)
 
   method <- rlang::enexpr(method)
-  if (length(method) > 1) {
-    method <- "euclidean"
-  } else {
-    method <- rlang::as_string(method)
-  }
+  method <- if (length(method) > 1L) "euclidean" else rlang::as_string(method)
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -1085,8 +1110,8 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
                     df = NULL, filepath = NULL, filename = NULL,
-                    theme = NULL, ...) {
-  
+                    theme = NULL, ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -1101,15 +1126,12 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   check_formalArgs(prnMDS, dist, c("method", "p"))
   
   choice <- rlang::enexpr(choice)
-  if (length(choice) > 1) {
-    choice <- "cmdscale"
-  } else {
-    choice <- rlang::as_string(choice)
-  }
-  
+  choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
+
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -1128,11 +1150,7 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   alpha_manual <- rlang::enexpr(alpha_manual)
 
   method <- rlang::enexpr(method)
-  if (length(method) > 1) {
-    method <- "euclidean"
-  } else {
-    method <- rlang::as_string(method)
-  }
+  method <- if (length(method) > 1L) "euclidean" else rlang::as_string(method)
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -1188,14 +1206,16 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 pepEucDist <- function (col_select = NULL,
                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                         adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL,
-                        df = NULL, filepath = NULL, filename = NULL, ...) {
+                        df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   check_dots(c("id", "col_group", "col_color", "col_fill",
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   check_formalArgs(prnEucDist, dist)
 
   id <- match_call_arg(normPSM, group_psm_by)
+  
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -1325,14 +1345,16 @@ pepEucDist <- function (col_select = NULL,
 prnEucDist <- function (col_select = NULL,
                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                         adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL,
-                        df = NULL, filepath = NULL, filename = NULL, ...) {
+                        df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   check_dots(c("id", "col_group", "col_color", "col_fill",
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   check_formalArgs(prnEucDist, dist)
 
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -1362,3 +1384,4 @@ prnEucDist <- function (col_select = NULL,
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, ...)
 }
+

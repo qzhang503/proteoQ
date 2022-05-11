@@ -7,7 +7,7 @@
 cluego(
   df2 = "Protein_Trend_Z_nclust5.txt",
   species = c(human = "Homo Sapiens"),
-  n_clust = 3
+  n_clust = 3L
 )
 }
 \arguments{

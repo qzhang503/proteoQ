@@ -2,7 +2,8 @@
 #' matches.
 #' 
 #' @param ... Arguments for \link[stats]{dist}
-my_dist <- function (...) {
+my_dist <- function (...) 
+{
   dots <- rlang::enexprs(...)
   
   dummies <- c("p")
@@ -11,8 +12,9 @@ my_dist <- function (...) {
     "`p` in `dist()` not used."
   )
   
-  stopifnot(length(dummies) == length(msgs))
-  
+  if (length(dummies) != length(msgs))
+    stop("Uneven lengths")
+
   purrr::walk2(dummies, msgs, ~ {
     if (.x %in% names(dots)) {
       warning(.y, call. = FALSE)
@@ -36,7 +38,8 @@ my_dist <- function (...) {
 #' 
 #' # distances (against normalized vectors)
 #' as.dist(1 - sim)
-cos_sim <- function (M) {
+cos_sim <- function (M) 
+{
   stopifnot(is.matrix(M))
   
   L <- sqrt(rowSums(M * M)) # vector lengths; no `mean` subtraction

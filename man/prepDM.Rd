@@ -29,7 +29,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{prot_acc} and \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
 analysis.}

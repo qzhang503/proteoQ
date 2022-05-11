@@ -77,8 +77,8 @@ data rows. Each statement contains to a list of logical expression(s). The
 \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
 the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
 For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
-exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
-entries with \code{pep_expect > 0.1}.}
+exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove
+PSM entries with \code{pep_expect > 0.1}.}
 }
 \description{
 Median summary of data from the same TMT or LFQ experiment at different LCMS

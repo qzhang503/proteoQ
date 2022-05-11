@@ -88,7 +88,8 @@ calc_sd_fcts <- function (df, range_log2r = c(0, 100), range_int = c(0, 100),
   SD <- df %>%
     dplyr::select(grep(pat, names(.))) %>%
     dblTrim(range_log2r, range_int) %>%
-    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.)))
+    `names<-`(replace_NorZ_names(find_NorZ(FALSE), names(.)))
+    # `names<-`(gsub("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.)))
   
   non_triv_sds <- SD %>% .[names(.) %in% non_triv_sids]
   coef_sd <- SD/mean(non_triv_sds, na.rm = TRUE)
@@ -442,6 +443,7 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
 	#   ignore difference in `n_comp`
 	
 	n_comp <- find_n_comp(df, n_comp, method_align)
+	# ok_O_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_O.txt", n_comp)
 	ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
 	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
 	
@@ -658,6 +660,7 @@ dblTrim <- function(df, range_log2r = c(0, 100), range_int = c(0, 100),
 	
 	# trim by log2-ratios
 	col_r <- grepl(type_r, names(df_trim))
+	
 	df_trim[, col_r] <- lapply(df_trim[, col_r], function (x) {
 			q_ratio <- quantile(x, probs = range_log2r/100, na.rm = TRUE)
 			x[x < q_ratio[1] | x > q_ratio[2]] <- NA_real_
@@ -667,6 +670,7 @@ dblTrim <- function(df, range_log2r = c(0, 100), range_int = c(0, 100),
 
 	# trim by intensity
 	col_int <- grepl(type_int, names(df_trim))
+	
 	df_trim[, col_int] <- lapply(df_trim[, col_int], function (x) {
 			q_intensity <- quantile(x, probs = range_int/100, na.rm = TRUE)
 			x[x < q_intensity[1] | x > q_intensity[2]] <- NA_real_

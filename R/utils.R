@@ -1,19 +1,19 @@
-#'Prepares data for analysis
+#' Prepares data for analysis
 #'
-#'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
+#' \code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#'@inheritParams prnEucDist
-#'@inheritParams info_anal
-#'@inheritParams normPSM
-#'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
-#'  analysis.
-#'@param type The type of data, for example ratio or intensity.
-#'@return A data frame tailored for subsequent analysis.
+#' @inheritParams prnEucDist
+#' @inheritParams info_anal
+#' @inheritParams normPSM
+#' @param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
+#'   analysis.
+#' @param type The type of data, for example ratio or intensity.
+#' @return A data frame tailored for subsequent analysis.
 #'
 #' @examples
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
-#'@import dplyr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#' @import dplyr
+#' @importFrom magrittr %>% %T>% %$% %<>%
 prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL, 
                    type = "ratio", anal_type = NULL, rm_allna = FALSE) 
 {
@@ -25,16 +25,14 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
 
   id <- rlang::as_string(rlang::enexpr(id))
   
-  if (anal_type %in% c("ESGAGE", "GSVA")) {
+  if (anal_type %in% c("ESGAGE", "GSVA"))
     id <- "entrez"
-  }
 
-  if ((anal_type %in% c("GSEA")) && (id != "gene")) {
+  if ((anal_type %in% c("GSEA")) && (id != "gene"))
     stop("Primary ID is not `gene`.", call. = FALSE)
-  }
 
-  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
-  
+  NorZ_ratios <- find_NorZ(scale_log2r)
+
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
 
@@ -44,10 +42,8 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
       dplyr::filter(!duplicated(!!rlang::sym(id)),
                     !is.na(!!rlang::sym(id)),) 
     
-    if (!nrow(df)) {
-      stop("All values are NA under the column `", id, "` in the input data.", 
-           call. = FALSE)
-    }
+    if (!nrow(df))
+      stop("All values are NA under the column `", id, "` in the input data.")
 
     df <- df %>% 
       dplyr::ungroup() %>% 
@@ -75,8 +71,7 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
     
     if (length(trivials)) {
       warning("Samples with all NA entries being dropped: ", 
-              purrr::reduce(trivials, paste, sep = ", "), 
-              call. = FALSE)
+              paste(trivials, collapse = ", "))
     }
 
     dfR <- dfR %>%
@@ -104,6 +99,29 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
                  IR = rbind(tempR, tempI)))
 }
 
+
+#' Finds the patterns of log2FC columns.
+#'
+#' @inheritParams prnHist
+find_NorZ <- function (scale_log2r = TRUE)
+{
+  if (is.na(scale_log2r))
+    "^log2_R"
+  else if (scale_log2r) 
+    "^Z_log2_R"
+  else
+    "^N_log2_R"
+}
+
+
+#' Replaces column names to get Sample_ID(s).
+#' 
+#' @param NorZ_ratios A string.
+#' @param nms A vector of names.
+replace_NorZ_names <- function (NorZ_ratios, nms) 
+{
+  gsub(paste0(NorZ_ratios, "[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$"), "\\1", nms)
+}
 
 #' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
 #'
@@ -1869,62 +1887,6 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r")
 }
 
 
-#' Matches the name of GSPA result file (not currently used)
-#'
-#' @param anal_type Always \code{GSPA}; maybe different value for future uses.
-#' @param subdir Character string of sub directory
-#' @inheritParams prnHM
-#'
-#' @import dplyr purrr 
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, 
-                                 scale_log2r = TRUE, impute_na = FALSE) 
-{
-  stopifnot(!is.null(subdir))
-
-  dat_dir <- get_gl_dat_dir()
-  
-  if (anal_type == "GSPA") {
-    file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
-    
-    if (!file.exists(file)) 
-      stop("Run `prnGSPA` first.", call. = FALSE)
-    
-    load(file = file)
-  }
-  
-  filename <- call_pars$filename
-  
-  if (!length(filename)) {
-    filename <- list.files(path = file.path(dat_dir, "Protein/GSPA", subdir), 
-                           pattern = "^Protein_GSPA_.*\\.txt$", 
-                           full.names = FALSE)
-    
-    if (!length(filename)) 
-      stop("No result file found under `", subdir, "`", call. = FALSE)
-    
-    if (scale_log2r)
-      filename <- filename[grepl("^Protein_GSPA_Z", filename)]
-    else
-      filename <- filename[grepl("^Protein_GSPA_N", filename)]
-
-    if (impute_na)
-      filename <- filename[grepl("Protein_GSPA_[NZ]_impNA\\.txt", filename)]
-    else
-      filename <- filename[grepl("Protein_GSPA_[NZ]\\.txt", filename)]
-
-    if (length(filename) > 1L) 
-      stop("More than one result file found under `", subdir, "`", call. = FALSE)
-    
-    if (rlang::is_empty(filename)) 
-      stop("No input files correspond to impute_na = ", impute_na, ", 
-           scale_log2r = ", scale_log2r, call. = FALSE)
-  }
-
-  invisible(filename)
-}
-
-
 #' Matches gset_nms to prnGSPA.
 #' 
 #' Not currently used.
@@ -1972,27 +1934,6 @@ match_gset_nms <- function (gset_nms = NULL)
 }
 
 
-
-#' Match scale_log2r
-#'
-#' \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
-#' in caller environment.
-#' 
-#' @inheritParams prnHist
-match_scale_log2r <- function(scale_log2r) 
-{
-  stopifnot(rlang::is_logical(scale_log2r))
-  
-  global_var <-tryCatch(global_var <-get("scale_log2r", envir = .GlobalEnv),
-                        error = function(e) "e")
-  
-  if (global_var != "e" && is.logical(global_var)) 
-    scale_log2r <- global_var
-  
-  invisible(scale_log2r)
-}
-
-
 #' A match to a global logical variable
 #' 
 #' @param var Character string representation of a variable.
@@ -2009,20 +1950,24 @@ match_scale_log2r <- function(scale_log2r)
 match_logi_gv <- function(var, val) 
 {
   oval <- val
-  gvar <- tryCatch(gvar <- get(var, envir = .GlobalEnv), error = function(e) "e")
 
-  if (gvar != "e") {
-    stopifnot(rlang::is_logical(gvar))
-    
-    if (gvar != oval) 
+  ok <- exists(var, envir = .GlobalEnv)
+  gvar <- if (ok) get(var, envir = .GlobalEnv) else NULL
+
+  if (is.null(gvar))
+    val
+  else {
+    if (!is.logical(gvar))
+      stop("Argument \"", var, "\" is not logical.")
+
+    if ((!is.na(gvar)) && (gvar != oval)) {
       warning("Coerce ", var, " to ", gvar, 
               " after matching to the global setting.", 
               call. = FALSE)
+    }
 
-    return(gvar)
-  } 
-  else
-    return(val)
+    gvar
+  }
 }
 
 
@@ -2041,13 +1986,13 @@ match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
   else 
     match_call_arg(prnSig_impFALSE, scale_log2r)
   
-  if (scale_log2r != mscale_log2r) {
+  if ((!is.na(mscale_log2r)) && (scale_log2r != mscale_log2r)) {
     warning("scale_log2r = ", mscale_log2r, 
             " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
   }
 
-  scale_log2r <- mscale_log2r
+  mscale_log2r
 }
 
 
@@ -2065,12 +2010,13 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
   else 
     match_call_arg(pepSig_impFALSE, scale_log2r)
   
-  if (scale_log2r != mscale_log2r)
+  if ((!is.na(mscale_log2r)) && (scale_log2r != mscale_log2r)) {
     warning("scale_log2r = ", mscale_log2r, 
             " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
+  }
 
-  scale_log2r <- mscale_log2r
+  mscale_log2r
 }
 
 
@@ -2789,7 +2735,7 @@ calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95),
 #' Calculates CV per TMT_Set and LCMS_injection
 #' 
 #' @inheritParams info_anal
-#' @param type Character string; the type of data.
+#' @param type Character string; the type of data for SD calculations.
 calcSD_Splex <- function (df, id, type = "log2_R") 
 {
   if (type == "log2_R") {
@@ -3412,7 +3358,7 @@ my_complete_cases <- function (df, scale_log2r, label_scheme_sub)
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  NorZ_ratios <- find_NorZ(scale_log2r)
   
   # in case that reference(s) are included in label_scheme_sub, 
   # the values are zero for single ref or non-NA/NaN for multi ref 
@@ -4679,5 +4625,24 @@ mprocBrukerMGF <- function (filepath, n_cores = 1L)
   else {
     lapply(files, procBrukerMGF)
   }
+}
+
+
+#' Checks lengths of aesthetics.
+#'
+#' The length between metadata and manual aesthetics.
+#'
+#' @param label_scheme A metadata.
+#' @param x A column name in metadata.
+#' @param vals Values of manual aesthetics.
+#' @param aes The name of an aesthetics.
+check_aes_length <- function (label_scheme = NULL, x = "Size", 
+                              aes = "size_manual", vals = c(3, 5)) 
+{
+  len_1 <- length(unique(label_scheme[[x]]))
+  len_2 <- length(vals)
+  
+  if (len_1 != len_2)
+    stop("Unequal lengths: metadata ", x, " = ", len_1, ", ", aes, " = ", len_2)
 }
 

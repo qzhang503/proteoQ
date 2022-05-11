@@ -16,8 +16,8 @@ scoreMDS(
   adjEucDist = FALSE,
   choice = "cmdscale",
   method = "euclidean",
-  p = 2,
-  k = 3,
+  p = 2L,
+  k = 3L,
   col_group,
   folds,
   out_file,
@@ -48,7 +48,9 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{center_features}{Logical; if TRUE, adjusts log2FC to center zero by
 features (proteins or peptides). The default is TRUE. Note the difference to

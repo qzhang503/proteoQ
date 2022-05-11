@@ -13,6 +13,7 @@ annotPSM(
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   rm_allna = FALSE,
+  type_sd = "log2_R",
   ...
 )
 }
@@ -53,12 +54,15 @@ metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
-\code{log2FC} will be plotted. The default is TRUE.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{type_sd}{Character string; the type of log2Ratios for SD calculations.
+The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
 \item{...}{Not currently used.}
 }

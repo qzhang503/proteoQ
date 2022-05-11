@@ -9,6 +9,7 @@ PSM2Pep(
     "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all"),
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
+  type_sd = c("log2_R", "N_log2_R", "Z_log2_R"),
   ...
 )
 }
@@ -30,17 +31,19 @@ aggregation of LFQ data.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
+\item{type_sd}{Character string; the type of log2Ratios for SD calculations.
+The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
+
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. See also \code{\link{normPSM}}.}
 }
 \value{
 Tables under \code{Peptide} folder for each TMT experiment and LC/MS
- series: \code{TMTset1_LCMSinj1_Peptide_N.txt} etc.
+  series: \code{TMTset1_LCMSinj1_Peptide_N.txt} etc.
 }
 \description{
 \code{PSM2Pep} summarizes
 \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
-peptides by individual TMT (or LFQ) experiments and LC/MS series.
 }
 \details{
 In general, fields other than \code{log2FC} and \code{intensity} are

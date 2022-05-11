@@ -64,13 +64,13 @@ statement contains to a list of logical expression(s). The \code{lhs} needs
 to start with \code{filter2_}. The logical condition(s) at the \code{rhs}
 needs to be enclosed in \code{exprs} with round parenthesis. For example,
 \code{distance} is a column key in \code{Protein_GSPA_Z_essmap.txt}. The
-statement \code{filter2_ = exprs(distance <= .95),} will remove entries with
-\code{distance > 0.95}. See also \code{\link{normPSM}} for the format of
-\code{filter_} statements against primary data. \cr \cr \code{arrange2_}:
-Variable argument statements for the row ordering against data in secondary
-file(s) of \code{_essmap.txt}. The \code{lhs} needs to start with
-\code{arrange2_}. The expression(s) at the \code{rhs} needs to be
-enclosed in \code{exprs} with round parenthesis. For example,
+statement \code{filter2_ = exprs(distance <= .95),} will remove entries
+with \code{distance > 0.95}. See also \code{\link{normPSM}} for the format
+of \code{filter_} statements against primary data. \cr \cr
+\code{arrange2_}: Variable argument statements for the row ordering against
+data in secondary file(s) of \code{_essmap.txt}. The \code{lhs} needs to
+start with \code{arrange2_}. The expression(s) at the \code{rhs} needs to
+be enclosed in \code{exprs} with round parenthesis. For example,
 \code{distance} and \code{size} are column keys in
 \code{Protein_GSPA_Z_essmap.txt}. The statement \code{arrange2_ =
 exprs(distance, size),} will order entries by \code{distance}, then by
@@ -87,9 +87,9 @@ and all gene sets.
 }
 \details{
 The list of gene sets and the associative quality metrics of \code{size} and
-\code{ess_size} are assessed after data filtration with the criteria specified
-by arguments \code{pval_cutoff} and \code{logFC_cutoff}, as well as optional
-varargs of \code{filter_}.
+\code{ess_size} are assessed after data filtration with the criteria
+specified by arguments \code{pval_cutoff} and \code{logFC_cutoff}, as well as
+optional varargs of \code{filter_}.
 }
 \section{\code{Protein_GSPA_[...].txt}}{
 

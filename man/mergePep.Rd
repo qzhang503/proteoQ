@@ -17,8 +17,8 @@ mergePep(
 )
 }
 \arguments{
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
-\code{log2FC} will be plotted. The default is TRUE.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}

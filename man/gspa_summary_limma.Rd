@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{gspa_summary_limma}
 \alias{gspa_summary_limma}
-\title{gspa pVal calculations using limma}
+\title{GSPA pVal calculations using limma}
 \usage{
 gspa_summary_limma(
   gset,
@@ -57,5 +57,5 @@ greater than the threshold will be reported. The default magnitude is
 of absolute values in \code{log2FC}.}
 }
 \description{
-gspa pVal calculations using limma
+GSPA pVal calculations using limma
 }

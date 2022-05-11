@@ -10,15 +10,12 @@ set_dat_dir <- function(dat_dir = NULL)
     new_dat_dir <- fs::path_expand_r(dat_dir)
     new_dat_dir2 <- fs::path_expand(dat_dir)
     
-    if (fs::dir_exists(new_dat_dir)) {
-      dat_dir <- new_dat_dir
-    } 
-    else if (fs::dir_exists(new_dat_dir2)) {
-      dat_dir <- new_dat_dir2
-    } 
-    else {
+    dat_dir <- if (fs::dir_exists(new_dat_dir))
+      new_dat_dir
+    else if (fs::dir_exists(new_dat_dir2))
+      new_dat_dir2
+    else
       stop(dat_dir, " not existed.", call. = FALSE)
-    }
   }
   
   nm <- names(formals())[1]

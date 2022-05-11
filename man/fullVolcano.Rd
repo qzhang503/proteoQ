@@ -35,9 +35,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{contrast_groups}{The contrast groups defined under a formula at \code{fml_nm}.}
 
 \item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-theme will be applied.}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
 
@@ -45,9 +45,9 @@ theme will be applied.}
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
+\item{filename}{A representative file name to outputs. By default, the
+name(s) will be determined automatically. For text files, a typical file
+extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 

@@ -38,7 +38,9 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
 distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option

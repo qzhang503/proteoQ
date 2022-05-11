@@ -95,14 +95,15 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, filepath = NULL, filename = NULL, 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
-                     lm_method = "limma", padj_method = "BH", ...) {
-
+                     lm_method = "limma", padj_method = "BH", ...) 
+{
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("pepGSVA")
-    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+    } 
+    else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("prnGSVA")
@@ -120,12 +121,14 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
     stop(err_msg1, call. = FALSE)
 
   dat_dir <- get_gl_dat_dir()
+  
   dir.create(file.path(dat_dir, "Protein/GSVA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
+  
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -141,13 +144,16 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 
 	if (rlang::is_empty(fmls)) {
 	  fml_file <-  file.path(dat_dir, "Calls/prnSig_formulas.rda")
+	  
 	  if (file.exists(fml_file)) {
 	    load(file = fml_file)
 	    dots <- c(dots, prnSig_formulas)
-	  } else {
+	  } 
+	  else {
 	    stop("Run `prnSig()` first.")
 	  }
-	} else {
+	} 
+	else {
 	  match_fmls(fmls)
 	  dots <- c(dots, fmls)
 	}
@@ -189,7 +195,8 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      gset_nms = "go_sets", lm_method = "limma", padj_method = "BH", 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
-                     anal_type = "GSVA", ...) {
+                     anal_type = "GSVA", ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   if (!requireNamespace("GSVA", quietly = TRUE)) {
@@ -202,13 +209,18 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
          call. = FALSE)
   }
   
-  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, 
+                   logical(1L)))
   
+  if (!nrow(label_scheme_sub))
+    stop("Empty metadata not allowed.")
+
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   gsets <- load_dbs(gset_nms = gset_nms, species = species)
-  stopifnot(length(gsets) > 0)
   
+  if (!length(gsets))
+    stop("Empty gene sets not allowed.")
+
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
@@ -218,19 +230,21 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
+  
   arrange_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^arrange_", names(.))]
+  
   select_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^select_", names(.))]
+  
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  if (purrr::is_empty(fmls)) {
+  if (!length(fmls))
     stop("Formula(s) of contrasts not available.", call. = FALSE)
-  }
-  
+
   # `complete_cases` depends on lm contrasts
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -278,8 +292,8 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     tibble::rownames_to_column("term") %>% 
     rm_pval_whitespace()
   
-  rm(quietly_log)
-  
+  rm(list = "quietly_log")
+
   kept_rows <- res %>%
     `rownames<-`(NULL) %>% 
     tibble::column_to_rownames("term") %>%

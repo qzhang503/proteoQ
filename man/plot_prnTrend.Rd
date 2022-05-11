@@ -59,9 +59,9 @@ of \code{df} and \code{df2}.}
 determined automatically by the name of the current call.}
 
 \item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
-theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-theme will be applied.}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{\code{filter2_}: Variable argument statements for the row
 filtration against data in secondary file(s) of

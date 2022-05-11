@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{fml_gspa}
 \alias{fml_gspa}
-\title{A helper function for GSPA}
+\title{Helper of GSPA.}
 \usage{
 fml_gspa(
   fml,
@@ -118,39 +118,42 @@ for selected samples.}
 missing values will be used. The default is FALSE.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
+\item{filename}{A representative file name to outputs. By default, the
+name(s) will be determined automatically. For text files, a typical file
+extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
 \item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
 FALSE.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt} for peptides or
-\code{Protein.txt} for proteins. Each statement contains to a list of
-logical expression(s). The \code{lhs} needs to start with \code{filter_}.
-The logical condition(s) at the \code{rhs} needs to be enclosed in
-\code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
-a column key in \code{Peptide.txt}. The statement \code{filter_peps_at =
-exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
-with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
-the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
-default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
-scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
-the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
-columns; the default is 1. \cr \code{width}, the width of plot; \cr
-\code{height}, the height of plot. \cr \code{scales}, should the scales be
-fixed across panels; the default is "fixed" and the alternative is "free".}
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration of data against the column keys in \code{Peptide.txt} for
+peptides or \code{Protein.txt} for proteins. Each statement contains to a
+list of logical expression(s). The \code{lhs} needs to start with
+\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. \cr \cr For example,
+\code{pep_len} is a column key in \code{Peptide.txt}. The statement
+\code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
+with \code{pep_len > 50}. See also \code{\link{normPSM}}. \cr \cr
+Additional parameters for plotting with \code{ggplot2}: \cr \code{xmin},
+the minimum \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax},
+the maximum \eqn{x} at a log2 scale; the default is +2. \cr \code{xbreaks},
+the breaks in \eqn{x}-axis at a log2 scale; the default is 1. \cr
+\code{binwidth}, the binwidth of \code{log2FC}; the default is \eqn{(xmax -
+xmin)/80}. \cr \code{ncol}, the number of columns; the default is 1. \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
+\code{scales}, should the scales be fixed across panels; the default is
+"fixed" and the alternative is "free".}
 }
 \description{
-A helper function for GSPA
+Helper of GSPA.
 }

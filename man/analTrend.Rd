@@ -59,7 +59,9 @@ in \code{\link[cluster]{clusGap}}. The \code{n_clust} overwrites the
 argument \code{centers} in \code{\link[e1071]{cmeans}}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

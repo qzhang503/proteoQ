@@ -50,8 +50,8 @@ default is between the 5th and the 95th quantiles.}
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
-\code{log2FC} will be plotted. The default is TRUE.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{...}{\code{slice_}: variable argument statements for the identification
 of row subsets. The partial data will be taken for parameterizing the

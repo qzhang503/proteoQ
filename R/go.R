@@ -9,9 +9,11 @@ create_db_path <- function (db_path)
     
     if (fs::dir_exists(new_db_path)) {
       db_path <- new_db_path
-    } else if (fs::dir_exists(new_db_path2)) {
+    } 
+    else if (fs::dir_exists(new_db_path2)) {
       db_path <- new_db_path2
-    } else {
+    } 
+    else {
       dir.create(file.path(db_path, "cache"), recursive = TRUE, showWarnings = FALSE)
       db_path <- new_db_path
     }
@@ -29,7 +31,9 @@ proc_obo <- function(db_path, fn_obo,
                      type = c("biological_process", "cellular_component", "molecular_function")) 
 {
   filepath <- file.path(db_path, "cache", fn_obo)
-  if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
+  
+  if (!file.exists(filepath)) 
+    stop("File not found ", filepath, ".", call. = FALSE)
 
   suppressWarnings(df <- readLines(filepath))
   first_row <- grep("\\[Term\\]", df)[1]
@@ -166,10 +170,12 @@ find_human_orthologs <- function(species, ortho_mart)
   if (species == "mouse") {
     data(package = "proteoQ", mart_mm, envir = environment())
     martL <- mart_mm
-  } else if (species == "rat") {
+  } 
+  else if (species == "rat") {
     data(package = "proteoQ", mart_rn, envir = environment())
     martL <- mart_rn
-  } else {
+  } 
+  else {
     martL <- biomaRt::useMart(biomart = 'ENSEMBL_MART_ENSEMBL', dataset = ortho_mart)
   }
   
@@ -218,7 +224,8 @@ find_abbr_species <- function(species = "human", abbr_species = NULL)
                 "\ni.e., `abbr_species = Ce` for later uses with `org.Ce.eg.db` annotation.", 
                 call. = FALSE)
     )
-  } else {
+  } 
+  else {
     abbr_species <- rlang::as_string(abbr_species)
     
     if (stringr::str_length(abbr_species) != 2) {
@@ -252,7 +259,8 @@ set_db_outname <- function(filename = NULL, species = "human", signature)
                                     call. = FALSE))
     
     filename <- paste0(signature, "_", abbr_species_lwr, ".rds")
-  } else {
+  } 
+  else {
     filename <- rlang::as_string(filename)
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
     fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -297,7 +305,9 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
 proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filename) 
 {
   filepath <- file.path(db_path, "cache", fn_gmt)
-  if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
+  
+  if (!file.exists(filepath)) 
+    stop("File not found ", filepath, ".", call. = FALSE)
   
   df <- suppressWarnings(readr::read_tsv(filepath, col_names = FALSE)) %>% 
     `names_pos<-`(1, "term")
@@ -658,12 +668,11 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
          call. = FALSE)
   }
 
-  if (is.null(msig_url)) {
-    msig_url <- "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
-  } else {
-    msig_url <- rlang::as_string(rlang::enexpr(msig_url))
-  }
-  
+  msig_url <- if (is.null(msig_url))
+    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
+  else
+    rlang::as_string(rlang::enexpr(msig_url))
+
   db_path <- create_db_path(db_path)
   
   fn_gmt <- dl_msig(msig_url, db_path, overwrite)
@@ -675,7 +684,8 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
     
     if (ok == 1) {
       ortho_mart <- rlang::as_string(rlang::enexpr(ortho_mart))
-    } else {
+    } 
+    else {
       ortho_mart <- ok
     }
   })
@@ -764,7 +774,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
         dplyr::left_join(accessions, by = "uniprot_acc") %>% 
         dplyr::mutate(entrez = as.numeric(entrez)) %>% 
         dplyr::select(c("uniprot_acc", "gene", "entrez", "species"))
-    } else if (from == "REFSEQ") {
+    } 
+    else if (from == "REFSEQ") {
       accessions <- accessions %>% dplyr::rename(refseq_acc = value)
       
       accessions <- annot_from_to(abbr_species, unique(accessions$refseq_acc), 
@@ -774,7 +785,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
         dplyr::left_join(accessions, by = "refseq_acc") %>% 
         dplyr::mutate(entrez = as.numeric(entrez)) %>% 
         dplyr::select(c("refseq_acc", "gene", "entrez", "species"))
-    } else {
+    } 
+    else {
       stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", 
            call. = FALSE)
     }
@@ -782,7 +794,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     saveRDS(accessions, file.path(db_path, filename))
 
     invisible(accessions)
-  } else {
+  } 
+  else {
     invisible(NULL)
   }
 }
@@ -884,8 +897,8 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
     )
     
     if (!is.object(x)) {
-      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", 
-                       call. = FALSE)
+      if (x == 1) 
+        stop("Did you forget to run `library(", pkg_nm, ")`?")
     }
     
     entrez_ids <- AnnotationDbi::mappedkeys(x) 
@@ -901,16 +914,19 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
     
     if (from == "UNIPROT") {
       accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
-    } else if (from == "REFSEQ") {
+    } 
+    else if (from == "REFSEQ") {
       accessions <- accessions %>% dplyr::rename(refseq_acc = value)
-    } else {
+    } 
+    else {
       stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
     }
     
     saveRDS(accessions, file.path(db_path, filename))
     
     invisible(accessions)
-  } else {
+  } 
+  else {
     invisible(NULL)
   }
 }
@@ -964,7 +980,8 @@ create_os_lookup <- function(species, os_name, overwrite = FALSE)
       uniprot_entrez_lookup <- uniprot_entrez_lookup %>% 
         .[! names(.) == os_name] %>% 
         .[! . == species]
-    } else {
+    } 
+    else {
       old_sp <- uniprot_entrez_lookup %>% .[names(.) == os_name]
       curr_sp <- curr_lookup
 

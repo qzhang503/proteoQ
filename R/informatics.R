@@ -32,10 +32,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
                                      "MA", "MDS", "Model",
                                      "NMF", "Trend")) 
 {
-  if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 
-    scipen = 999 
-  else 
-    scipen = 0
+  scipen <- if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 999 else 0
 
   old_opts <- options()
 
@@ -50,7 +47,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
   on.exit(setwd(old_dir), add = TRUE)
 
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), 
-                   rlang::is_logical, logical(1)))
+                   rlang::is_logical, logical(1L)))
 
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
@@ -148,79 +145,78 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	label_scheme <- load_ls_group(dat_dir, label_scheme)
 
 	if (is.null(label_scheme[[col_select]])) 
-		stop("Column \'", rlang::as_string(col_select), "\' not found.", 
-		     call. = FALSE)
+		stop("Column \'", rlang::as_string(col_select), "\' not found.")
 	else if (sum(!is.na(label_scheme[[col_select]])) == 0) 
-		stop("No samples under column \'", rlang::as_string(col_select), "\'.", 
-		     call. = FALSE)
+		stop("No samples under column \'", rlang::as_string(col_select), "\'.")
 
 	if (is.null(label_scheme[[col_group]])) {
+		warning("Column \"", rlang::as_string(col_group), 
+		        "\" not found; use column \"Select\".")
 		col_group <- rlang::expr(Select)
-		warning("Column \'", rlang::as_string(col_group), 
-		        "\' not found; use column \'Select\'.", 
-		        call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_group]])) == 0) {
-		warning("No samples under \'", rlang::as_string(col_group), 
-		        "\'; use column \'Select\'.", 
-		        call. = FALSE)
+	} 
+	else if (sum(!is.na(label_scheme[[col_group]])) == 0) {
+		warning("No samples under \"", rlang::as_string(col_group), 
+		        "\"; use column \"Select\".")
 		col_group <- rlang::expr(Select)
 	}
 
 	if (is.null(label_scheme[[col_order]])) {
-		warning("Column \'", rlang::as_string(col_order), 
-		        "\' not found; arranged by the alphebatics.", 
-		        call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_order]])) == 0) {
-	  # warning("No samples under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_order), 
+		        "\" not found; arranged by the alphebatics.")
+	} 
+	else if (sum(!is.na(label_scheme[[col_order]])) == 0) {
+	  # warning("No samples under column \"", rlang::as_string(col_order), "\".")
 	}
 
 	if (is.null(label_scheme[[col_color]]) && rlang::as_string(col_color) != ".") {
 		warning("Column \'", rlang::as_string(col_color), 
 		        "\' not found.", 
 		        call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_color]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_color), "\'.", call. = FALSE)
+	} 
+	else if (sum(!is.na(label_scheme[[col_color]])) == 0) {
+		# warning("No samples under column \'", rlang::as_string(col_color), "\'.")
 	}
 
 	if (is.null(label_scheme[[col_fill]]) && rlang::as_string(col_fill) != ".") {
-		warning("Column \'", rlang::as_string(col_fill), 
-		        "\' not found.", 
-		        call. = FALSE)
-	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_fill), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_fill), "\" not found.")
+		        
+	} 
+	else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
+		# warning("No samples under column \"", rlang::as_string(col_fill), "\".")
 	}
 
 	if (is.null(label_scheme[[col_shape]]) && rlang::as_string(col_shape) != ".") {
-		warning("Column \'", rlang::as_string(col_shape), "\' not found.", 
-		        call. = FALSE)
-	} else if(sum(!is.na(label_scheme[[col_shape]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_shape), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_shape), "\" not found.")
+	} 
+	else if(sum(!is.na(label_scheme[[col_shape]])) == 0) {
+		# warning("No samples under column \"", rlang::as_string(col_shape), "\".")
 	}
 
 	if (is.null(label_scheme[[col_size]]) && rlang::as_string(col_size) != ".") {
-		warning("Column \'", rlang::as_string(col_size), "\' not found.", 
-		        call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_size), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_size), "\" not found.")
+	} 
+	else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
+		# warning("No samples under column \"", rlang::as_string(col_size), "\".")
 	}
 
 	if(is.null(label_scheme[[col_alpha]]) && rlang::as_string(col_alpha) != ".") {
-		warning("Column \'", rlang::as_string(col_alpha), "\' not found.", 
-		        call. = FALSE)
-	} else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_alpha), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_alpha), "\" not found.")
+	} 
+	else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {
+		# warning("No samples under column \"", rlang::as_string(col_alpha), "\".")
 	}
 
 	if (is.null(label_scheme[[col_benchmark]])) {
-		warning("Column \'", rlang::as_string(col_benchmark), "\' not found.")
-	} else if (sum(!is.na(label_scheme[[col_benchmark]])) == 0) {
-		# warning("No samples under column \'", rlang::as_string(col_benchmark), "\'.", call. = FALSE)
+		warning("Column \"", rlang::as_string(col_benchmark), "\" not found.")
+	} 
+	else if (sum(!is.na(label_scheme[[col_benchmark]])) == 0) {
+		# warning("No samples under column \"", rlang::as_string(col_benchmark), "\".")
 	}
 
 	id <- rlang::as_string(rlang::enexpr(id))
+	
 	if (length(id) != 1L) 
-	  stop("'id' must be one of 'pep_seq', 'pep_seq_mod', 'prot_acc' or 'gene'.", 
-	       call. = FALSE)
+	  stop("'id' must be one of 'pep_seq', 'pep_seq_mod', 'prot_acc' or 'gene'.")
 
 	if (id %in% c("prot_acc", "gene")) 
 		data_type <- "Protein"
@@ -228,8 +224,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		data_type <- "Peptide"
 	else 
 		stop("Unrecognized 'id'; ", 
-		     "needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")",
-		     call. = TRUE)
+		     "needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")")
 
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
 
@@ -247,19 +242,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		           recursive = TRUE, showWarnings = FALSE)
 	} 
 	else {
-	  stop("Use default `filepath`.", call. = FALSE)
+	  stop("Use default `filepath`.")
 	}
 
 	if (is.null(filename)) {
 		fn_prefix <- paste(data_type, anal_type, sep = "_")
-		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
-		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 
-		fn_suffix <- if (anal_type %in% c("Model", "KinSub")) 
-		   "txt"
-		else 
-		  "png"
-		
+		fn_prefix <- local({
+		  s_type <- if (is.na(scale_log2r)) "O" else if (scale_log2r) "Z" else "N"
+		  paste0(fn_prefix, "_", s_type)
+		})
+
+		## ifelse handles scale_log2r = NA
+		# fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
+		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
+		fn_suffix <- if (anal_type %in% c("Model", "KinSub")) "txt" else "png"
 	} 
 	else {
 	  if (length(filename) > 1L) {
@@ -275,7 +272,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
     
 	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
 	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
-	    fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
+	    
+	    fn_prefix <- local({
+	      s_type <- if (is.na(scale_log2r)) "O" else if (scale_log2r) "Z" else "N"
+	      paste0(fn_prefix, "_", s_type)
+	    })
+	    
+	    # fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
 	    fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 	  }
 	}
