@@ -40,25 +40,25 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   if (!nrow(label_scheme_sub))
     stop("Empty metadata not allowed.")
-
+  
   col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
   col_size <- rlang::enexpr(col_size)
   col_alpha <- rlang::enexpr(col_alpha)
-
+  
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
   if (complete_cases) 
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-
+  
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
     warning("No ellipses at `type = feats`.", 
             call. = FALSE)
   }
-
+  
   id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
   
@@ -72,10 +72,10 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots)]
-
+  
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
-
+  
   
   if (choice == "lda") {
     dummies <- c("formula", "data", "x", "grouping", "prior", 
@@ -116,7 +116,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       .[! . %in% anal_dots]
   }
   
-
+  
   res <- df %>%
     filters_in_call(!!!filter_dots) %>%
     arrangers_in_call(!!!arrange_dots) %>%
@@ -134,296 +134,296 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
-
+  
   df <- res$x
-
+  
   df$Label <- if ("Sample_ID" %in% names(df))
     df$Sample_ID
   else if (id %in% names(df))
     df[[id]]
   else 
     df$df[, 1, drop = FALSE]
-
-	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
-	nms <- names(df)
-
-	if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
-	  assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-	
-	if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
-	  assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-	
-	if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
-	  assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-	
-	if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
-	  assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-	
-	if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
-	  assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
-
-	if (!is.na(map_color)) col_color <- NULL
-	if (!is.na(map_fill)) col_fill <- NULL
-	if (!is.na(map_shape)) col_shape <- NULL
-	if (!is.na(map_size)) col_size <- NULL
-	if (!is.na(map_alpha)) col_alpha <- NULL
-
-	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
-	suppressWarnings(rm(list = c("map_.")))
-
-	color_brewer <- rlang::enexpr(color_brewer)
-	fill_brewer <- rlang::enexpr(fill_brewer)
-	if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
-	if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
-
-	size_manual <- eval_bare(size_manual, env = caller_env())
-	shape_manual <- eval_bare(shape_manual, env = caller_env())
-	alpha_manual <- eval_bare(alpha_manual, env = caller_env())
-
-	proteoq_pca_theme <- theme_bw() + theme(
-		 axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
-		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
-		 axis.title.x = element_text(colour="black", size=20),
-		 axis.title.y = element_text(colour="black", size=20),
-		 plot.title = element_text(face="bold", colour="black", 
-		                           size=20, hjust=0.5, vjust=0.5),
-
-		 panel.grid.major.x = element_blank(),
-		 panel.grid.minor.x = element_blank(),
-		 panel.grid.major.y = element_blank(),
-		 panel.grid.minor.y = element_blank(),
-
-		 legend.key = element_rect(colour = NA, fill = 'transparent'),
-		 legend.background = element_rect(colour = NA,  fill = "transparent"),
-		 legend.title = element_blank(),
-		 legend.text = element_text(colour="black", size=14),
-		 legend.text.align = 0,
-		 legend.box = NULL
-	)
-	
-	if (is.null(theme)) theme <- proteoq_pca_theme
-
-	# --- check dimension ---
-	if (dimension < 2L) {
-	  warning("The `dimension` increased from ", dimension, " to a minimum of 2.")
-	  dimension <- 2L
-	}
-
-	ranges <- seq_len(dimension)
-	cols <- names(df) %>% .[. %in% paste0("LD", ranges)]
-
-	max_dim <- names(df) %>% .[grepl("^LD[0-9]+", .)] %>% length()
-	
-	if (dimension > max_dim) {
-	  warning("The `dimension` decreased from ", dimension, 
-	          " to a maximum of ", max_dim, ".")
-	  dimension <- max_dim
-	}
-	
-	rm(list = c("max_dim"))
-
-	# --- set up aes ---
-	if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
-	  col_color <- NULL
-	if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
-	  col_fill <- NULL
-	if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
-	  col_shape <- NULL
-	if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
-	  col_size <- NULL
-	if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
-	  col_alpha <- NULL
-	
-	if (dimension > 2L) {
-	  mapping <- ggplot2::aes(colour = !!col_color, 
-	                          fill = !!col_fill, 
-	                          shape = !!col_shape,
-	                          size = !!col_size, 
-	                          alpha = !!col_alpha)
-	} 
-	else {
-	  mapping <- ggplot2::aes(x = LD1, y = LD2,
-	                          colour = !!col_color, 
-	                          fill = !!col_fill, 
-	                          shape = !!col_shape,
-	                          size = !!col_size, 
-	                          alpha = !!col_alpha)
-	}
-
-	idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
-
-	mapping_var <- mapping[!idxes]
-	mapping_fix <- mapping[idxes]
-	
-	local({
-	  nms <- names(mapping_var)
-	  not_xy <- which(!nms %in% c("x", "y"))
-	  
-	  vars <- mapping_var[not_xy]
-	  
-	  if (length(vars)) {
-	    for (var in vars) {
-	      col <- quo_name(var)
-	      
-	      if (anyNA(df[[col]]))
-	        warning("NA/incomplete aesthetics in column `", col, "`.\n")
-	    }
-	  }
-	})
-	
-	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>%
-	  .[names(.) %in% names(mapping_fix)] %>%
-	  .[!is.na(.)]
-	
-	fix_args$stroke <- 0.02
-
-	# --- set up axis labels ---
-	col_labs <- cols
-
-	# --- plots ---
-	if (dimension > 2L) {
-	  p <- GGally::ggpairs(df,
-	                       axisLabels = "internal",
-	                       columns = cols,
-	                       mapping = mapping_var,
-	                       columnLabels = col_labs,
-	                       labeller = label_wrap_gen(10),
-	                       title = "",
-	                       lower = list(continuous = wrap(geom_lower_text,
-	                                                      params = fix_args,
-	                                                      show_ids = show_ids,
-	                                                      size = 3)),
-	                       upper = "blank")
-
-	  p <- p + theme
-
-	  if (!is.null(fill_brewer)) {
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + scale_fill_brewer(palette = fill_brewer)
-	      }
-	    }
-	  }
-
-	  if (!is.null(color_brewer)) {
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + scale_color_brewer(palette = color_brewer)
-	      }
-	    }
-	  }
-
-	  if ((!is.null(col_size)) && (!is.null(size_manual))) {
-	    check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
-
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
-	      }
-	    }
-	  }
-
-	  if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
-	    check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
-
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
-	      }
-	    }
-	  }
-
-	  if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
-	    check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
-
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
-	      }
-	    }
-	  }
-
-	  if (show_ellipses) {
-	    if (anyNA(label_scheme_sub[[col_group]]))
-	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
-
-	    for (x in 2:dimension) {
-	      for (y in 1:(x-1)) {
-	        p[x, y] <- p[x, y] + stat_ellipse(
-	          data = df,
-	          aes(x = !!rlang::sym(paste0("LD", y)),
-	              y = !!rlang::sym(paste0("LD", x)),
-	              fill = !!rlang::sym(col_group)),
-	          geom = "polygon",
-	          alpha = .4,
-	          show.legend = FALSE,
-	        )
-	      }
-	    }
-	  }
-	} 
-	else if (dimension == 2L) {
-	  p <- ggplot() +
-	    rlang::eval_tidy(rlang::quo(geom_point(data = df, 
-	                                           mapping = mapping_var, 
-	                                           !!!fix_args))) +
-	    coord_fixed()
-	  
-	  check_ggplot_aes(p)
-
-	  if (show_ellipses) {
-	    if (anyNA(label_scheme_sub[[col_group]]))
-	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
-
-	    p <- p + ggplot2::stat_ellipse(
-	      data = df,
-	      aes(x = LD1, y = LD2, fill = !!rlang::sym(col_group)),
-	      geom = "polygon",
-	      alpha = .4,
-	      show.legend = FALSE,
-	    )
-	  }
-
-	  if (show_ids) {
-	    p <- p +
-	      geom_text(data = df,
-	                mapping = aes(x = LD1, y = LD2, label = Sample_ID),
-	                color = "gray", size = 3)
-	  }
-
-	  p <- p +
-	    labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
-
-  	if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
-  	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
-
-  	if ((!is.null(col_size)) && (!is.null(size_manual))) {
-  	  check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
-  	  p <- p + scale_size_manual(values = size_manual)
-  	}
-
-  	if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
-  	  check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
-  	  p <- p + scale_shape_manual(values = shape_manual)
-  	}
-
-  	if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
-  	  check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
-  	  p <- p + scale_shape_manual(values = alpha_manual)
-  	}
-	}
-	else if (dimension == 1) {
-	  p <- ggplot(data = df, aes(x = Label, y = LD1)) +
-	    geom_bar(stat="identity") +
-	    theme(axis.text.x  = element_text(angle=60, vjust=0.5, size=8))
-	}
-
-	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
-	rlang::eval_tidy(rlang::quo(ggsave(filename = 
-	                                     file.path(filepath, gg_imgname(filename)),
-	                                   plot = p, !!!ggsave_dots)))
-
-	invisible(res)
+  
+  map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
+  nms <- names(df)
+  
+  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
+    assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
+  
+  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
+    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
+  
+  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
+    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+  
+  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
+    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
+  
+  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
+    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+  
+  if (!is.na(map_color)) col_color <- NULL
+  if (!is.na(map_fill)) col_fill <- NULL
+  if (!is.na(map_shape)) col_shape <- NULL
+  if (!is.na(map_size)) col_size <- NULL
+  if (!is.na(map_alpha)) col_alpha <- NULL
+  
+  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
+  suppressWarnings(rm(list = c("map_.")))
+  
+  color_brewer <- rlang::enexpr(color_brewer)
+  fill_brewer <- rlang::enexpr(fill_brewer)
+  if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
+  if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
+  
+  size_manual <- eval_bare(size_manual, env = caller_env())
+  shape_manual <- eval_bare(shape_manual, env = caller_env())
+  alpha_manual <- eval_bare(alpha_manual, env = caller_env())
+  
+  proteoq_pca_theme <- theme_bw() + theme(
+    axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
+    axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
+    axis.title.x = element_text(colour="black", size=20),
+    axis.title.y = element_text(colour="black", size=20),
+    plot.title = element_text(face="bold", colour="black", 
+                              size=20, hjust=0.5, vjust=0.5),
+    
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    
+    legend.key = element_rect(colour = NA, fill = 'transparent'),
+    legend.background = element_rect(colour = NA,  fill = "transparent"),
+    legend.title = element_blank(),
+    legend.text = element_text(colour="black", size=14),
+    legend.text.align = 0,
+    legend.box = NULL
+  )
+  
+  if (is.null(theme)) theme <- proteoq_pca_theme
+  
+  # --- check dimension ---
+  if (dimension < 2L) {
+    warning("The `dimension` increased from ", dimension, " to a minimum of 2.")
+    dimension <- 2L
+  }
+  
+  ranges <- seq_len(dimension)
+  cols <- names(df) %>% .[. %in% paste0("LD", ranges)]
+  
+  max_dim <- names(df) %>% .[grepl("^LD[0-9]+", .)] %>% length()
+  
+  if (dimension > max_dim) {
+    warning("The `dimension` decreased from ", dimension, 
+            " to a maximum of ", max_dim, ".")
+    dimension <- max_dim
+  }
+  
+  rm(list = c("max_dim"))
+  
+  # --- set up aes ---
+  if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
+    col_color <- NULL
+  if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
+    col_fill <- NULL
+  if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
+    col_shape <- NULL
+  if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
+    col_size <- NULL
+  if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
+    col_alpha <- NULL
+  
+  if (dimension > 2L) {
+    mapping <- ggplot2::aes(colour = !!col_color, 
+                            fill = !!col_fill, 
+                            shape = !!col_shape,
+                            size = !!col_size, 
+                            alpha = !!col_alpha)
+  } 
+  else {
+    mapping <- ggplot2::aes(x = LD1, y = LD2,
+                            colour = !!col_color, 
+                            fill = !!col_fill, 
+                            shape = !!col_shape,
+                            size = !!col_size, 
+                            alpha = !!col_alpha)
+  }
+  
+  idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
+  
+  mapping_var <- mapping[!idxes]
+  mapping_fix <- mapping[idxes]
+  
+  local({
+    nms <- names(mapping_var)
+    not_xy <- which(!nms %in% c("x", "y"))
+    
+    vars <- mapping_var[not_xy]
+    
+    if (length(vars)) {
+      for (var in vars) {
+        col <- quo_name(var)
+        
+        if (anyNA(df[[col]]))
+          warning("NA/incomplete aesthetics in column `", col, "`.\n")
+      }
+    }
+  })
+  
+  fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>%
+    .[names(.) %in% names(mapping_fix)] %>%
+    .[!is.na(.)]
+  
+  fix_args$stroke <- 0.02
+  
+  # --- set up axis labels ---
+  col_labs <- cols
+  
+  # --- plots ---
+  if (dimension > 2L) {
+    p <- GGally::ggpairs(df,
+                         axisLabels = "internal",
+                         columns = cols,
+                         mapping = mapping_var,
+                         columnLabels = col_labs,
+                         labeller = label_wrap_gen(10),
+                         title = "",
+                         lower = list(continuous = wrap(geom_lower_text,
+                                                        params = fix_args,
+                                                        show_ids = show_ids,
+                                                        size = 3)),
+                         upper = "blank")
+    
+    p <- p + theme
+    
+    if (!is.null(fill_brewer)) {
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + scale_fill_brewer(palette = fill_brewer)
+        }
+      }
+    }
+    
+    if (!is.null(color_brewer)) {
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + scale_color_brewer(palette = color_brewer)
+        }
+      }
+    }
+    
+    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+      check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
+      
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
+        }
+      }
+    }
+    
+    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+      check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
+      
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
+        }
+      }
+    }
+    
+    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+      check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
+      
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
+        }
+      }
+    }
+    
+    if (show_ellipses) {
+      if (anyNA(label_scheme_sub[[col_group]]))
+        warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
+      
+      for (x in 2:dimension) {
+        for (y in 1:(x-1)) {
+          p[x, y] <- p[x, y] + stat_ellipse(
+            data = df,
+            aes(x = !!rlang::sym(paste0("LD", y)),
+                y = !!rlang::sym(paste0("LD", x)),
+                fill = !!rlang::sym(col_group)),
+            geom = "polygon",
+            alpha = .4,
+            show.legend = FALSE,
+          )
+        }
+      }
+    }
+  } 
+  else if (dimension == 2L) {
+    p <- ggplot() +
+      rlang::eval_tidy(rlang::quo(geom_point(data = df, 
+                                             mapping = mapping_var, 
+                                             !!!fix_args))) +
+      coord_fixed()
+    
+    check_ggplot_aes(p)
+    
+    if (show_ellipses) {
+      if (anyNA(label_scheme_sub[[col_group]]))
+        warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
+      
+      p <- p + ggplot2::stat_ellipse(
+        data = df,
+        aes(x = LD1, y = LD2, fill = !!rlang::sym(col_group)),
+        geom = "polygon",
+        alpha = .4,
+        show.legend = FALSE,
+      )
+    }
+    
+    if (show_ids) {
+      p <- p +
+        geom_text(data = df,
+                  mapping = aes(x = LD1, y = LD2, label = Sample_ID),
+                  color = "gray", size = 3)
+    }
+    
+    p <- p +
+      labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+    
+    if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
+    if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
+    
+    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+      check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
+      p <- p + scale_size_manual(values = size_manual)
+    }
+    
+    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+      check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
+      p <- p + scale_shape_manual(values = shape_manual)
+    }
+    
+    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+      check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
+      p <- p + scale_shape_manual(values = alpha_manual)
+    }
+  }
+  else if (dimension == 1) {
+    p <- ggplot(data = df, aes(x = Label, y = LD1)) +
+      geom_bar(stat="identity") +
+      theme(axis.text.x  = element_text(angle=60, vjust=0.5, size=8))
+  }
+  
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
+  rlang::eval_tidy(rlang::quo(ggsave(filename = 
+                                       file.path(filepath, gg_imgname(filename)),
+                                     plot = p, !!!ggsave_dots)))
+  
+  invisible(res)
 }
 
 

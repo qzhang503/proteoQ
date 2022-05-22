@@ -136,8 +136,8 @@ replace_NorZ_names <- function (NorZ_ratios, nms)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 `names_pos<-` <- function(x, pos, value) 
 {
-	names(x)[pos] <- value
-	x
+  names(x)[pos] <- value
+  x
 }
 
 
@@ -197,25 +197,25 @@ reorder_files <- function(filelist)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 reorderCols <- function(df, endColIndex, col_to_rn) 
 {
-	if (!length(endColIndex)) {
-	  endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
-	}
-
-	df <- cbind(df[, -endColIndex], df[, endColIndex])
-
-	if (sum(duplicated(df[[col_to_rn]])) > 0) {
-		df <- df %>%
-				dplyr::group_by(!!ensym(col_to_rn)) %>%
-				dplyr::mutate(Index = row_number()) %>%
-				dplyr::mutate(indexed_names = paste(get(col_to_rn), Index, sep=".")) %>%
-				data.frame(check.names = FALSE) %>%
-				`rownames<-`(.[, "indexed_names"]) %>%
-				dplyr::select(-c("Index", "indexed_names"))
-	} else {
-		rownames(df) <- df[[col_to_rn]]
-	}
-
-	return(df)
+  if (!length(endColIndex)) {
+    endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
+  }
+  
+  df <- cbind(df[, -endColIndex], df[, endColIndex])
+  
+  if (sum(duplicated(df[[col_to_rn]])) > 0) {
+    df <- df %>%
+      dplyr::group_by(!!ensym(col_to_rn)) %>%
+      dplyr::mutate(Index = row_number()) %>%
+      dplyr::mutate(indexed_names = paste(get(col_to_rn), Index, sep=".")) %>%
+      data.frame(check.names = FALSE) %>%
+      `rownames<-`(.[, "indexed_names"]) %>%
+      dplyr::select(-c("Index", "indexed_names"))
+  } else {
+    rownames(df) <- df[[col_to_rn]]
+  }
+  
+  return(df)
 }
 
 
@@ -340,15 +340,15 @@ not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 aggrNums <- function(f) 
 {
-	function (df, id, ...) {
-		id <- rlang::as_string(rlang::enexpr(id))
-		dots <- rlang::enexprs(...)
-
-		df %>%
-			dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise_all(~ f(.x, !!!dots))
-	}
+  function (df, id, ...) {
+    id <- rlang::as_string(rlang::enexpr(id))
+    dots <- rlang::enexprs(...)
+    
+    df %>%
+      dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
+      dplyr::group_by(!!rlang::sym(id)) %>%
+      dplyr::summarise_all(~ f(.x, !!!dots))
+  }
 }
 
 
@@ -533,17 +533,17 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 TMT_top_n <- function (x, id, ...) 
 {
-	id <- rlang::as_string(rlang::enexpr(id))
-	dots <- rlang::enexprs(...)
-	
-	x %>%
-	  dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-	  dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
-	                                        na.rm = TRUE)) %>%
-	  dplyr::group_by(!!rlang::sym(id)) %>%
-	  dplyr::top_n(n = 3, wt = sum_Intensity) %>%
-	  dplyr::select(-sum_Intensity) %>%
-	  dplyr::summarise_all(~ mean(.x, !!!dots))
+  id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
+  
+  x %>%
+    dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
+    dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
+                                          na.rm = TRUE)) %>%
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::top_n(n = 3, wt = sum_Intensity) %>%
+    dplyr::select(-sum_Intensity) %>%
+    dplyr::summarise_all(~ mean(.x, !!!dots))
 }
 
 
@@ -657,60 +657,60 @@ replace_trivial_with_na <- function (x)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL) 
 {
-	if (is.null(annot_cols)) 
-	  return(NA)
-
+  if (is.null(annot_cols)) 
+    return(NA)
+  
   dat_dir <- get_gl_dat_dir()
   # load(file = file.path(dat_dir, "label_scheme.rda"))
   label_scheme <- load_ls_group(dat_dir, label_scheme)
-	exists <- annot_cols %in% names(label_scheme)
-
-	if (sum(!exists) > 0L) {
-		warning(paste0("Column '", annot_cols[!exists], "'",
-		               " not found in \'label_scheme\' and will be skipped."), 
-		        call. = FALSE)
-		annot_cols <- annot_cols[exists]
-	}
-
-	if (!length(annot_cols)) 
-	  return(NA)
-
-	x <- label_scheme %>%
-		dplyr::filter(Sample_ID %in% sample_ids) %>%
-		dplyr::select(annot_cols, Sample_ID) 
-	
-	idx <- !not_all_NA(x)
-	
-	if (sum(idx) > 0L) 
-	  stop("No aesthetics defined under column(s) `", 
-	       purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
-	       call. = FALSE)
-
-	x <- x %>%
-		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
-		              !is.na(.[["Sample_ID"]])) %>%
-		data.frame(check.names = FALSE) %>%
-		`rownames<-`(.[["Sample_ID"]])
-
-	if (any(duplicated(x[["Sample_ID"]]))) 
-	  stop("Duplicated sample IDs found.\n", 
-	       call. = FALSE)
-
-	if (!"Sample_ID" %in% annot_cols) 
-	  x <- x %>% dplyr::select(-Sample_ID)
-
-	if (!ncol(x)) 
-	  return(NA)
-
-	if ("TMT_Set" %in% names(x)) {
-		x <- x %>%
-			tibble::rownames_to_column() %>%
-			dplyr::mutate(TMT_Set = as.factor(TMT_Set)) %>%
-		  `rownames<-`(NULL) %>% 
-			tibble::column_to_rownames(var = "rowname")
-	}
-
-	invisible(x)
+  exists <- annot_cols %in% names(label_scheme)
+  
+  if (sum(!exists) > 0L) {
+    warning(paste0("Column '", annot_cols[!exists], "'",
+                   " not found in \'label_scheme\' and will be skipped."), 
+            call. = FALSE)
+    annot_cols <- annot_cols[exists]
+  }
+  
+  if (!length(annot_cols)) 
+    return(NA)
+  
+  x <- label_scheme %>%
+    dplyr::filter(Sample_ID %in% sample_ids) %>%
+    dplyr::select(annot_cols, Sample_ID) 
+  
+  idx <- !not_all_NA(x)
+  
+  if (sum(idx) > 0L) 
+    stop("No aesthetics defined under column(s) `", 
+         purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
+         call. = FALSE)
+  
+  x <- x %>%
+    dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
+                  !is.na(.[["Sample_ID"]])) %>%
+    data.frame(check.names = FALSE) %>%
+    `rownames<-`(.[["Sample_ID"]])
+  
+  if (any(duplicated(x[["Sample_ID"]]))) 
+    stop("Duplicated sample IDs found.\n", 
+         call. = FALSE)
+  
+  if (!"Sample_ID" %in% annot_cols) 
+    x <- x %>% dplyr::select(-Sample_ID)
+  
+  if (!ncol(x)) 
+    return(NA)
+  
+  if ("TMT_Set" %in% names(x)) {
+    x <- x %>%
+      tibble::rownames_to_column() %>%
+      dplyr::mutate(TMT_Set = as.factor(TMT_Set)) %>%
+      `rownames<-`(NULL) %>% 
+      tibble::column_to_rownames(var = "rowname")
+  }
+  
+  invisible(x)
 }
 
 
@@ -721,42 +721,42 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 setHMColor <- function (annotation_col) 
 {
-	ncol <- ncol(annotation_col)
-
-	if (is.null(ncol)) 
-	  return (NA)
-	
-	if (!ncol) 
-	  return (NA)
-
-	suppressWarnings(
-	  annotation_col <- annotation_col %>%
-	    dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
-	    dplyr::mutate_if(is.character, as.factor)  
-	)
-
-	palette <- lapply(names(annotation_col), function(x) {
-		n <- nlevels(annotation_col[[x]])
-
-		palette <- if(n < 9L && n >= 3L) 
-		  brewer.pal(n, name = "Set2") # Set2: maximum 8 
-		else if(n >= 9L) 
-			colorRampPalette(brewer.pal(n = 7L, "Set1"))(n)
-		else if(n == 2L) 
-		  c("#66C2A5", "#FC8D62")
-		else if(n == 1L) 
-		  c("#66C2A5")
-		else if(n == 0L) 
-			colorRampPalette(brewer.pal(n = 9L, "YlOrBr"))(100)
-
-		names(palette) <- levels(annotation_col[[x]])
-
-		palette
-	})
-
-	names(palette) <- names(annotation_col)
-
-	palette
+  ncol <- ncol(annotation_col)
+  
+  if (is.null(ncol)) 
+    return (NA)
+  
+  if (!ncol) 
+    return (NA)
+  
+  suppressWarnings(
+    annotation_col <- annotation_col %>%
+      dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
+      dplyr::mutate_if(is.character, as.factor)  
+  )
+  
+  palette <- lapply(names(annotation_col), function(x) {
+    n <- nlevels(annotation_col[[x]])
+    
+    palette <- if(n < 9L && n >= 3L) 
+      brewer.pal(n, name = "Set2") # Set2: maximum 8 
+    else if(n >= 9L) 
+      colorRampPalette(brewer.pal(n = 7L, "Set1"))(n)
+    else if(n == 2L) 
+      c("#66C2A5", "#FC8D62")
+    else if(n == 1L) 
+      c("#66C2A5")
+    else if(n == 0L) 
+      colorRampPalette(brewer.pal(n = 9L, "YlOrBr"))(100)
+    
+    names(palette) <- levels(annotation_col[[x]])
+    
+    palette
+  })
+  
+  names(palette) <- names(annotation_col)
+  
+  palette
 }
 
 
@@ -773,10 +773,10 @@ setHMColor <- function (annotation_col)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 setHMlims <- function (x, xmin, xmax) 
 {
-	x[x < xmin] <- xmin
-	x[x > xmax] <- xmax
-
-	invisible(x)
+  x[x < xmin] <- xmin
+  x[x > xmax] <- xmax
+  
+  invisible(x)
 }
 
 
@@ -788,28 +788,28 @@ setHMlims <- function (x, xmin, xmax)
 #' @examples \donttest{ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)}
 ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) 
 {
-	id <- rlang::as_string(rlang::enexpr(id))
-
-	nm_ctrl <- rlang::as_string(rlang::ensym(nm_ctrl))
-
-	x <- df %>%
-		dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>%
-		`rownames<-`(df[[id]])
-
-	col_ratio <- which(names(x) %in% label_scheme_sub$Sample_ID)
-
-	col_ctrl <- which(names(x) %in%
-	                    label_scheme_sub[!is.na(label_scheme_sub[[nm_ctrl]]), "Sample_ID"])
-
-	x[, col_ratio] <- sweep(x[, col_ratio], 1,
-	                        rowMeans(x[, col_ctrl, drop = FALSE], na.rm = TRUE), "-")
-
-	x <- x %>% tibble::rownames_to_column(id)
-
-	df %>%
-		dplyr::select(which(!names(df) %in% label_scheme_sub$Sample_ID)) %>%
-		dplyr::left_join(x, by = id)	%>%
-		`rownames<-`(.[[id]])
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  nm_ctrl <- rlang::as_string(rlang::ensym(nm_ctrl))
+  
+  x <- df %>%
+    dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>%
+    `rownames<-`(df[[id]])
+  
+  col_ratio <- which(names(x) %in% label_scheme_sub$Sample_ID)
+  
+  col_ctrl <- which(names(x) %in%
+                      label_scheme_sub[!is.na(label_scheme_sub[[nm_ctrl]]), "Sample_ID"])
+  
+  x[, col_ratio] <- sweep(x[, col_ratio], 1,
+                          rowMeans(x[, col_ctrl, drop = FALSE], na.rm = TRUE), "-")
+  
+  x <- x %>% tibble::rownames_to_column(id)
+  
+  df %>%
+    dplyr::select(which(!names(df) %in% label_scheme_sub$Sample_ID)) %>%
+    dplyr::left_join(x, by = id)	%>%
+    `rownames<-`(.[[id]])
 }
 
 
@@ -833,107 +833,107 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl)
 #'@export
 imputeNA <- function (id, overwrite = FALSE, ...) 
 {
-	my_mice <- function (data, ...) {
-		data <- rlang::enexpr(data)
-		dots <- rlang::enexprs(...)
-
-		rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), 
-		                 env = rlang::caller_env())
-	}
-
-	handleNA <- function (x, ...) {
-		ind <- purrr::map(x, is.numeric) %>% unlist()
-
-		if (sum(ind) < ncol(x)) cat(names(ind)[!ind], "skipped.")
-
-		# handle special column names
-		nm_orig <- names(x[, ind])
-
-		x[, ind] <- x[, ind] %>%
-			data.frame(check.names = TRUE) %>%
-			my_mice(...) %>%
-			mice::complete(1) %>%
-			`colnames<-`(nm_orig)
-
-		x
-	}
-
-	
-	dat_dir <- get_gl_dat_dir()
-	
-	if (!requireNamespace("mice", quietly = TRUE)) {
-	  stop("\n============================================================", 
-	       "\nNeed package \"mice\" for this function to work.",
-	       "\n============================================================",
-	       call. = FALSE)
-	}
-
-	id <- rlang::as_string(rlang::enexpr(id))
-
-	if (id %in% c("pep_seq", "pep_seq_mod")) {
-		src_path <- file.path(dat_dir, "Peptide", "Peptide.txt")
-		filename <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
-	} else if (id %in% c("prot_acc", "gene")) {
-		src_path <- file.path(dat_dir, "Protein", "Protein.txt")
-		filename <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
-	}
-
-	if ((!file.exists(filename)) || overwrite) {
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, 
-		                        header = TRUE, sep = "\t",
-		                        comment.char = "#"), 
-		               error = function(e) NA)
-
-		if (!is.null(dim(df))) {
-		  message(paste("File loaded:", src_path))
-		} else {
-		  stop("File or directory not found: ", src_path, 
-		       call. = FALSE)
-		}
-
-		df[, grep("N_log2_R", names(df))] <- 
-		  handleNA(df[, grep("N_log2_R", names(df))], ...)
-
-		fn_params <- file.path(dat_dir, "Protein/Histogram", "MGKernel_params_N.txt")
-		
-		if (file.exists(fn_params)) {
-			cf_SD <- read.csv(fn_params, check.names = FALSE, 
-			                  header = TRUE, sep = "\t", comment.char = "#") %>%
-				dplyr::filter(!duplicated(Sample_ID)) %>%
-				dplyr::select(Sample_ID, fct)
-
-			df[, grep("Z_log2_R", names(df))] <-
-				mapply(normSD,
-				       df[, grepl("^N_log2_R[0-9]{3}", names(df))], 
-				       center = 0, SD = cf_SD$fct, SIMPLIFY = FALSE) %>%
-				data.frame(check.names = FALSE) %>%
-				`colnames<-`(gsub("N_log2", "Z_log2", names(.)))
-		} else {
-			df[, grep("Z_log2_R", names(df))]  <- df[, grep("Z_log2_R", names(df))] %>% 
-			  handleNA(...)
-		}
-
-		if (any(duplicated(df[[id]]))) {
-			if (id == "pep_seq") {
-				warning("\`pep_seq\` is not uqique for rownames; ", 
-				        "uses \`pep_seq_mod\` instead.\n", 
-				        call. = FALSE)
-				rownames(df) <- df[["pep_seq_mod"]]
-			}
-			if (id == "gene") {
-				warning("\`gene\` is not uqique for rownames; ", 
-				        "uses \`prot_acc\` instead.\n", 
-				        call. = FALSE)
-				rownames(df) <- df[["prot_acc"]]
-			}
-		} else {
-			rownames(df) <- df[[id]]
-		}
-
-		write.table(df, filename, sep = "\t", col.names = TRUE, row.names = FALSE)
-	} else {
-	  warning("NA imputation has been previously performed!\n", call. = FALSE)
-	}
+  my_mice <- function (data, ...) {
+    data <- rlang::enexpr(data)
+    dots <- rlang::enexprs(...)
+    
+    rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), 
+                     env = rlang::caller_env())
+  }
+  
+  handleNA <- function (x, ...) {
+    ind <- purrr::map(x, is.numeric) %>% unlist()
+    
+    if (sum(ind) < ncol(x)) cat(names(ind)[!ind], "skipped.")
+    
+    # handle special column names
+    nm_orig <- names(x[, ind])
+    
+    x[, ind] <- x[, ind] %>%
+      data.frame(check.names = TRUE) %>%
+      my_mice(...) %>%
+      mice::complete(1) %>%
+      `colnames<-`(nm_orig)
+    
+    x
+  }
+  
+  
+  dat_dir <- get_gl_dat_dir()
+  
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("\n============================================================", 
+         "\nNeed package \"mice\" for this function to work.",
+         "\n============================================================",
+         call. = FALSE)
+  }
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    src_path <- file.path(dat_dir, "Peptide", "Peptide.txt")
+    filename <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
+  } else if (id %in% c("prot_acc", "gene")) {
+    src_path <- file.path(dat_dir, "Protein", "Protein.txt")
+    filename <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
+  }
+  
+  if ((!file.exists(filename)) || overwrite) {
+    df <- tryCatch(read.csv(src_path, check.names = FALSE, 
+                            header = TRUE, sep = "\t",
+                            comment.char = "#"), 
+                   error = function(e) NA)
+    
+    if (!is.null(dim(df))) {
+      message(paste("File loaded:", src_path))
+    } else {
+      stop("File or directory not found: ", src_path, 
+           call. = FALSE)
+    }
+    
+    df[, grep("N_log2_R", names(df))] <- 
+      handleNA(df[, grep("N_log2_R", names(df))], ...)
+    
+    fn_params <- file.path(dat_dir, "Protein/Histogram", "MGKernel_params_N.txt")
+    
+    if (file.exists(fn_params)) {
+      cf_SD <- read.csv(fn_params, check.names = FALSE, 
+                        header = TRUE, sep = "\t", comment.char = "#") %>%
+        dplyr::filter(!duplicated(Sample_ID)) %>%
+        dplyr::select(Sample_ID, fct)
+      
+      df[, grep("Z_log2_R", names(df))] <-
+        mapply(normSD,
+               df[, grepl("^N_log2_R[0-9]{3}", names(df))], 
+               center = 0, SD = cf_SD$fct, SIMPLIFY = FALSE) %>%
+        data.frame(check.names = FALSE) %>%
+        `colnames<-`(gsub("N_log2", "Z_log2", names(.)))
+    } else {
+      df[, grep("Z_log2_R", names(df))]  <- df[, grep("Z_log2_R", names(df))] %>% 
+        handleNA(...)
+    }
+    
+    if (any(duplicated(df[[id]]))) {
+      if (id == "pep_seq") {
+        warning("\`pep_seq\` is not uqique for rownames; ", 
+                "uses \`pep_seq_mod\` instead.\n", 
+                call. = FALSE)
+        rownames(df) <- df[["pep_seq_mod"]]
+      }
+      if (id == "gene") {
+        warning("\`gene\` is not uqique for rownames; ", 
+                "uses \`prot_acc\` instead.\n", 
+                call. = FALSE)
+        rownames(df) <- df[["prot_acc"]]
+      }
+    } else {
+      rownames(df) <- df[[id]]
+    }
+    
+    write.table(df, filename, sep = "\t", col.names = TRUE, row.names = FALSE)
+  } else {
+    warning("NA imputation has been previously performed!\n", call. = FALSE)
+  }
 }
 
 
@@ -1724,47 +1724,47 @@ annotPrn <- function (df, fasta, entrez)
       
       df$acc_type[na_acc_type] <- "other_acc"
     }
-
+    
     invisible(df)
   }
   
   acc_lookup <- parse_fasta(df, fasta, entrez)
-	
-	acc_lookup <- dplyr::bind_cols(
-	  acc_lookup %>% 
-	    dplyr::select(prot_acc), 
-	  acc_lookup %>% 
-	    dplyr::select(-which(names(.) %in% names(df))) %>% 
-	    dplyr::select(-"organism"))
-
-	# (1) multiple uniprot_acc(s) can share the same entrez id
-	# prot_acc    gene      acc_type   uniprot_acc species entrez
-	# A1AT1_MOUSE Serpina1a uniprot_id P07758      mouse    20703
-	# A1AT4_MOUSE Serpina1d uniprot_id Q00897      mouse    20703
-		
-	# (2) same uniprot_acc can have different entrez ids
-	# From	To
-	# P02088	100503605
-	# P02088	101488143
-	# P02088	15129	
-	
-	# (3) ok that some uniprot_accs(s) have no corresponding entrez id
-
-	# NA values after joining, for `prot_cc` without corresponding entries in fasta
-	# except for the coercion to "other_acc" for `acc_type`
-	# [1] "gene"        "prot_len"    "fasta_name"  "uniprot_acc" "uniprot_id" 
-	# [7] "refseq_acc"  "other_acc"   "entrez"      "species"     "acc_type"   
-	
-	df <- df %>% 
-	  dplyr::mutate(psm_index = row_number()) %>% 
-	  dplyr::left_join(acc_lookup, by = "prot_acc") %>% 
-	  dplyr::filter(!duplicated(psm_index)) %>% 
-	  na_acc_type_to_other() %>% 
-	  # na_fasta_name_by_prot_acc() %>% 
-	  dplyr::select(-psm_index) %>% 
-	  reloc_col_after("prot_mass", "prot_acc")
-
-	invisible(df)
+  
+  acc_lookup <- dplyr::bind_cols(
+    acc_lookup %>% 
+      dplyr::select(prot_acc), 
+    acc_lookup %>% 
+      dplyr::select(-which(names(.) %in% names(df))) %>% 
+      dplyr::select(-"organism"))
+  
+  # (1) multiple uniprot_acc(s) can share the same entrez id
+  # prot_acc    gene      acc_type   uniprot_acc species entrez
+  # A1AT1_MOUSE Serpina1a uniprot_id P07758      mouse    20703
+  # A1AT4_MOUSE Serpina1d uniprot_id Q00897      mouse    20703
+  
+  # (2) same uniprot_acc can have different entrez ids
+  # From	To
+  # P02088	100503605
+  # P02088	101488143
+  # P02088	15129	
+  
+  # (3) ok that some uniprot_accs(s) have no corresponding entrez id
+  
+  # NA values after joining, for `prot_cc` without corresponding entries in fasta
+  # except for the coercion to "other_acc" for `acc_type`
+  # [1] "gene"        "prot_len"    "fasta_name"  "uniprot_acc" "uniprot_id" 
+  # [7] "refseq_acc"  "other_acc"   "entrez"      "species"     "acc_type"   
+  
+  df <- df %>% 
+    dplyr::mutate(psm_index = row_number()) %>% 
+    dplyr::left_join(acc_lookup, by = "prot_acc") %>% 
+    dplyr::filter(!duplicated(psm_index)) %>% 
+    na_acc_type_to_other() %>% 
+    # na_fasta_name_by_prot_acc() %>% 
+    dplyr::select(-psm_index) %>% 
+    reloc_col_after("prot_mass", "prot_acc")
+  
+  invisible(df)
 }
 
 
@@ -1777,11 +1777,11 @@ annotPrn <- function (df, fasta, entrez)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 annotKin <- function (df, acc_type) 
 {
-	if (is.null(df)) 
-	  return(df)
+  if (is.null(df)) 
+    return(df)
   
   stopifnot ("prot_acc" %in% names(df))
-	
+  
   data(package = "proteoQ", kinase_lookup, envir = environment())
   
   if (!acc_type %in% names(kinase_lookup)) {
@@ -1792,19 +1792,19 @@ annotKin <- function (df, acc_type)
     
     return(df)
   }
-
+  
   lookup <- kinase_lookup %>% 
     dplyr::select(acc_type, kin_attr, kin_class, kin_order) %>%
     dplyr::filter(!duplicated(.)) %>% 
     dplyr::filter(!is.na(.[[acc_type]])) %>% 
     dplyr::mutate(!!acc_type := as.character(!!rlang::sym(acc_type)))
-
+  
   df <- df %>% 
     dplyr::left_join(lookup, by = c("prot_acc" = acc_type))
-
-	df$kin_attr[is.na(df$kin_attr)] <- FALSE
-
-	invisible(df)
+  
+  df$kin_attr[is.na(df$kin_attr)] <- FALSE
+  
+  invisible(df)
 }
 
 
@@ -2028,33 +2028,33 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 replace_na_genes <- function(df, acc_type) 
 {
-	acc_type <- tolower(acc_type)
-
-	if (acc_type == "refseq_acc") {
-		na_gene <- (is.na(df[, c("gene")])) | (str_length(df$gene) == 0)
-		df$gene <- as.character(df$gene)
-		df$gene[na_gene] <- as.character(df$prot_acc[na_gene])
-	} 
-	else if (acc_type == "uniprot_id") {
-		temp <- data.frame(do.call('rbind', 
-		                           strsplit(as.character(df$prot_desc), 
-		                                    'GN=', 
-		                                    fixed = TRUE))) %>%
-				dplyr::select(2) %>%
-				`colnames<-`("gene") %>%
-				dplyr::mutate(gene = gsub("PE\\=.*", "", gene)) %>%
-				dplyr::mutate(gene = gsub("\\s+.*", "", gene))
-
-		na_gene <- is.na(df$gene)
-		df[na_gene, c("gene")] <- temp[na_gene, c("gene")]
-		
-		rm(list = c("temp"))
-
-		df <- df %>%
-			dplyr::mutate(gene = gsub(".*\\|", "", gene))
-	}
-
-	invisible(df)
+  acc_type <- tolower(acc_type)
+  
+  if (acc_type == "refseq_acc") {
+    na_gene <- (is.na(df[, c("gene")])) | (str_length(df$gene) == 0)
+    df$gene <- as.character(df$gene)
+    df$gene[na_gene] <- as.character(df$prot_acc[na_gene])
+  } 
+  else if (acc_type == "uniprot_id") {
+    temp <- data.frame(do.call('rbind', 
+                               strsplit(as.character(df$prot_desc), 
+                                        'GN=', 
+                                        fixed = TRUE))) %>%
+      dplyr::select(2) %>%
+      `colnames<-`("gene") %>%
+      dplyr::mutate(gene = gsub("PE\\=.*", "", gene)) %>%
+      dplyr::mutate(gene = gsub("\\s+.*", "", gene))
+    
+    na_gene <- is.na(df$gene)
+    df[na_gene, c("gene")] <- temp[na_gene, c("gene")]
+    
+    rm(list = c("temp"))
+    
+    df <- df %>%
+      dplyr::mutate(gene = gsub(".*\\|", "", gene))
+  }
+  
+  invisible(df)
 }
 
 
@@ -3239,7 +3239,8 @@ rows_are_all <- function (match, vars, ignore.case = FALSE)
 #'
 #' \code{rows_are_all}: rows are all
 #' @rdname contain_str
-rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
+rows_are_not_all <- function (match, vars, ignore.case = FALSE) 
+{
   stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
 }

@@ -17,17 +17,17 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
   
   if (!nrow(label_scheme_sub))
     stop("Empty metadata (at a data subset).")
-
+  
   if (complete_cases)
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-
+  
   fn_par <- if (is.na(scale_log2r))
     file.path(filepath, "MGKernel_params_O.txt")
   else if (scale_log2r)
     file.path(filepath, "MGKernel_params_Z.txt")
   else
     file.path(filepath, "MGKernel_params_N.txt")
-
+  
   if (file.exists(fn_par)) {
     params <- read.csv(fn_par, check.names = FALSE, header = TRUE, sep = "\t", 
                        comment.char = "#")
@@ -37,227 +37,227 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
     params <- NULL
     show_curves <- FALSE
   }
-
+  
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-
-	xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
-	xmax <- eval(dots$xmax, envir = rlang::caller_env()) 
-	xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
-	binwidth <- eval(dots$binwidth, envir = rlang::caller_env())
-	alpha <- eval(dots$alpha, envir = rlang::caller_env())
-	ncol <- eval(dots$ncol, envir = rlang::caller_env())
-	width <- eval(dots$width, envir = rlang::caller_env())
-	height <- eval(dots$height, envir = rlang::caller_env())
-	scales <- eval(dots$scales, envir = rlang::caller_env())
-
-	if (is.null(xmin)) xmin <- -2
-	if (is.null(xmax)) xmax <- 2
-	if (is.null(xbreaks)) xbreaks <- 1
-	if (is.null(binwidth)) binwidth <- (xmax - xmin)/80
-	if (is.null(alpha)) alpha <- .8
-	if (is.null(ncol)) ncol <- 5
-	if (is.null(width)) width <- 4 * ncol + 2
-	if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
-	if (is.null(scales)) scales <- "fixed"
   
-	ylimits <- eval(dots$ylimits, envir = rlang::caller_env()) 
-	
-	dots <- dots %>% 
+  xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
+  xmax <- eval(dots$xmax, envir = rlang::caller_env()) 
+  xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
+  binwidth <- eval(dots$binwidth, envir = rlang::caller_env())
+  alpha <- eval(dots$alpha, envir = rlang::caller_env())
+  ncol <- eval(dots$ncol, envir = rlang::caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
+  scales <- eval(dots$scales, envir = rlang::caller_env())
+  
+  if (is.null(xmin)) xmin <- -2
+  if (is.null(xmax)) xmax <- 2
+  if (is.null(xbreaks)) xbreaks <- 1
+  if (is.null(binwidth)) binwidth <- (xmax - xmin)/80
+  if (is.null(alpha)) alpha <- .8
+  if (is.null(ncol)) ncol <- 5
+  if (is.null(width)) width <- 4 * ncol + 2
+  if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
+  if (is.null(scales)) scales <- "fixed"
+  
+  ylimits <- eval(dots$ylimits, envir = rlang::caller_env()) 
+  
+  dots <- dots %>% 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", 
                         "binwidth", "ncol", "alpha", 
                         "width", "height", "scales", 
                         "ylimits")]
-
-	filter_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^filter_", names(.))]
-	
-	arrange_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^arrange_", names(.))]
-	
-	dots <- dots %>% 
-	  .[! . %in% c(filter_dots, arrange_dots)]
-	
-	if (scale_y) {
-	  df <- df %>% 
-	    filters_in_call(!!!filter_dots) %>% 
-	    arrangers_in_call(!!!arrange_dots)
-	  
-	  if (!nrow(df))
-	    stop("Zero row of data.")
-	}
-	
-	by = (xmax - xmin)/200
-	nrow <- nrow(df)
-	x_label <- expression("Ratio ("*log[2]*")")
-	NorZ_ratios <- find_NorZ(scale_log2r)
-
-	if (!is.null(params)) {
-		n_comp <- max(params$Component)
-		nm_comps <- paste0("G", 1:n_comp)
-		nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
-
-		# offset by the percentage of non-NA values
-		perc_nna <- df %>%
-			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
-		  `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
-			lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
-
-		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
-
-		# density profiles
-		fit <- params %>%
-			dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
-			dplyr::arrange(Sample_ID) %>%
-			split(.$Sample_ID) %>%
-			lapply(sumdnorm, xmin, xmax, by = by)
-
-		fit <- fit %>%
-			purrr::map(~ .[, grep("^G[0-9]{1}|^Sum", names(.))]) %>%
-			purrr::map2(perc_nna, `*`) %>%
-			do.call(rbind, .) %>%
-			dplyr::bind_cols(fit %>% do.call(rbind, .) %>% dplyr::select(c("x", "Sample_ID"))) %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
-			dplyr::arrange(Sample_ID) %>%
-			dplyr::rename(!!sym(paste(nm_comps, collapse = " + ")) := Sum) %>%
-			tidyr::gather(key = variable, value = value, -x, -Sample_ID) %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
-			dplyr::mutate(variable = factor(variable, levels = nm_full)) %>%
-			dplyr::arrange(Sample_ID, variable) %>%
-			dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
-
-		myPalette <- c(rep("gray", n_comp), "black")
-	} 
-	else {
-		n_comp <- NA
-		nm_comps <- NA
-		myPalette <- NA
-		nm_full <- NA
-		perc_nna <- NA
-		fit <- NA
-	}
-
-	proteoq_histo_theme <- theme_bw() + theme(
-		axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
-		axis.ticks.x  = element_blank(), # x-axis ticks
-		axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
-		axis.title.x = element_text(colour="black", size=24),
-		axis.title.y = element_text(colour="black", size=24),
-		plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
-
-		strip.text.x = element_text(size = 18, colour = "black", angle = 0),
-		strip.text.y = element_text(size = 18, colour = "black", angle = 90),
-
-		panel.grid.major.x = element_blank(),
-		panel.grid.minor.x = element_blank(),
-		panel.grid.major.y = element_blank(),
-		panel.grid.minor.y = element_blank(),
-
-		legend.key = element_rect(colour = NA, fill = 'transparent'),
-		legend.background = element_rect(colour = NA,  fill = "transparent"),
-		legend.title = element_blank(),
-		legend.text = element_text(colour="black", size=18),
-		legend.text.align = 0,
-		legend.box = NULL
-	)
-	
-	if (is.null(theme)) 
-	  theme <- proteoq_histo_theme
-
-	if (!scale_y) {
-	  df <- df %>% 
-	    filters_in_call(!!!filter_dots) %>% 
-	    arrangers_in_call(!!!arrange_dots)
-	}
-
-	if (!nrow(df))
-	  stop("Zero row of data")
-
-	# cut_points = c(prot_icover = seq(.25, .75, .25))
-	# cut_points = c(mean_lint = seq(4, 7, .5)) 
-	# cut_points = c(prot_icover = Inf)
-	# cut_points = c(prot_icover = NULL)
-	# cut_points = c(prot_icover = Inf)
-	
-	# cut_points = Inf
-	# cut_points = NULL
-	# cut_points = c(prot_icover = NA)
-	# cut_points = NA
-	
-	df_melt <- local({
-	  cut_points <- set_cutpoints2(cut_points, df)
-	  nm <- names(cut_points)[1]
-
-	  df_melt <- df %>% 
-	    dplyr::mutate(col_cut = !!rlang::sym(nm)) %>% 
-	    dplyr::select(col_cut, 
-	                  grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
-	    dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
-	    dplyr::select(which(not_all_zero(.))) %>%
-	    dplyr::select(which(colSums(!is.na(.)) > 0)) 
-	  
-	  df_melt <- df_melt %>% 
-	    dplyr::mutate_at(.vars = "col_cut", cut, 
-	                     breaks = cut_points, 
-	                     labels = cut_points[1:(length(cut_points)-1)]) %>%
-	    dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-	    `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
-	    tidyr::gather(key = Sample_ID, value = value, -col_cut) 
-	  
-	  if (! "Sample_ID" %in% names(df_melt)) 
-	    stop("No ratio fields available after data filtration.")
-	  
-	  df_melt <- df_melt %>%
-	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
-	    dplyr::arrange(Sample_ID) %>%
-	    dplyr::filter(!is.na(value), !is.na(col_cut)) %>%
-	    dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
-	    dplyr::mutate(value = setHMlims(value, xmin, xmax))
-	})
-	
-	p <- ggplot() +
-		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = col_cut),
-		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
-		scale_fill_brewer(palette = "Spectral", direction = -1) +
-		labs(title = "", x = x_label, y = expression("Frequency")) +
-		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
-		                   labels = as.character(seq(xmin, xmax, by = xbreaks))) +
-	  scale_y_continuous(limits = ylimits) + 
-		facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
-	  theme
-
-	if (show_curves) {
-	  p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
-	                     size = .2) +
-	    scale_colour_manual(values = myPalette, name = "Gaussian",
-	                        breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
-	                        labels = nm_full)
-	}
-
-	if (show_vline) {
-	  p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
-	}
-
-	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
-	
-	suppressWarnings(
-	  rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-	                    plot = p, 
-	                    width = width, 
-	                    height = height, 
-	                    !!!ggsave_dots)) %>% 
-	    rlang::eval_tidy()
-	)
-
-	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
-	
-	if (!any(is.na(fit)))
-	  readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
-
-	invisible(list(raw = df_melt, fitted = fit))
+  
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots)]
+  
+  if (scale_y) {
+    df <- df %>% 
+      filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots)
+    
+    if (!nrow(df))
+      stop("Zero row of data.")
+  }
+  
+  by = (xmax - xmin)/200
+  nrow <- nrow(df)
+  x_label <- expression("Ratio ("*log[2]*")")
+  NorZ_ratios <- find_NorZ(scale_log2r)
+  
+  if (!is.null(params)) {
+    n_comp <- max(params$Component)
+    nm_comps <- paste0("G", 1:n_comp)
+    nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
+    
+    # offset by the percentage of non-NA values
+    perc_nna <- df %>%
+      dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
+      `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
+      lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
+    
+    perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
+    
+    # density profiles
+    fit <- params %>%
+      dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::arrange(Sample_ID) %>%
+      split(.$Sample_ID) %>%
+      lapply(sumdnorm, xmin, xmax, by = by)
+    
+    fit <- fit %>%
+      purrr::map(~ .[, grep("^G[0-9]{1}|^Sum", names(.))]) %>%
+      purrr::map2(perc_nna, `*`) %>%
+      do.call(rbind, .) %>%
+      dplyr::bind_cols(fit %>% do.call(rbind, .) %>% dplyr::select(c("x", "Sample_ID"))) %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::arrange(Sample_ID) %>%
+      dplyr::rename(!!sym(paste(nm_comps, collapse = " + ")) := Sum) %>%
+      tidyr::gather(key = variable, value = value, -x, -Sample_ID) %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::mutate(variable = factor(variable, levels = nm_full)) %>%
+      dplyr::arrange(Sample_ID, variable) %>%
+      dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
+    
+    myPalette <- c(rep("gray", n_comp), "black")
+  } 
+  else {
+    n_comp <- NA
+    nm_comps <- NA
+    myPalette <- NA
+    nm_full <- NA
+    perc_nna <- NA
+    fit <- NA
+  }
+  
+  proteoq_histo_theme <- theme_bw() + theme(
+    axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
+    axis.ticks.x  = element_blank(), # x-axis ticks
+    axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
+    axis.title.x = element_text(colour="black", size=24),
+    axis.title.y = element_text(colour="black", size=24),
+    plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
+    
+    strip.text.x = element_text(size = 18, colour = "black", angle = 0),
+    strip.text.y = element_text(size = 18, colour = "black", angle = 90),
+    
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    
+    legend.key = element_rect(colour = NA, fill = 'transparent'),
+    legend.background = element_rect(colour = NA,  fill = "transparent"),
+    legend.title = element_blank(),
+    legend.text = element_text(colour="black", size=18),
+    legend.text.align = 0,
+    legend.box = NULL
+  )
+  
+  if (is.null(theme)) 
+    theme <- proteoq_histo_theme
+  
+  if (!scale_y) {
+    df <- df %>% 
+      filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots)
+  }
+  
+  if (!nrow(df))
+    stop("Zero row of data")
+  
+  # cut_points = c(prot_icover = seq(.25, .75, .25))
+  # cut_points = c(mean_lint = seq(4, 7, .5)) 
+  # cut_points = c(prot_icover = Inf)
+  # cut_points = c(prot_icover = NULL)
+  # cut_points = c(prot_icover = Inf)
+  
+  # cut_points = Inf
+  # cut_points = NULL
+  # cut_points = c(prot_icover = NA)
+  # cut_points = NA
+  
+  df_melt <- local({
+    cut_points <- set_cutpoints2(cut_points, df)
+    nm <- names(cut_points)[1]
+    
+    df_melt <- df %>% 
+      dplyr::mutate(col_cut = !!rlang::sym(nm)) %>% 
+      dplyr::select(col_cut, 
+                    grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
+      dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
+      dplyr::select(which(not_all_zero(.))) %>%
+      dplyr::select(which(colSums(!is.na(.)) > 0)) 
+    
+    df_melt <- df_melt %>% 
+      dplyr::mutate_at(.vars = "col_cut", cut, 
+                       breaks = cut_points, 
+                       labels = cut_points[1:(length(cut_points)-1)]) %>%
+      dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
+      `names<-`(replace_NorZ_names(NorZ_ratios, names(.))) %>% 
+      tidyr::gather(key = Sample_ID, value = value, -col_cut) 
+    
+    if (! "Sample_ID" %in% names(df_melt)) 
+      stop("No ratio fields available after data filtration.")
+    
+    df_melt <- df_melt %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::arrange(Sample_ID) %>%
+      dplyr::filter(!is.na(value), !is.na(col_cut)) %>%
+      dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
+      dplyr::mutate(value = setHMlims(value, xmin, xmax))
+  })
+  
+  p <- ggplot() +
+    geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = col_cut),
+                   color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
+    scale_fill_brewer(palette = "Spectral", direction = -1) +
+    labs(title = "", x = x_label, y = expression("Frequency")) +
+    scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
+                       labels = as.character(seq(xmin, xmax, by = xbreaks))) +
+    scale_y_continuous(limits = ylimits) + 
+    facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
+    theme
+  
+  if (show_curves) {
+    p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
+                       size = .2) +
+      scale_colour_manual(values = myPalette, name = "Gaussian",
+                          breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
+                          labels = nm_full)
+  }
+  
+  if (show_vline) {
+    p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+  }
+  
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+  
+  suppressWarnings(
+    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
+                      plot = p, 
+                      width = width, 
+                      height = height, 
+                      !!!ggsave_dots)) %>% 
+      rlang::eval_tidy()
+  )
+  
+  readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
+  
+  if (!any(is.na(fit)))
+    readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
+  
+  invisible(list(raw = df_melt, fitted = fit))
 }
 
 

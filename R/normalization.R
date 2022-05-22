@@ -427,213 +427,213 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
 {
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   dat_dir <- get_gl_dat_dir()
-
-	dots <- rlang::enexprs(...)
-	
-	slice_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^slice_", names(.))]
-	
-	nonslice_dots <- dots %>% 
-	  .[! . %in% slice_dots]
-	
-	# if different `n_comp` between two `method_align = MGKernel`, 
-	#   force `col_select` to `Sample_ID` (all samples); 
-	# if `n_comp` is given but with `method_align = MC`, 
-	#   ignore difference in `n_comp`
-	
-	n_comp <- find_n_comp(df, n_comp, method_align)
-	# ok_O_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_O.txt", n_comp)
-	ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
-	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
-	
-	if (method_align == "MGKernel") {
-  	if ((!ok_N_ncomp) && (col_select != rlang::expr(sample_ID))) 
-  	  col_select <- rlang::expr(Sample_ID)
-
-  	if ((!ok_Z_ncomp) && (col_select != rlang::expr(sample_ID))) 
-  	  col_select <- rlang::expr(Sample_ID)
-	}
-
-	label_scheme <- load_ls_group(dat_dir, "label_scheme")
-	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
-	sids <- label_scheme$Sample_ID
-	sub_sids <- label_scheme_fit$Sample_ID
-
-	## finds the subset of column names for fitting
-	ans <- lapply(c("^N_log2_R", "^N_I"), hfind_fit_nms, names(df), sub_sids)
-	nm_log2r_n <- ans[[1]]
-	nm_int_n <- ans[[2]]
-	rm(list = c("ans"))
-
-	## fitting
-	pat_ref_n <- "^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$"
-	pat_ref_z <- "^Z_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$"
-	
-	if (method_align == "MGKernel") {
-	  message("method_align = ", method_align)
-	  message("n_comp = ", n_comp)
-	  message("col_select = ", col_select)
-	  
-	  # (1.1) multi-Gaussian params
-	  params_sub <- df %>% 
-	    filters_in_call(!!!slice_dots) %>% 
-	    dplyr::select(nm_log2r_n) %>% 
-	    `names<-`(gsub(pat_ref_n, "\\1", names(.))) %>% 
-	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
-	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
-	    dplyr::arrange(Sample_ID, Component)
-	  
-	  if (!ok_N_ncomp) {
-	    # previously forced `col_select = Sample_ID` if detected different `n_comp` 
-	    # so if not `ok`, `params_sub` must be for all samples
-	    params <- params_sub
-	  } 
-	  else {
-	    params <- read.table(file.path(filepath, "MGKernel_params_N.txt"), 
-	                         check.names = FALSE, header = TRUE, 
-	                         comment.char = "#") %>% 
-	      dplyr::select(names(params_sub)) %>% 
-	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
-	      dplyr::arrange(Sample_ID, Component)
-	    
-	    rows <- params$Sample_ID %in% params_sub$Sample_ID
-	    params[rows, ] <- params_sub
-	    rm(list = "rows")
-	  }
-	  
-	  rm(list = "params_sub")
-
-	  # (1.2) SDs and scaling factors
-	  sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
-
-	  # (1.3) centers
-		cf_x <- my_which_max(params, label_scheme) %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
-			dplyr::arrange(Sample_ID) 
-
-		# (1.4) putting together
-		list(params, cf_x, sd_coefs) %>%
-			purrr::reduce(dplyr::left_join, by = "Sample_ID") %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
-			dplyr::arrange(Sample_ID) %>%
-			write.table(file = file.path(filepath, "MGKernel_params_N.txt"), 
-			            sep = "\t", col.names = TRUE, row.names = FALSE)
-		
-		# (2.1) the subset of SDs and scaling factors
-		sd_coefs_fit <- sd_coefs %>% dplyr::filter(Sample_ID %in% sub_sids)
-
-		# (2.2) the subset of centers
-		cf_x_fit <- cf_x %>% dplyr::filter(Sample_ID %in% sub_sids)
-
-		# (2.3) data centering: (Z_log2R, N_log2_R) and intensity scaling (N_I)
-		# for selected samples
-		ans <- center_df(df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
-		df <- ans$df
-		nm_log2r_z <- ans$nm_log2r_z
-		rm(list = "ans")
-
-		# (3) separate fits of Z_log2_R for updating curve parameters only
-		if (!ok_Z_ncomp) {
-		  params_z <- df %>% 
-		    filters_in_call(!!!slice_dots) %>% 
-		    dplyr::select(nm_log2r_z) %>% 
-		    `names<-`(gsub(pat_ref_z, "\\1", names(.))) %>% 
-		    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
-		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
-		    dplyr::arrange(Sample_ID, Component) %>% 
-		    dplyr::mutate(x = 0)
-		} 
-		else {
-		  params_z_sub <- df %>% 
-		    filters_in_call(!!!slice_dots) %>% 
-		    dplyr::select(nm_log2r_z) %>% 
-		    `names<-`(gsub(pat_ref_z, "\\1", names(.))) %>% 
-		    fitKernelDensity(n_comp = n_comp, seed, !!!nonslice_dots) %>% 
-		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
-		    dplyr::arrange(Sample_ID, Component)
-		  
-		  params_z <- read.table(file.path(filepath, "MGKernel_params_Z.txt"), 
-		                         check.names = FALSE, header = TRUE, 
-		                         comment.char = "#") %>% 
-		    dplyr::select(names(params_z_sub)) %>% 
-		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
-		    dplyr::arrange(Sample_ID, Component)
-		  
-		  rows_z <- params_z$Sample_ID %in% params_z_sub$Sample_ID
-		  params_z[rows_z, ] <- params_z_sub
-		  rm(list = "rows_z")
-		  
-		  params_z$x <- 0
-		}
-		
-		write.table(params_z, file = file.path(filepath, "MGKernel_params_Z.txt"),
-		            sep = "\t", col.names = TRUE, row.names = FALSE)
-	} 
-	else if (method_align == "MC") {
-	  message("method_align = ", method_align)
-	  message("n_comp = NULL")
-	  message("col_select = ", col_select)
-	  
-	  # (1) when called with `mergePep` or `Pep2Prn`, 
-	  #       always median-centering against all samples 
-	  # (2) `mergePep` called before `standPep` and `Pep2Prn` before `standPrn`
-	  #       -> data are at first median-centered for all samples
-
-	  # (MC.1) SDs and scaling factors (all samples)
-	  sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
-
-	  # cut_points = c(mean_lint = seq(4, 7, .5))
-	  # cut_points = c(prot_icover = seq(.25, .75, .25))
-	  # cut_points = c(prot_icover = Inf)
-	  # cut_points = c(prot_icover = NULL)
-	  # cut_points = c(prot_icover = NA)
-	  # cut_points = Inf
-	  # cut_points = NULL
-	  # cut_points = NA
-	  
-	  # (MC.2) df's by cut_points (all samples)
-	  cut_points <- set_cutpoints2(cut_points, df)
-
-	  if (all(is.infinite(cut_points))) {
-	    df <- list(df)
-	  } 
-	  else {
-	    df <- df %>% 
-	      dplyr::mutate(col_cut = !!rlang::sym(names(cut_points)[1])) %>% 
-	      dplyr::mutate_at(.vars = "col_cut", cut, 
-	                       breaks = cut_points, 
-	                       labels = cut_points[1:(length(cut_points)-1)]) %>%
-	      split(.$col_cut, drop = TRUE) %>% 
-	      purrr::map(~ .x %>% dplyr::select(-col_cut))
-	  }
-
-	  # (MC.3) centers 
-	  # (a) new x's for selected samples; 
-	  # (b) 0 for the remaining (no further adjustment)
-	  x_vals <- df %>% 
-	    purrr::map(spline_coefs, label_scheme, label_scheme_fit, !!!slice_dots)
-
-	  # (MC.4) data median-centering (selected samples)
-	  # (label_scheme, not label_scheme_fit as x's are 0's for non-selected)
-	  ans <- purrr::map2(df, x_vals, ~ center_df(.x, label_scheme, .y, sd_coefs))
-
-	  df <- lapply(ans, `[[`, "df") %>% 
-	    dplyr::bind_rows()
-	  
-	  rm(list = "ans")
-	}
   
-	# (1) median deviation based sample IDs in `label_scheme` not `label_scheme_fit`
-	#  as sample IDs in `label_scheme_fit` may be only for mixed-bed normalization
-	# (2) the `mean` also get updated after normalization against sample subsets 
-	
-	label_scheme_non_trivial <- label_scheme %>% 
-	  dplyr::filter(!Reference, !grepl("^Empty\\.[0-9]+", Sample_ID))
-	
-	df <- df %>% add_mean_dev(label_scheme_non_trivial, filepath)
-	
-	invisible(df)
+  dots <- rlang::enexprs(...)
+  
+  slice_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^slice_", names(.))]
+  
+  nonslice_dots <- dots %>% 
+    .[! . %in% slice_dots]
+  
+  # if different `n_comp` between two `method_align = MGKernel`, 
+  #   force `col_select` to `Sample_ID` (all samples); 
+  # if `n_comp` is given but with `method_align = MC`, 
+  #   ignore difference in `n_comp`
+  
+  n_comp <- find_n_comp(df, n_comp, method_align)
+  # ok_O_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_O.txt", n_comp)
+  ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
+  ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
+  
+  if (method_align == "MGKernel") {
+    if ((!ok_N_ncomp) && (col_select != rlang::expr(sample_ID))) 
+      col_select <- rlang::expr(Sample_ID)
+    
+    if ((!ok_Z_ncomp) && (col_select != rlang::expr(sample_ID))) 
+      col_select <- rlang::expr(Sample_ID)
+  }
+  
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
+  label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
+  sids <- label_scheme$Sample_ID
+  sub_sids <- label_scheme_fit$Sample_ID
+  
+  ## finds the subset of column names for fitting
+  ans <- lapply(c("^N_log2_R", "^N_I"), hfind_fit_nms, names(df), sub_sids)
+  nm_log2r_n <- ans[[1]]
+  nm_int_n <- ans[[2]]
+  rm(list = c("ans"))
+  
+  ## fitting
+  pat_ref_n <- "^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$"
+  pat_ref_z <- "^Z_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$"
+  
+  if (method_align == "MGKernel") {
+    message("method_align = ", method_align)
+    message("n_comp = ", n_comp)
+    message("col_select = ", col_select)
+    
+    # (1.1) multi-Gaussian params
+    params_sub <- df %>% 
+      filters_in_call(!!!slice_dots) %>% 
+      dplyr::select(nm_log2r_n) %>% 
+      `names<-`(gsub(pat_ref_n, "\\1", names(.))) %>% 
+      fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
+      dplyr::arrange(Sample_ID, Component)
+    
+    if (!ok_N_ncomp) {
+      # previously forced `col_select = Sample_ID` if detected different `n_comp` 
+      # so if not `ok`, `params_sub` must be for all samples
+      params <- params_sub
+    } 
+    else {
+      params <- read.table(file.path(filepath, "MGKernel_params_N.txt"), 
+                           check.names = FALSE, header = TRUE, 
+                           comment.char = "#") %>% 
+        dplyr::select(names(params_sub)) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+        dplyr::arrange(Sample_ID, Component)
+      
+      rows <- params$Sample_ID %in% params_sub$Sample_ID
+      params[rows, ] <- params_sub
+      rm(list = "rows")
+    }
+    
+    rm(list = "params_sub")
+    
+    # (1.2) SDs and scaling factors
+    sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+    
+    # (1.3) centers
+    cf_x <- my_which_max(params, label_scheme) %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+      dplyr::arrange(Sample_ID) 
+    
+    # (1.4) putting together
+    list(params, cf_x, sd_coefs) %>%
+      purrr::reduce(dplyr::left_join, by = "Sample_ID") %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+      dplyr::arrange(Sample_ID) %>%
+      write.table(file = file.path(filepath, "MGKernel_params_N.txt"), 
+                  sep = "\t", col.names = TRUE, row.names = FALSE)
+    
+    # (2.1) the subset of SDs and scaling factors
+    sd_coefs_fit <- sd_coefs %>% dplyr::filter(Sample_ID %in% sub_sids)
+    
+    # (2.2) the subset of centers
+    cf_x_fit <- cf_x %>% dplyr::filter(Sample_ID %in% sub_sids)
+    
+    # (2.3) data centering: (Z_log2R, N_log2_R) and intensity scaling (N_I)
+    # for selected samples
+    ans <- center_df(df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
+    df <- ans$df
+    nm_log2r_z <- ans$nm_log2r_z
+    rm(list = "ans")
+    
+    # (3) separate fits of Z_log2_R for updating curve parameters only
+    if (!ok_Z_ncomp) {
+      params_z <- df %>% 
+        filters_in_call(!!!slice_dots) %>% 
+        dplyr::select(nm_log2r_z) %>% 
+        `names<-`(gsub(pat_ref_z, "\\1", names(.))) %>% 
+        fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
+        dplyr::arrange(Sample_ID, Component) %>% 
+        dplyr::mutate(x = 0)
+    } 
+    else {
+      params_z_sub <- df %>% 
+        filters_in_call(!!!slice_dots) %>% 
+        dplyr::select(nm_log2r_z) %>% 
+        `names<-`(gsub(pat_ref_z, "\\1", names(.))) %>% 
+        fitKernelDensity(n_comp = n_comp, seed, !!!nonslice_dots) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>% 
+        dplyr::arrange(Sample_ID, Component)
+      
+      params_z <- read.table(file.path(filepath, "MGKernel_params_Z.txt"), 
+                             check.names = FALSE, header = TRUE, 
+                             comment.char = "#") %>% 
+        dplyr::select(names(params_z_sub)) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+        dplyr::arrange(Sample_ID, Component)
+      
+      rows_z <- params_z$Sample_ID %in% params_z_sub$Sample_ID
+      params_z[rows_z, ] <- params_z_sub
+      rm(list = "rows_z")
+      
+      params_z$x <- 0
+    }
+    
+    write.table(params_z, file = file.path(filepath, "MGKernel_params_Z.txt"),
+                sep = "\t", col.names = TRUE, row.names = FALSE)
+  } 
+  else if (method_align == "MC") {
+    message("method_align = ", method_align)
+    message("n_comp = NULL")
+    message("col_select = ", col_select)
+    
+    # (1) when called with `mergePep` or `Pep2Prn`, 
+    #       always median-centering against all samples 
+    # (2) `mergePep` called before `standPep` and `Pep2Prn` before `standPrn`
+    #       -> data are at first median-centered for all samples
+    
+    # (MC.1) SDs and scaling factors (all samples)
+    sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+    
+    # cut_points = c(mean_lint = seq(4, 7, .5))
+    # cut_points = c(prot_icover = seq(.25, .75, .25))
+    # cut_points = c(prot_icover = Inf)
+    # cut_points = c(prot_icover = NULL)
+    # cut_points = c(prot_icover = NA)
+    # cut_points = Inf
+    # cut_points = NULL
+    # cut_points = NA
+    
+    # (MC.2) df's by cut_points (all samples)
+    cut_points <- set_cutpoints2(cut_points, df)
+    
+    if (all(is.infinite(cut_points))) {
+      df <- list(df)
+    } 
+    else {
+      df <- df %>% 
+        dplyr::mutate(col_cut = !!rlang::sym(names(cut_points)[1])) %>% 
+        dplyr::mutate_at(.vars = "col_cut", cut, 
+                         breaks = cut_points, 
+                         labels = cut_points[1:(length(cut_points)-1)]) %>%
+        split(.$col_cut, drop = TRUE) %>% 
+        purrr::map(~ .x %>% dplyr::select(-col_cut))
+    }
+    
+    # (MC.3) centers 
+    # (a) new x's for selected samples; 
+    # (b) 0 for the remaining (no further adjustment)
+    x_vals <- df %>% 
+      purrr::map(spline_coefs, label_scheme, label_scheme_fit, !!!slice_dots)
+    
+    # (MC.4) data median-centering (selected samples)
+    # (label_scheme, not label_scheme_fit as x's are 0's for non-selected)
+    ans <- purrr::map2(df, x_vals, ~ center_df(.x, label_scheme, .y, sd_coefs))
+    
+    df <- lapply(ans, `[[`, "df") %>% 
+      dplyr::bind_rows()
+    
+    rm(list = "ans")
+  }
+  
+  # (1) median deviation based sample IDs in `label_scheme` not `label_scheme_fit`
+  #  as sample IDs in `label_scheme_fit` may be only for mixed-bed normalization
+  # (2) the `mean` also get updated after normalization against sample subsets 
+  
+  label_scheme_non_trivial <- label_scheme %>% 
+    dplyr::filter(!Reference, !grepl("^Empty\\.[0-9]+", Sample_ID))
+  
+  df <- df %>% add_mean_dev(label_scheme_non_trivial, filepath)
+  
+  invisible(df)
 }
 
 
@@ -653,43 +653,43 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
 dblTrim <- function(df, range_log2r = c(0, 100), range_int = c(0, 100),  
                    type_r = "N_log2_R",  type_int = "N_I") 
 {
-	df_trim <- df
-	
-	type_r <- paste0("^", type_r, "[0-9]{3}")
-	type_int <- paste0("^", type_int, "[0-9]{3}")
-	
-	# trim by log2-ratios
-	col_r <- grepl(type_r, names(df_trim))
-	
-	df_trim[, col_r] <- lapply(df_trim[, col_r], function (x) {
-			q_ratio <- quantile(x, probs = range_log2r/100, na.rm = TRUE)
-			x[x < q_ratio[1] | x > q_ratio[2]] <- NA_real_
-			return(x)
-		}
-	)
-
-	# trim by intensity
-	col_int <- grepl(type_int, names(df_trim))
-	
-	df_trim[, col_int] <- lapply(df_trim[, col_int], function (x) {
-			q_intensity <- quantile(x, probs = range_int/100, na.rm = TRUE)
-			x[x < q_intensity[1] | x > q_intensity[2]] <- NA_real_
-			return(x)
-		}
-	)
-
-	# doubly trim
-	df_trim[!is.na(df_trim)] <- 1
-
-	df_trim <- mapply(`*`, df_trim[, grepl(type_r, names(df_trim))],
-	                  df_trim[, grepl(type_int, names(df_trim))], 
-	                  SIMPLIFY = FALSE) %>%
-		data.frame(check.names = FALSE)
-
-	df_trim[] <- mapply(`*`, df[, grepl(type_r, names(df))] , df_trim, 
-	                    SIMPLIFY = FALSE)
-
-	sapply(df_trim, sd, na.rm = TRUE)
+  df_trim <- df
+  
+  type_r <- paste0("^", type_r, "[0-9]{3}")
+  type_int <- paste0("^", type_int, "[0-9]{3}")
+  
+  # trim by log2-ratios
+  col_r <- grepl(type_r, names(df_trim))
+  
+  df_trim[, col_r] <- lapply(df_trim[, col_r], function (x) {
+    q_ratio <- quantile(x, probs = range_log2r/100, na.rm = TRUE)
+    x[x < q_ratio[1] | x > q_ratio[2]] <- NA_real_
+    return(x)
+  }
+  )
+  
+  # trim by intensity
+  col_int <- grepl(type_int, names(df_trim))
+  
+  df_trim[, col_int] <- lapply(df_trim[, col_int], function (x) {
+    q_intensity <- quantile(x, probs = range_int/100, na.rm = TRUE)
+    x[x < q_intensity[1] | x > q_intensity[2]] <- NA_real_
+    return(x)
+  }
+  )
+  
+  # doubly trim
+  df_trim[!is.na(df_trim)] <- 1
+  
+  df_trim <- mapply(`*`, df_trim[, grepl(type_r, names(df_trim))],
+                    df_trim[, grepl(type_int, names(df_trim))], 
+                    SIMPLIFY = FALSE) %>%
+    data.frame(check.names = FALSE)
+  
+  df_trim[] <- mapply(`*`, df[, grepl(type_r, names(df))] , df_trim, 
+                      SIMPLIFY = FALSE)
+  
+  sapply(df_trim, sd, na.rm = TRUE)
 }
 
 
@@ -706,22 +706,22 @@ dblTrim <- function(df, range_log2r = c(0, 100), range_int = c(0, 100),
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) 
 {
-	wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
-
-	args <- purrr::pmap(x[, names(x) %in% c("lambda", "mean", "sd")], list) %>%
-		`names<-`(x$Sample_ID)
-
-	nm_comps <- paste0("G", seq_len(length(args)))
-
-	Seq <- seq(xmin, xmax, by = by)
-
-	lapply(args, function(args) rlang::eval_tidy(rlang::quo(wt_dnorm(Seq, !!! args)))) %>%
-		do.call(cbind, .) %>%
-		data.frame(check.names = FALSE) %>%
-		`colnames<-`(nm_comps) %>%
-		dplyr::mutate(Sum = rowSums(.)) %>%
-		dplyr::mutate(x = Seq) %>% #
-		dplyr::mutate(Sample_ID = names(args)[1])
+  wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
+  
+  args <- purrr::pmap(x[, names(x) %in% c("lambda", "mean", "sd")], list) %>%
+    `names<-`(x$Sample_ID)
+  
+  nm_comps <- paste0("G", seq_len(length(args)))
+  
+  Seq <- seq(xmin, xmax, by = by)
+  
+  lapply(args, function(args) rlang::eval_tidy(rlang::quo(wt_dnorm(Seq, !!! args)))) %>%
+    do.call(cbind, .) %>%
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`(nm_comps) %>%
+    dplyr::mutate(Sum = rowSums(.)) %>%
+    dplyr::mutate(x = Seq) %>% #
+    dplyr::mutate(Sample_ID = names(args)[1])
 }
 
 
@@ -737,16 +737,16 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200)
 #' @export
 normSD <- function (x, center = 0, SD = 1) 
 {
-	if (sum(is.na(x)) == length(x))
-		x
+  if (sum(is.na(x)) == length(x))
+    x
   else if ((sum(is.na(x)) + sum(x == 0, na.rm = TRUE)) == length(x)) 
-		x[1:length(x)] <- NaN
+    x[1:length(x)] <- NaN
   else if (all(x == 0)) 
-		x
+    x
   else 
-		x <- (x - center) / SD
-
-	invisible(x)
+    x <- (x - center) / SD
+  
+  invisible(x)
 }
 
 
@@ -763,29 +763,28 @@ normSD <- function (x, center = 0, SD = 1)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 fitKernelDensity <- function (df, n_comp = 3L, seed = NULL, ...) 
 {
-	
-	dots <- rlang::enexprs(...)
-
-	ok_nan_cols <- df %>% 
-	  purrr::map_lgl(not_all_nan, na.rm = TRUE)
-	
-	min_n <- df %>% 
-	  .[, ok_nan_cols, drop = FALSE] %>% 
-	  .[, not_all_NA(.), drop = FALSE] %>% 
-	  purrr::map_int(~ (!is.na(.x)) %>% sum()) %>% 
-	  min()
-
-	if (min_n < 50L) 
-	  stop("Too few data points for fitting with multiple Gaussian functions.")
-
-	lapply(df, nmix_params, n_comp, seed = seed, !!!dots) %>%
-		do.call(rbind, .) %>%
-		dplyr::mutate(Sample_ID = rownames(.)) %>%
-		dplyr::mutate(Sample_ID = gsub("(.*)\\.\\d+$", "\\1", Sample_ID)) %>%
-		dplyr::mutate(Channel = rep(1:(nrow(.)/n_comp), each = n_comp)) %>%
-		dplyr::arrange(Channel, -lambda) %>%
-		dplyr::mutate(Component = rep(1:n_comp, nrow(.)/n_comp)) %>%
-		dplyr::mutate(Height = .$lambda * dnorm(.$mean, mean = .$mean, sd = .$sd))
+  dots <- rlang::enexprs(...)
+  
+  ok_nan_cols <- df %>% 
+    purrr::map_lgl(not_all_nan, na.rm = TRUE)
+  
+  min_n <- df %>% 
+    .[, ok_nan_cols, drop = FALSE] %>% 
+    .[, not_all_NA(.), drop = FALSE] %>% 
+    purrr::map_int(~ (!is.na(.x)) %>% sum()) %>% 
+    min()
+  
+  if (min_n < 50L) 
+    stop("Too few data points for fitting with multiple Gaussian functions.")
+  
+  lapply(df, nmix_params, n_comp, seed = seed, !!!dots) %>%
+    do.call(rbind, .) %>%
+    dplyr::mutate(Sample_ID = rownames(.)) %>%
+    dplyr::mutate(Sample_ID = gsub("(.*)\\.\\d+$", "\\1", Sample_ID)) %>%
+    dplyr::mutate(Channel = rep(1:(nrow(.)/n_comp), each = n_comp)) %>%
+    dplyr::arrange(Channel, -lambda) %>%
+    dplyr::mutate(Component = rep(1:n_comp, nrow(.)/n_comp)) %>%
+    dplyr::mutate(Height = .$lambda * dnorm(.$mean, mean = .$mean, sd = .$sd))
 }
 
 
@@ -796,8 +795,7 @@ fitKernelDensity <- function (df, n_comp = 3L, seed = NULL, ...)
 nmix_params <- function (x, n_comp = 3L, seed = seed, ...) 
 {
   dots <- rlang::enexprs(...)
-  # x <- rlang::enexpr(x)
-  
+
   if (!is.null(dots$k)) {
     cat(paste("k =", dots$k, "replaced by", paste("n_comp =", n_comp, "\n")))
     dots$k <- NULL

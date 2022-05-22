@@ -636,49 +636,49 @@ batchPSMheader <- function(filename = NULL, dat_dir = NULL, TMT_plex = 10L,
 rmPSMHeaders <- function(parallel = TRUE) 
 {
   old_opts <- options(warn = 0)
-	options(warn = 1)
-	on.exit(options(old_opts), add = TRUE)
-	
-	on.exit(
-	  if (exists(".savecall", envir = rlang::current_env())) {
-	    if (.savecall) {
-	      message("Remove PSM headers --- Completed.")
-	    }
-	  }, 
-	  add = TRUE
-	)
-
-	dat_dir <- get_gl_dat_dir()
-	
-	filelist <- list.files(path = file.path(dat_dir), 
-	                       pattern = "^F[0-9]+.*\\.csv$")
-
-	if (!length(filelist)) {
-	  stop("No PSM files(s) with \".csv\" extension under ", dat_dir, 
-	       call. = FALSE)
-	}
-
-	load(file = file.path(dat_dir, "label_scheme_full.rda"))
-	TMT_plex <- TMT_plex(label_scheme_full)
-
-	n_files <- length(filelist)
-	
-	if (parallel && (n_files > 1)) {
-	  n_cores <- min(parallel::detectCores(), n_files)
-	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-	  
-	  parallel::clusterMap(cl, batchPSMheader, filelist, 
-	                       MoreArgs = list(dat_dir, TMT_plex))
-	  
-	  parallel::stopCluster(cl)
-	} 
-	else {
-	  purrr::walk(filelist, batchPSMheader, dat_dir, TMT_plex)
-	}
-	
-	.saveCall <- TRUE
-	
-	invisible(NULL)
+  options(warn = 1)
+  on.exit(options(old_opts), add = TRUE)
+  
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        message("Remove PSM headers --- Completed.")
+      }
+    }, 
+    add = TRUE
+  )
+  
+  dat_dir <- get_gl_dat_dir()
+  
+  filelist <- list.files(path = file.path(dat_dir), 
+                         pattern = "^F[0-9]+.*\\.csv$")
+  
+  if (!length(filelist)) {
+    stop("No PSM files(s) with \".csv\" extension under ", dat_dir, 
+         call. = FALSE)
+  }
+  
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  n_files <- length(filelist)
+  
+  if (parallel && (n_files > 1)) {
+    n_cores <- min(parallel::detectCores(), n_files)
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    parallel::clusterMap(cl, batchPSMheader, filelist, 
+                         MoreArgs = list(dat_dir, TMT_plex))
+    
+    parallel::stopCluster(cl)
+  } 
+  else {
+    purrr::walk(filelist, batchPSMheader, dat_dir, TMT_plex)
+  }
+  
+  .saveCall <- TRUE
+  
+  invisible(NULL)
 }
 
 
@@ -2805,49 +2805,49 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq",
                        rm_allna = FALSE, parallel = TRUE) 
 {
   dat_dir <- get_gl_dat_dir()
-
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-	TMT_plex <- TMT_plex(label_scheme_full)
-	
-	filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
-	                      pattern = "^TMT.*LCMS.*\\.csv$") %>% 
-	  reorder_files()
-
-	n_files <- length(filelist)
-	
-	if (parallel && (n_files > 1L)) {
-	  n_cores <- min(parallel::detectCores(), n_files)
-	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-	  
-	  parallel::clusterExport(
-	    cl,
-	    c("add_cols_at", 
-	      "reloc_col_before"), 
-	    envir = environment(proteoQ:::add_cols_at)
-	  )
-	  
-	  suppressWarnings(
-	    silent_out <- parallel::clusterApply(
-	      cl, filelist, psm_mcleanup, 
-	      rm_outliers, 
-	      group_psm_by, 
-	      dat_dir, 
-	      TMT_plex, 
-	      rm_allna)
-	  )
-	  
-	  rm(list = "silent_out")
-
-  	parallel::stopCluster(cl)
-	} 
-	else {
-	  purrr::walk(filelist, psm_mcleanup, 
-	              rm_outliers, 
-	              group_psm_by, 
-	              dat_dir, 
-	              TMT_plex, 
-	              rm_allna)
-	}
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
+                         pattern = "^TMT.*LCMS.*\\.csv$") %>% 
+    reorder_files()
+  
+  n_files <- length(filelist)
+  
+  if (parallel && (n_files > 1L)) {
+    n_cores <- min(parallel::detectCores(), n_files)
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    parallel::clusterExport(
+      cl,
+      c("add_cols_at", 
+        "reloc_col_before"), 
+      envir = environment(proteoQ:::add_cols_at)
+    )
+    
+    suppressWarnings(
+      silent_out <- parallel::clusterApply(
+        cl, filelist, psm_mcleanup, 
+        rm_outliers, 
+        group_psm_by, 
+        dat_dir, 
+        TMT_plex, 
+        rm_allna)
+    )
+    
+    rm(list = "silent_out")
+    
+    parallel::stopCluster(cl)
+  } 
+  else {
+    purrr::walk(filelist, psm_mcleanup, 
+                rm_outliers, 
+                group_psm_by, 
+                dat_dir, 
+                TMT_plex, 
+                rm_allna)
+  }
 }
 
 
@@ -6196,8 +6196,7 @@ pad_mf_channels <- function(file = NULL, ...)
   dat_dir <- get_gl_dat_dir()
   load(file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
-  
-  base_name <- file %>% gsub("\\.tsv$", "", .)
+  base_name <- gsub("\\.tsv$", "", file)
   
   df <- suppressWarnings(
     readr::read_tsv(file.path(dat_dir, file), 
@@ -6209,35 +6208,37 @@ pad_mf_channels <- function(file = NULL, ...)
                                                    "Mapped Proteins")), 
                      ~ gsub("\\.[0-9]$", "", .x))
 
-  stopifnot("Spectrum" %in% names(df))
+  nms_df <- names(df)
+  
+  if (!"Spectrum" %in% nms_df)
+    stop("Column 'Spectrum' not found.")
+
+  # !!! "Intensity" in both TMT and LFQ
+  # "Purity" only with TMT
+  if ("Purity" %in% nms_df) {
+    df_int <- local({
+      df_int <- df[(which(nms_df == "Purity") + 1):ncol(df)]
+      
+      nums <- purrr::map_lgl(df_int, is.numeric)
+      csum <- cumsum(nums)
+      cols <- diff(csum, 1)
+      
+      df_int[, names(cols[cols == 1]), drop = FALSE]
+    })
+  } 
+  else if ("Intensity" %in% nms_df) {
+    return(dplyr::mutate(df, dat_file = base_name, I000 = Intensity))
+  } 
+  else {
+    stop("Neither column 'Purity' or 'Intensity' were found.")
+  }
+  
+  rm(list = "nms_df")
   
   # (Assumed MSFragger still uses MGF from MSConvert)
   df <- df %>% 
     dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
-  
-  # !!! "Intensity" in both TMT and LFQ
-  # "Purity" only with TMT
-  if ("Purity" %in% names(df)) {
-    df_int <- df[(which(names(df) == "Purity") + 1):ncol(df)] %>% 
-      dplyr::select(-RAW_File)
-    
-    local({
-      oks <- purrr::map_lgl(df_int, is.numeric) %>% all()
-      if (!oks) {
-        stop("Not all columns after \"Purity\" from MSFragger PSMs are numeric.",
-             call. = FALSE)
-      }
-    })
-  } 
-  else if ("Intensity" %in% names(df)) {
-    df <- df %>% dplyr::mutate(dat_file = base_name, I000 = Intensity)
-    return(df)
-  } 
-  else {
-    stop("Unknown data type. PSM tabels need to be either TMT- or LFQ-based.",
-         call. = FALSE)
-  }
-  
+
   ## TMT only (no LFQ) from this point on
   
   if (!"PSM_File" %in% names(fraction_scheme)) {
@@ -6274,19 +6275,18 @@ pad_mf_channels <- function(file = NULL, ...)
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
   this_plex <- ncol(df_int)
   TMT_plex <- TMT_plex(label_scheme_full)
-  stopifnot(this_plex <= TMT_plex, this_plex >= 0)
+  
+  stopifnot(this_plex <= TMT_plex, this_plex >= 0L)
 
   # Empty.xxx can be due to either channel padding or removals
   
-  if ((this_plex > 0L) && (this_plex < TMT_plex)) {
+  if (this_plex && (this_plex < TMT_plex)) {
     pos <- find_padding_pos(this_plex, TMT_plex)
+    nas <- data.frame(rep(NA_real_, nrow(df)))
     
-    nas <- data.frame(rep(NA, nrow(df)))
-    
-    for (idx in seq_along(pos)) {
+    for (idx in seq_along(pos))
       df_int <- suppressMessages(add_cols_at(df_int, nas, pos[idx] - 1))
-    }
-    
+
     rm(list = c("idx", "nas"))
   }
   
@@ -6295,15 +6295,17 @@ pad_mf_channels <- function(file = NULL, ...)
     n_ints <- ncol(df_int)
     n_samples <- length(sample_ids)
     
-    stopifnot(n_ints >= 1, n_samples >= n_ints)
+    stopifnot(n_ints >= 1L, n_samples >= n_ints)
     
     if (n_ints < n_samples) {
       if (!((n_samples %% n_ints) == 0)) {
         stop("Number of intensity columns: ", n_ints, 
              " is not a multiple of number of samples: ", n_samples, "\n",
              call. = FALSE)
-      } else {
-        warning("In TMT plex(es) ", purrr::reduce(tmt_sets, paste, sep = ", "), ": \n", 
+      } 
+      else {
+        warning("In TMT plex(es) ", 
+                paste(tmt_sets, collapse = ", "), ": \n", 
                 "number of intensity columns: ", n_ints, "\n",
                 "number of samples: ", n_samples, ".\n",
                 "Assume a merged search at folds: ", n_samples/n_ints, ".", 
@@ -6470,33 +6472,47 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # assumed use_lowercase_aa = TRUE; otherwise on lower-case sty?
     is_phospho_expt <- any(grepl("[sty]", df$pep_seq_mod))
     
-    if (is_phospho_expt && purge_phosphodata) {
+    if (is_phospho_expt && purge_phosphodata)
       df <- df %>% dplyr::filter(grepl("[sty]", pep_seq_mod))
-    }
-    
+
     invisible(df)
   })
   
   # (2.2) compile "preferred" columns
   df <- local({
     df <- df %>% 
-      { if("Retention" %in% names(.)) . else dplyr::mutate(., Retention = NA) } %>% 
-      dplyr::mutate(pep_scan_range = NA,
+      { if("Retention" %in% names(.)) . else dplyr::mutate(., Retention = NA_real_) } %>% 
+      dplyr::mutate(pep_scan_num = NA_character_,
                     pep_ret_range = Retention, 
-                    pep_ms2_sumint = NA,
-                    pep_n_ions = NA,
-                    pep_locprob = NA, 
-                    pep_locdiff = NA) %>% 
-      dplyr::select(-c("Retention"))
+                    pep_ms2_sumint = NA_real_,
+                    pep_n_ions = NA_integer_,
+                    pep_locprob = NA_real_, 
+                    pep_locdiff = NA_real_) %>% 
+      dplyr::select(-which(names(.) == "Retention"))
     
+    df <- df %>% 
+      mutate(pep_scan_num = gsub("[^\\.]+?\\.(.*)", "\\1", Spectrum)) %>% 
+      mutate(pep_scan_num = gsub("([^\\.]+?)\\..*", "\\1", pep_scan_num)) %>% 
+      mutate(pep_scan_num = gsub("^0+", "", pep_scan_num))
+    
+    if ("PeptideProphet Probability" %in% names(df)) {
+      df <- df %>% 
+        dplyr::mutate(pep_locprob = `PeptideProphet Probability`) %>% 
+        dplyr::select(-c("PeptideProphet Probability"))
+    }
+
     df <- df %>% 
       dplyr::rename(
         pep_expect = Expectation, 
         pep_score = Hyperscore, 
       ) 
     
-    if ("pep_index" %in% names(df)) df$pep_index <- NULL
-    if ("prot_index" %in% names(df)) df$prot_index <- NULL
+    if ("pep_index" %in% names(df)) 
+      df$pep_index <- NULL
+    
+    if ("prot_index" %in% names(df)) 
+      df$prot_index <- NULL
+    
     df <- df %>% 
       add_entry_ids("pep_seq", "pep_index") %>% 
       add_entry_ids("prot_acc", "prot_index")
@@ -6505,18 +6521,16 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.4) find the shared prot_accs and genes for each peptide
   # (the original uniqueness of peptides by MSFragger may not holder after 
   # the joining of PSM files)
-  df <- df %>% add_shared_prot_accs_mf() 
+  df <- add_shared_prot_accs_mf(df)
 
   if (all(is.na(df$Gene))) {
-    df <- df %>% 
-      add_shared_genes(key = "shared_prot_accs", sep = ", ", fasta, entrez) 
+    df <- add_shared_genes(df, key = "shared_prot_accs", sep = ", ", fasta, entrez)
   } 
   else {
-    df <- df %>% 
-      dplyr::mutate(shared_genes = 
-                      ifelse(is.na(`Mapped Genes`), 
-                             gene, 
-                             paste(gene, `Mapped Genes`, sep = ", ")))
+    df <- dplyr::mutate(df, shared_genes = 
+                          ifelse(is.na(`Mapped Genes`), 
+                                 gene, 
+                                 paste(gene, `Mapped Genes`, sep = ", ")))
   }
 
   # (2.5) find the uniqueness of peptides
@@ -6534,21 +6548,20 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                       pep_razor_unique = `Is Unique`)
     } 
     else {
-      stop("\"group_pep_by\" is not one of \"prot_acc\" or \"gene\".", 
-           call. = FALSE)
+      stop("\"group_pep_by\" is not one of \"prot_acc\" or \"gene\".")
     }
     
     if (pep_unique_by == "group") {
-      df <- df %>% dplyr::mutate(pep_isunique = pep_razor_unique)
+      df <- dplyr::mutate(df, pep_isunique = pep_razor_unique)
     } 
     else if (pep_unique_by == "protein") {
-      df <- df %>% dplyr::mutate(pep_isunique = pep_literal_unique)
+      df <- dplyr::mutate(df, pep_isunique = pep_literal_unique)
     } 
     else if (pep_unique_by == "none") {
-      df <- df %>% dplyr::mutate(pep_isunique = TRUE)
+      df <- dplyr::mutate(df, pep_isunique = TRUE)
     } 
     else {
-      df <- df %>% dplyr::mutate(pep_isunique = pep_razor_unique)
+      df <- dplyr::mutate(df, pep_isunique = pep_razor_unique)
     }
     
     df <- df %>% 
@@ -6575,15 +6588,12 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                                     stringr::str_count(pep_seq, "[KR]") - 1,
                                     stringr::str_count(pep_seq, "[KR]"))) %>% 
     add_prot_icover(id = group_pep_by) %>% 
-    { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
+    { if (!("prot_cover" %in% names(.) && length(filelist) == 1L)) 
         calc_cover(., id = !!rlang::sym(group_pep_by)) 
       else . } 
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
-  
-  # placeholder: no yet localization probability 
-  # ...
+  df <- add_quality_cols(df, !!group_psm_by, !!group_pep_by)
   
   .saveCall <- TRUE
   

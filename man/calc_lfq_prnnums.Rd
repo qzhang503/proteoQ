@@ -17,13 +17,13 @@ calc_lfq_prnnums(
 \item{df}{A data frame.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
-equal to \code{1} under the column \code{pep_isunique} in
-\code{Peptide.txt} will be used, for summarizing the \code{log2FC} and the
-\code{intensity} of peptides into protein values. The default is to use
-unique peptides only. For \code{MaxQuant} data, the levels of uniqueness
-are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
-argument currently do nothing to \code{Spectrum Mill} data where both
-unique and shared peptides will be kept.}
+equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+will be used, for summarizing the \code{log2FC} and the \code{intensity} of
+peptides into protein values. The default is to use unique peptides only.
+For \code{MaxQuant} data, the levels of uniqueness are according to the
+\code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+nothing to \code{Spectrum Mill} data where both unique and shared peptides
+will be kept.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated

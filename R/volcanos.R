@@ -222,97 +222,97 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
                                highlights = highlights, theme = NULL, ...) 
 {
   id <- rlang::as_string(rlang::enexpr(id))
-
-	contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
-	  gsub("^log2Ratio\\s+\\(|\\)$", "", .)
-
-	if (anal_type %in% c("Volcano")) {
-		function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn_gsets = 0, 
-		         show_sig = "none", theme = NULL, highlights = NULL, 
-		         ...) {
-		  
-			rm(gspval_cutoff, gslogFC_cutoff, show_sig)
+  
+  contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
+    gsub("^log2Ratio\\s+\\(|\\)$", "", .)
+  
+  if (anal_type %in% c("Volcano")) {
+    function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn_gsets = 0, 
+             show_sig = "none", theme = NULL, highlights = NULL, 
+             ...) {
       
-			fullVolcano(df = df, 
-			            id = !!id, 
-			            contrast_groups = contrast_groups,
-			            theme = theme, 
-			            fml_nm = fml_nm, 
-			            filepath = filepath, 
-			            filename = filename, 
-			            adjP = adjP, 
-			            topn_labels = topn_labels, 
-			            highlights = highlights, 
-			            ...)
-		}
-	} 
-	else if (anal_type == "mapGSPA") 
-	  function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
-	           show_sig = "none", theme = theme, ...) {
-	    
-	    stopifnot(!is.null(fml_nm))
-	    
-	    filepath_fml <- file.path(filepath, fml_nm)
-	    
-	    in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
-	    
-	    if (!length(in_names)) {
-	      warning("No inputs under ", filepath_fml, call. = FALSE)
-	      return(NULL)
-	    }
-	    
-	    if (is.null(df2)) {
-  	    in_names <- in_names %>% 
-  	      .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
-  	      {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]}
-  	    
-  	    in_names <- if (is.na(scale_log2r)) 
-  	      in_names[grepl("_GSPA_O", in_names)] 
-  	    else if (scale_log2r) 
-  	      in_names[grepl("_GSPA_Z", in_names)] 
-  	    else 
-  	      in_names[grepl("_GSPA_N", in_names)]
-
-  	    if (!length(in_names))
-  	      stop("No inputs correspond to impute_na = ", impute_na, 
-  	           ", scale_log2r = ", scale_log2r, 
-  	           " at fml_nms = ", fml_nm)
-
-  	    df2 <- in_names
-	    } 
-	    else {
-	      local({
-	        if (grepl("_essmap|_essmeta|_resgreedy", df2)) 
-	          stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`.")
-	        
-	        non_exists <- df2 %>% .[! . %in% in_names]
-	        
-	        if (length(non_exists)) 
-	          stop("Missing file(s): ", paste(non_exists, collapse = ", "))
-	      })
-	      
-	      if (!length(df2)) 
-	        stop("File(s) not found under \"", filepath_fml, "\".")
-	    }
-
-	    # plot data ---------------------------
-	    purrr::walk(df2, gsVolcano, 
-	                df = df, 
-	                contrast_groups = contrast_groups, 
-	                gsea_key = "term", 
-	                gsets = gsets, 
-	                theme = theme, 
-	                fml_nm = fml_nm, 
-	                filepath = filepath, 
-	                filename = filename, 
-	                adjP = adjP, 
-	                topn_labels = topn_labels, 
-	                show_sig = show_sig, 
-	                gspval_cutoff = gspval_cutoff, 
-	                gslogFC_cutoff = gslogFC_cutoff, 
-	                topn_gsets = topn_gsets, 
-	                ...)
-	  }
+      rm(gspval_cutoff, gslogFC_cutoff, show_sig)
+      
+      fullVolcano(df = df, 
+                  id = !!id, 
+                  contrast_groups = contrast_groups,
+                  theme = theme, 
+                  fml_nm = fml_nm, 
+                  filepath = filepath, 
+                  filename = filename, 
+                  adjP = adjP, 
+                  topn_labels = topn_labels, 
+                  highlights = highlights, 
+                  ...)
+    }
+  } 
+  else if (anal_type == "mapGSPA") 
+    function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
+             show_sig = "none", theme = theme, ...) {
+      
+      stopifnot(!is.null(fml_nm))
+      
+      filepath_fml <- file.path(filepath, fml_nm)
+      
+      in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
+      
+      if (!length(in_names)) {
+        warning("No inputs under ", filepath_fml, call. = FALSE)
+        return(NULL)
+      }
+      
+      if (is.null(df2)) {
+        in_names <- in_names %>% 
+          .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
+          {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]}
+        
+        in_names <- if (is.na(scale_log2r)) 
+          in_names[grepl("_GSPA_O", in_names)] 
+        else if (scale_log2r) 
+          in_names[grepl("_GSPA_Z", in_names)] 
+        else 
+          in_names[grepl("_GSPA_N", in_names)]
+        
+        if (!length(in_names))
+          stop("No inputs correspond to impute_na = ", impute_na, 
+               ", scale_log2r = ", scale_log2r, 
+               " at fml_nms = ", fml_nm)
+        
+        df2 <- in_names
+      } 
+      else {
+        local({
+          if (grepl("_essmap|_essmeta|_resgreedy", df2)) 
+            stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`.")
+          
+          non_exists <- df2 %>% .[! . %in% in_names]
+          
+          if (length(non_exists)) 
+            stop("Missing file(s): ", paste(non_exists, collapse = ", "))
+        })
+        
+        if (!length(df2)) 
+          stop("File(s) not found under \"", filepath_fml, "\".")
+      }
+      
+      # plot data ---------------------------
+      purrr::walk(df2, gsVolcano, 
+                  df = df, 
+                  contrast_groups = contrast_groups, 
+                  gsea_key = "term", 
+                  gsets = gsets, 
+                  theme = theme, 
+                  fml_nm = fml_nm, 
+                  filepath = filepath, 
+                  filename = filename, 
+                  adjP = adjP, 
+                  topn_labels = topn_labels, 
+                  show_sig = show_sig, 
+                  gspval_cutoff = gspval_cutoff, 
+                  gslogFC_cutoff = gslogFC_cutoff, 
+                  topn_gsets = topn_gsets, 
+                  ...)
+    }
 }
 
 
@@ -331,265 +331,264 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
                         topn_labels = 20, highlights = NULL, ...) 
 {
   id <- rlang::as_string(rlang::enexpr(id))
-
-	dots <- rlang::enexprs(...)
-	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
-	yco <- ifelse(is.null(dots$yco), .05, dots$yco)
-	
-	title <- dots[["title"]]
   
-	x_label <- if (is.null(dots$x_label)) 
-	  expression("Ratio ("*log[2]*")")
-	else 
-	  dots$x_label
-
-	y_label <- if (is.null(dots$y_label)) {
-	  if (adjP) 
-	    expression("adjP ("*-log[10]*")") 
-	  else 
-	    expression("pVal ("*-log[10]*")")
-	} 
-	else {
-	  dots$y_label
-	}
-	
-	if (!length(contrast_groups))
-	  stop("No constrasts available.")
-
-	dfw <- lapply(contrast_groups, function (x) {
-	  nms <- names(df)
-	  pat <- paste0(" (", x, ")")
-	  keys <- c("pVal", "adjP", "log2Ratio")
-	  
-	  dfa <- local({
-	    cols <- lapply(keys, function (key) {
-	      grepl(paste0(key, pat), nms, fixed = TRUE) & grepl(paste0("^", key), nms)
-	    })
-	    
-	    df[, purrr::reduce(cols, `|`)] %>%
-	      `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-	      dplyr::mutate(Contrast = x)
-	  })
-	  
-	  dfb <- local({
-	    pat_i <- lapply(keys, function (key) {
-	      paste0("^", key, " ")
-	    })
-	    
-	    df[, !grepl(paste(pat_i, collapse = "|"), nms), drop = FALSE]
-	  })
-	  
-	  dplyr::bind_cols(dfb, dfa)
-	})
-	
-	local({
-	  if (length(dfw) > 1L) {
-	    ncols <- unlist(lapply(dfw, ncol))
-	    
-	    if (length(unique(ncols)) > 1L)
-	      stop("Uneven number of columns detected. ", "Please report the bug.")
-
-	    nms <- lapply(dfw, names)
-	    nms_1 <- nms[[1]]
-	    nms_all <- unique(unlist(nms))
-	    
-	    if (length(nms_1) != length(nms_all))
-	      stop("Uneven column names detected. ", "Please report the bug.")
-	  }
-	})
-	
-	dfw <- dfw %>% 
-	  do.call(rbind, .) %>% 
-	  dplyr::mutate(
-	    Contrast = factor(Contrast, levels = contrast_groups),
-	    valence = ifelse(.$log2Ratio > 0, "pos", "neg")
-	  ) %>%
-	  dplyr::filter(!is.na(pVal))
-	  
-	dfw_sub <- dfw %>%
-		dplyr::filter((pVal < yco) & (abs(log2Ratio) > log2(xco))) %>%
-		dplyr::arrange(Contrast, pVal) %>%
-		dplyr::group_by(Contrast) %>%
-		dplyr::mutate(Index = row_number()) %>%
-		data.frame (check.names = FALSE)
-	
-	if(is.null(highlights)) 
-	  dfw_high <- dfw_sub[0, ]
-	else {
-	  if (!is.list(highlights)) 
-	    highlights <- list(highlights)
-	  
-	  if (length(highlights) > 1L)
-	    stop("Single expression for `highlights`.")
-	  
-	  rows <- eval(highlights[[1]], dfw_sub)
-	  dfw_high <- dfw_sub[rows, ]
-	}
-
-	if (nrow(dfw_high)) {
-	  warning("Overruled `topn_labels` by `highlights`.")
-	  dfw_sub_top20 <- dfw_high
-	} 
-	else {
-	  dfw_sub_top20 <- dfw_sub %>%
-	    dplyr::group_by(Contrast) %>%
-	    dplyr::top_n(n = -topn_labels, wt = pVal) %>%
-	    data.frame (check.names = FALSE)
-	}
-
-	# data table for labels
-	dt <- purrr::map(contrast_groups, ~ {
-	  to_csv_(dfw_sub_top20 %>%
-            dplyr::filter(Contrast == .x) %>%
-            dplyr::select(c("Index", id))) %>%
-            {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # zero-entry exception
-	  })  %>%
-	  do.call(rbind, .) %>%
-	  data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
-	  dplyr::rename(!!rlang::sym(id) := id) %>%
-	  dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
-
-	fn_prefix <- gsub("\\.[^.]*$", "", filename)
-
-	myPalette <- c("#377EB8", "#E41A1C")
-	
-	if (nrow(dfw_high)) {
-	  dfw_greater <- dfw_high[dfw_high$valence == "pos", ]
-	  dfw_less <- dfw_high[dfw_high$valence == "neg", ]
-	}
-	else {
-	  dfw_greater <- dfw_sub[dfw_sub$valence == "pos", ]
-	  dfw_less <- dfw_sub[dfw_sub$valence == "neg", ]
-	}
-
-	nrow <- if (is.null(dots$nrow))
-	  if (length(unique(dfw$Contrast)) > 3L) 2L else 1L
-	else
-	  dots$nrow
-
-	if (is.null(dots$xmax)) {
-	  xmax <- ceiling(pmax(abs(min(dfw$log2Ratio, na.rm = TRUE)), 
-	                       max(dfw$log2Ratio, na.rm = TRUE)))
-	} 
-	else {
-	  xmax <- eval(dots$xmax)
-	  stopifnot(xmax > 0)
-	}
-	
-	if (is.null(dots$xmin)) {
-	  xmin <- -xmax
-	} 
-	else {
-	  xmin <- eval(dots$xmin)
-	  stopifnot(xmin < 0)
-	}
-
-	if (is.null(dots$ymax)) {
-	  ymax <- ceiling(max(-log10(dfw$pVal), na.rm = TRUE)) * 1.1
-	} 
-	else {
-	  ymax <- eval(dots$ymax)
-	  stopifnot(ymax > 0)
-	}	
-
-	if (is.null(dots$ymin)) {
-	  ymin <- 0
-	} 
-	else {
-	  ymin <- eval(dots$ymin)
-	  stopifnot(ymin < ymax)
-	}	
-	
-	p <- ggplot() +
-		geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-		           size = 3, colour = "#252525", shape = 20, alpha = .5) +
-		geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-		           size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-		geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-		           size = 3, color = myPalette[1], shape = 20, alpha = .8) +
-		geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
-		geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
-		geom_vline(xintercept = log2(xco), linetype = "longdash", size = .5) +
-		scale_x_continuous(limits = c(xmin, xmax)) +
-		scale_y_continuous(limits = c(ymin, ymax)) +
-		labs(title = title, x = x_label, y = y_label) +
-		theme
-
-	if (nrow(dfw_sub_top20)) {
-		p <- p + geom_text(data = dfw_sub_top20, 
-		                   mapping = aes(x = log2Ratio, 
-		                                 y = -log10(pVal), 
-		                                 label = Index, 
-		                                 color = Index),
-		                   size = 3, 
-		                   alpha = .5, 
-		                   hjust = 0, 
-		                   nudge_x = 0.05, 
-		                   vjust = 0, 
-		                   nudge_y = 0.05, 
-		                   na.rm = TRUE)
-		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
-		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), 
-		                    x = -xmax*.85, y = ymax/2)
-	} 
-	else {
-		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
-	}
-
-	if(is.null(dots$width)) {
-	  width <- if (nrow > 1L) 
-	    6*length(unique(dfw$Contrast))/nrow + 1 
-	  else 
-	    6*length(unique(dfw$Contrast))/nrow
-	} 
-	else {
-		width <- eval(dots$width)
-	}
-
-	height <- if(is.null(dots$height))
-		6*nrow
-	else
-		eval(dots$height)
-
-	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
-	
-	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, fml_nm, filename),
-	                                   plot = p, 
-	                                   width = width, 
-	                                   height = height, 
-	                                   !!!ggsave_dots)))
-
-	local({
-	  gr <- summ_venn(dfw_greater, id, contrast_groups)
-	  plot_venn(gr, filepath, paste0(fn_prefix, "_greater"), fml_nm)
-	  
-	  le <- summ_venn(dfw_less, id, contrast_groups)
-	  plot_venn(le, filepath, paste0(fn_prefix, "_less"), fml_nm)
-	})
-	
-	saveRDS(
-	  list(
-	    data = dfw, 
-	    greater = dfw_greater, 
-	    less = dfw_less, 
-	    topns = dfw_sub_top20, 
-	    highlights = dfw_high, 
-	    topn_labels = dt, 
-	    palette = myPalette, 
-	    xco = xco, 
-	    yco = yco,
-	    xmin = xmin, 
-	    xmax = xmax,
-	    ymin = ymin,
-	    ymax = ymax, 
-	    title = title, 
-	    x_label = x_label,
-	    y_label = y_label,
-	    theme = theme
-	  ), 
-	  file.path(filepath, fml_nm, paste0(fn_prefix, ".rds"))
-	)
-	
+  dots <- rlang::enexprs(...)
+  xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
+  yco <- ifelse(is.null(dots$yco), .05, dots$yco)
+  
+  title <- dots[["title"]]
+  
+  x_label <- if (is.null(dots$x_label)) 
+    expression("Ratio ("*log[2]*")")
+  else 
+    dots$x_label
+  
+  y_label <- if (is.null(dots$y_label)) {
+    if (adjP) 
+      expression("adjP ("*-log[10]*")") 
+    else 
+      expression("pVal ("*-log[10]*")")
+  } 
+  else {
+    dots$y_label
+  }
+  
+  if (!length(contrast_groups))
+    stop("No constrasts available.")
+  
+  dfw <- lapply(contrast_groups, function (x) {
+    nms <- names(df)
+    pat <- paste0(" (", x, ")")
+    keys <- c("pVal", "adjP", "log2Ratio")
+    
+    dfa <- local({
+      cols <- lapply(keys, function (key) {
+        grepl(paste0(key, pat), nms, fixed = TRUE) & grepl(paste0("^", key), nms)
+      })
+      
+      df[, purrr::reduce(cols, `|`)] %>%
+        `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
+        dplyr::mutate(Contrast = x)
+    })
+    
+    dfb <- local({
+      pat_i <- lapply(keys, function (key) {
+        paste0("^", key, " ")
+      })
+      
+      df[, !grepl(paste(pat_i, collapse = "|"), nms), drop = FALSE]
+    })
+    
+    dplyr::bind_cols(dfb, dfa)
+  })
+  
+  local({
+    if (length(dfw) > 1L) {
+      ncols <- unlist(lapply(dfw, ncol))
+      
+      if (length(unique(ncols)) > 1L)
+        stop("Uneven number of columns detected. ", "Please report the bug.")
+      
+      nms <- lapply(dfw, names)
+      nms_1 <- nms[[1]]
+      nms_all <- unique(unlist(nms))
+      
+      if (length(nms_1) != length(nms_all))
+        stop("Uneven column names detected. ", "Please report the bug.")
+    }
+  })
+  
+  dfw <- dfw %>% 
+    do.call(rbind, .) %>% 
+    dplyr::mutate(
+      Contrast = factor(Contrast, levels = contrast_groups),
+      valence = ifelse(.$log2Ratio > 0, "pos", "neg")
+    ) %>%
+    dplyr::filter(!is.na(pVal))
+  
+  dfw_sub <- dfw %>%
+    dplyr::filter((pVal < yco) & (abs(log2Ratio) > log2(xco))) %>%
+    dplyr::arrange(Contrast, pVal) %>%
+    dplyr::group_by(Contrast) %>%
+    dplyr::mutate(Index = row_number()) %>%
+    data.frame (check.names = FALSE)
+  
+  if(is.null(highlights)) 
+    dfw_high <- dfw_sub[0, ]
+  else {
+    if (!is.list(highlights)) 
+      highlights <- list(highlights)
+    
+    if (length(highlights) > 1L)
+      stop("Single expression for `highlights`.")
+    
+    rows <- eval(highlights[[1]], dfw_sub)
+    dfw_high <- dfw_sub[rows, ]
+  }
+  
+  if (nrow(dfw_high)) {
+    warning("Overruled `topn_labels` by `highlights`.")
+    dfw_sub_top20 <- dfw_high
+  } 
+  else {
+    dfw_sub_top20 <- dfw_sub %>%
+      dplyr::group_by(Contrast) %>%
+      dplyr::top_n(n = -topn_labels, wt = pVal) %>%
+      data.frame (check.names = FALSE)
+  }
+  
+  # data table for labels
+  dt <- purrr::map(contrast_groups, ~ {
+    to_csv_(dfw_sub_top20 %>%
+              dplyr::filter(Contrast == .x) %>%
+              dplyr::select(c("Index", id))) %>%
+      {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # zero-entry exception
+  })  %>%
+    do.call(rbind, .) %>%
+    data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
+    dplyr::rename(!!rlang::sym(id) := id) %>%
+    dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
+  
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  myPalette <- c("#377EB8", "#E41A1C")
+  
+  if (nrow(dfw_high)) {
+    dfw_greater <- dfw_high[dfw_high$valence == "pos", ]
+    dfw_less <- dfw_high[dfw_high$valence == "neg", ]
+  }
+  else {
+    dfw_greater <- dfw_sub[dfw_sub$valence == "pos", ]
+    dfw_less <- dfw_sub[dfw_sub$valence == "neg", ]
+  }
+  
+  nrow <- if (is.null(dots$nrow))
+    if (length(unique(dfw$Contrast)) > 3L) 2L else 1L
+  else
+    dots$nrow
+  
+  if (is.null(dots$xmax)) {
+    xmax <- ceiling(pmax(abs(min(dfw$log2Ratio, na.rm = TRUE)), 
+                         max(dfw$log2Ratio, na.rm = TRUE)))
+  } 
+  else {
+    xmax <- eval(dots$xmax)
+    stopifnot(xmax > 0)
+  }
+  
+  if (is.null(dots$xmin)) {
+    xmin <- -xmax
+  } 
+  else {
+    xmin <- eval(dots$xmin)
+    stopifnot(xmin < 0)
+  }
+  
+  if (is.null(dots$ymax)) {
+    ymax <- ceiling(max(-log10(dfw$pVal), na.rm = TRUE)) * 1.1
+  } 
+  else {
+    ymax <- eval(dots$ymax)
+    stopifnot(ymax > 0)
+  }	
+  
+  if (is.null(dots$ymin)) {
+    ymin <- 0
+  } 
+  else {
+    ymin <- eval(dots$ymin)
+    stopifnot(ymin < ymax)
+  }	
+  
+  p <- ggplot() +
+    geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+               size = 3, colour = "#252525", shape = 20, alpha = .5) +
+    geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+               size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+    geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+               size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+    geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
+    geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
+    geom_vline(xintercept = log2(xco), linetype = "longdash", size = .5) +
+    scale_x_continuous(limits = c(xmin, xmax)) +
+    scale_y_continuous(limits = c(ymin, ymax)) +
+    labs(title = title, x = x_label, y = y_label) +
+    theme
+  
+  if (nrow(dfw_sub_top20)) {
+    p <- p + geom_text(data = dfw_sub_top20, 
+                       mapping = aes(x = log2Ratio, 
+                                     y = -log10(pVal), 
+                                     label = Index, 
+                                     color = Index),
+                       size = 3, 
+                       alpha = .5, 
+                       hjust = 0, 
+                       nudge_x = 0.05, 
+                       vjust = 0, 
+                       nudge_y = 0.05, 
+                       na.rm = TRUE)
+    p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
+    p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), 
+                        x = -xmax*.85, y = ymax/2)
+  } 
+  else {
+    p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
+  }
+  
+  if(is.null(dots$width)) {
+    width <- if (nrow > 1L) 
+      6*length(unique(dfw$Contrast))/nrow + 1 
+    else 
+      6*length(unique(dfw$Contrast))/nrow
+  } 
+  else {
+    width <- eval(dots$width)
+  }
+  
+  height <- if(is.null(dots$height))
+    6*nrow
+  else
+    eval(dots$height)
+  
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+  
+  rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, fml_nm, filename),
+                                     plot = p, 
+                                     width = width, 
+                                     height = height, 
+                                     !!!ggsave_dots)))
+  
+  local({
+    gr <- summ_venn(dfw_greater, id, contrast_groups)
+    plot_venn(gr, filepath, paste0(fn_prefix, "_greater"), fml_nm)
+    
+    le <- summ_venn(dfw_less, id, contrast_groups)
+    plot_venn(le, filepath, paste0(fn_prefix, "_less"), fml_nm)
+  })
+  
+  saveRDS(
+    list(
+      data = dfw, 
+      greater = dfw_greater, 
+      less = dfw_less, 
+      topns = dfw_sub_top20, 
+      highlights = dfw_high, 
+      topn_labels = dt, 
+      palette = myPalette, 
+      xco = xco, 
+      yco = yco,
+      xmin = xmin, 
+      xmax = xmax,
+      ymin = ymin,
+      ymax = ymax, 
+      title = title, 
+      x_label = x_label,
+      y_label = y_label,
+      theme = theme
+    ), 
+    file.path(filepath, fml_nm, paste0(fn_prefix, ".rds"))
+  )
 }
 
 
@@ -665,8 +664,7 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, 
-                      theme = NULL, 
-                      fml_nm = NULL, 
+                      theme = NULL, fml_nm = NULL, 
                       filepath = NULL, filename = NULL, adjP = FALSE, 
                       topn_labels = 20, show_sig = "none", 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), 
@@ -677,7 +675,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
                             gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
   
   if (file.exists(par_filepath)) load(par_filepath) else call_pars <- NULL
-
+  
   df <- local({
     par_filter_dots <- call_pars %>% 
       .[purrr::map_lgl(., is.language)] %>% 
@@ -687,7 +685,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       message(
         "\nApply the following vararg(s) from matching `prnGSPA` to: ", fml_nm, ".", 
         paste(par_filter_dots, "\n"))
-
+      
       df %>% filters_in_call(!!!par_filter_dots)
     } 
     else {
@@ -726,286 +724,286 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   
   dir.create(path = file.path(filepath, fml_nm, custom_prefix), 
              recursive = TRUE, showWarnings = FALSE)
-
+  
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) 
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   filename <- paste0(custom_prefix, fn_prefix, ".", fn_suffix)
   
   dots <- rlang::enexprs(...)
   
-	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
-	yco <- ifelse(is.null(dots$yco), .05, dots$yco)
-
-	x_label <- if (is.null(dots$x_label))
-	  expression("Ratio ("*log[2]*")")
-	else
-	  dots$x_label
-
-	y_label <- if (is.null(dots$y_label)) {
-	  if (adjP) 
-	    expression("adjP ("*-log[10]*")")
-	  else
-	    expression("pVal ("*-log[10]*")")
-	} 
-	else {
-	  dots$y_label
-	}
-	
-	gsea_res <- tryCatch(
-	  readr::read_tsv(file.path(filepath, fml_nm, df2), 
-	                  col_types = cols(term = col_character(),
-	                                   is_essential = col_logical(),
-	                                   size = col_double(),
-	                                   ess_size = col_double(),
-	                                   contrast = col_character(),
-	                                   p_val = col_double(),
-	                                   q_val = col_double(),
-	                                   log2fc = col_double())), 
-	  error = function(e) NA
-	)
-	
-	message("Secondary file loaded: ", file.path(filepath, fml_nm, df2))
-
-	filter2_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^filter2_", names(.))]
-	
-	arrange2_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^arrange2_", names(.))]
-	
-	select2_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^select2_", names(.))]
-	
-	dots <- dots %>% 
-	  .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
-	
-	gsea_res <- gsea_res %>% 
-	  dplyr::arrange(p_val, abs(log2fc)) %>% 
-	  filters_in_call(!!!filter2_dots) %>% 
-	  arrangers_in_call(!!!arrange2_dots)
-	
-	rm(list = c("filter2_dots", "arrange2_dots", "select2_dots"))
-
-	if (!nrow(gsea_res))
-	  stop("No GSPA terms available after data filtration.")
-
-	topn_gsets <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), topn_gsets)
-	
-	terms <- gsea_res %>%
-	  dplyr::arrange(p_val) %>% 
-	  dplyr::slice(1:(topn_gsets*length(contrast_groups))) %>% 
-	  dplyr::filter(p_val <= gspval_cutoff, 
-	                abs(log2fc) >= gslogFC_cutoff) %>%
-	  dplyr::select(gsea_key) %>%
-	  unique() %>%
-	  unlist() %>% 
-	  .[. %in% names(gsets)]
-	
-	gsea_res <- gsea_res %>% 
-	  dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>% 
-	  dplyr::mutate(q_val = format(p_val, scientific = TRUE, digits = 2)) %>% 
-	  dplyr::mutate(log2fc = round(log2fc, digits = 2))
-
-	if (length(terms)) {
-  	dfw <- do.call(rbind,
-  		purrr::map(contrast_groups, ~ {
-  			df[, grepl(paste0(" (", .x, ")"), names(df), fixed = TRUE)] %>%
-  				`colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-  				dplyr::mutate(Contrast = .x) %>%
-  		    dplyr::bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df))], .)
-  		} )) %>%
-  		dplyr::mutate(Contrast = factor(Contrast, levels = contrast_groups),
-  			pVal = as.numeric(pVal),
-  			valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>%
-  		dplyr::filter(!is.na(pVal))
-
-  	lapply(terms, function(gt) {
-  	  # some results may be based on gene sets from an older database, 
-  	  # which become missing terms in the current
-  	  
-  	  gsets_sub <- gsets %>% .[names(.) == gt]
-  	  
-  		if (!length(gsets_sub)) 
-  		  return(NULL)
-
-  		fn <- gsub(":", "~", gsub("/", "or", names(gsets_sub)[[1]]), fixed = TRUE)
-
-  		res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] %>% 
-  		  data.frame(check.names = FALSE)
-
-  		dfw_sub <- dfw[as.character(dfw$entrez) %in% gsets_sub[[1]], ]
-
-  		if (!nrow(dfw_sub)) 
-  		  return(NULL) 
-
-  		if (is.null(dots$xmax)) {
-  		  xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
-  		                       max(dfw_sub$log2Ratio, na.rm = TRUE)))
-  		} 
-  		else {
-  		  xmax <- eval(dots$xmax)
-  		  stopifnot(xmax > 0)
-  		}
-  		
-  		if (is.null(dots$xmin)) {
-  		  xmin <- -xmax
-  		} 
-  		else {
-  		  xmin <- eval(dots$xmin)
-  		  stopifnot(xmin < 0)
-  		}
-  		
-  		if (is.null(dots$ymax)) {
-  		  ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
-  		} 
-  		else {
-  		  ymax <- eval(dots$ymax)
-  		  stopifnot(ymax > 0)
-  		}
-  		
-  		if (is.null(dots$ymin)) {
-  		  ymin <- 0
-  		} 
-  		else {
-  		  ymin <- eval(dots$ymin)
-  		  stopifnot(ymin < ymax)
-  		}	
-
-  		# ensure the same levels between "Levels" and "newLevels"
-  		Levels <- levels(dfw_sub$Contrast)
-
-  		dfw_sub <- dfw_sub %>%
-  			dplyr::arrange(Contrast, pVal) %>%
-  			dplyr::group_by(Contrast) %>%
-  			dplyr::mutate(Index = row_number()) %>%
-  			data.frame(check.names = FALSE) %>% 
-  		  dplyr::mutate(Contrast = as.character(Contrast)) %>% 
-  			dplyr::left_join(., res_sub, by = c("Contrast" = "contrast")) %>%
-  			dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
-  			dplyr::arrange(Contrast) %>%
-  			# dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>%
-  			# dplyr::mutate(p_val = as.numeric(p_val)) %>%
-  			# dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
-  			# dplyr::mutate(q_val = as.numeric(q_val)) %>%
-  			# dplyr::mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
-  			# dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
-  			dplyr::mutate(newContrast = Contrast)
-				
-  		if (show_sig != "none") {
-  			if (grepl("^p", show_sig)) {
-  				dfw_sub <- dfw_sub %>%
-  					dplyr::mutate(newContrast = paste0(Contrast, " (p = ", p_val, ")"))
-  			} 
-  		  else if (grepl("^q", show_sig)) {
-  				dfw_sub <- dfw_sub %>%
-  					dplyr::mutate(newContrast = paste0(Contrast, " (q = ", q_val, ")"))
-  			}
-  		}
-
-  		newLevels <- unique(dfw_sub$newContrast)
-
-  		dfw_sub <- dfw_sub %>%
-  			dplyr::mutate(newContrast = factor(newContrast, levels = newLevels)) %>%
-  			dplyr::arrange(newContrast)
-
-  		dfw_sub_top20 <- dfw_sub %>%
-  			dplyr::group_by(newContrast) %>%
-  			dplyr::top_n(n = -topn_labels, wt = pVal)
-
-  		dt <- purrr::map(newLevels, ~ {
-  				dfw_sub_top20 %>%
-  					dplyr::filter(newContrast == .x) %>%
-  					data.frame(check.names = FALSE) %>%
-  					dplyr::select(c("Index", "gene")) %>%
-  					to_csv_() %>%
-  					{if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .}
-  			}) %>%
-  			do.call(rbind, .) %>%
-  			data.frame(newContrast = newLevels, 
-  			           Contrast = Levels, 
-  			           Gene = ., 
-  			           stringsAsFactors = FALSE) %>%
-  			dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
-  			dplyr::mutate(newContrast = factor(newContrast, levels = newLevels))
-
-  		dfw_greater <- dfw_sub %>% dplyr::filter(pVal < yco & log2Ratio > log2(xco))
-  		dfw_less <- dfw_sub %>% dplyr::filter(pVal < yco & log2Ratio < -log2(xco))
-
-  		dt_pos <- ifelse(nrow(dfw_greater) > nrow(dfw_less), -xmax*.85, xmax*.6)
-  		myPalette <- c("#377EB8", "#E41A1C")
-  		
-  		nrow <- if(is.null(dots$nrow))
-  		  if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
-  		else
-  		  dots$nrow
-
-  		p <- ggplot() +
-  			geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-  			           size = 3, colour = "gray", shape = 20, alpha = .5) +
-  			geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-  			           size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-  			geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-  			           size = 3, color = myPalette[1], shape = 20, alpha = .8) +
-  			geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
-  			geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
-  			geom_vline(xintercept = log2(xco), linetype = "longdash", size =.5) +
-  		  geom_hline(yintercept = -log10(pval_cutoff), 
-  		             linetype = "longdash", size = .5, color = "#fc9272") +
-  		  geom_vline(xintercept = -logFC_cutoff, 
-  		             linetype = "longdash", size = .5, color = "#fc9272") +
-  		  geom_vline(xintercept = logFC_cutoff, 
-  		             linetype = "longdash", size =.5, color = "#fc9272") +
-  			labs(title = names(gsets_sub), x = x_label, y = y_label) +
-  			scale_x_continuous(limits = c(xmin, xmax)) +
-  			scale_y_continuous(limits = c(ymin, ymax)) +
-  			theme
-  		
-  		p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
-
-  		if (nrow(dfw_sub_top20)) {
-  		  p <- p + geom_text(data = dfw_sub_top20, 
-  		                     mapping = aes(x = log2Ratio, y = -log10(pVal),
-  		                                   label = Index, color = Index), 
-  		                     size = 2, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05) +
-  		    geom_table(data = dt, aes(table = Gene), x = dt_pos, y = ymax/2)
-  		}
-
-  		if (nchar(fn) > 50) 
-  		  fn <- paste0(str_sub(fn, 1, 50), "...") 
-  		
-  		width <- if (is.null(dots$width)) {
-  		  if (nrow > 1L)
-  		    6*length(unique(dfw_sub$newContrast))/nrow + 1
-  		  else
-  		    6*length(unique(dfw$Contrast))/nrow
-  		} 
-  		else {
-  		  dots$width
-  		}
-  		
-  		height <- if (is.null(dots$height)) 6*nrow else dots$height
-  		
-  		ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
-  		
-  		rlang::eval_tidy(
-  		  rlang::quo(
-  		    ggsave(filename = file.path(filepath, fml_nm, custom_prefix, 
-  		                                paste0(fn, ".", fn_suffix)),
-  		           plot = p, 
-  		           width = width, 
-  		           height = height, 
-  		           !!!ggsave_dots)
-  		  )
-  		)
-  		
-  		write.table(dfw_sub, 
-  		            file = file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".txt")), 
-  		            sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
-  		            
-  	})
-	}
+  xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
+  yco <- ifelse(is.null(dots$yco), .05, dots$yco)
+  
+  x_label <- if (is.null(dots$x_label))
+    expression("Ratio ("*log[2]*")")
+  else
+    dots$x_label
+  
+  y_label <- if (is.null(dots$y_label)) {
+    if (adjP) 
+      expression("adjP ("*-log[10]*")")
+    else
+      expression("pVal ("*-log[10]*")")
+  } 
+  else {
+    dots$y_label
+  }
+  
+  gsea_res <- tryCatch(
+    readr::read_tsv(file.path(filepath, fml_nm, df2), 
+                    col_types = cols(term = col_character(),
+                                     is_essential = col_logical(),
+                                     size = col_double(),
+                                     ess_size = col_double(),
+                                     contrast = col_character(),
+                                     p_val = col_double(),
+                                     q_val = col_double(),
+                                     log2fc = col_double())), 
+    error = function(e) NA
+  )
+  
+  message("Secondary file loaded: ", file.path(filepath, fml_nm, df2))
+  
+  filter2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter2_", names(.))]
+  
+  arrange2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange2_", names(.))]
+  
+  select2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select2_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
+  
+  gsea_res <- gsea_res %>% 
+    dplyr::arrange(p_val, abs(log2fc)) %>% 
+    filters_in_call(!!!filter2_dots) %>% 
+    arrangers_in_call(!!!arrange2_dots)
+  
+  rm(list = c("filter2_dots", "arrange2_dots", "select2_dots"))
+  
+  if (!nrow(gsea_res))
+    stop("No GSPA terms available after data filtration.")
+  
+  topn_gsets <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), topn_gsets)
+  
+  terms <- gsea_res %>%
+    dplyr::arrange(p_val) %>% 
+    dplyr::slice(1:(topn_gsets*length(contrast_groups))) %>% 
+    dplyr::filter(p_val <= gspval_cutoff, 
+                  abs(log2fc) >= gslogFC_cutoff) %>%
+    dplyr::select(gsea_key) %>%
+    unique() %>%
+    unlist() %>% 
+    .[. %in% names(gsets)]
+  
+  gsea_res <- gsea_res %>% 
+    dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>% 
+    dplyr::mutate(q_val = format(p_val, scientific = TRUE, digits = 2)) %>% 
+    dplyr::mutate(log2fc = round(log2fc, digits = 2))
+  
+  if (length(terms)) {
+    dfw <- do.call(rbind,
+                   purrr::map(contrast_groups, ~ {
+                     df[, grepl(paste0(" (", .x, ")"), names(df), fixed = TRUE)] %>%
+                       `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
+                       dplyr::mutate(Contrast = .x) %>%
+                       dplyr::bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df))], .)
+                   } )) %>%
+      dplyr::mutate(Contrast = factor(Contrast, levels = contrast_groups),
+                    pVal = as.numeric(pVal),
+                    valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>%
+      dplyr::filter(!is.na(pVal))
+    
+    lapply(terms, function(gt) {
+      # some results may be based on gene sets from an older database, 
+      # which become missing terms in the current
+      
+      gsets_sub <- gsets %>% .[names(.) == gt]
+      
+      if (!length(gsets_sub)) 
+        return(NULL)
+      
+      fn <- gsub(":", "~", gsub("/", "or", names(gsets_sub)[[1]]), fixed = TRUE)
+      
+      res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] %>% 
+        data.frame(check.names = FALSE)
+      
+      dfw_sub <- dfw[as.character(dfw$entrez) %in% gsets_sub[[1]], ]
+      
+      if (!nrow(dfw_sub)) 
+        return(NULL) 
+      
+      if (is.null(dots$xmax)) {
+        xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
+                             max(dfw_sub$log2Ratio, na.rm = TRUE)))
+      } 
+      else {
+        xmax <- eval(dots$xmax)
+        stopifnot(xmax > 0)
+      }
+      
+      if (is.null(dots$xmin)) {
+        xmin <- -xmax
+      } 
+      else {
+        xmin <- eval(dots$xmin)
+        stopifnot(xmin < 0)
+      }
+      
+      if (is.null(dots$ymax)) {
+        ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
+      } 
+      else {
+        ymax <- eval(dots$ymax)
+        stopifnot(ymax > 0)
+      }
+      
+      if (is.null(dots$ymin)) {
+        ymin <- 0
+      } 
+      else {
+        ymin <- eval(dots$ymin)
+        stopifnot(ymin < ymax)
+      }	
+      
+      # ensure the same levels between "Levels" and "newLevels"
+      Levels <- levels(dfw_sub$Contrast)
+      
+      dfw_sub <- dfw_sub %>%
+        dplyr::arrange(Contrast, pVal) %>%
+        dplyr::group_by(Contrast) %>%
+        dplyr::mutate(Index = row_number()) %>%
+        data.frame(check.names = FALSE) %>% 
+        dplyr::mutate(Contrast = as.character(Contrast)) %>% 
+        dplyr::left_join(., res_sub, by = c("Contrast" = "contrast")) %>%
+        dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
+        dplyr::arrange(Contrast) %>%
+        # dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>%
+        # dplyr::mutate(p_val = as.numeric(p_val)) %>%
+        # dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
+        # dplyr::mutate(q_val = as.numeric(q_val)) %>%
+        # dplyr::mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
+        # dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
+        dplyr::mutate(newContrast = Contrast)
+      
+      if (show_sig != "none") {
+        if (grepl("^p", show_sig)) {
+          dfw_sub <- dfw_sub %>%
+            dplyr::mutate(newContrast = paste0(Contrast, " (p = ", p_val, ")"))
+        } 
+        else if (grepl("^q", show_sig)) {
+          dfw_sub <- dfw_sub %>%
+            dplyr::mutate(newContrast = paste0(Contrast, " (q = ", q_val, ")"))
+        }
+      }
+      
+      newLevels <- unique(dfw_sub$newContrast)
+      
+      dfw_sub <- dfw_sub %>%
+        dplyr::mutate(newContrast = factor(newContrast, levels = newLevels)) %>%
+        dplyr::arrange(newContrast)
+      
+      dfw_sub_top20 <- dfw_sub %>%
+        dplyr::group_by(newContrast) %>%
+        dplyr::top_n(n = -topn_labels, wt = pVal)
+      
+      dt <- purrr::map(newLevels, ~ {
+        dfw_sub_top20 %>%
+          dplyr::filter(newContrast == .x) %>%
+          data.frame(check.names = FALSE) %>%
+          dplyr::select(c("Index", "gene")) %>%
+          to_csv_() %>%
+          {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .}
+      }) %>%
+        do.call(rbind, .) %>%
+        data.frame(newContrast = newLevels, 
+                   Contrast = Levels, 
+                   Gene = ., 
+                   stringsAsFactors = FALSE) %>%
+        dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
+        dplyr::mutate(newContrast = factor(newContrast, levels = newLevels))
+      
+      dfw_greater <- dfw_sub %>% dplyr::filter(pVal < yco & log2Ratio > log2(xco))
+      dfw_less <- dfw_sub %>% dplyr::filter(pVal < yco & log2Ratio < -log2(xco))
+      
+      dt_pos <- ifelse(nrow(dfw_greater) > nrow(dfw_less), -xmax*.85, xmax*.6)
+      myPalette <- c("#377EB8", "#E41A1C")
+      
+      nrow <- if(is.null(dots$nrow))
+        if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
+      else
+        dots$nrow
+      
+      p <- ggplot() +
+        geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                   size = 3, colour = "gray", shape = 20, alpha = .5) +
+        geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                   size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+        geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                   size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+        geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
+        geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
+        geom_vline(xintercept = log2(xco), linetype = "longdash", size =.5) +
+        geom_hline(yintercept = -log10(pval_cutoff), 
+                   linetype = "longdash", size = .5, color = "#fc9272") +
+        geom_vline(xintercept = -logFC_cutoff, 
+                   linetype = "longdash", size = .5, color = "#fc9272") +
+        geom_vline(xintercept = logFC_cutoff, 
+                   linetype = "longdash", size =.5, color = "#fc9272") +
+        labs(title = names(gsets_sub), x = x_label, y = y_label) +
+        scale_x_continuous(limits = c(xmin, xmax)) +
+        scale_y_continuous(limits = c(ymin, ymax)) +
+        theme
+      
+      p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
+      
+      if (nrow(dfw_sub_top20)) {
+        p <- p + geom_text(data = dfw_sub_top20, 
+                           mapping = aes(x = log2Ratio, y = -log10(pVal),
+                                         label = Index, color = Index), 
+                           size = 2, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05) +
+          geom_table(data = dt, aes(table = Gene), x = dt_pos, y = ymax/2)
+      }
+      
+      if (nchar(fn) > 50) 
+        fn <- paste0(str_sub(fn, 1, 50), "...") 
+      
+      width <- if (is.null(dots$width)) {
+        if (nrow > 1L)
+          6*length(unique(dfw_sub$newContrast))/nrow + 1
+        else
+          6*length(unique(dfw$Contrast))/nrow
+      } 
+      else {
+        dots$width
+      }
+      
+      height <- if (is.null(dots$height)) 6*nrow else dots$height
+      
+      ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+      
+      rlang::eval_tidy(
+        rlang::quo(
+          ggsave(filename = file.path(filepath, fml_nm, custom_prefix, 
+                                      paste0(fn, ".", fn_suffix)),
+                 plot = p, 
+                 width = width, 
+                 height = height, 
+                 !!!ggsave_dots)
+        )
+      )
+      
+      write.table(dfw_sub, 
+                  file = file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".txt")), 
+                  sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
+      
+    })
+  }
 }
 
 
@@ -1360,68 +1358,68 @@ gspaMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 
 
 GeomTable <- ggproto(
-	"GeomTable",
-	Geom,
-	required_aes = c("x", "y",  "table"),
-	default_aes = aes(widthx = 10, widthy = 10, rownames = NA),
-	draw_key = draw_key_blank,
-
-	draw_panel = function(data, panel_scales, coord) {
-  	if (nrow(data) != 1) {
-  		stop(sprintf("only one table per panel allowed, got %s (%s)", 
-  		             nrow(data), 
-  		             as.character(data)), 
-  		     call. = FALSE)
-  	}
-	  
-	  wx = data$widthx / 2
-	  wy = data$widthy / 2
-
-  	corners <- data.frame(x = c(data$x - wx, data$x + wx), y = c(data$y - wy, data$y + wy))
-  	d <- coord$transform(corners, panel_scales)
+  "GeomTable",
+  Geom,
+  required_aes = c("x", "y",  "table"),
+  default_aes = aes(widthx = 10, widthy = 10, rownames = NA),
+  draw_key = draw_key_blank,
   
-  	table = read.csv(text = data$table, header = TRUE)
-  	if (!is.na(data$rownames)) {
-  		rownames(table) <-
-  		unlist(strsplit(data$rownames, "|", fixed = TRUE))
-  	}
-  
-  	x_rng <- range(d$x, na.rm = TRUE)
-  	y_rng <- range(d$y, na.rm = TRUE)
-
-  	vp <- grid::viewport(x = mean(x_rng), y = mean(y_rng), 
-  	                     width = diff(x_rng), height = diff(y_rng), 
-  	               just = c("center", "center"))
-  	  
-  	grob <- gridExtra::tableGrob(table, rows = NULL, cols = NULL,
-  	                  theme = 
-  	                    gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
-  	                                         colhead = list(fg_params=list(cex = .7), 
-  	                                                        parse=TRUE),
-  	                                         rowhead = list(fg_params=list(cex = .7))))
-  	grob$heights <- grob$heights*.6
-  
-  	## add a line across the header
-  	# grob <- gtable_add_grob(
-  	#   grob,
-  	#   grobs = segmentsGrob(y1 = unit(0, "npc"), gp = gpar(lwd = 2.0)),
-  	#   t = 1,
-  	#   b = 1,
-  	#   l = 1,
-  	#   r = ncol(d) + 1
-  	# )
-  	grid::editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
-	}
+  draw_panel = function(data, panel_scales, coord) {
+    if (nrow(data) != 1) {
+      stop(sprintf("only one table per panel allowed, got %s (%s)", 
+                   nrow(data), 
+                   as.character(data)), 
+           call. = FALSE)
+    }
+    
+    wx = data$widthx / 2
+    wy = data$widthy / 2
+    
+    corners <- data.frame(x = c(data$x - wx, data$x + wx), y = c(data$y - wy, data$y + wy))
+    d <- coord$transform(corners, panel_scales)
+    
+    table = read.csv(text = data$table, header = TRUE)
+    if (!is.na(data$rownames)) {
+      rownames(table) <-
+        unlist(strsplit(data$rownames, "|", fixed = TRUE))
+    }
+    
+    x_rng <- range(d$x, na.rm = TRUE)
+    y_rng <- range(d$y, na.rm = TRUE)
+    
+    vp <- grid::viewport(x = mean(x_rng), y = mean(y_rng), 
+                         width = diff(x_rng), height = diff(y_rng), 
+                         just = c("center", "center"))
+    
+    grob <- gridExtra::tableGrob(table, rows = NULL, cols = NULL,
+                                 theme = 
+                                   gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
+                                                             colhead = list(fg_params=list(cex = .7), 
+                                                                            parse=TRUE),
+                                                             rowhead = list(fg_params=list(cex = .7))))
+    grob$heights <- grob$heights*.6
+    
+    ## add a line across the header
+    # grob <- gtable_add_grob(
+    #   grob,
+    #   grobs = segmentsGrob(y1 = unit(0, "npc"), gp = gpar(lwd = 2.0)),
+    #   t = 1,
+    #   b = 1,
+    #   l = 1,
+    #   r = ncol(d) + 1
+    # )
+    grid::editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
+  }
 )
 
 
 facet_id <- local({
-	i <- 1
-	
-	function() {
-  	i <<- i + 1
-  	i
-	}
+  i <- 1
+  
+  function() {
+    i <<- i + 1
+    i
+  }
 })
 
 #' Prints table in ggplot2 images
@@ -1456,6 +1454,6 @@ geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
 #' @param x A data frame column.
 to_csv_ <- function(x) 
 {
-	paste(capture.output(write.csv(x, stdout(), row.names = F)), collapse = "\n")
+  paste(capture.output(write.csv(x, stdout(), row.names = F)), collapse = "\n")
 }
 
