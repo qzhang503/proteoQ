@@ -6442,7 +6442,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (no craps removal by grepl("\\|.*\\|$", Protein); ending "|" not present)
   df <- df %>% 
     dplyr::rename(pep_seq = Peptide, 
-                  prot_acc = `Protein ID`) %>% 
+                  prot_acc = `Protein ID`, 
+                  ) %>% 
     dplyr::filter(prot_acc != "") %>% 
     { if (rm_craps && "Protein" %in% names(.)) 
       dplyr::filter(., !grepl("\\|.*\\|$", Protein)) else . } 
@@ -6473,7 +6474,22 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     is_phospho_expt <- any(grepl("[sty]", df$pep_seq_mod))
     
     if (is_phospho_expt && purge_phosphodata)
-      df <- df %>% dplyr::filter(grepl("[sty]", pep_seq_mod))
+      df <- dplyr::filter(df, grepl("[sty]", pep_seq_mod))
+    
+    if ("STY:79.9663" %in% names(df)) {
+      prs <- stringr::str_extract_all(df[["STY:79.9663"]], "\\([^()]+\\)")
+      prs <- lapply(prs, function (x) as.numeric(substring(x, 2L, nchar(x) - 1L)))
+      prs <- lapply(prs, sort, decreasing = TRUE)
+      
+      df$pep_phospho_locprob <- unlist(lapply(prs, `[`, 1), recursive = FALSE)
+      
+      df$pep_phospho_locdiff <- lapply(prs, function (x) {
+        if (length(x) <= 1L) 0 else x[1] - x[2]
+      }) %>% 
+        unlist(recursive = FALSE)
+      
+      rm(list = "prs")
+    }
 
     invisible(df)
   })
@@ -6493,20 +6509,22 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     df <- df %>% 
       mutate(pep_scan_num = gsub("[^\\.]+?\\.(.*)", "\\1", Spectrum)) %>% 
       mutate(pep_scan_num = gsub("([^\\.]+?)\\..*", "\\1", pep_scan_num)) %>% 
-      mutate(pep_scan_num = gsub("^0+", "", pep_scan_num))
+      mutate(pep_scan_num = gsub("^0+", "", pep_scan_num)) # may be leading zeros
     
-    if ("PeptideProphet Probability" %in% names(df)) {
-      df <- df %>% 
-        dplyr::mutate(pep_locprob = `PeptideProphet Probability`) %>% 
-        dplyr::select(-c("PeptideProphet Probability"))
-    }
-
     df <- df %>% 
-      dplyr::rename(
+      dplyr::mutate(
         pep_expect = Expectation, 
         pep_score = Hyperscore, 
-      ) 
-    
+        
+        pep_exp_mz = `Observed M/Z`, 
+        pep_exp_mr = `Observed Mass`, 
+        pep_exp_z = Charge,
+        pep_n_exp_z = NA_integer_, 
+        pep_calc_mr = `Calculated M/Z`, 
+        pep_delta = `Delta Mass`, 
+      ) %>% 
+      add_n_pepexpz(group_psm_by)
+
     if ("pep_index" %in% names(df)) 
       df$pep_index <- NULL
     
