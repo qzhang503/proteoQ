@@ -2167,99 +2167,105 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'Fields other than \code{log2FC} and \code{intensity} are summarized with
 #'median statistics.
 #'
-#' @param method_pep_prn Character string; the method to summarize the
-#'   \code{log2FC} and the \code{intensity} of peptides by protein entries. The
-#'   descriptive statistics includes \code{c("mean", "median", "weighted_mean",
-#'   "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
-#'   \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
-#'   The representative \code{log10-intensity} of reporter (or LFQ) ions at the
-#'   peptide levels will be the weight when summarizing \code{log2FC} with
-#'   various \code{"top_n"} statistics or \code{"weighted_mean"}.
-#' @param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
-#'   equal to \code{1} under the column \code{pep_isunique} in
-#'   \code{Peptide.txt} will be used, for summarizing the \code{log2FC} and the
-#'   \code{intensity} of peptides into protein values. The default is to use
-#'   unique peptides only. For \code{MaxQuant} data, the levels of uniqueness
-#'   are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
-#'   argument currently do nothing to \code{Spectrum Mill} data where both
-#'   unique and shared peptides will be kept.
-#' @param ... \code{filter_}: Variable argument statements for the filtration of
-#'   data rows. Each statement contains a list of logical expression(s). The
-#'   \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-#'   the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'   For example, \code{pep_len} is a column key in \code{Peptide.txt}. The
-#'   statement of \code{filter_peps_at = exprs(pep_len <= 50)} will remove
-#'   peptide entries with \code{pep_len > 50}.
-#' @inheritParams mergePep
-#' @inheritParams normPSM
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@param method_pep_prn Character string; the method to summarize the
+#'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
+#'  descriptive statistics includes \code{c("mean", "median", "weighted_mean",
+#'  "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
+#'  \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
+#'  The representative \code{log10-intensity} of reporter (or LFQ) ions at the
+#'  peptide levels will be the weight when summarizing \code{log2FC} with
+#'  various \code{"top_n"} statistics or \code{"weighted_mean"}.
+#'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
+#'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+#'  will be used, for summarizing the \code{log2FC} and the \code{intensity} of
+#'  peptides into protein values. The default is to use unique peptides only.
+#'  For \code{MaxQuant} data, the levels of uniqueness are according to the
+#'  \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+#'  nothing to \code{Spectrum Mill} data where both unique and shared peptides
+#'  will be kept.
+#'@param mc Logical. At the TRUE default, performs median-centering of
+#'  \code{log2FC} after the peptide-to-protein aggregation. Otherwise, the
+#'  summarized \code{log2FC} values will be left as they are.
+#'@param ... \code{filter_}: Variable argument statements for the filtration of
+#'  data rows. Each statement contains a list of logical expression(s). The
+#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{pep_len} is a column key in \code{Peptide.txt}. The
+#'  statement of \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+#'  peptide entries with \code{pep_len > 50}.
+#'@inheritParams mergePep
+#'@inheritParams normPSM
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
+#'
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
+#'
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'
 #'@return The primary output in "\code{.../Protein/Protein.txt}".
 #'
 #'@example inst/extdata/examples/Pep2Prn_.R
 #'@import stringr dplyr purrr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", 
                                         "top_3_mean", "lfq_max", "lfq_top_2_sum", 
                                         "lfq_top_3_sum", "lfq_all"), 
                      use_unique_pep = TRUE, cut_points = Inf, 
-                     rm_outliers = FALSE, rm_allna = FALSE, ...) 
+                     rm_outliers = FALSE, rm_allna = FALSE, mc = TRUE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -2324,7 +2330,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
-  stopifnot(vapply(c(use_unique_pep), rlang::is_logical, logical(1)))
+  stopifnot(vapply(c(use_unique_pep, mc), rlang::is_logical, logical(1)))
   
   gn_rollup <- if (group_pep_by == "gene") TRUE else FALSE
 
@@ -2344,17 +2350,21 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
                    rm_allna = rm_allna, 
                    !!!filter_dots) 
   
-  df <- normMulGau(
-    df = df,
-    method_align = "MC",
-    n_comp = 1L,
-    range_log2r = c(0, 100),
-    range_int = c(0, 100),
-    filepath = file.path(dat_dir, "Protein/Histogram"),
-    col_select = rlang::expr(Sample_ID), 
-    cut_points = cut_points, 
-  ) 
-  
+  if (mc) {
+    df <- normMulGau(
+      df = df,
+      method_align = "MC",
+      n_comp = 1L,
+      range_log2r = c(0, 100),
+      range_int = c(0, 100),
+      filepath = file.path(dat_dir, "Protein/Histogram"),
+      col_select = rlang::expr(Sample_ID), 
+      cut_points = cut_points) 
+  }
+  else {
+    warning("No data centering performed.", call. = FALSE)
+  }
+
   df <- df %>% 
     dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
     dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 

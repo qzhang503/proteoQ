@@ -119,7 +119,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
     stop(err_msg1, call. = FALSE)
-
+  
   dat_dir <- get_gl_dat_dir()
   
   dir.create(file.path(dat_dir, "Protein/GSVA/log"), 
@@ -131,53 +131,53 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
-	padj_method <- rlang::as_string(rlang::enexpr(padj_method))
-
-	dots <- rlang::enexprs(...)
-	fmls <- dots %>% .[grepl("^\\s*~", .)]
-	dots <- dots[!names(dots) %in% names(fmls)]
-
-	if (rlang::is_empty(fmls)) {
-	  fml_file <-  file.path(dat_dir, "Calls/prnSig_formulas.rda")
-	  
-	  if (file.exists(fml_file)) {
-	    load(file = fml_file)
-	    dots <- c(dots, prnSig_formulas)
-	  } 
-	  else {
-	    stop("Run `prnSig()` first.")
-	  }
-	} 
-	else {
-	  match_fmls(fmls)
-	  dots <- c(dots, fmls)
-	}
-	
-	reload_expts()
-	
-	# Sample selection criteria:
-	#   !is_reference under "Reference"
-	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, 
-	          df2 = NULL, 
-	          id = !!id, 
-	          filepath = !!filepath, 
-	          filename = !!filename, 
-	          scale_log2r = scale_log2r, 
-	          complete_cases = complete_cases, 
-	          impute_na = impute_na, 
-	          anal_type = "GSVA")(lm_method = lm_method, 
-	                              padj_method = padj_method, 
-	                              gset_nms = gset_nms, 
-	                              var_cutoff = var_cutoff, 
-	                              pval_cutoff = pval_cutoff, 
-	                              logFC_cutoff = logFC_cutoff, 
-	                              !!!dots)
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  lm_method <- rlang::as_string(rlang::enexpr(lm_method))
+  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
+  
+  dots <- rlang::enexprs(...)
+  fmls <- dots %>% .[grepl("^\\s*~", .)]
+  dots <- dots[!names(dots) %in% names(fmls)]
+  
+  if (rlang::is_empty(fmls)) {
+    fml_file <-  file.path(dat_dir, "Calls/prnSig_formulas.rda")
+    
+    if (file.exists(fml_file)) {
+      load(file = fml_file)
+      dots <- c(dots, prnSig_formulas)
+    } 
+    else {
+      stop("Run `prnSig()` first.")
+    }
+  } 
+  else {
+    match_fmls(fmls)
+    dots <- c(dots, fmls)
+  }
+  
+  reload_expts()
+  
+  # Sample selection criteria:
+  #   !is_reference under "Reference"
+  #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
+            anal_type = "GSVA")(lm_method = lm_method, 
+                                padj_method = padj_method, 
+                                gset_nms = gset_nms, 
+                                var_cutoff = var_cutoff, 
+                                pval_cutoff = pval_cutoff, 
+                                logFC_cutoff = logFC_cutoff, 
+                                !!!dots)
 }
 
 

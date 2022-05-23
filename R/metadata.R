@@ -1467,13 +1467,13 @@ reload_expts <- function()
 #' @importFrom dplyr select filter
 channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) 
 {
-	stopifnot(length(set_idx) == 1L)
+  stopifnot(length(set_idx) == 1L)
   
   if (is.null(set_idx)) 
     stop("Need to specify `set_idx`.", call. = FALSE)
   if (is.null(dat_dir)) 
     stop("Need to specify `dat_dir`.", call. = FALSE)
-
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   
   label_scheme_sub <- label_scheme_full %>%
@@ -1482,21 +1482,21 @@ channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1)
   if (nrow(label_scheme_sub) == 0) 
     stop("No samples at TMT_Set ", set_idx, " and LCMS_Injection ", injn_idx, ".", 
          call. = FALSE)
-
-	ref <- label_scheme_sub$Reference
-
-	empty_channels <- is.na(label_scheme_sub$Sample_ID) |
-	  grepl("^Empty\\.[0-9]+$", label_scheme_sub$Sample_ID, ignore.case = TRUE)
-
-	labeled_channels <- !empty_channels
-
-	out <- list(
-		refChannels = ref,
-		emptyChannels = empty_channels,
-		labeledChannels = labeled_channels
-	)
-
-	lapply(out, which)
+  
+  ref <- label_scheme_sub$Reference
+  
+  empty_channels <- is.na(label_scheme_sub$Sample_ID) |
+    grepl("^Empty\\.[0-9]+$", label_scheme_sub$Sample_ID, ignore.case = TRUE)
+  
+  labeled_channels <- !empty_channels
+  
+  out <- list(
+    refChannels = ref,
+    emptyChannels = empty_channels,
+    labeledChannels = labeled_channels
+  )
+  
+  lapply(out, which)
 }
 
 
@@ -1562,19 +1562,19 @@ TMT_levels <- function (TMT_plex)
       "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
       "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
       "TMT-133N", "TMT-133C", "TMT-134N")
-	else if (TMT_plex == 11L) 
-	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-	    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
-	    "TMT-131N", "TMT-131C")
-	else if (TMT_plex == 10L) 
-	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-	    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
-	else if (TMT_plex == 6L) 
-	  c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
-	else if (TMT_plex == 1L) 
-	  c("TMT-126")
-	else if (TMT_plex == 0L) 
-	  NULL
+  else if (TMT_plex == 11L) 
+    c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+      "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+      "TMT-131N", "TMT-131C")
+  else if (TMT_plex == 10L) 
+    c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+      "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
+  else if (TMT_plex == 6L) 
+    c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
+  else if (TMT_plex == 1L) 
+    c("TMT-126")
+  else if (TMT_plex == 0L) 
+    NULL
 }
 
 
@@ -1586,39 +1586,39 @@ TMT_levels <- function (TMT_plex)
 #' @inheritParams n_TMT_sets
 simple_label_scheme <- function (dat_dir, label_scheme_full) 
 {
-	TMT_plex <- TMT_plex(label_scheme_full)
-	TMT_levels <- TMT_levels(TMT_plex)
-
-	# OK Sample_ID of "sample_x" and "Empty.1" at the same TMT_Set and TMT_Channel,
-	# but different LCMS_Injection
-	label_scheme <- label_scheme_full %>%
-	  dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>%
-	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
-	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
-	
-	multi_dips <- label_scheme %>% 
-	  tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>% 
-	  dplyr::group_by(key) %>% 
-	  dplyr::mutate(n = n()) %>% 
-	  dplyr::filter(n > 1L) %>% 
-	  dplyr::ungroup()
-	
-	label_scheme <- label_scheme %>% 
-	  dplyr::filter(! .data$Sample_ID %in% multi_dips$Sample_ID)
-	
-	label_scheme <- multi_dips %>% 
-	  dplyr::filter(!grepl("^Empty\\.[0-9]+$", Sample_ID)) %>% 
-	  dplyr::select(names(label_scheme)) %>% 
-	  dplyr::bind_rows(label_scheme) %>% 
-	  dplyr::mutate(LCMS_Injection = 1L) %>% 
-	  dplyr::arrange(TMT_Set, TMT_Channel)
-
-	if (nrow(label_scheme) < (TMT_plex * n_TMT_sets(label_scheme))) 
-	  stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
-
-	save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
-	
-	invisible(label_scheme)
+  TMT_plex <- TMT_plex(label_scheme_full)
+  TMT_levels <- TMT_levels(TMT_plex)
+  
+  # OK Sample_ID of "sample_x" and "Empty.1" at the same TMT_Set and TMT_Channel,
+  # but different LCMS_Injection
+  label_scheme <- label_scheme_full %>%
+    dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>%
+    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+    dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+  
+  multi_dips <- label_scheme %>% 
+    tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>% 
+    dplyr::group_by(key) %>% 
+    dplyr::mutate(n = n()) %>% 
+    dplyr::filter(n > 1L) %>% 
+    dplyr::ungroup()
+  
+  label_scheme <- label_scheme %>% 
+    dplyr::filter(! .data$Sample_ID %in% multi_dips$Sample_ID)
+  
+  label_scheme <- multi_dips %>% 
+    dplyr::filter(!grepl("^Empty\\.[0-9]+$", Sample_ID)) %>% 
+    dplyr::select(names(label_scheme)) %>% 
+    dplyr::bind_rows(label_scheme) %>% 
+    dplyr::mutate(LCMS_Injection = 1L) %>% 
+    dplyr::arrange(TMT_Set, TMT_Channel)
+  
+  if (nrow(label_scheme) < (TMT_plex * n_TMT_sets(label_scheme))) 
+    stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
+  
+  save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
+  
+  invisible(label_scheme)
 }
 
 

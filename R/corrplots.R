@@ -14,7 +14,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
 {
   if (complete_cases) 
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-
+  
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
@@ -23,7 +23,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
   xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
   width <- eval(dots$width, envir = rlang::caller_env())
   height <- eval(dots$height, envir = rlang::caller_env())
-
+  
   dots <- dots %>% 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "width", "height")]
   
@@ -41,68 +41,68 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
-
-	col_select <- rlang::enexpr(col_select)
-	col_order <- rlang::enexpr(col_order)
-
-	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-	fn_prefix <- gsub("\\.[^.]*$", "", filename)
-
-	df <- prepDM(df = df, 
-	             id = !!id, 
-	             scale_log2r = scale_log2r, 
-	             sub_grp = label_scheme_sub$Sample_ID, 
-	             anal_type = anal_type, 
-	             rm_allna = TRUE) 
-	
-	if (data_select == "logFC") {
-	  df <- df$log2R
-	  y_label <- x_label <- expression("Ratio ("*log[2]*")")
-	  if (is.null(xmin)) xmin <- -2
-	  if (is.null(xmax)) xmax <- 2
-	  if (is.null(xbreaks)) xbreaks <- 1
-	} 
-	else if (data_select == "logInt") {
-	  df <- log10(df$Intensity)
-	  y_label <- x_label <- expression("Intensity ("*log[10]*")")
-	  if (is.null(xmin)) xmin <- 3.5
-	  if (is.null(xmax)) xmax <- 6
-	  if (is.null(xbreaks)) xbreaks <- 1
-	} 
-	else {
-	  stop("`data_select` nees to be either`logFC` or `logInt`.")
-	}
-	
-	label_scheme_sub <- label_scheme_sub %>% 
-	  dplyr::filter(Sample_ID %in% colnames(df))
-	
-	if (is.null(width)) 
-	  width <- 1.4 * length(label_scheme_sub$Sample_ID)
-	
-	if (is.null(height)) 
-	  height <- width
-	
-	if (ncol(df) > 44) 
-	  stop("Maximum number of samples for correlation plots is 44.")
-
-	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L)
-		df <- df[, order(names(df))]
-	else {
-	  corrplot_orders <- label_scheme_sub %>%
-	    dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
-	    dplyr::filter(!is.na(!!col_order)) %>%
-	    unique(.) %>%
-	    dplyr::arrange(!!col_order)
-	  
-	  df <- df[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
-	}
-
-	plot_corr_sub(df = df, 
-	              cor_method = cor_method, 
-	              xlab = x_label, ylab = y_label,
-	              filename = filename, filepath = filepath,
-	              xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
-	              width = width, height = height, !!!dots)
+  
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  df <- prepDM(df = df, 
+               id = !!id, 
+               scale_log2r = scale_log2r, 
+               sub_grp = label_scheme_sub$Sample_ID, 
+               anal_type = anal_type, 
+               rm_allna = TRUE) 
+  
+  if (data_select == "logFC") {
+    df <- df$log2R
+    y_label <- x_label <- expression("Ratio ("*log[2]*")")
+    if (is.null(xmin)) xmin <- -2
+    if (is.null(xmax)) xmax <- 2
+    if (is.null(xbreaks)) xbreaks <- 1
+  } 
+  else if (data_select == "logInt") {
+    df <- log10(df$Intensity)
+    y_label <- x_label <- expression("Intensity ("*log[10]*")")
+    if (is.null(xmin)) xmin <- 3.5
+    if (is.null(xmax)) xmax <- 6
+    if (is.null(xbreaks)) xbreaks <- 1
+  } 
+  else {
+    stop("`data_select` nees to be either`logFC` or `logInt`.")
+  }
+  
+  label_scheme_sub <- label_scheme_sub %>% 
+    dplyr::filter(Sample_ID %in% colnames(df))
+  
+  if (is.null(width)) 
+    width <- 1.4 * length(label_scheme_sub$Sample_ID)
+  
+  if (is.null(height)) 
+    height <- width
+  
+  if (ncol(df) > 44) 
+    stop("Maximum number of samples for correlation plots is 44.")
+  
+  if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L)
+    df <- df[, order(names(df))]
+  else {
+    corrplot_orders <- label_scheme_sub %>%
+      dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
+      dplyr::filter(!is.na(!!col_order)) %>%
+      unique(.) %>%
+      dplyr::arrange(!!col_order)
+    
+    df <- df[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
+  }
+  
+  plot_corr_sub(df = df, 
+                cor_method = cor_method, 
+                xlab = x_label, ylab = y_label,
+                filename = filename, filepath = filepath,
+                xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
+                width = width, height = height, !!!dots)
 }
 
 

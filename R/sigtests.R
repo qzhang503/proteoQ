@@ -49,127 +49,127 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 prepFml <- function(formula, label_scheme_sub, ...) 
 {
-	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
-	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
-	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
-	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|Duplicate)
-	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]
-	# formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|TMT_Set)
-	# formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|Duplicate)
-	# formula = ~ Term["Ner-PD", "V-PD", "(Ner_PLUS_PD-PD)"] + (1|Duplicate)
-	# formula = log2Ratio ~ Term
-	# formula = ~ Term[~V] # no interaction terms
-	# formula = ~ Term
+  # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
+  # formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
+  # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
+  # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|Duplicate)
+  # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]
+  # formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|TMT_Set)
+  # formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|Duplicate)
+  # formula = ~ Term["Ner-PD", "V-PD", "(Ner_PLUS_PD-PD)"] + (1|Duplicate)
+  # formula = log2Ratio ~ Term
+  # formula = ~ Term[~V] # no interaction terms
+  # formula = ~ Term
   
   dots <- rlang::enexprs(...)
-
-	fml <- as.character(formula) %>% gsub("\\s+", "", .) %>% .[. != "~"]
-	len <- length(fml)
-
-	key_col <- fml[len] %>% gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", .)
-
-	label_scheme_sub <- label_scheme_sub %>% 
-	  dplyr::filter(!is.na(!!sym(key_col)))
-
-	# formula = ~ Term[ ~ V]
-	base <- if (grepl("\\[\\s*\\~\\s*", fml[len])) 
-		fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
-	else 
-		NULL
-
-	if (!is.null(base)) { # formula = ~ Term[~V]
-		new_levels <- label_scheme_sub[[key_col]] %>% levels()
-		new_levels <- c(new_levels[new_levels == base], 
-		                new_levels[new_levels != base])
-		label_scheme_sub <- label_scheme_sub %>%
-			dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
-	} 
-	else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
-		new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
-	}
-	else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
-		new_levels <- NULL
-	}
-
-	if (!is.null(new_levels)) {
-		contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
-		elements <- new_levels
-	} 
-	else {
-	  contrs <- fml[len] %>%
-	    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-	    gsub("\\\"", "", .) %>%
-	    str_split(",\\s*", simplify = TRUE) %>%
-	    as.character()
-
-	  new_contrs <- fml[len] %>%
-	    gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
-	    gsub("\\\"", "", .) %>% 
-	    str_split(",\\s*", simplify = TRUE) %>% 
-	    gsub("\\s+", "", .) %>% 
-	    gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
-	    gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
-	    gsub("[ <>]+", "", .)
-
-	  new_elements <- new_contrs %>%
-	    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
-	    gsub("[\\(\\)]", "", .) %>%
-	    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
-	    as.character() %>%
-	    unique() %>% 
-	    .[. != ""]
-	  
-	  elements <- new_elements %>% 
-	    gsub(".plus.", "+", ., fixed = TRUE) %>% 
-	    gsub(".minus.", "-", ., fixed = TRUE)
-	  
-	  message("\ncontrs: ", contrs %>% as.character, "\n")
-	  message("new_contrs: ", new_contrs %>% as.character, "\n")
-	  message("elements: ", paste(elements, collapse = ", "), "\n")
-	  message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
-	}
-
-	label_scheme_sub_sub <- label_scheme_sub %>%
-		dplyr::filter(!!sym(key_col) %in% elements) %>%
-		dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
-	
-	if (!nrow(label_scheme_sub_sub))
-	  stop("No samples were found for formula ", formula, 
-	       "\nCheck the terms under column ", key_col)
-
-	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
-		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
-
-	new_design_nms <- colnames(design) %>% 
-	  gsub("+", ".plus.", ., fixed = TRUE) %>% 
-	  gsub("-", ".minus.", ., fixed = TRUE)
-	
-	new_design <- design %>% 
-	  `colnames<-`(new_design_nms)
-	
-	contr_mat <- makeContrasts(contrasts = new_contrs, 
-	                           levels = data.frame(new_design)) %>% 
-	  `colnames<-`(contrs) %>% 
-	  `rownames<-`(colnames(design))
-	
-	rm(new_design_nms, new_design)
-	
-	random_vars <- fml[len] %>%
-		gsub("\\[.*\\]+?", "", .) %>%
-		paste("~", .) %>%
-		as.formula() %>%
-		terms.formula(.) %>%
-		attr(., "term.labels") %>%
-		.[grepl("\\|", .)] %>%
-		gsub("1\\s*\\|\\s*(.*)", "\\1", .)
-
-	message("random_vars: ", as.character(random_vars), "\n\n")
-	
-	invisible(list(design = design, 
-	               contr_mat = contr_mat, 
-	               key_col = key_col, 
-	               random_vars = random_vars,
-	               label_scheme_sub_sub = label_scheme_sub_sub))
+  
+  fml <- as.character(formula) %>% gsub("\\s+", "", .) %>% .[. != "~"]
+  len <- length(fml)
+  
+  key_col <- fml[len] %>% gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", .)
+  
+  label_scheme_sub <- label_scheme_sub %>% 
+    dplyr::filter(!is.na(!!sym(key_col)))
+  
+  # formula = ~ Term[ ~ V]
+  base <- if (grepl("\\[\\s*\\~\\s*", fml[len])) 
+    fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
+  else 
+    NULL
+  
+  if (!is.null(base)) { # formula = ~ Term[~V]
+    new_levels <- label_scheme_sub[[key_col]] %>% levels()
+    new_levels <- c(new_levels[new_levels == base], 
+                    new_levels[new_levels != base])
+    label_scheme_sub <- label_scheme_sub %>%
+      dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
+  } 
+  else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
+    new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
+  }
+  else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
+    new_levels <- NULL
+  }
+  
+  if (!is.null(new_levels)) {
+    contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
+    elements <- new_levels
+  } 
+  else {
+    contrs <- fml[len] %>%
+      gsub(".*\\[(.*)\\].*", "\\1", .) %>%
+      gsub("\\\"", "", .) %>%
+      str_split(",\\s*", simplify = TRUE) %>%
+      as.character()
+    
+    new_contrs <- fml[len] %>%
+      gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
+      gsub("\\\"", "", .) %>% 
+      str_split(",\\s*", simplify = TRUE) %>% 
+      gsub("\\s+", "", .) %>% 
+      gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
+      gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
+      gsub("[ <>]+", "", .)
+    
+    new_elements <- new_contrs %>%
+      gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
+      gsub("[\\(\\)]", "", .) %>%
+      str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
+      as.character() %>%
+      unique() %>% 
+      .[. != ""]
+    
+    elements <- new_elements %>% 
+      gsub(".plus.", "+", ., fixed = TRUE) %>% 
+      gsub(".minus.", "-", ., fixed = TRUE)
+    
+    message("\ncontrs: ", contrs %>% as.character, "\n")
+    message("new_contrs: ", new_contrs %>% as.character, "\n")
+    message("elements: ", paste(elements, collapse = ", "), "\n")
+    message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
+  }
+  
+  label_scheme_sub_sub <- label_scheme_sub %>%
+    dplyr::filter(!!sym(key_col) %in% elements) %>%
+    dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
+  
+  if (!nrow(label_scheme_sub_sub))
+    stop("No samples were found for formula ", formula, 
+         "\nCheck the terms under column ", key_col)
+  
+  design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
+    `colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
+  
+  new_design_nms <- colnames(design) %>% 
+    gsub("+", ".plus.", ., fixed = TRUE) %>% 
+    gsub("-", ".minus.", ., fixed = TRUE)
+  
+  new_design <- design %>% 
+    `colnames<-`(new_design_nms)
+  
+  contr_mat <- makeContrasts(contrasts = new_contrs, 
+                             levels = data.frame(new_design)) %>% 
+    `colnames<-`(contrs) %>% 
+    `rownames<-`(colnames(design))
+  
+  rm(new_design_nms, new_design)
+  
+  random_vars <- fml[len] %>%
+    gsub("\\[.*\\]+?", "", .) %>%
+    paste("~", .) %>%
+    as.formula() %>%
+    terms.formula(.) %>%
+    attr(., "term.labels") %>%
+    .[grepl("\\|", .)] %>%
+    gsub("1\\s*\\|\\s*(.*)", "\\1", .)
+  
+  message("random_vars: ", as.character(random_vars), "\n\n")
+  
+  invisible(list(design = design, 
+                 contr_mat = contr_mat, 
+                 key_col = key_col, 
+                 random_vars = random_vars,
+                 label_scheme_sub_sub = label_scheme_sub_sub))
 }
 
 
@@ -180,14 +180,14 @@ prepFml <- function(formula, label_scheme_sub, ...)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 my_padj <- function(df_pval, pval_cutoff) 
 {
-	df_pval %>%
-		purrr::map(~ .x <= pval_cutoff)	%>%
-		purrr::map(~ ifelse(!.x, NA, .x)) %>%
-		purrr::map2(as.list(df_pval), `*`) %>%
-		purrr::map(~ p.adjust(.x, "BH")) %>%
-		dplyr::bind_cols() %>%
-		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
-		dplyr::mutate(rowname = rownames(df_pval)) %>%
+  df_pval %>%
+    purrr::map(~ .x <= pval_cutoff)	%>%
+    purrr::map(~ ifelse(!.x, NA, .x)) %>%
+    purrr::map2(as.list(df_pval), `*`) %>%
+    purrr::map(~ p.adjust(.x, "BH")) %>%
+    dplyr::bind_cols() %>%
+    `names<-`(gsub("pVal", "adjP", colnames(.))) %>%
+    dplyr::mutate(rowname = rownames(df_pval)) %>%
     dplyr::bind_cols(df_pval, .) %>%
     dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
                      scientific = TRUE, digits = 2) %>%
@@ -207,37 +207,37 @@ my_padj <- function(df_pval, pval_cutoff)
 lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, 
                        padj_method = "BH") 
 {
-	nms <- rownames(pvals)
-
-	pass_pvals <- purrr::map(pvals, ~ .x <= pval_cutoff)
-	pass_fcs <- purrr::map(log2rs, ~ abs(.x) >= log2(logFC_cutoff))
-	
-	pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
-	  purrr::map(~ ifelse(!.x, NA, .x))
-
-	res_padj <- pvals %>%
-		purrr::map2(pass_both, `*`) %>%
-		purrr::map(~ p.adjust(.x, padj_method)) %>%
-		data.frame(check.names = FALSE) %>%
-		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
-		`rownames<-`(nms) %>%
-	  tibble::rownames_to_column() %>% 
-		dplyr::bind_cols(pvals, .) %>%
-	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
-	                   scientific = TRUE, digits = 2L) %>%
-	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
-	                   scientific = TRUE, digits = 2L) %>% 
-	  tibble::remove_rownames() %>% 
-	  tibble::column_to_rownames()
-
-	log2rs <- log2rs %>%
-		to_linfc() %>%
-		`colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
-		dplyr::bind_cols(log2rs, .) %>%
-		dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2L) %>%
-		`rownames<-`(nms)
-
-	cbind.data.frame(res_padj, log2rs)
+  nms <- rownames(pvals)
+  
+  pass_pvals <- purrr::map(pvals, ~ .x <= pval_cutoff)
+  pass_fcs <- purrr::map(log2rs, ~ abs(.x) >= log2(logFC_cutoff))
+  
+  pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
+    purrr::map(~ ifelse(!.x, NA, .x))
+  
+  res_padj <- pvals %>%
+    purrr::map2(pass_both, `*`) %>%
+    purrr::map(~ p.adjust(.x, padj_method)) %>%
+    data.frame(check.names = FALSE) %>%
+    `names<-`(gsub("pVal", "adjP", colnames(.))) %>%
+    `rownames<-`(nms) %>%
+    tibble::rownames_to_column() %>% 
+    dplyr::bind_cols(pvals, .) %>%
+    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2L) %>%
+    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2L) %>% 
+    tibble::remove_rownames() %>% 
+    tibble::column_to_rownames()
+  
+  log2rs <- log2rs %>%
+    to_linfc() %>%
+    `colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
+    dplyr::bind_cols(log2rs, .) %>%
+    dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2L) %>%
+    `rownames<-`(nms)
+  
+  cbind.data.frame(res_padj, log2rs)
 }
 
 
@@ -253,191 +253,191 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
                               method, padj_method, var_cutoff, 
                               pval_cutoff, logFC_cutoff, ...) 
 {
-	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
-	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
-	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
-	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|Duplicate)
-	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]
-	# formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|TMT_Set)
-	# formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|Duplicate)
-	# formula = ~ Term["Ner-PD", "V-PD", "(Ner_PLUS_PD-PD)"] + (1|Duplicate)
-	# formula = log2Ratio ~ Term
-	# formula = ~ Term[~V] # no interaction terms
-	# formula = ~ Term
+  # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
+  # formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
+  # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
+  # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|Duplicate)
+  # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]
+  # formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|TMT_Set)
+  # formula = ~ Term["Ner-V", "PD-V", "(Ner_PLUS_PD-V)"] + (1|Duplicate)
+  # formula = ~ Term["Ner-PD", "V-PD", "(Ner_PLUS_PD-PD)"] + (1|Duplicate)
+  # formula = log2Ratio ~ Term
+  # formula = ~ Term[~V] # no interaction terms
+  # formula = ~ Term
   
   options(warn = 1L)
   
   dots <- rlang::enexprs(...)
   # lmFit_dots <- dots %>% .[. %in% c("method")]
   # eBayes_dots <- dots %>% .[. %in% c("proportion")]
-
-	id <- rlang::as_string(rlang::enexpr(id))
-
-	fml_ops <- prepFml(formula, label_scheme_sub, ...)
-	contr_mat <- fml_ops$contr_mat
-	design <- fml_ops$design
-	key_col <- fml_ops$key_col
-	random_vars <- fml_ops$random_vars
-	label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
-	
-	local({
-	  ss <- (colSums(design) == 1)
-	  bads <- ss[ss]
-
-	  if (length(bads)) 
-	    warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
-	            " under `", formula, "`.")
-	})
-
-	# keep the name list as rows may drop in filtration
-	df_nms <- df %>%
-		tibble::rownames_to_column(id) %>%
-		dplyr::select(id)
-
-	if (complete_cases) 
-	  df <- df[complete.cases(df), ]
-	
-	df <- df %>% 
-	  filterData(var_cutoff = var_cutoff) %>% 
-	  dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
-	
-	local({
-	  ncol <- ncol(df)
-	  
-	  if (ncol < 4L) 
-	    warning(formula, ": the total number of samples is ", ncol, ".\n", 
-	            "May need more samples for statistical tests.")
-	})
-
-	if (length(random_vars)) {
-	  if (length(random_vars) > 1L) {
-	    warning("Uses only the first random variable: ", random_vars[1])
-	  }
-	  
-	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
-		corfit <- duplicateCorrelation(df, design = design, block = design_random)
-		
-		fit <- suppressWarnings(
-		  df %>%
-		    lmFit(design = design, 
-		          block = design_random, 
-		          correlation = corfit$consensus) %>%
-		    contrasts.fit(contr_mat) %>%
-		    eBayes()
-		)
-	} 
-	else {
-	  fit <- suppressWarnings(
-	    df %>%
-	      lmFit(design = design) %>%
-	      contrasts.fit(contr_mat) %>%
-	      eBayes()
-	  )
-	}
-
-	print(design)
-	print(contr_mat)
-	
-	# limma
-	log2rs <- fit$coefficients %>%
-		data.frame(check.names = FALSE) %>%
-		`names<-`(paste0("log2Ratio (", names(.), ")"))
-
-	pvals <- fit$p.value %>%
-		data.frame(check.names = FALSE) %>%
-		`names<-`(paste0("pVal (", names(.), ")"))
-
-	res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method)
-
-	if (method %in% c("lmer", "lme", "lm")) {
-		fml_rhs <- gsub("\\[.*\\]", "", formula) %>% .[length(.)]
-		new_formula <- as.formula(paste("log2Ratio", "~", fml_rhs))
-
-		contr_mat_lm <- t(contr_mat) %>%
-			MASS::ginv() %>%
-			`colnames<-`(colnames(contr_mat)) %>%
-			`rownames<-`(rownames(contr_mat))
-		
-		names(dimnames(contr_mat_lm)) <- c("Levels", "Contrasts")
-		contr_mat_lm <- list(Cdn = contr_mat_lm) %>% `names<-`(key_col)
-
-		smpl_levels <- names(df)
-		contr_levels <- attributes(contr_mat_lm[[key_col]])$dimnames$Contrasts
-		
-		df_lm <- df %>%
-			tibble::rownames_to_column(id) %>%
-			tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
-			dplyr::left_join(label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
-			                 by = "Sample_ID") %>%
-			dplyr::select(which(not_all_NA(.))) %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			tidyr::nest()
-
-		if (length(random_vars)) {
-		  if (!requireNamespace("broom.mixed", quietly = TRUE)) {
-		    stop("\n====================================================================", 
-		         "\nNeed package \"broom.mixed\" for this function to work.",
-		         "\n====================================================================",
-		         call. = FALSE)
-		  }
-		  
-		  if (!requireNamespace("lmerTest", quietly = TRUE)) {
-		    stop("\n============================================================", 
-		         "\nNeed package \"lmerTest\" for this function to work.",
-		         "\n============================================================",
-		         call. = FALSE)
-		  }
-		  
-		  res_lm <- df_lm %>%
-				dplyr::mutate(
-				  model = purrr::map(data, 
-				    ~ lmerTest::lmer(data = .x, formula = new_formula, 
-				                     contrasts = contr_mat_lm))) %>%
-				dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
-			  tidyr::unnest(glance, keep_empty = TRUE) %>% 
-				dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
-				dplyr::select(-c("group", "effect", "estimate", "std.error", "statistic", "df")) %>%
-				dplyr::mutate(term = gsub(key_col, "", term)) %>% 
-			  dplyr::select(-data, -model) %>% 
-				dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
-				tidyr::spread(term , p.value) %>%
-		    `rownames<-`(NULL) %>% 
-				tibble::column_to_rownames(id) %>%
-				`names<-`(paste0("pVal (", names(.), ")")) %>%
-				lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
-		} 
-		else {
-		  if (!requireNamespace("broom", quietly = TRUE)) {
-		    stop("\n============================================================", 
-		         "\nNeed package \"broom\" for this function to work.",
-		         "\n============================================================",
-		         call. = FALSE)
-		  }
-		  
-		  res_lm <- df_lm %>%
-				dplyr::mutate(model = purrr::map(data, ~ lm(data = .x, formula = new_formula,
-				                                            contrasts = contr_mat_lm))) %>%
-				dplyr::mutate(glance = purrr::map(model, broom::tidy)) %>%
-			  tidyr::unnest(glance, keep_empty = TRUE) %>%	
-				dplyr::filter(!grepl("Intercept", term)) %>%
-				dplyr::select(-c("std.error", "estimate", "statistic")) %>% 
-				dplyr::mutate(term = gsub(key_col, "", term)) %>% 
-			  dplyr::select(-data, -model) %>% 
-				dplyr::mutate(term = factor(term, levels = contr_levels))	%>% 
-				tidyr::spread(term , p.value)	%>% 
-		    `rownames<-`(NULL) %>% 
-				tibble::column_to_rownames(id) %>%
-				`names<-`(paste0("pVal (", names(.), ")"))  %>% 
-			  lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
-		}
-	}
-
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  fml_ops <- prepFml(formula, label_scheme_sub, ...)
+  contr_mat <- fml_ops$contr_mat
+  design <- fml_ops$design
+  key_col <- fml_ops$key_col
+  random_vars <- fml_ops$random_vars
+  label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
+  
+  local({
+    ss <- (colSums(design) == 1)
+    bads <- ss[ss]
+    
+    if (length(bads)) 
+      warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
+              " under `", formula, "`.")
+  })
+  
+  # keep the name list as rows may drop in filtration
+  df_nms <- df %>%
+    tibble::rownames_to_column(id) %>%
+    dplyr::select(id)
+  
+  if (complete_cases) 
+    df <- df[complete.cases(df), ]
+  
+  df <- df %>% 
+    filterData(var_cutoff = var_cutoff) %>% 
+    dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
+  
+  local({
+    ncol <- ncol(df)
+    
+    if (ncol < 4L) 
+      warning(formula, ": the total number of samples is ", ncol, ".\n", 
+              "May need more samples for statistical tests.")
+  })
+  
+  if (length(random_vars)) {
+    if (length(random_vars) > 1L) {
+      warning("Uses only the first random variable: ", random_vars[1])
+    }
+    
+    design_random <- label_scheme_sub_sub[[random_vars[1]]] 
+    corfit <- duplicateCorrelation(df, design = design, block = design_random)
+    
+    fit <- suppressWarnings(
+      df %>%
+        lmFit(design = design, 
+              block = design_random, 
+              correlation = corfit$consensus) %>%
+        contrasts.fit(contr_mat) %>%
+        eBayes()
+    )
+  } 
+  else {
+    fit <- suppressWarnings(
+      df %>%
+        lmFit(design = design) %>%
+        contrasts.fit(contr_mat) %>%
+        eBayes()
+    )
+  }
+  
+  print(design)
+  print(contr_mat)
+  
+  # limma
+  log2rs <- fit$coefficients %>%
+    data.frame(check.names = FALSE) %>%
+    `names<-`(paste0("log2Ratio (", names(.), ")"))
+  
+  pvals <- fit$p.value %>%
+    data.frame(check.names = FALSE) %>%
+    `names<-`(paste0("pVal (", names(.), ")"))
+  
+  res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method)
+  
+  if (method %in% c("lmer", "lme", "lm")) {
+    fml_rhs <- gsub("\\[.*\\]", "", formula) %>% .[length(.)]
+    new_formula <- as.formula(paste("log2Ratio", "~", fml_rhs))
+    
+    contr_mat_lm <- t(contr_mat) %>%
+      MASS::ginv() %>%
+      `colnames<-`(colnames(contr_mat)) %>%
+      `rownames<-`(rownames(contr_mat))
+    
+    names(dimnames(contr_mat_lm)) <- c("Levels", "Contrasts")
+    contr_mat_lm <- list(Cdn = contr_mat_lm) %>% `names<-`(key_col)
+    
+    smpl_levels <- names(df)
+    contr_levels <- attributes(contr_mat_lm[[key_col]])$dimnames$Contrasts
+    
+    df_lm <- df %>%
+      tibble::rownames_to_column(id) %>%
+      tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
+      dplyr::left_join(label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
+                       by = "Sample_ID") %>%
+      dplyr::select(which(not_all_NA(.))) %>%
+      dplyr::group_by(!!rlang::sym(id)) %>%
+      tidyr::nest()
+    
+    if (length(random_vars)) {
+      if (!requireNamespace("broom.mixed", quietly = TRUE)) {
+        stop("\n====================================================================", 
+             "\nNeed package \"broom.mixed\" for this function to work.",
+             "\n====================================================================",
+             call. = FALSE)
+      }
+      
+      if (!requireNamespace("lmerTest", quietly = TRUE)) {
+        stop("\n============================================================", 
+             "\nNeed package \"lmerTest\" for this function to work.",
+             "\n============================================================",
+             call. = FALSE)
+      }
+      
+      res_lm <- df_lm %>%
+        dplyr::mutate(
+          model = purrr::map(data, 
+                             ~ lmerTest::lmer(data = .x, formula = new_formula, 
+                                              contrasts = contr_mat_lm))) %>%
+        dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
+        tidyr::unnest(glance, keep_empty = TRUE) %>% 
+        dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
+        dplyr::select(-c("group", "effect", "estimate", "std.error", "statistic", "df")) %>%
+        dplyr::mutate(term = gsub(key_col, "", term)) %>% 
+        dplyr::select(-data, -model) %>% 
+        dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
+        tidyr::spread(term , p.value) %>%
+        `rownames<-`(NULL) %>% 
+        tibble::column_to_rownames(id) %>%
+        `names<-`(paste0("pVal (", names(.), ")")) %>%
+        lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
+    } 
+    else {
+      if (!requireNamespace("broom", quietly = TRUE)) {
+        stop("\n============================================================", 
+             "\nNeed package \"broom\" for this function to work.",
+             "\n============================================================",
+             call. = FALSE)
+      }
+      
+      res_lm <- df_lm %>%
+        dplyr::mutate(model = purrr::map(data, ~ lm(data = .x, formula = new_formula,
+                                                    contrasts = contr_mat_lm))) %>%
+        dplyr::mutate(glance = purrr::map(model, broom::tidy)) %>%
+        tidyr::unnest(glance, keep_empty = TRUE) %>%	
+        dplyr::filter(!grepl("Intercept", term)) %>%
+        dplyr::select(-c("std.error", "estimate", "statistic")) %>% 
+        dplyr::mutate(term = gsub(key_col, "", term)) %>% 
+        dplyr::select(-data, -model) %>% 
+        dplyr::mutate(term = factor(term, levels = contr_levels))	%>% 
+        tidyr::spread(term , p.value)	%>% 
+        `rownames<-`(NULL) %>% 
+        tibble::column_to_rownames(id) %>%
+        `names<-`(paste0("pVal (", names(.), ")"))  %>% 
+        lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
+    }
+  }
+  
   df_op <- res_lm %>% 
     tibble::rownames_to_column(id) %>%
     dplyr::right_join(df_nms, by = id) %>%
     `rownames<-`(NULL) %>% 
-    tibble::column_to_rownames(var = id)	
+    tibble::column_to_rownames(var = id)
 }
 
 
@@ -452,110 +452,110 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, rm_allna, 
                     filepath, filename, 
-										method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
-										data_type, anal_type, ...) 
+                    method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
+                    data_type, anal_type, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
                    logical(1L)))
   
-	id <- rlang::as_string(rlang::enexpr(id))
-	method <- rlang::as_string(rlang::enexpr(method))
-
-	dots <- rlang::enexprs(...)
-	
-	filter_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^filter_", names(.))]
-	
-	arrange_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^arrange_", names(.))]
-	
-	dots <- dots %>% 
-	  .[! . %in% c(filter_dots, arrange_dots)]
-	
-	non_fml_dots <- dots[!purrr::map_lgl(dots, is_formula)]
-	dots <- dots[purrr::map_lgl(dots, is_formula)]
-	
-	if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  pepSig_formulas <- dots
-	  save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
-	  rm(list = "pepSig_formulas")
-	} 
-	else if (id %in% c("prot_acc", "gene")) {
-	  if (!length(dots)) {
-	    prnSig_formulas <- dots <- concat_fml_dots()
-	  } 
-	  else {
-	    prnSig_formulas <- dots
-	  }
-	  
-	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
-	  rm(list = "prnSig_formulas")
-	}	
-
-	fn_prefix2 <- if (impute_na) "_impNA_pVals.txt" else "_pVals.txt"
-
-	df_op <- local({
-	  dfw <- df %>% 
-	    filters_in_call(!!!filter_dots) %>% 
-	    arrangers_in_call(!!!arrange_dots) %>% 
-	    prepDM(id = !!id, 
-	           scale_log2r = scale_log2r, 
-	           sub_grp = label_scheme_sub$Sample_ID, 
-	           anal_type = anal_type, 
-	           rm_allna = rm_allna) %>% 
-	    .$log2R
-	  
-	  # `complete_cases` depends on lm contrasts
-	  purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
-	                                             complete_cases, method, 
-	                                             padj_method, var_cutoff, 
-	                                             pval_cutoff, logFC_cutoff, 
-	                                             !!!non_fml_dots)) %>% 
-	    do.call("cbind", .)
-	})
-	
-	# record the `scale_log2r` status; otherwise, need to indicate it in a way
-	# for example, `_N` or `_Z` in file names
-	local({
-  	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
-	  
-	  type <- if (data_type == "Peptide")
-	    "pep"
-	  else if (data_type == "Protein")
-	    "prn"
-	  else
-	    stop("`data_type` needs to be either `Peptide` or `Protein`.")
-
-	  file <- paste0(type, "Sig_imp", ifelse(impute_na, "TRUE", "FALSE"), ".rda")
-	  
-	  call_pars <- c(scale_log2r = scale_log2r, 
-	                 complete_cases = complete_cases, 
-	                 impute_na = impute_na) %>% 
-	    as.list()
-	  
-	  save(call_pars, file = file.path(dat_dir, "Calls", file))
-	})
-	
-	suppressWarnings(
-  	df_op <- df_op %>%
-  	  tibble::rownames_to_column(id) %>% 
-  	  dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
-  	  dplyr::right_join(df, ., by = id) %T>% 
-  	  write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
-  	              col.names = TRUE, row.names = FALSE)	  
-	)
-
-	wb <- createWorkbook("proteoQ")
-	addWorksheet(wb, sheetName = "Results")
-	openxlsx::writeData(wb, sheet = "Results", df_op)
-	saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
-	             overwrite = TRUE) 
-
-	invisible(df_op)
+  id <- rlang::as_string(rlang::enexpr(id))
+  method <- rlang::as_string(rlang::enexpr(method))
+  
+  dots <- rlang::enexprs(...)
+  
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots)]
+  
+  non_fml_dots <- dots[!purrr::map_lgl(dots, is_formula)]
+  dots <- dots[purrr::map_lgl(dots, is_formula)]
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    pepSig_formulas <- dots
+    save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
+    rm(list = "pepSig_formulas")
+  } 
+  else if (id %in% c("prot_acc", "gene")) {
+    if (!length(dots)) {
+      prnSig_formulas <- dots <- concat_fml_dots()
+    } 
+    else {
+      prnSig_formulas <- dots
+    }
+    
+    save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
+    rm(list = "prnSig_formulas")
+  }	
+  
+  fn_prefix2 <- if (impute_na) "_impNA_pVals.txt" else "_pVals.txt"
+  
+  df_op <- local({
+    dfw <- df %>% 
+      filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots) %>% 
+      prepDM(id = !!id, 
+             scale_log2r = scale_log2r, 
+             sub_grp = label_scheme_sub$Sample_ID, 
+             anal_type = anal_type, 
+             rm_allna = rm_allna) %>% 
+      .$log2R
+    
+    # `complete_cases` depends on lm contrasts
+    purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
+                                        complete_cases, method, 
+                                        padj_method, var_cutoff, 
+                                        pval_cutoff, logFC_cutoff, 
+                                        !!!non_fml_dots)) %>% 
+      do.call("cbind", .)
+  })
+  
+  # record the `scale_log2r` status; otherwise, need to indicate it in a way
+  # for example, `_N` or `_Z` in file names
+  local({
+    dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
+    
+    type <- if (data_type == "Peptide")
+      "pep"
+    else if (data_type == "Protein")
+      "prn"
+    else
+      stop("`data_type` needs to be either `Peptide` or `Protein`.")
+    
+    file <- paste0(type, "Sig_imp", ifelse(impute_na, "TRUE", "FALSE"), ".rda")
+    
+    call_pars <- c(scale_log2r = scale_log2r, 
+                   complete_cases = complete_cases, 
+                   impute_na = impute_na) %>% 
+      as.list()
+    
+    save(call_pars, file = file.path(dat_dir, "Calls", file))
+  })
+  
+  suppressWarnings(
+    df_op <- df_op %>%
+      tibble::rownames_to_column(id) %>% 
+      dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
+      dplyr::right_join(df, ., by = id) %T>% 
+      write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
+                  col.names = TRUE, row.names = FALSE)	  
+  )
+  
+  wb <- createWorkbook("proteoQ")
+  addWorksheet(wb, sheetName = "Results")
+  openxlsx::writeData(wb, sheet = "Results", df_op)
+  saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
+               overwrite = TRUE) 
+  
+  invisible(df_op)
 }
 
 

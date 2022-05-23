@@ -47,297 +47,297 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 {
   if (!nrow(label_scheme_sub))
     stop("Empty metadata.")
-
-	complete_cases <- to_complete_cases(complete_cases = complete_cases, 
-	                                    impute_na = impute_na)
-	if (complete_cases)
-	  df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-
-	id <- rlang::as_string(rlang::enexpr(id))
-	dots <- rlang::enexprs(...)
-	
-	filter_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^filter_", names(.))]
-	
-	arrange_dots <- dots %>% 
-	  .[purrr::map_lgl(., is.language)] %>% 
-	  .[grepl("^arrange_", names(.))]
-	
-	dots <- dots %>% 
-	  .[! . %in% c(filter_dots, arrange_dots)]
-	
-	df_num <- df %>% 
-	  filters_in_call(!!!filter_dots) %>% 
-	  arrangers_in_call(!!!arrange_dots) %>% 
-	  prepDM(id = !!id, scale_log2r = scale_log2r, 
-	         sub_grp = label_scheme_sub$Sample_ID, 
-	         anal_type = anal_type, 
-	         rm_allna = TRUE) %>% 
-	  .$log2R
-	
-	label_scheme_sub <- label_scheme_sub %>% 
-	  dplyr::filter(Sample_ID %in% colnames(df_num))
-	
-	cols_lsnum <- unlist(lapply(label_scheme_sub, is.numeric))
-	cols_lsnum <- names(cols_lsnum[cols_lsnum])
-
-	col_group <- rlang::enexpr(col_group)
-	col_order <- rlang::enexpr(col_order)
-	
-	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-	fn_prefix <- gsub("\\.[^.]*$", "", filename)
-
-	df_mean <- t(df_num) %>%
-	  data.frame(check.names = FALSE) %>%
-	  tibble::rownames_to_column("Sample_ID") %>%
-	  dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
-	  dplyr::filter(!is.na(!!col_group)) %>%
-	  dplyr::mutate(Group := !!col_group) %>% 
-	  dplyr::group_by(Group)
-
-	df_mean <- suppressWarnings(
-	  df_mean %>%
-	    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
-	)
-	
-	if (rlang::as_string(col_order) %in% names(df_mean)) {
-		df_mean <- df_mean %>%
-			dplyr::arrange(!!col_order) %>%
-			dplyr::rename(Order := !!col_order) %>% 
-		  dplyr::select(-which(names(.) %in% cols_lsnum))
-	}
-	
-	df_mean <- df_mean %>%
-	  dplyr::ungroup() %>% 
-	  dplyr::select(-Group) %>% 
-	  t() %>% 
-	  data.frame(check.names = FALSE) %>%
-	  `colnames<-`(df_mean$Group) %>%
-	  tibble::rownames_to_column(id) %>%
-	  dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
-	  `rownames<-`(NULL) %>% 
-	  tibble::column_to_rownames(id)
-	
-	if (is.null(n_clust)) {
-	  n_clust <- local({
-	    gap_stat <- cluster::clusGap(df_mean, kmeans, 10, B = 100)
-	    cluster::maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
-	  })
-	  
-	  message("Set `n_clust` to ", n_clust, ".")
-	  
-	  fn_prefix <- paste0(fn_prefix, n_clust)
-	} 
-	else {
-	  stopifnot(all(n_clust >= 2L), all(n_clust %% 1 == 0L))
-	}
-	
-	dots <- local({
-	  if (choice == "cmeans") {
-	    # (1) overwriting args: to this <- from `cmeans`
-	    if (!is.null(dots$centers)) {
-	      n_clust <- centers
-	      dots$centers <- NULL
-	      warning("Replace the value of `n_clust` with `centers`.")
-	    }
-	    
-	    # (2) excluded formalArgs: `x` and `centers`; 
-	    #     mistaken `k` intended for `cluster::clara` excluded as well; 
-	    #     no mismatch between "m" and "method" with `%in%`
-	    dots <- dots %>% 
-	      .[names(.) %in% c("iter.max", 
-	                        "verbose",
-	                        "dist",
-	                        "method", 
-	                        "m", 
-	                        "rate.par", 
-	                        "weights", 
-	                        "control")]
-	    
-	    # (3) conversion: expr to character string
-	    purrr::map(c("dist", "method"), ~ {
-	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
-	    })
-
-	    # (4) overwriting from this -> to `cmeans` defaults
-	    if (is.null(dots$m)) {
-	      dots$m <- local({
-	        N <- nrow(df_mean)
-	        D <- ncol(df_mean)
-	        m <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
-	          D^(-0.0406 * log(N) - 0.1134)
-	        
-	        message("Set `m` to ", round(m, digits = 2), ".")
-	        
-	        invisible(m)
-	      })
-	    }
-	  } 
-	  else if (choice == "kmeans") {
-	    if (!is.null(dots$centers)) {
-	      n_clust <- centers
-	      dots$centers <- NULL
-	      warning("Replace the value of `n_clust` with `centers`.")
-	    }
-	    
-	    dots <- dots %>% 
-	      .[names(.) %in% c("iter.max", 
-	                        "nstart",
-	                        "algorithm",
-	                        "trace")]
-	    
-	    purrr::map(c("algorithm"), ~ {
-	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
-	    })
-	    
-	    if (is.null(dots$nstart)) {
-	      dots$nstart <- 20
-	      message("Set `n_start` to 20.")
-	    }
-	  } 
-	  else if (choice == "clara") {
-	    if (!is.null(dots[["k"]])) {
-	      n_clust <- k
-	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.")
-	    }
-	    
-	    dots <- dots %>% 
-	      .[names(.) %in% c("metric", 
-	                        "stand",
-	                        "samples",
-	                        "sampsize", 
-	                        "trace", 
-	                        "medoids.x",
-	                        "keep.data",
-	                        "rngR", 
-	                        "pamLike", 
-	                        "correct.d")]
-	    
-	    purrr::map(c("metric"), ~ {
-	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
-	    })
-	    
-	    if (is.null(dots$samples)) {
-	      dots$samples <- 50
-	      message("Set `samples` to 50.")
-	    }
-	  } 
-	  else if (choice == "pam") {
-	    if (!is.null(dots[["k"]])) {
-	      n_clust <- k
-	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.")
-	    }
-	    
-	    dots <- dots %>% 
-	      .[names(.) %in% c("diss",
-	                        "metric", 
-	                        "medoids",
-	                        "stand",
-	                        "cluster.only",
-	                        "do.swap",
-	                        "keep.diss",
-	                        "keep.data",
-	                        "pamonce", 
-	                        "trace.lev")]
-	    
-	    purrr::map(c("metric"), ~ {
-	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
-	    })
-	  } 
-	  else if (choice == "fanny") {
-	    if (!is.null(dots[["k"]])) {
-	      n_clust <- k
-	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.")
-	    }
-	    
-	    dots <- dots %>% 
-	      .[names(.) %in% c("diss",
-	                        "memb.exp",
-	                        "metric", 
-	                        "stand",
-	                        "iniMem.p",
-	                        "cluster.only",
-	                        "keep.diss",
-	                        "keep.data",
-	                        "maxit",
-	                        "tol",
-	                        "trace.lev")]
-	    
-	    purrr::map(c("metric"), ~ {
-	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
-	    })
-	    
-	    if (is.null(dots$maxit)) {
-	      dots$maxit <- 50
-	      message("Set `maxit` to 50.")
-	    }
-	  } 
-	  else {
-	    stop("Unknown `choice = ", choice, "`.", call. = FALSE)
-	  }
-	  
-	  invisible(dots)
-	})
-
-	purrr::walk(fn_prefix, ~ {
-	  n_clust <- gsub("^.*_nclust(\\d+).*", "\\1", .x) %>% 
-	    as.numeric()
-	  
-	  filename <- paste0(.x, ".txt")
-
-	  args <- if (choice %in% c("cmeans", "kmeans"))
-	    c(list(x = as.matrix(df_mean), centers = n_clust), dots)
-	  else if (choice %in% c("clara", "pam", "fanny"))
-	    c(list(x = as.matrix(df_mean), k = n_clust), dots)
-	  else
-	    stop("Unknown `choice` ", choice, ".")
-
-	  if (choice == "cmeans") {
-	    # Warning of cmeans: partial argument match of 'length' to 'length.out'
-	    suppressWarnings(cl <- do.call(e1071::cmeans, args))
-	  } 
-	  else if (choice == "kmeans") {
-	    cl <- do.call(stats::kmeans, args)
-	  } 
-	  else if (choice == "clara") {
-	    cl <- do.call(cluster::clara, args)
-	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
-	  } 
-	  else if (choice == "pam") {
-	    cl <- do.call(cluster::pam, args)
-	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
-	  } 
-	  else if (choice == "fanny") {
-	    cl <- do.call(cluster::fanny, args)
-	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
-	  } 
-	  else {
-	    stop("Unknown `choice` ", choice, ".", call. = FALSE)
-	  }
-
-	  res_cl <- data.frame(cluster = cl$cluster) %>%
-	    tibble::rownames_to_column() %>%
-	    dplyr::rename(!!id := rowname)
-	  
-	  Levels <- names(df_mean)
-	  
-	  df_mean %>% 
-	    tibble::rownames_to_column(id) %>% 
-	    dplyr::left_join(res_cl, by = id) %>% 
-	    tidyr::gather(key = variable, value = value, -id, -cluster) %>%
-	    dplyr::mutate(variable = factor(variable, levels = Levels)) %>%
-	    dplyr::arrange(variable) %>% 
-	    dplyr::rename(group = variable, log2FC = value) %>% 
-	    dplyr::left_join(df[, c(id, "species")], by = id) %>% 
-	    dplyr::mutate(col_group = rlang::as_string(col_group), 
-	                  col_order = rlang::as_string(col_order)) %>% 
-	    write.table(file.path(filepath, filename), sep = "\t", 
-	                col.names = TRUE, row.names = FALSE, quote = FALSE)	
-	})
+  
+  complete_cases <- to_complete_cases(complete_cases = complete_cases, 
+                                      impute_na = impute_na)
+  if (complete_cases)
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
+  
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots)]
+  
+  df_num <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    prepDM(id = !!id, scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub$Sample_ID, 
+           anal_type = anal_type, 
+           rm_allna = TRUE) %>% 
+    .$log2R
+  
+  label_scheme_sub <- label_scheme_sub %>% 
+    dplyr::filter(Sample_ID %in% colnames(df_num))
+  
+  cols_lsnum <- unlist(lapply(label_scheme_sub, is.numeric))
+  cols_lsnum <- names(cols_lsnum[cols_lsnum])
+  
+  col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  df_mean <- t(df_num) %>%
+    data.frame(check.names = FALSE) %>%
+    tibble::rownames_to_column("Sample_ID") %>%
+    dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
+    dplyr::filter(!is.na(!!col_group)) %>%
+    dplyr::mutate(Group := !!col_group) %>% 
+    dplyr::group_by(Group)
+  
+  df_mean <- suppressWarnings(
+    df_mean %>%
+      dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+  )
+  
+  if (rlang::as_string(col_order) %in% names(df_mean)) {
+    df_mean <- df_mean %>%
+      dplyr::arrange(!!col_order) %>%
+      dplyr::select(-col_order) %>%
+      dplyr::select(-which(names(.) %in% cols_lsnum))
+  }
+  
+  df_mean <- df_mean %>%
+    dplyr::ungroup() %>% 
+    dplyr::select(-Group) %>% 
+    t() %>% 
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`(df_mean$Group) %>%
+    tibble::rownames_to_column(id) %>%
+    dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
+    `rownames<-`(NULL) %>% 
+    tibble::column_to_rownames(id)
+  
+  if (is.null(n_clust)) {
+    n_clust <- local({
+      gap_stat <- cluster::clusGap(df_mean, kmeans, 10, B = 100)
+      cluster::maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
+    })
+    
+    message("Set `n_clust` to ", n_clust, ".")
+    
+    fn_prefix <- paste0(fn_prefix, n_clust)
+  } 
+  else {
+    stopifnot(all(n_clust >= 2L), all(n_clust %% 1 == 0L))
+  }
+  
+  dots <- local({
+    if (choice == "cmeans") {
+      # (1) overwriting args: to this <- from `cmeans`
+      if (!is.null(dots$centers)) {
+        n_clust <- centers
+        dots$centers <- NULL
+        warning("Replace the value of `n_clust` with `centers`.")
+      }
+      
+      # (2) excluded formalArgs: `x` and `centers`; 
+      #     mistaken `k` intended for `cluster::clara` excluded as well; 
+      #     no mismatch between "m" and "method" with `%in%`
+      dots <- dots %>% 
+        .[names(.) %in% c("iter.max", 
+                          "verbose",
+                          "dist",
+                          "method", 
+                          "m", 
+                          "rate.par", 
+                          "weights", 
+                          "control")]
+      
+      # (3) conversion: expr to character string
+      purrr::map(c("dist", "method"), ~ {
+        if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
+      })
+      
+      # (4) overwriting from this -> to `cmeans` defaults
+      if (is.null(dots$m)) {
+        dots$m <- local({
+          N <- nrow(df_mean)
+          D <- ncol(df_mean)
+          m <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
+            D^(-0.0406 * log(N) - 0.1134)
+          
+          message("Set `m` to ", round(m, digits = 2), ".")
+          
+          invisible(m)
+        })
+      }
+    } 
+    else if (choice == "kmeans") {
+      if (!is.null(dots$centers)) {
+        n_clust <- centers
+        dots$centers <- NULL
+        warning("Replace the value of `n_clust` with `centers`.")
+      }
+      
+      dots <- dots %>% 
+        .[names(.) %in% c("iter.max", 
+                          "nstart",
+                          "algorithm",
+                          "trace")]
+      
+      purrr::map(c("algorithm"), ~ {
+        if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
+      })
+      
+      if (is.null(dots$nstart)) {
+        dots$nstart <- 20
+        message("Set `n_start` to 20.")
+      }
+    } 
+    else if (choice == "clara") {
+      if (!is.null(dots[["k"]])) {
+        n_clust <- k
+        dots[["k"]] <- NULL
+        warning("Replace the value of `n_clust` with `k`.")
+      }
+      
+      dots <- dots %>% 
+        .[names(.) %in% c("metric", 
+                          "stand",
+                          "samples",
+                          "sampsize", 
+                          "trace", 
+                          "medoids.x",
+                          "keep.data",
+                          "rngR", 
+                          "pamLike", 
+                          "correct.d")]
+      
+      purrr::map(c("metric"), ~ {
+        if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
+      })
+      
+      if (is.null(dots$samples)) {
+        dots$samples <- 50
+        message("Set `samples` to 50.")
+      }
+    } 
+    else if (choice == "pam") {
+      if (!is.null(dots[["k"]])) {
+        n_clust <- k
+        dots[["k"]] <- NULL
+        warning("Replace the value of `n_clust` with `k`.")
+      }
+      
+      dots <- dots %>% 
+        .[names(.) %in% c("diss",
+                          "metric", 
+                          "medoids",
+                          "stand",
+                          "cluster.only",
+                          "do.swap",
+                          "keep.diss",
+                          "keep.data",
+                          "pamonce", 
+                          "trace.lev")]
+      
+      purrr::map(c("metric"), ~ {
+        if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
+      })
+    } 
+    else if (choice == "fanny") {
+      if (!is.null(dots[["k"]])) {
+        n_clust <- k
+        dots[["k"]] <- NULL
+        warning("Replace the value of `n_clust` with `k`.")
+      }
+      
+      dots <- dots %>% 
+        .[names(.) %in% c("diss",
+                          "memb.exp",
+                          "metric", 
+                          "stand",
+                          "iniMem.p",
+                          "cluster.only",
+                          "keep.diss",
+                          "keep.data",
+                          "maxit",
+                          "tol",
+                          "trace.lev")]
+      
+      purrr::map(c("metric"), ~ {
+        if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
+      })
+      
+      if (is.null(dots$maxit)) {
+        dots$maxit <- 50
+        message("Set `maxit` to 50.")
+      }
+    } 
+    else {
+      stop("Unknown `choice = ", choice, "`.", call. = FALSE)
+    }
+    
+    invisible(dots)
+  })
+  
+  purrr::walk(fn_prefix, ~ {
+    n_clust <- gsub("^.*_nclust(\\d+).*", "\\1", .x) %>% 
+      as.numeric()
+    
+    filename <- paste0(.x, ".txt")
+    
+    args <- if (choice %in% c("cmeans", "kmeans"))
+      c(list(x = as.matrix(df_mean), centers = n_clust), dots)
+    else if (choice %in% c("clara", "pam", "fanny"))
+      c(list(x = as.matrix(df_mean), k = n_clust), dots)
+    else
+      stop("Unknown `choice` ", choice, ".")
+    
+    if (choice == "cmeans") {
+      # Warning of cmeans: partial argument match of 'length' to 'length.out'
+      suppressWarnings(cl <- do.call(e1071::cmeans, args))
+    } 
+    else if (choice == "kmeans") {
+      cl <- do.call(stats::kmeans, args)
+    } 
+    else if (choice == "clara") {
+      cl <- do.call(cluster::clara, args)
+      names(cl)[which(names(cl) == "clustering")] <- "cluster"
+    } 
+    else if (choice == "pam") {
+      cl <- do.call(cluster::pam, args)
+      names(cl)[which(names(cl) == "clustering")] <- "cluster"
+    } 
+    else if (choice == "fanny") {
+      cl <- do.call(cluster::fanny, args)
+      names(cl)[which(names(cl) == "clustering")] <- "cluster"
+    } 
+    else {
+      stop("Unknown `choice` ", choice, ".", call. = FALSE)
+    }
+    
+    res_cl <- data.frame(cluster = cl$cluster) %>%
+      tibble::rownames_to_column() %>%
+      dplyr::rename(!!id := rowname)
+    
+    Levels <- names(df_mean)
+    
+    df_mean %>% 
+      tibble::rownames_to_column(id) %>% 
+      dplyr::left_join(res_cl, by = id) %>% 
+      tidyr::gather(key = variable, value = value, -id, -cluster) %>%
+      dplyr::mutate(variable = factor(variable, levels = Levels)) %>%
+      dplyr::arrange(variable) %>% 
+      dplyr::rename(group = variable, log2FC = value) %>% 
+      dplyr::left_join(df[, c(id, "species")], by = id) %>% 
+      dplyr::mutate(col_group = rlang::as_string(col_group), 
+                    col_order = rlang::as_string(col_order)) %>% 
+      write.table(file.path(filepath, filename), sep = "\t", 
+                  col.names = TRUE, row.names = FALSE, quote = FALSE)	
+  })
 }
 
 
@@ -695,7 +695,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
                            n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, ...) {
+                           df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
