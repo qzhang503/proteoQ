@@ -502,7 +502,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
   } 
   else if (anal_type == "Corrplot") {
     function(data_select = "logFC", 
-             cor_method = "pearson", ...) {
+             cor_method = "pearson", digits = 2L, ...) {
       plotCorr(df = df,
                id = !!id,
                anal_type = anal_type,
@@ -515,6 +515,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
                filepath = filepath,
                filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix),
                cor_method = cor_method, 
+               digits = digits,
                ...)
     }
   } 
@@ -543,7 +544,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
   } 
   else if (anal_type == "Volcano") {
     function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
-             theme = NULL, highlights = NULL, ...) {
+             theme = NULL, highlights = NULL, grids = NULL, ...) {
       plotVolcano(df = df,
                   df2 = NULL,
                   id = !!id,
@@ -562,6 +563,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
                   filepath = filepath,
                   filename = paste0(fn_prefix, ".", fn_suffix),
                   highlights = highlights, 
+                  grids = grids, 
                   theme = theme,
                   ...)
     }

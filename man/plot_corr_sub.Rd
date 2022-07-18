@@ -16,6 +16,7 @@ plot_corr_sub(
   xbreaks,
   width,
   height,
+  digits = 2L,
   ...
 )
 }

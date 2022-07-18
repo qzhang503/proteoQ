@@ -53,6 +53,7 @@ pep_end	Ordinal position of last peptide residue in protein sequence
 pep_len	Number of amino acid residues in a peptide sequence	
 pep_miss	Count of missed cleavage sites in peptide	
 pep_istryptic	Is a peptide sequence a canonical tryptic peptide or not	
+pep_semitryptic	Charateristics of semi-tryptic peptides	
 pep_frame	Mascot calculation of translation frame number	
 pep_var_mod	Mascot variable modifications from all sources as list of names	
 pep_var_mod_pos	"Mascot variable modifications as a string of digits, e.g. ’0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	

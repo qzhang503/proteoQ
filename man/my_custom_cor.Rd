@@ -10,6 +10,7 @@ my_custom_cor(
   color = I("grey50"),
   sizeRange = c(1, 4),
   cor_method = "pearson",
+  digits = 2L,
   ...
 )
 }

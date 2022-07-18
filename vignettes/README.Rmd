@@ -5,6 +5,8 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:

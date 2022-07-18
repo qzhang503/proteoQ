@@ -17,6 +17,7 @@ plotCorr(
   filepath = NULL,
   filename = NULL,
   cor_method = "pearson",
+  digits = 2L,
   ...
 )
 }
@@ -79,6 +80,9 @@ image type will be determined by the extension of the file name.}
 \item{cor_method}{A character string indicating which correlation coefficient
 is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
 \code{"spearman"}.}
+
+\item{digits}{The number of decimal places in correlation values to be
+displayed.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

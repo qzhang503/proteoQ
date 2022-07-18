@@ -25,5 +25,5 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{max_len}{The maximum length of peptide sequence for consideration.}
 }
 \description{
-Finds peptide abundance indexes.
+In relative to tryptic peptides.
 }

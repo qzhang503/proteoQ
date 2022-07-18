@@ -33,6 +33,7 @@ pep_end	Mascot: ordinal position of last peptide residue in protein sequence
 pep_len	Number of amino acid residues in a peptide sequence	
 pep_miss	Count of missed cleavage sites in peptide	
 pep_istryptic	Is a peptide sequence a canonical tryptic peptide or not	
+pep_semitryptic	Charateristics of semi-tryptic peptides	
 pep_frame	Mascot calculation of translation frame number	
 pep_isdecoy	Is peptide identication a decoy or not	
 pep_issig	Is peptide identication significant or not	

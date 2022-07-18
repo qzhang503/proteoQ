@@ -1496,7 +1496,8 @@ med_summarise_keys <- function(df, ids)
                           "pep_exp_mz", "pep_exp_z", 
                           "pep_locprob", "pep_locdiff", 
                           "pep_ret_range", "pep_n_nl", "pep_n_exp_z", 
-                          "pep_score_co", "pep_n_nl")
+                          # "pep_score_co", 
+                          "pep_n_nl")
   mascot_geomean_keys <- c("pep_expect")
   mascot_sum_keys <- c("pep_tot_int")
   
@@ -2818,7 +2819,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::select(-which(names(.) %in% c("pep_istryptic", "mean_lint", "count_nna", 
+    dplyr::select(-which(names(.) %in% c("pep_istryptic", "pep_semitryptic", 
+                                         "mean_lint", "count_nna", 
                                          "shared_prot_accs", "shared_genes"))) %>% 
     dplyr::select(-grep("^Reporter mass deviation", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("m/z", "PIF", "PEP"))) %>% 

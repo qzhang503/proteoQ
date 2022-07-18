@@ -15,6 +15,7 @@ fullVolcano(
   adjP = FALSE,
   topn_labels = 20,
   highlights = NULL,
+  grids = NULL,
   ...
 )
 }
@@ -60,6 +61,11 @@ shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{highlights}{A list of entries for highlighting. See also \code{filter_}
 varargs for the format.}
+
+\item{grids}{An integer or integer vector for subset visualization of
+contrasts within a group. For example with a group of three contrasts,
+\code{grids = 2:3} will hide the first grid from displaying. At the
+NULL default, all available grids will be shown.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

@@ -24,6 +24,7 @@ byfml_volcano(
   complete_cases,
   impute_na,
   highlights = NULL,
+  grids = NULL,
   theme = NULL,
   ...
 )
@@ -133,6 +134,11 @@ will be used. The default is FALSE.}
 
 \item{highlights}{A list of entries for highlighting. See also \code{filter_}
 varargs for the format.}
+
+\item{grids}{An integer or integer vector for subset visualization of
+contrasts within a group. For example with a group of three contrasts,
+\code{grids = 2:3} will hide the first grid from displaying. At the
+NULL default, all available grids will be shown.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

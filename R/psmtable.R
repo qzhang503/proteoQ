@@ -2488,7 +2488,7 @@ pad_mascot_channels <- function(file = NULL, ...)
          call. = FALSE)
   }
   
-  if (TMT_plex == 0L) {
+  if (!TMT_plex) {
     if (!file.exists(file.path(dat_dir, "PSM/cache/", 
                                paste0(base_name, "_queryInfo.rds")))) {
       warning("Query file not found for LFQ.\n", 
@@ -2498,7 +2498,7 @@ pad_mascot_channels <- function(file = NULL, ...)
     }
   }
   
-  if ((this_plex > 0L) && (this_plex < TMT_plex)) {
+  if (this_plex && (this_plex < TMT_plex)) {
     nms <- set_mascot_colnms(TMT_plex) %>% stringr::str_split(",", simplify = TRUE)
     nms_ratio <- nms %>% .[grepl("R[0-9]{3}[NC]{0,1}$", .)]
     nms_int <- nms %>% .[grepl("I[0-9]{3}[NC]{0,1}$", .)]
@@ -4945,7 +4945,8 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE)
                   "pep_delta",	"pep_score", "pep_homol",	"pep_ident",
                   "pep_expect",	"pep_res_before", "pep_seq",
                   "pep_seq_mod",	"pep_res_after",	"pep_start", 
-                  "pep_end",	"pep_len",	"pep_miss",	"pep_istryptic",	
+                  "pep_end",	"pep_len",	"pep_miss",	
+                  "pep_istryptic", "pep_semitryptic", 
                   "pep_frame", "pep_var_mod",	"pep_var_mod_pos", 
                   "pep_summed_mod_pos",	"pep_local_mod_pos",
                   "pep_num_match",	"pep_scan_title",	"pep_index",	
@@ -5082,7 +5083,7 @@ pad_mq_channels <- function(file = NULL, fasta = NULL, entrez = NULL,
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  if (TMT_plex == 0L) {
+  if (!TMT_plex) {
     # no "Corrected" intensity for LFQ
     df <- df %>% 
       dplyr::mutate(dat_file = base_name, 
@@ -5126,6 +5127,9 @@ pad_mq_channels <- function(file = NULL, fasta = NULL, entrez = NULL,
       dplyr::filter(TMT_Set %in% tmt_sets)
   }
 
+  if (!nrow(label_scheme_sub))
+    stop("No RAW_Files(s) matched between PSM and metadata.", call. = FALSE)
+  
   nas <- data.frame(rep(NA, nrow(df)))
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
 
@@ -5764,6 +5768,9 @@ pad_sm_channels <- function(file = NULL, ...)
     label_scheme_sub <- label_scheme_full %>% 
       dplyr::filter(TMT_Set %in% tmt_sets)
   }
+  
+  if (!nrow(label_scheme_sub))
+    stop("No RAW_Files(s) matched between PSM and metadata.", call. = FALSE)
 
   nas <- data.frame(rep(NA, nrow(df)))
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
@@ -6225,19 +6232,23 @@ pad_mf_channels <- function(file = NULL, ...)
       
       df_int[, names(cols[cols == 1]), drop = FALSE]
     })
+    
+    # (Assumed MSFragger still uses MGF from MSConvert)
+    df <- df %>% 
+      dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
   } 
   else if ("Intensity" %in% nms_df) {
-    return(dplyr::mutate(df, dat_file = base_name, I000 = Intensity))
+    df <- df %>% 
+      dplyr::mutate(dat_file = base_name, I000 = Intensity) %>% 
+      dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
+    
+    return(df)
   } 
   else {
-    stop("Neither column 'Purity' or 'Intensity' were found.")
+    stop("Neither column 'Purity' or 'Intensity' were found.", call. = FALSE)
   }
   
   rm(list = "nms_df")
-  
-  # (Assumed MSFragger still uses MGF from MSConvert)
-  df <- df %>% 
-    dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
 
   ## TMT only (no LFQ) from this point on
   
@@ -6272,6 +6283,9 @@ pad_mf_channels <- function(file = NULL, ...)
       dplyr::filter(TMT_Set %in% tmt_sets)
   }
   
+  if (!nrow(label_scheme_sub))
+    stop("No RAW_Files(s) matched between PSM and metadata.", call. = FALSE)
+
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
   this_plex <- ncol(df_int)
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -6465,7 +6479,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- df %>% 
     dplyr::mutate(`Modified Peptide` = ifelse(is.na(`Modified Peptide`), 
                                               pep_seq, `Modified Peptide`)) %>% 
-    dplyr::rename(pep_seq_mod = `Modified Peptide`) %>% 
+    dplyr::mutate(pep_seq_mod = `Modified Peptide`) %>% 
     add_msfragger_pepseqmod(use_lowercase_aa) 
   
   # (1.4.2) phospho
@@ -6723,7 +6737,7 @@ pad_tmt_channels <- function(file = NULL, ...)
                       pep_len = col_integer(), 
                       pep_issig = col_logical(),
                       pep_score = col_double(),
-                      pep_score_co = col_double(),
+                      pep_expect = col_double(),
                       pep_rank = col_integer(), 
                       pep_locprob = col_double(),
                       pep_locdiff = col_double(),
@@ -6763,7 +6777,7 @@ pad_tmt_channels <- function(file = NULL, ...)
   
   stopifnot(this_plex >= 0L)
   
-  if (this_plex == 0L) {
+  if (!this_plex) {
     return(dplyr::mutate(df, dat_file = base_name, I000 = pep_tot_int))
   }
   
@@ -6875,42 +6889,48 @@ add_pepseqmod <- function(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
   })
   
   if ("pep_seq_mod" %in% col_nms) {
-    warning("Recompile column \"pep_seq_mod\".")
+    warning("Recompiling column \"pep_seq_mod\".")
   }
 
   df <- df %>% dplyr::mutate(pep_seq_mod = pep_seq)
-  
+
   fmods <- unique(df$pep_fmod)
   
   vmods <- unique(df$pep_vmod) %>% 
     .[! . == ""] %>% 
     .[!is.na(.)]
+  
+  fixedmods <- unique(unlist(strsplit(fmods, ", ")))
+  varmods <- unique(unlist(strsplit(vmods, ", ")))
+  varmods <- varmods[!varmods %in% fixedmods]
 
   df <- local({
     pat <- "Phospho\\s{1}\\("
+    is_phos <- any(grepl(pat, c(fmods, vmods)))
     
-    is_phospho_expt <- any(grepl(pat, c(fmods, vmods)))
-    
-    if (is_phospho_expt && purge_phosphodata) {
+    if (is_phos && purge_phosphodata) {
       df <- df %>% dplyr::filter(grepl(pat, pep_vmod) | grepl(pat, pep_fmod))
     }
-    
+
     df
   })
   
   if (!length(vmods)) {
-    warning("No applicable variable modifications", call. = FALSE)
     return(df)
   }
-  
+
   if (use_lowercase_aa) {
-    # (1) non terminal modifications
-    pos_matrix  <- gregexpr("[1-f]", df$pep_ivmod) %>%
+    check_dup_unimods(varmods)
+    
+    # (1) non-terminal modifications
+    pos_matrix  <- gregexpr("[1-f]", df$pep_ivmod)
+    
+    pos_matrix <- pos_matrix %>%
       list_to_dataframe() %>% 
       data.frame(check.names = FALSE)
     
     pos_matrix[pos_matrix < 0L] <- NA
-    
+
     for (k in 1:ncol(pos_matrix)) {
       rows <- !is.na(pos_matrix[, k])
       locales <- pos_matrix[rows, k]
@@ -6949,20 +6969,53 @@ add_pepseqmod <- function(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
                              pep_seq_mod))
     
     # (4-1) "^" for peptide "(N-term)"
-    df <- df %>% 
-      dplyr::mutate(pep_seq_mod = 
-                      ifelse(grepl("N-term", pep_vmod) & 
-                               !grepl("Protein N-term", pep_vmod, fixed = TRUE), 
-                             gsub("(^[_~]{0,1})", paste0("\\1", "^"), pep_seq_mod), 
-                             pep_seq_mod))
-    
+    # note: 
+    # (1) only ONE terminal site per combination of fixed and variable modifications;
+    # (2) fixed Protein N-term unlikely
+    fixedn <- fixedmods[grepl("N-term", fixedmods)]
+    len_n <- length(fixedn)
+
+    if (len_n == 1L) {
+      df <- df %>% 
+        dplyr::mutate(pep_seq_mod = 
+                        ifelse(!grepl(fixedn, pep_vmod, fixed = TRUE) & 
+                                 grepl("N-term", pep_vmod) & 
+                                 !grepl("Protein N-term", pep_vmod, fixed = TRUE), 
+                               gsub("(^[_~]{0,1})", paste0("\\1", "^"), pep_seq_mod), 
+                               pep_seq_mod))
+    }
+    else if (len_n > 1L) {
+      warning("Multiple N-terms not supposed in a set of ", 
+              "fixed and variable modifications: ", 
+              paste(fixedn, collapse = ", "), 
+              "\nContact the developer of \"proteoM\" for fixes.")
+      warning("Indicator of N-term modification not added.")
+    }
+
+    rm(list = c("fixedn", "len_n"))
+
     # (4-2) "^" peptide "(C-term)"
-    df <- df %>% 
-      dplyr::mutate(pep_seq_mod = 
-                      ifelse(grepl("C-term", pep_vmod) & 
-                               !grepl("Protein C-term", pep_vmod, fixed = TRUE), 
-                             gsub("([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod), 
-                             pep_seq_mod))
+    fixedc <- fixedmods[grepl("C-term", fixedmods)]
+    len_c <- length(fixedc)
+    
+    if (len_c == 1L) {
+      df <- df %>% 
+        dplyr::mutate(pep_seq_mod = 
+                        ifelse(!grepl(fixedc, pep_vmod, fixed = TRUE) & 
+                                 grepl("C-term", pep_vmod) & 
+                                 !grepl("Protein C-term", pep_vmod, fixed = TRUE), 
+                               gsub("([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod), 
+                               pep_seq_mod))
+    }
+    else if (len_c > 1L) {
+      warning("Multiple C-terms not supposed in a set of ", 
+              "fixed and variable modifications: ", 
+              paste(fixedc, collapse = ", "), 
+              "\nContact the developer of \"proteoM\" for fixes.")
+      warning("Indicator of C-term modification not added.")
+    }
+    
+    rm(list = c("fixedc", "len_c"))
   } 
   else {
     df <- df %>%
@@ -6970,6 +7023,35 @@ add_pepseqmod <- function(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
   }
   
   invisible(df)
+}
+
+
+#' Checks duplicated \code{Anywhere} variable modifications.
+#' 
+#' A helper for the option of \code{use_lowercase_aa}.
+#' 
+#' @param varmods A vector of variable modifications.
+check_dup_unimods <- function (varmods)
+{
+  if (requireNamespace("proteoM", quietly = TRUE)) {
+    ums <- lapply(varmods, proteoM::parse_unimod)
+    sites <- unlist(lapply(ums, `[[`, "site"))
+    dups <- sites[duplicated(sites)]
+    
+    if (length(dups)) {
+      warning("Multiple variable modifications to the same site: ", 
+              paste(dups, collapse = ", "), "\n", 
+              "May consider setting \"use_lowercase_aa\" to FALSE.")
+    }
+  }
+  else {
+    warning("\n==========================================================", 
+            "\nPackage \"proteoM\" needed to check duplicated Unimods.",
+            "\n==========================================================",
+            call. = FALSE)
+  }
+  
+  invisible(varmods)
 }
 
 

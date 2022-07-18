@@ -2099,14 +2099,15 @@ na_genes_by_acc <- function(df)
 find_pep_pos <- function (fasta_name, pep_seq, fasta) 
 {
   if (is.na(fasta_name)) {
-    return(
-      cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
-            start = NA_integer_, end = NA_integer_, 
-            pep_res_after = NA_character_, fasta_name = fasta_name, 
-            pep_istryptic = NA))
+    out <- cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
+                 start = NA_integer_, end = NA_integer_, 
+                 pep_res_after = NA_character_, fasta_name = fasta_name, 
+                 pep_istryptic = NA, pep_semitryptic = NA_character_)
+    
+    return(out)
   }
 
-  this_fasta <- fasta %>% .[names(.) == fasta_name]
+  this_fasta <- fasta[names(fasta) == fasta_name]
   len_fasta <- length(this_fasta)
   pep_seq <- as.character(pep_seq)
   
@@ -2116,21 +2117,24 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
     
     # can have no matches if the fasta is different to what are used in 
     #  database searches; i.e., the fasta sequence may be altered.
-    
+
     n_rows <- nrow(pep_pos_all)
     
     if (!n_rows) {
       warning(pep_seq, " not found in ", fasta_name, ".\n", 
               "Probably different fastas between database searches and proteoQ.", 
               call. = FALSE)
+      
+      out <- cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
+                   start = NA_integer_, end = NA_integer_, 
+                   pep_res_after = NA_character_, fasta_name = fasta_name, 
+                   pep_istryptic = NA, pep_semitryptic = NA_character_)
 
-      return(
-        cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
-              start = NA_integer_, end = NA_integer_, 
-              pep_res_after = NA_character_, fasta_name = fasta_name, 
-              pep_istryptic = NA))
+      return(out)
     }
     
+    cts <- nts <- logical(n_rows)
+
     for (i in seq_len(n_rows)) {
       pep_pos_i <- pep_pos_all[i, ]
       
@@ -2143,13 +2147,15 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
       # Mascot specialty of "X" residues (see also aa_residues.rda)
       # prot_acc: "XP_003960355", original "QERFCQXK" becomes "QERFCQVK"
       
-      if (any(is.na(c(pep_res_before, pep_res_after)))) 
-        return(
-          cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
-                start = NA_integer_, end = NA_integer_, 
-                pep_res_after = NA_character_, fasta_name = fasta_name, 
-                pep_istryptic = NA))
-
+      if (is.na(pep_res_before) || is.na(pep_res_after)) {
+        out <- cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
+                     start = NA_integer_, end = NA_integer_, 
+                     pep_res_after = NA_character_, fasta_name = fasta_name, 
+                     pep_istryptic = NA, pep_semitryptic = NA_character_)
+        
+        return(out)
+      }
+      
       if (nchar(pep_res_before) == 0L) pep_res_before <- "-"
       if (nchar(pep_res_after) == 0L) pep_res_after <- "-"
 
@@ -2158,38 +2164,56 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
       # Not N-term M: 
       #   pep_res_before != "M" || pep_pos_i[1] != 2L
       
-      if (!(grepl("[KR]$", pep_seq) || pep_res_after == "-") || 
-           (!pep_res_before %in% c("K", "R", "-")) && 
-          (pep_res_before != "M" || pep_pos_i[1] != 2L))
-        next
-      else
-        return(cbind(pep_seq = pep_seq, 
+      ok_ct <- grepl("[KR]$", pep_seq) || pep_res_after == "-"
+      is_nt <- pep_res_before %in% c("K", "R", "-")
+      is_nm <- pep_res_before == "M" && pep_pos_i[1] == 2L
+      ok_nt <- is_nt || is_nm
+      
+      if (ok_ct && ok_nt) {
+        out <- cbind(pep_seq = pep_seq, 
                      pep_res_before = pep_res_before, 
-                     start = pep_pos_i[[1]], 
-                     end = pep_pos_i[[2]],  
-                     pep_res_after = pep_res_after, 
-                     fasta_name = fasta_name, 
-                     pep_istryptic = TRUE))
+                     start = pep_pos_i[[1]], end = pep_pos_i[[2]],  
+                     pep_res_after = pep_res_after, fasta_name = fasta_name, 
+                     pep_istryptic = TRUE, pep_semitryptic = "both")
+        
+        return(out)
+      }
+      else {
+        cts[[i]] <- ok_ct
+        nts[[i]] <- ok_nt
+      }
     }
     
-    # no matches
-    pep_pos_i <- pep_pos_all[1, ]
+    ## no full-tryptic matches
+    semi_tryp <- "none"
     
+    for (k in seq_along(nts)) {
+      if (nts[[k]]) {
+        semi_tryp <- "nterm"
+        break
+      }
+      else if (cts[[k]]) {
+        semi_tryp <- "cterm"
+        break
+      }
+    }
+    
+    pep_pos_i <- pep_pos_all[k, ]
+
     out <- cbind(pep_seq = pep_seq, 
                  pep_res_before = pep_res_before, 
-                 start = pep_pos_i[[1]], 
-                 end = pep_pos_i[[2]], 
-                 pep_res_after, fasta_name, 
-                 pep_istryptic = FALSE)
+                 start = pep_pos_i[[1]], end = pep_pos_i[[2]], 
+                 pep_res_after = pep_res_after, fasta_name = fasta_name, 
+                 pep_istryptic = FALSE, pep_semitryptic = semi_tryp)
   } 
-  else  if (len_fasta == 0L) { # no fasta matches
+  else  if (len_fasta == 0L) {
     out <- cbind(pep_seq = pep_seq, 
                  pep_res_before = NA_character_, 
                  start = NA_integer_, 
                  end = NA_integer_, 
                  pep_res_after = NA_character_, 
                  fasta_name = fasta_name, 
-                 pep_istryptic = FALSE)
+                 pep_istryptic = NA, pep_semitryptic = NA_character_)
   }
   else {
     stop("More than one matched fasta_name.")
@@ -2242,7 +2266,7 @@ annotPeppos <- function (df)
     do.call(rbind, .) %>% 
     `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", 
                    "pep_end", "pep_res_after", 
-                   "fasta_name", "pep_istryptic")) %>% 
+                   "fasta_name", "pep_istryptic", "pep_semitryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
     tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
     dplyr::mutate(pep_start = as.integer(pep_start), 
@@ -2305,7 +2329,9 @@ subset_fasta <- function (df, fasta, acc_type)
 
 
 #' Finds peptide abundance indexes.
-#' 
+#'
+#' In relative to tryptic peptides.
+#'
 #' @param max_len The maximum length of peptide sequence for consideration.
 #' @inheritParams info_anal
 #' @inheritParams find_shared_prots
@@ -2333,10 +2359,12 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
     gn_rollup <- FALSE
   }
   
-  min_len <- min(nchar(df[[pep_id]])) - 1L
-  max_len2 <- max_len - 1L
+  min_len <- min(nchar(df[[pep_id]])) # - 1L
+  max_len2 <- max_len # - 1L
   
-  zero_npeps <- df %>%
+  zero_npeps <- df %>% 
+    dplyr::mutate(pep_istryptic = as.logical(pep_istryptic)) %>% 
+    { if ("pep_istryptic" %in% names(df)) dplyr::filter(., pep_istryptic) else . } %>% 
     dplyr::filter(pep_len <= max_len, pep_miss == 0L) %>% 
     dplyr::select(c(pep_id, "fasta_name")) %>%
     dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
@@ -2345,8 +2373,14 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
   
   max_npeps <- fasta_db %>% 
     purrr::map_int(~ {
-      x <- stringr::str_split(.x, "[KR]")
+      .x <- gsub("([KR]{1})", paste0("\\1", "@"), .x)
+      x <- stringr::str_split(.x, "@")
       
+      x <- lapply(x, function (p) {
+        p1 <- p[[1]]
+        if (grepl("^M", p1)) c(gsub("^M", "", p1), p) else p
+      })
+
       x %>% purrr::map_int(~ {
         len <- stringr::str_length(.x)
         sum(len >= min_len & len <= max_len2)
@@ -2355,7 +2389,9 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
     tibble::tibble(
       fasta_name = names(.), 
       prot_n_pepi = .,
-    ) %>% 
+    ) 
+
+  max_npeps <- max_npeps %>% 
     dplyr::left_join(zero_npeps, by = "fasta_name") %>% 
     dplyr::mutate(prot_n_pep0 = ifelse(is.na(prot_n_pep0), 1L, prot_n_pep0)) %>% 
     dplyr::mutate(prot_icover = prot_n_pep0/prot_n_pepi, 
@@ -4324,7 +4360,7 @@ get_col_types <- function ()
     
     pep_issig = col_logical(),
     pep_score = col_double(),
-    pep_score_co = col_double(),
+    pep_expect = col_double(),
     pep_rank = col_integer(), 
     pep_locprob = col_double(),
     pep_locdiff = col_double(),
@@ -4421,7 +4457,6 @@ get_col_types <- function ()
     pep_isdecoy = col_logical(),
     pep_ivmod = col_character(),
     pep_issig = col_logical(),
-    pep_score_co = col_double(),
     pep_rank_nl = col_integer(),
     
     gene = col_character(),
@@ -4439,6 +4474,7 @@ get_col_types <- function ()
     kin_class = col_character(),
     kin_order = col_integer(),
     pep_istryptic = col_logical(),
+    pep_semitryptic = col_character(),
     
     dat_file = col_character(),
     raw_file = col_character(),
@@ -4593,6 +4629,39 @@ procBrukerMGF <- function (file)
     hdr <- lines[1:50L]
     ln <- hdr[grepl("###.*\\.d$", hdr)]
     nm <- gsub("###\t(.*\\.d$)", "\\1", ln)
+    paste0("~File:", nm, "~")
+  })
+  
+  rows <- which(stringi::stri_startswith_fixed(lines, "TITLE="))
+  
+  tits <- lapply(rows, function (i) 
+    gsub("^([^,]*?),[ ]{0,1}(.*)", paste("\\1", fi, "\\2", sep = ", "), lines[i]))
+  
+  lines[rows] <- tits
+  
+  writeLines(unlist(lines), file)
+}
+
+
+#' Reprocesses of Bruker MGF files.
+#' 
+#' @param file A file name with prepending path.
+#' 
+#' @examples
+#' \donttest{
+#' filepath = "F:/timsTOF/mgf"
+#' mprocBrukerMGF(filepath)
+#' }
+procBrukerMGF_v1 <- function (file) 
+{
+  message("Processing: ", file)
+  
+  lines <- readLines(file)
+  
+  fi <- local({
+    hdr <- lines[1:50L]
+    ln <- hdr[grepl("###.*\\.d$", hdr)]
+    nm <- gsub("###\t(.*\\.d$)", "\\1", ln)
     paste0("File:", nm)
   })
   
@@ -4605,7 +4674,6 @@ procBrukerMGF <- function (file)
   
   writeLines(unlist(lines), file)
 }
-
 
 #' Batch-reprocessing of Bruker MGF files.
 #' 

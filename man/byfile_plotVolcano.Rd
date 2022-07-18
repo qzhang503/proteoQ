@@ -17,7 +17,6 @@ byfile_plotVolcano(
   gset_nms = "go_sets",
   scale_log2r = TRUE,
   impute_na = FALSE,
-  highlights = highlights,
   theme = NULL,
   ...
 )
@@ -87,9 +86,6 @@ be used.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
-
-\item{highlights}{A list of entries for highlighting. See also \code{filter_}
-varargs for the format.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

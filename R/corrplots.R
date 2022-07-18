@@ -10,7 +10,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
                       col_select = NULL, col_order = NULL, label_scheme_sub = NULL, 
                       scale_log2r = TRUE, complete_cases = FALSE, 
                       filepath = NULL, filename = NULL, 
-                      cor_method = "pearson", ...) 
+                      cor_method = "pearson", digits = 2L, ...) 
 {
   if (complete_cases) 
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
@@ -102,7 +102,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
                 xlab = x_label, ylab = y_label,
                 filename = filename, filepath = filepath,
                 xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
-                width = width, height = height, !!!dots)
+                width = width, height = height, digits = digits, !!!dots)
 }
 
 
@@ -119,7 +119,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
 #' my_custom_cor(data, aes(x = col_nm_1, y = col_nm_1))
 #' }
 my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4), 
-                          cor_method = "pearson", ...) 
+                          cor_method = "pearson", digits = 2L, ...) 
 {
   x <- GGally::eval_data_col(data, mapping$x)
   y <- GGally::eval_data_col(data, mapping$y)
@@ -136,7 +136,7 @@ my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4
   )
   
   r <- unname(ct$estimate)
-  rt <- format(r, digits=2)[1]
+  rt <- format(r, digits = digits)[1]
   
   cex <- max(sizeRange)
   
@@ -193,7 +193,8 @@ my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plot_corr_sub <- function (df, cor_method = "pearson", 
                            xlab, ylab, filename, filepath, 
-                           xmin, xmax, xbreaks, width, height, ...) 
+                           xmin, xmax, xbreaks, width, height, 
+                           digits = 2L, ...) 
 {
   # not used
   my_fn <- function(data, mapping, method = "lm", ...) {
@@ -315,7 +316,8 @@ plot_corr_sub <- function (df, cor_method = "pearson",
                 title = "", xlab = xlab, ylab = ylab, 
                 lower = list(continuous = my_lower_no_sm),
                 upper = list(continuous = wrap(my_custom_cor, 
-                                               cor_method = cor_method)))
+                                               cor_method = cor_method, 
+                                               digits = digits)))
   
   p2 <- ggcorr(df, label = TRUE, label_round = 2)
   
@@ -420,7 +422,8 @@ plot_corr_sub <- function (df, cor_method = "pearson",
 pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
-                           filename = NULL, cor_method = "pearson", ...) 
+                           filename = NULL, cor_method = "pearson", 
+                           digits = 2L, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -453,6 +456,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
             filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", 
                                     cor_method = cor_method, 
+                                    digits = digits,
                                     ...)
 }
 
@@ -469,7 +473,8 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
-                            filename = NULL, cor_method = "pearson", ...) 
+                            filename = NULL, cor_method = "pearson", 
+                            digits = 2L, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -502,6 +507,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
             filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", 
                                     cor_method = cor_method, 
+                                    digits = digits,
                                     ...)
 }
 
@@ -525,6 +531,8 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'@param cor_method A character string indicating which correlation coefficient
 #'  is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
 #'  \code{"spearman"}.
+#'@param digits The number of decimal places in correlation values to be
+#'  displayed.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
@@ -603,7 +611,8 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
-                           filename = NULL, cor_method = "pearson", ...) 
+                           filename = NULL, cor_method = "pearson", 
+                           digits = 2L, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -636,6 +645,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
             filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", 
                                     cor_method = cor_method, 
+                                    digits = digits, 
                                     ...)
 }
 
@@ -653,7 +663,8 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
-                            filename = NULL, cor_method = "pearson", ...) 
+                            filename = NULL, cor_method = "pearson", 
+                            digits = 2L, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -686,6 +697,7 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
             filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", 
                                     cor_method = cor_method, 
+                                    digits = digits, 
                                     ...)
 }
 
