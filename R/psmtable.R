@@ -5362,7 +5362,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- df %>% 
     dplyr::filter(as.character(.[["Proteins"]]) > 0) %>% 
     { if (rm_craps) dplyr::filter(., !grepl("^CON_", .[["Proteins"]])) else . } %>% 
-    { if (rm_reverses) dplyr::filter(., is.na(Reverse) || Reverse != "+") else . } %>% 
+    { if (rm_reverses) dplyr::filter(., is.na(Reverse) | Reverse != "+") else . } %>% 
     dplyr::mutate(prot_acc = gsub("\\;.*", "", Proteins)) %>% 
     dplyr::filter(prot_acc != "") %>% 
     { if (rm_craps) dplyr::filter(., !grepl("\\|.*\\|$", prot_acc)) else . } 
