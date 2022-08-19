@@ -2904,7 +2904,17 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   flip_coord <- eval(dots$flip_coord, envir = rlang::caller_env())
   if (is.null(flip_coord)) flip_coord <- FALSE
   
-  df <- df %>% dplyr::filter(!duplicated(.[[id]]))
+  df <- df %>% 
+    dplyr::filter(!duplicated(.[[id]]))
+  
+  if (("pep_scan_num" %in% names(df)) && (!all(is.na(df$pep_scan_num)))) {
+    df <- df %>% 
+      tidyr::unite(uniq_by., raw_file, pep_scan_num, sep = "@") %>% 
+      dplyr::group_by(uniq_by.) %>% 
+      dplyr::filter(row_number() == 1L) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(-uniq_by.)
+  }
 
   pat0 <- "[0-9]{3}[NC]{0,1}"
   

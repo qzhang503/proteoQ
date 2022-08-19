@@ -27,8 +27,7 @@ info_anal(
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
-  anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model", "NMF",
-    "Trend")
+  anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model", "NMF", "Trend")
 )
 }
 \arguments{

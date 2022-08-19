@@ -684,10 +684,7 @@ rmPSMHeaders <- function(parallel = TRUE)
 
 #' Adds column "pep_var_mod_conf"
 #'
-#' Currently only for Mascot.
-#'
-#' Not yet supports Mascot timsTOF format and thus \code{pep_scan_range} is
-#' \code{NA_integer_} not \code{NA_character_}.
+#' Only for Mascot.
 #'
 #' @param df A data frame of PSMs
 #' @inheritParams load_expts
@@ -703,7 +700,7 @@ add_mod_conf <- function(df = NULL, dat_dir = NULL)
   if (!file.exists(file)) {
     df <- df %>% 
       dplyr::mutate(pep_tot_int = NA_real_, 
-                    pep_scan_range = NA_integer_, 
+                    pep_scan_num = NA_character_, 
                     pep_ret_range = NA_integer_, 
                     pep_ms2_sumint = NA_real_,
                     pep_n_ions = NA_integer_, 
@@ -739,7 +736,7 @@ add_mod_conf <- function(df = NULL, dat_dir = NULL)
                  "Retention time range", 
                  "TotalIonsIntensity", "NumVals", 
                  "StringIons1", "StringIons2", "StringIons3"), 
-               c("pep_tot_int", "pep_scan_range", 
+               c("pep_tot_int", "pep_scan_num", 
                  "pep_ret_range", "pep_ms2_sumint", 
                  "pep_n_ions", 
                  "pep_ions_first", "pep_ions_second", "pep_ions_third"), 
@@ -825,7 +822,7 @@ add_mod_conf <- function(df = NULL, dat_dir = NULL)
                                              c("uniq_id", 
                                                "pep_tot_int", 
                                                "pep_var_mod_conf", 
-                                               "pep_scan_range", 
+                                               "pep_scan_num", 
                                                "pep_ret_range", 
                                                "pep_ms2_sumint", 
                                                "pep_n_ions", 
@@ -2318,6 +2315,17 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.9) update original Mascot fields
   # (e.g. updated counts after data merging)
+  if ("pep_scan_range" %in% names(df))
+    df[["pep_scan_range"]] <- NULL
+  
+  if ("pep_scan_title" %in% names(df)) {
+    df <- dplyr::mutate(df, pep_scan_num = gsub(".* scan\\=(.*)~$", "\\1", pep_scan_title))
+  }
+  else {
+    df[["pep_scan_num"]] <- NA_character_
+  }
+  
+  df <- reloc_col_after(df, "pep_scan_num", "pep_scan_title")
 
   .saveCall <- TRUE
   
@@ -3121,15 +3129,13 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       }
 
       if (plot_log2FC_cv && TMT_plex) {
-        try(
-          df %>% 
-            sd_violin(id = !!group_psm_by, 
+        try(sd_violin(df, 
+                      id = !!group_psm_by, 
                       filepath = 
                         file.path(dat_dir, "PSM/log2FC_cv/raw", 
                                   gsub("_PSM_N\\.txt", "_sd.png", out_fn[idx])), 
                       width = 8, height = 8, type = "log2_R", 
-                      adjSD = FALSE, is_psm = TRUE, ...)
-        )
+                      adjSD = FALSE, is_psm = TRUE, ...))
       }
       
     }
@@ -3807,7 +3813,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
       "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos", 
       "pep_rank", "pep_isbold", "pep_exp_mz", "pep_exp_mr", "pep_exp_z", 
       "pep_delta", "pep_calc_mr", "pep_homol", "pep_ident", 
-      "pep_num_match", "pep_scan_range", 
+      "pep_num_match", 
       "pep_ms2_sumint", "pep_n_ions", 
       "pep_scan_num", "pep_mod_group", "pep_fmod", "pep_vmod", "pep_ivmod", 
       "pep_n_ms2", "pep_rank_nl", 
@@ -4950,7 +4956,7 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE)
                   "pep_frame", "pep_var_mod",	"pep_var_mod_pos", 
                   "pep_summed_mod_pos",	"pep_local_mod_pos",
                   "pep_num_match",	"pep_scan_title",	"pep_index",	
-                  "pep_scan_range",	"pep_ret_range",
+                  "pep_ret_range",
                   "pep_ms2_sumint",	"pep_n_ions",	"pep_locprob",	"pep_locdiff",
                   "pep_phospho_locprob", "pep_phospho_locdiff", 
                   "pep_ions_first", "pep_ions_second", "pep_ions_third", 
@@ -4963,9 +4969,21 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE)
                   "dat_file",	"psm_index")
   }
   
+  # if ("pep_scan_range" %in% names(df)) df[["pep_scan_range"]] <- NULL
+
   df <- df %>% 
     order_psm_cols(psm_cols) 
   
+  if (FALSE) {
+    if ("pep_scan_title" %in% names(df) && 
+        all(is.na(df$pep_scan_num)) && 
+        !all(is.na(df$pep_scan_title))) {
+      df <- df %>% 
+        dplyr::mutate(pep_scan_num = gsub(".* scan\\=(.*)~$", "\\1", pep_scan_title)) %>% 
+        reloc_col_after("pep_scan_num", "pep_scan_title")
+    }
+  }
+
   df <- dplyr::bind_cols(
     df %>% dplyr::select(psm_cols), 
     df %>% dplyr::select(-psm_cols), 
@@ -5444,7 +5462,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         else dplyr::mutate(., `Localization Prob` = NA) } 
     
     df <- df %>% 
-      dplyr::mutate(pep_scan_range = `Scan Number`,
+      dplyr::mutate(pep_scan_num = `Scan Number`,
                     pep_ret_range = `Retention Time`, 
                     pep_ms2_sumint = .[, "Intensities"] %>% 
                       stringr::str_split(., pattern = ";") %>% 
@@ -6094,7 +6112,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.2) compile "preferred" columns
   df <- local({
     df <- df %>% 
-      dplyr::mutate(pep_scan_range = NA,
+      dplyr::mutate(pep_scan_num = NA,
                     pep_ret_range = NA, 
                     pep_ms2_sumint = NA,
                     pep_n_ions = NA,
@@ -6151,7 +6169,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   df <- df %>% 
     dplyr::mutate(pep_tot_int = NA, 
-                  pep_scan_range = NA, 
+                  pep_scan_num = NA, 
                   pep_ret_range = NA, 
                   pep_ms2_sumint = NA,
                   pep_n_ions = NA, 

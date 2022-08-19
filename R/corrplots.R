@@ -38,6 +38,16 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots)]
   
+  save_data <- dots[["save_data"]]
+  
+  if (is.null(save_data)) {
+    save_data <- FALSE
+  } 
+  else {
+    save_data <- TRUE
+    dots[["save_data"]] <- NULL
+  }
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
@@ -82,7 +92,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
   if (is.null(height)) 
     height <- width
   
-  if (ncol(df) > 44) 
+  if (ncol(df) > 44L) 
     stop("Maximum number of samples for correlation plots is 44.")
   
   if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L)
@@ -96,6 +106,9 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
     
     df <- df[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
   }
+  
+  if (save_data)
+    readr::write_tsv(df, file.path(filepath, paste0(fn_prefix, "_data.txt")))
   
   plot_corr_sub(df = df, 
                 cor_method = cor_method, 

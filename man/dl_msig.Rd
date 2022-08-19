@@ -5,8 +5,8 @@
 \title{Helper to download `gmt`}
 \usage{
 dl_msig(
- 
-    msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+  msig_url =
+    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
   db_path = "~/proteoQ/dbs/msig",
   overwrite = FALSE
 )

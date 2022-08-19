@@ -13,9 +13,5 @@ add_mod_conf(df = NULL, dat_dir = NULL)
 match the value under the global environment.}
 }
 \description{
-Currently only for Mascot.
-}
-\details{
-Not yet supports Mascot timsTOF format and thus \code{pep_scan_range} is
-\code{NA_integer_} not \code{NA_character_}.
+Only for Mascot.
 }

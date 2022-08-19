@@ -1190,13 +1190,21 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   }
   
   df <- suppressWarnings(
-    purrr::map(filelist, readr::read_tsv, col_types = get_col_types(), 
-               show_col_types = FALSE)
+    lapply(filelist, function (x) {
+      df <- readr::read_tsv(x, col_types = get_col_types(), show_col_types = FALSE) 
+      nms <- names(df)
+      
+      # MaxQuant; in case that all groups contain only single ID and become integer
+      if ("Protein Group Ids" %in% nms)
+        df <- dplyr::mutate(df, `Protein Group Ids` = as.character(`Protein Group Ids`))
+      
+      invisible(df)
+    })
   ) %>% 
     dplyr::bind_rows() %>% 
     dplyr::select(-which(names(.) %in% c("dat_file"))) %>% 
     dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
-    dplyr::arrange(TMT_Set) 
+    dplyr::arrange(TMT_Set)
   
   df <- df %>% filters_in_call(!!!filter_dots)
   
