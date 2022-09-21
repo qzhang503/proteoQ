@@ -1,72 +1,72 @@
 proteoQ
 ================
 true
-2022-07-11
+2022-09-20
 
--   <a href="#introduction-to-proteoq"
-    id="toc-introduction-to-proteoq">Introduction to proteoQ</a>
--   <a href="#installation" id="toc-installation">Installation</a>
--   <a href="#1-data-normalization" id="toc-1-data-normalization">1 Data
-    normalization</a>
-    -   <a href="#11-experiment-setup" id="toc-11-experiment-setup">1.1
-        Experiment setup</a>
-    -   <a href="#12-psm-summarization" id="toc-12-psm-summarization">1.2 PSM
-        summarization</a>
-    -   <a href="#13-psms-to-peptides" id="toc-13-psms-to-peptides">1.3 PSMs to
-        peptides</a>
-    -   <a href="#14-peptides-to-proteins" id="toc-14-peptides-to-proteins">1.4
-        Peptides to proteins</a>
-    -   <a href="#15-workflow-scripts" id="toc-15-workflow-scripts">1.5 Workflow
-        scripts</a>
-    -   <a href="#16-quick-start" id="toc-16-quick-start">1.6 Quick start</a>
--   <a href="#2-basic-informatics" id="toc-2-basic-informatics">2 Basic
-    informatics</a>
-    -   <a href="#21-mds" id="toc-21-mds">2.1 MDS</a>
-    -   <a href="#22-pca" id="toc-22-pca">2.2 PCA</a>
-    -   <a href="#23-lda" id="toc-23-lda">2.3 LDA</a>
-    -   <a href="#24-correlation-plots" id="toc-24-correlation-plots">2.4
-        Correlation plots</a>
-    -   <a href="#25-heat-maps" id="toc-25-heat-maps">2.5 Heat maps</a>
-    -   <a href="#26-significance-tests" id="toc-26-significance-tests">2.6
-        Significance tests</a>
-    -   <a href="#27-gene-sets-under-volcano-plots"
-        id="toc-27-gene-sets-under-volcano-plots">2.7 Gene sets under volcano
-        plots</a>
-    -   <a href="#28-gene-set-networks" id="toc-28-gene-set-networks">2.8 Gene
-        set networks</a>
-    -   <a href="#29-trend-analysis" id="toc-29-trend-analysis">2.9 Trend
-        Analysis</a>
-    -   <a href="#210-nmf-analysis" id="toc-210-nmf-analysis">2.10 NMF
-        Analysis</a>
-    -   <a href="#211-string-analysis" id="toc-211-string-analysis">2.11 STRING
-        Analysis</a>
-    -   <a href="#212-missing-value-imputation"
-        id="toc-212-missing-value-imputation">2.12 Missing value imputation</a>
--   <a href="#3-labs" id="toc-3-labs">3 Labs</a>
-    -   <a href="#31-reference-choices" id="toc-31-reference-choices">3.1
-        Reference choices</a>
-    -   <a href="#32-data-subsets-and-additions"
-        id="toc-32-data-subsets-and-additions">3.2 Data subsets and
-        additions</a>
-    -   <a href="#33-random-effects" id="toc-33-random-effects">3.3 Random
-        effects</a>
--   <a href="#4-column-keys" id="toc-4-column-keys">4 Column keys</a>
-    -   <a href="#41-psms" id="toc-41-psms">4.1 PSMs</a>
-    -   <a href="#42-peptides" id="toc-42-peptides">4.2 Peptides</a>
-    -   <a href="#43-proteins" id="toc-43-proteins">4.3 Proteins</a>
--   <a href="#5-appendix" id="toc-5-appendix">5 Appendix</a>
-    -   <a href="#51-psm-exports" id="toc-51-psm-exports">5.1 PSM exports</a>
-    -   <a href="#52-vararg-table" id="toc-52-vararg-table">5.2 Vararg table</a>
--   <a href="#references" id="toc-references">References</a>
+- <a href="#introduction-to-proteoq"
+  id="toc-introduction-to-proteoq">Introduction to proteoQ</a>
+- <a href="#installation" id="toc-installation">Installation</a>
+- <a href="#1-data-normalization" id="toc-1-data-normalization">1 Data
+  normalization</a>
+  - <a href="#11-experiment-setup" id="toc-11-experiment-setup">1.1
+    Experiment setup</a>
+  - <a href="#12-psm-summarization" id="toc-12-psm-summarization">1.2 PSM
+    summarization</a>
+  - <a href="#13-psms-to-peptides" id="toc-13-psms-to-peptides">1.3 PSMs to
+    peptides</a>
+  - <a href="#14-peptides-to-proteins" id="toc-14-peptides-to-proteins">1.4
+    Peptides to proteins</a>
+  - <a href="#15-workflow-scripts" id="toc-15-workflow-scripts">1.5 Workflow
+    scripts</a>
+  - <a href="#16-quick-start" id="toc-16-quick-start">1.6 Quick start</a>
+- <a href="#2-basic-informatics" id="toc-2-basic-informatics">2 Basic
+  informatics</a>
+  - <a href="#21-mds" id="toc-21-mds">2.1 MDS</a>
+  - <a href="#22-pca" id="toc-22-pca">2.2 PCA</a>
+  - <a href="#23-lda" id="toc-23-lda">2.3 LDA</a>
+  - <a href="#24-correlation-plots" id="toc-24-correlation-plots">2.4
+    Correlation plots</a>
+  - <a href="#25-heat-maps" id="toc-25-heat-maps">2.5 Heat maps</a>
+  - <a href="#26-significance-tests" id="toc-26-significance-tests">2.6
+    Significance tests</a>
+  - <a href="#27-gene-sets-under-volcano-plots"
+    id="toc-27-gene-sets-under-volcano-plots">2.7 Gene sets under volcano
+    plots</a>
+  - <a href="#28-gene-set-networks" id="toc-28-gene-set-networks">2.8 Gene
+    set networks</a>
+  - <a href="#29-trend-analysis" id="toc-29-trend-analysis">2.9 Trend
+    Analysis</a>
+  - <a href="#210-nmf-analysis" id="toc-210-nmf-analysis">2.10 NMF
+    Analysis</a>
+  - <a href="#211-string-analysis" id="toc-211-string-analysis">2.11 STRING
+    Analysis</a>
+  - <a href="#212-missing-value-imputation"
+    id="toc-212-missing-value-imputation">2.12 Missing value imputation</a>
+- <a href="#3-labs" id="toc-3-labs">3 Labs</a>
+  - <a href="#31-reference-choices" id="toc-31-reference-choices">3.1
+    Reference choices</a>
+  - <a href="#32-data-subsets-and-additions"
+    id="toc-32-data-subsets-and-additions">3.2 Data subsets and
+    additions</a>
+  - <a href="#33-random-effects" id="toc-33-random-effects">3.3 Random
+    effects</a>
+- <a href="#4-column-keys" id="toc-4-column-keys">4 Column keys</a>
+  - <a href="#41-psms" id="toc-41-psms">4.1 PSMs</a>
+  - <a href="#42-peptides" id="toc-42-peptides">4.2 Peptides</a>
+  - <a href="#43-proteins" id="toc-43-proteins">4.3 Proteins</a>
+- <a href="#5-appendix" id="toc-5-appendix">5 Appendix</a>
+  - <a href="#51-psm-exports" id="toc-51-psm-exports">5.1 PSM exports</a>
+  - <a href="#52-vararg-table" id="toc-52-vararg-table">5.2 Vararg table</a>
+- <a href="#references" id="toc-references">References</a>
 
 The proteo\[X\] family currently contains members of
 
--   [proteoM](https://github.com/qzhang503/proteoM) for database
-    searches.  
--   [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics
-    and informatics.
--   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary
-    data.
+- [proteoM](https://github.com/qzhang503/proteoM) for database
+  searches.  
+- [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics
+  and informatics.
+- [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary
+  data.
 
 The document is mainly about proteoQ.
 
@@ -138,12 +138,12 @@ devtools::install_github("qzhang503/proteoQ@QZ_20190930")
 In this document, I first illustrate the following applications of
 proteoQ:
 
--   Summarization of PSM results to normalized peptide and protein data.
--   Visualization of quality metrics in normalized peptide and protein
-    data.
--   Re-normalization of data against selected samples.
--   Mixed-bed normalization using full or partial data.
--   Removal of low-quality entries from PSM, peptide and protein data.
+- Summarization of PSM results to normalized peptide and protein data.
+- Visualization of quality metrics in normalized peptide and protein
+  data.
+- Re-normalization of data against selected samples.
+- Mixed-bed normalization using full or partial data.
+- Removal of low-quality entries from PSM, peptide and protein data.
 
 The data set we will use in this section corresponds to the proteomics
 data from Mertins et al. (Martins 2018). In the study, two different
@@ -191,12 +191,12 @@ MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),
 [proteoM](https://github.com/qzhang503/proteoM) or Spectrum Mill with
 the following compilation in file names:
 
--   Mascot: begin with letter `F`, followed by digits and ends with
-    `.csv`;
--   MaxQuant: start with `msms` and end with `.txt`;
--   MSFragger: start with `psm` and end with `.tsv`;
--   proteoM: start with `psmQ` and end with `.txt`;
--   Spectrum Mill: start with `PSMexport` and end with `.ssv`.
+- Mascot: begin with letter `F`, followed by digits and ends with
+  `.csv`;
+- MaxQuant: start with `msms` and end with `.txt`;
+- MSFragger: start with `psm` and end with `.tsv`;
+- proteoM: start with `psmQ` and end with `.txt`;
+- Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 The corresponding PSMs are available through one of the followings
 `copy_` utilities:
@@ -1182,8 +1182,8 @@ prnMDS(
 
 In this section I illustrate the following applications of proteoQ:
 
--   Basic informatic analysis against peptide and protein data.
--   Linear modeling using contrast fits
+- Basic informatic analysis against peptide and protein data.
+- Linear modeling using contrast fits
 
 Unless otherwise mentioned, the `in-function filtration` of data by
 varargs of `filter_` is available throughout this section of informatic
@@ -2581,22 +2581,22 @@ proteoQ.
 In this lab, we will first apply pseudoname approaches to subset data.
 The available pseudonyms include
 
--   `contain_str`: contain a literal string; “PEPTIDES” contain_str
-    “TIDE”.
--   `contain_chars_in`: contain some of the characters in a literal
-    string; “PEPTIDES” contain_chars_in “XP”.
--   `not_contain_str`: not contain a literal string; “PEPTIDES”
-    not_contain_str “TED”.
--   `not_contain_chars_in`: not contain any of the characters in a
-    literal string; “PEPTIDES” not_contain_chars_in “CAB”.
--   `start_with_str`: start with a literal string. “PEPTIDES”
-    start_with_str “PEP”.
--   `end_with_str`: end with a literal string. “PEPTIDES” end_with_str
-    “TIDES”.
--   `start_with_chars_in`: start with one of the characters in a literal
-    string. “PEPTIDES” start_with_chars_in “XP”.
--   `ends_with_chars_in`: end with one of the characters in a literal
-    string. “PEPTIDES” ends_with_chars_in “XS”.
+- `contain_str`: contain a literal string; “PEPTIDES” contain_str
+  “TIDE”.
+- `contain_chars_in`: contain some of the characters in a literal
+  string; “PEPTIDES” contain_chars_in “XP”.
+- `not_contain_str`: not contain a literal string; “PEPTIDES”
+  not_contain_str “TED”.
+- `not_contain_chars_in`: not contain any of the characters in a literal
+  string; “PEPTIDES” not_contain_chars_in “CAB”.
+- `start_with_str`: start with a literal string. “PEPTIDES”
+  start_with_str “PEP”.
+- `end_with_str`: end with a literal string. “PEPTIDES” end_with_str
+  “TIDES”.
+- `start_with_chars_in`: start with one of the characters in a literal
+  string. “PEPTIDES” start_with_chars_in “XP”.
+- `ends_with_chars_in`: end with one of the characters in a literal
+  string. “PEPTIDES” ends_with_chars_in “XS”.
 
 These functions are typically coupled to the varargs of `filter_` or
 `slice_` for the subsetting of data rows based on their names. More

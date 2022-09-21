@@ -684,7 +684,8 @@ check_channel_prefix <- function (x, is_tmt = TRUE)
 #' @param x A vector.
 check_tmt_ref <- function (x) 
 {
-  (!is.na(x)) & x & (x != 0)
+  # (!is.na(x)) & x & (x != 0)
+  (!is.na(x)) & (x != 0)
 }
 
 

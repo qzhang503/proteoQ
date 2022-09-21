@@ -661,13 +661,12 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
     return(NA)
   
   dat_dir <- get_gl_dat_dir()
-  # load(file = file.path(dat_dir, "label_scheme.rda"))
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   exists <- annot_cols %in% names(label_scheme)
   
   if (sum(!exists) > 0L) {
     warning(paste0("Column '", annot_cols[!exists], "'",
-                   " not found in \'label_scheme\' and will be skipped."), 
+                   " not found in \"label_scheme\" and will be skipped."), 
             call. = FALSE)
     annot_cols <- annot_cols[exists]
   }
@@ -683,8 +682,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
   
   if (sum(idx) > 0L) 
     stop("No aesthetics defined under column(s) `", 
-         purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
-         call. = FALSE)
+         paste(names(x)[idx], collapse = ", "), "`.")
   
   x <- x %>%
     dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
@@ -693,8 +691,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
     `rownames<-`(.[["Sample_ID"]])
   
   if (any(duplicated(x[["Sample_ID"]]))) 
-    stop("Duplicated sample IDs found.\n", 
-         call. = FALSE)
+    stop("Duplicated sample IDs found.\n")
   
   if (!"Sample_ID" %in% annot_cols) 
     x <- x %>% dplyr::select(-Sample_ID)
@@ -709,6 +706,9 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
       `rownames<-`(NULL) %>% 
       tibble::column_to_rownames(var = "rowname")
   }
+  
+  x <- x %>% 
+    mutate_if(is.logical, factor)
   
   invisible(x)
 }

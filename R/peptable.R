@@ -1264,23 +1264,6 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       reloc_col_before("mean_lint", "count_nna")
   })
 
-  pep_n_psm <- df %>%
-    dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
-    dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-    dplyr::summarise(pep_n_psm = sum(pep_n_psm)) %>% 
-    dplyr::arrange(!!rlang::sym(group_psm_by))
-  
-  prot_n_psm <- df %>% 
-    dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
-    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-    dplyr::summarise(prot_n_psm = sum(pep_n_psm))
-
-  prot_n_pep <- df %>% 
-    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
-    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-    dplyr::summarise(prot_n_pep = n())
-  
   if ("pep_ret_range" %in% names(df) && !all(is.na(df$pep_ret_range))) {
     if (rm_ret_outliers) {
       df <- df %>% dplyr::mutate(id. = row_number())
@@ -1349,8 +1332,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   df_first <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("pep_unique_int", "pep_razor_int"))) %>% 
-    dplyr::select(-which(names(.) %in% c("pep_n_psm", "prot_n_psm", "prot_n_pep", 
-                                         "prot_matches_sig", "prot_sequences_sig", 
+    dplyr::select(-which(names(.) %in% c("prot_matches_sig", "prot_sequences_sig", 
                                          "pep_ret_sd", 
                                          "TMT_Set"))) %>% 
     med_summarise_keys(group_psm_by) %>% 
@@ -1367,7 +1349,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   df <- local({
     colnm_before <- find_preceding_colnm(df, "pep_tot_int")
     
-    df <- list(pep_n_psm, df_first, pep_ret_sd, df_num) %>%
+    df <- list(df_first, pep_ret_sd, df_num) %>%
       purrr::reduce(dplyr::left_join, by = group_psm_by) %>% 
       reloc_col_before(group_psm_by, "pep_res_after") %>% 
       reloc_col_after("pep_tot_int", colnm_before) %>% 
@@ -1383,9 +1365,6 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       dplyr::select(-grep("^pep_.*_int \\(", names(.)))
   }
 
-  df <- list(df, prot_n_psm, prot_n_pep) %>%
-    purrr::reduce(dplyr::left_join, by = group_pep_by)
-  
   # --- update sd_log2R000 (...) ---
   if (!(TMT_plex || use_mq_pep)) {
     df <- local({

@@ -20,7 +20,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
   stopifnot(vapply(c(gspval_cutoff, gslogFC_cutoff, topn_gsets), 
                    is.numeric, logical(1L)))
   
-  stopifnot(is.numeric(topn_labels), topn_labels >= 0)
+  stopifnot(is.numeric(topn_labels), topn_labels >= 0L)
   
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -80,7 +80,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
   fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
   
   if (!length(fml_nms)) 
-    stop("No formula (names) matched to those in `pepSig(...)` or `prnSig(...)`.")
+    stop("No formula (names) matched to those in \"pepSig(...)\" or \"prnSig(...)\".")
   
   purrr::walk(file.path(filepath, fml_nms), 
               ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
@@ -97,7 +97,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
     .[!is.na(.)] %>% 
     as.character()
   
-  if (!(purrr::is_empty(species) || is.null(gset_nms))) 
+  if (length(species) && !is.null(gset_nms))
     load_dbs(gset_nms = gset_nms, species = species)
   
   proteoq_volcano_theme <- theme_bw() +
@@ -158,6 +158,22 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
 }
 
 
+#' Helper of comeplet cases.
+#' 
+#' @param df A data frame.
+pval_complete_cases <- function (df) 
+{
+  rows <- df %>% 
+    dplyr::select(grep("^pVal\\s+", names(.))) %>% 
+    complete.cases()
+  
+  if (sum(rows) == 0) 
+    stop("None of the cases are complete.")
+  
+  df[rows, ]
+}  
+
+
 #' Formula specific volcano plots
 #' 
 #' @inheritParams info_anal
@@ -172,17 +188,6 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            scale_log2r, complete_cases, impute_na, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
-  pval_complete_cases <- function (df) {
-    rows <- df %>% 
-      dplyr::select(grep("^pVal\\s+", names(.))) %>% 
-      complete.cases()
-    
-    if (sum(rows) == 0) 
-      stop("None of the cases are complete.", call. = FALSE)
-    
-    df <- df[rows, ]
-  }  
-  
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
@@ -320,6 +325,31 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 }
 
 
+#' Sets data for volcan plots.
+#' 
+#' @param x A contrast
+#' @param df A data frame
+#' @param keys Column keys.
+subset_volcano_df <- function (x, df, keys = c("pVal", "adjP", "log2Ratio"))
+{
+  nms <- names(df)
+  pat <- paste0(" (", x, ")")
+  
+  cols <- lapply(keys, function (key) 
+    grepl(paste0(key, pat), nms, fixed = TRUE) & grepl(paste0("^", key), nms)
+  )
+  
+  dfa <- df[, purrr::reduce(cols, `|`)] %>%
+    `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
+    dplyr::mutate(Contrast = x)
+  
+  pat_i <- lapply(keys, function (key) paste0("^", key, " "))
+  dfb <- df[, !grepl(paste(pat_i, collapse = "|"), nms), drop = FALSE]
+  
+  dplyr::bind_cols(dfb, dfa)
+}
+
+
 #' Volcano plots for all proteins or peptides in a data set
 #' 
 #' @param contrast_groups The contrast groups defined under a formula at \code{fml_nm}.
@@ -337,24 +367,23 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   id <- rlang::as_string(rlang::enexpr(id))
   
   dots <- rlang::enexprs(...)
-  xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
-  yco <- ifelse(is.null(dots$yco), .05, dots$yco)
-  
+  xco <- if (is.null(dots[["xco"]])) 1.2 else dots[["xco"]]
+  yco <- if (is.null(dots[["yco"]])) .05 else dots[["yco"]]
   title <- dots[["title"]]
   
-  x_label <- if (is.null(dots$x_label)) 
+  x_label <- if (is.null(dots[["x_label"]])) 
     expression("Ratio ("*log[2]*")")
   else 
-    dots$x_label
+    dots[["x_label"]]
   
-  y_label <- if (is.null(dots$y_label)) {
+  y_label <- if (is.null(dots[["y_label"]])) {
     if (adjP) 
       expression("adjP ("*-log[10]*")") 
     else 
       expression("pVal ("*-log[10]*")")
   } 
   else {
-    dots$y_label
+    dots[["y_label"]]
   }
   
   if (!length(contrast_groups))
@@ -363,32 +392,9 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   if (!is.null(grids))
     contrast_groups <- contrast_groups[grids]
   
-  dfw <- lapply(contrast_groups, function (x) {
-    nms <- names(df)
-    pat <- paste0(" (", x, ")")
-    keys <- c("pVal", "adjP", "log2Ratio")
-    
-    dfa <- local({
-      cols <- lapply(keys, function (key) {
-        grepl(paste0(key, pat), nms, fixed = TRUE) & grepl(paste0("^", key), nms)
-      })
-      
-      df[, purrr::reduce(cols, `|`)] %>%
-        `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-        dplyr::mutate(Contrast = x)
-    })
-    
-    dfb <- local({
-      pat_i <- lapply(keys, function (key) {
-        paste0("^", key, " ")
-      })
-      
-      df[, !grepl(paste(pat_i, collapse = "|"), nms), drop = FALSE]
-    })
-    
-    dplyr::bind_cols(dfb, dfa)
-  })
-  
+  dfw <- lapply(contrast_groups, subset_volcano_df, df = df, 
+                keys = c("pVal", "adjP", "log2Ratio"))
+
   local({
     if (length(dfw) > 1L) {
       ncols <- unlist(lapply(dfw, ncol))
@@ -566,13 +572,12 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
                                      height = height, 
                                      !!!ggsave_dots)))
   
-  local({
-    gr <- summ_venn(dfw_greater, id, contrast_groups)
-    plot_venn(gr, filepath, paste0(fn_prefix, "_greater"), fml_nm)
-    
-    le <- summ_venn(dfw_less, id, contrast_groups)
-    plot_venn(le, filepath, paste0(fn_prefix, "_less"), fml_nm)
-  })
+  summ_venn(df = dfw_greater, id = id, contrast_groups = contrast_groups, 
+            filepath = filepath, direction = paste0(fn_prefix, "_greater"), 
+            fml_nm = fml_nm)
+  summ_venn(df = dfw_less, id = id, contrast_groups = contrast_groups, 
+            filepath = filepath, direction = paste0(fn_prefix, "_less"), 
+            fml_nm = fml_nm)
   
   saveRDS(
     list(
@@ -605,26 +610,53 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 #' @param id ID.
 #' @param contrast_groups Contrast groups
 #' @param max_size The maximum number of contrast groups.
-summ_venn <- function(df, id, contrast_groups, max_size = 20L) 
+#' @inheritParams plot_venn
+summ_venn <- function(df, id, contrast_groups, filepath, direction, fml_nm, 
+                      max_size = 20L) 
 {
-  if (length(contrast_groups) > max_size)
-    return(NULL)
-
-  universe <- sort(unique(df[[id]]))
+  len <- length(contrast_groups)
   
-  Counts <- matrix(0, nrow = length(universe), ncol = length(contrast_groups)) %>%
+  if (len > max_size) {
+    message("The number of contrasts is more than ", max_size, ".")
+    return(NULL)
+  }
+  
+  universe <- sort(unique(df[[id]]))
+
+  Counts <- matrix(0, nrow = length(universe), ncol = len) %>%
     `rownames<-`(universe) %>%
     `colnames<-`(contrast_groups)
   
+  others <- vector("list", len)
+  names(others) <- contrast_groups
+  
   for (Group in contrast_groups) {
-    ids <- df %>% 
-      dplyr::filter(Contrast == Group) %>% 
-      dplyr::select(id) %>% unlist()
-    
+    df2 <- dplyr::filter(df, Contrast == Group)
+    ids <- df2[[id]]
     Counts[, Group] <- rownames(Counts) %in% ids
+    
+    nm_p <- paste0(fml_nm, ".", "pVal (", Group, ")")
+    nm_r <- paste0(fml_nm, ".", "log2Ratio (", Group, ")")
+    
+    others[[Group]] <- df2[, c(id, "pVal", "log2Ratio")] %>% 
+      dplyr::rename(!!nm_p := pVal, !!nm_r := log2Ratio)
   }
   
-  invisible(Counts)
+  plot_venn(Counts, filepath, direction, fml_nm)
+  
+  ans <- local({
+    a <- Counts %>% 
+      data.frame(check.names = FALSE) %>% 
+      tibble::rownames_to_column(id)
+    
+    b <- others %>% 
+      purrr::reduce(dplyr::full_join, by = id)
+    
+    dplyr::left_join(a, b, by = id) %T>% 
+      readr::write_tsv(file.path(filepath, fml_nm, paste0(direction, "_venn.txt")))
+  })
+  
+  invisible(ans)
 }
 
 
@@ -644,9 +676,11 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
   Height <- 3
   fn_prefix <- paste0(direction, "_venn")
   
-  write.table(Counts, file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), 
-              sep = "\t", col.names = TRUE, row.names = TRUE, quote = FALSE)
-  
+  if (FALSE) {
+    write.table(Counts, file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), 
+                sep = "\t", col.names = TRUE, row.names = TRUE, quote = FALSE)
+  }
+
   if (ncol(Counts) > 5L) {
     warning("No Venn diagrams with more than 5 groups.")
     return(NULL)

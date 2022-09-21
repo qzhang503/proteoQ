@@ -24,13 +24,13 @@ extract_raws <- function(raw_dir = NULL, dat_dir = NULL)
     dat_dir <- get_gl_dat_dir()
   
   fns <- dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)
+  
+  message("List of \".raw\" file names stored in ", 
+          file.path(dat_dir, "raw_list.txt"))
 
   data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
     write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", 
                 col.names = TRUE, row.names = FALSE, quote = FALSE)
-		
-	message("List of \".raw\" file names stored in ", 
-	        file.path(dat_dir, "raw_list.txt"))
 }
 
 
@@ -1260,6 +1260,10 @@ add_quality_cols <- function(df = NULL, group_psm_by = "pep_seq",
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_pep = n())
   
+  df[["pep_n_psm"]] <- NULL
+  df[["prot_n_psm"]] <- NULL
+  df[["prot_n_pep"]] <- NULL
+  
   df <- df %>% dplyr::left_join(pep_n_psm, by = group_psm_by)
   
   df <- list(df, prot_n_psm, prot_n_pep) %>%
@@ -2069,9 +2073,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         pattern = "^F[0-9]+.*_hdr_rm.csv$")
 
 	if (!length(filelist)) {
-	  stop(paste("Missing intermediate PSM file(s) under: ", 
-	             file.path(dat_dir, "PSM/cache")), 
-	       call. = FALSE)
+	  stop("No intermediate PSM file(s) under: ", file.path(dat_dir, "PSM/cache"))
 	}
   
   # (1.1) row filtration, column padding and psm file combinations
@@ -2121,9 +2123,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     purrr::map(add_mascot_pepseqmod, use_lowercase_aa, purge_phosphodata) %>% 
     dplyr::bind_rows() 
   
-  stopifnot("pep_tot_int" %in% names(df), 
-            "pep_seq_mod" %in% names(df))
-  
+  nms <- names(df)
+  stopifnot("pep_tot_int" %in% nms, "pep_seq_mod" %in% nms)
+  rm(list = "nms")
+
   if (!TMT_plex) {
     df <- df %>% 
       dplyr::mutate(I000 = pep_tot_int) %>% 
@@ -5361,7 +5364,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         filelist <- list.files(path = file.path(dat_dir), 
                                pattern = "^peptides.*\\.txt$")
         
-        if (!file.exists(file.path(dat_dir, filelist))) {
+        if (!isTRUE(file.exists(file.path(dat_dir, filelist)))) {
           stop("All NA values under \"Precursor Intensity\" in \"msms[...].txt\".\n", 
                "To proceed, provide \"peptides[...].txt\" for intensity back-filling.", 
                call. = FALSE)
