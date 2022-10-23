@@ -4,7 +4,11 @@
 \alias{count_phosphopeps}
 \title{Counts phospho.}
 \usage{
-count_phosphopeps()
+count_phosphopeps(collapses = c("mn"))
+}
+\arguments{
+\item{collapses}{The modified residues to be collapsed with unmodified
+counterparts.}
 }
 \description{
 Not currently used.

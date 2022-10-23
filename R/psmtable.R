@@ -1517,12 +1517,14 @@ add_shared_prot_accs_mf <- function (df)
     dplyr::select(-id.)
   
   # may be later remove "^rev_" and "^REV_" entries...
-  
   df_accs <- df_acc[["Mapped Proteins"]] %>% 
     stringr::str_split(", ") %>% 
     list_to_dataframe()
-
-  df_accs2 <- purrr::imap(df_accs, ~ {
+  
+  # remove mapped proteins not the primary prot_acc
+  prots <- unique(df$prot_acc)
+  
+  df_accs_map <- purrr::imap(df_accs, ~ {
     data.frame(fasta_name = .x) %>% 
       dplyr::left_join(acc_lookup[, c("prot_acc", "fasta_name")], 
                        by = "fasta_name") %>% 
@@ -1530,11 +1532,13 @@ add_shared_prot_accs_mf <- function (df)
       dplyr::select(prot_acc.) %>% 
       dplyr::rename(!!.y := prot_acc.)
   }) %>% 
-    dplyr::bind_cols(
-      df_acc %>% dplyr::select(pep_seq, prot_acc)
-    )
-  
-  df_shared <- df_accs2 %>% 
+    lapply(function (x) {
+      x <- unlist(x, use.names = FALSE)
+      ifelse(x %in% prots, x, NA_character_)
+    }) %>% 
+    dplyr::bind_cols(df_acc[, c("pep_seq", "prot_acc")])
+
+  df_shared <- df_accs_map %>% 
     tidyr::gather("id.", "maps.", -prot_acc, -pep_seq) %>% 
     dplyr::select(-id.) %>% 
     tidyr::unite(uniq_id, c("pep_seq", "prot_acc", "maps."), sep = "@", remove = FALSE) %>% 
@@ -3810,7 +3814,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   # --- Mascot ---
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(
-      "prot_hit_num", "prot_family_member", "prot_score", 
+      # "prot_score", 
       "prot_matches", "prot_sequences", 
       "pep_var_mod", "pep_var_mod_pos", "pep_scan_title", 
       "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos", 
@@ -3845,8 +3849,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     dplyr::select(-grep("\\s{1}Probabilities$", names(.))) %>% 
     dplyr::select(-grep("\\s{1}Score\\s{1}Diffs$", names(.))) %>% 
     dplyr::select(-which(names(.) %in% stringr::str_to_title(
-      c(
-        "Scan number", "Scan index", 
+      c("Scan number", "Scan index", 
         "Deamidation (N) Probabilities", "Oxidation (M) Probabilities", 
         "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
         "Acetyl (Protein N-term)", "Deamidation (N)", "Gln->pyro-Glu", "Oxidation (M)", 
@@ -4421,6 +4424,22 @@ my_tolower <- function(x = "", ch = "^")
   for (i in seq_along(lowers)) 
     substr(x, locales[i], locales[i]) <- lowers[i]
 
+  gsub(ch, "", x)
+}
+
+
+#' To upper cases
+#' 
+#' @param x A character string of amino acid sequence.
+#' @param ch A tag before the letter to conversion to its upper case.
+my_upper <- function(x = "", ch = "@") 
+{
+  locs <- gregexpr(ch, x)[[1]] %>% `+`(1)
+  uprs <- purrr::map(locs, ~ substr(x, .x, .x)) %>% toupper()
+  
+  for (i in seq_along(uprs)) 
+    substr(x, locs[i], locs[i]) <- uprs[i]
+  
   gsub(ch, "", x)
 }
 
@@ -6243,6 +6262,19 @@ pad_mf_channels <- function(file = NULL, ...)
 
   # !!! "Intensity" in both TMT and LFQ
   # "Purity" only with TMT
+  mf_cols <- c("Spectrum", "Spectrum File", "Peptide", "Modified Peptide", 
+               "Prev AA", "Next AA", "Peptide Length", "Charge",                   
+               "Retention", "Observed Mass", "Calibrated Observed Mass", 
+               "Observed M/Z", "Calibrated Observed M/Z", 
+               "Calculated Peptide Mass", "Calculated M/Z", 
+               "Delta Mass", "Expectation", "Hyperscore", "Nextscore", 
+               "PeptideProphet Probability", "Number of Enzymatic Termini", 
+               "Number of Missed Cleavages", "Protein Start", "Protein End", 
+               "Intensity", "Assigned Modifications", "Observed Modifications", 
+               "Purity", "Is Unique", "Protein", "Protein ID", "Entry Name", 
+               "Gene", "Protein Description", "Mapped Genes", "Mapped Proteins", 
+               "Quan Usage")
+  
   if ("Purity" %in% nms_df) {
     df_int <- local({
       df_int <- df[(which(nms_df == "Purity") + 1):ncol(df)]
@@ -6590,15 +6622,15 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- local({
     if (group_pep_by == "prot_acc") {
       df <- df %>% 
-        dplyr::mutate(pep_literal_unique = 
-                        ifelse(`Is Unique` & !grepl(", ", shared_prot_accs), TRUE, FALSE), 
-                      pep_razor_unique = `Is Unique`)
+        dplyr::mutate(pep_literal_unique = `Is Unique`, 
+                      pep_razor_unique = 
+                        ifelse(grepl(", ", shared_prot_accs), FALSE, TRUE))
     } 
     else if (group_pep_by == "gene") {
       df <- df %>% 
-        dplyr::mutate(pep_literal_unique = 
-                        ifelse(`Is Unique` & !grepl(", ", shared_genes), TRUE, FALSE), 
-                      pep_razor_unique = `Is Unique`)
+        dplyr::mutate(pep_literal_unique = `Is Unique`, 
+                      pep_razor_unique = 
+                        ifelse(grepl(", ", shared_genes), FALSE, TRUE))
     } 
     else {
       stop("\"group_pep_by\" is not one of \"prot_acc\" or \"gene\".")
@@ -7168,6 +7200,21 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     pad_psm_fields() %>% 
     dplyr::bind_rows()
   
+  # for psmC.txt to bypass
+  not_psmC <- c("prot_hit_num", "prot_family_member", "prot_isess", "prot_tier")
+  
+  if (!all(not_psmC %in% names(df))) {
+    df <- df %>% 
+      dplyr::group_by(prot_acc) %>% 
+      dplyr::mutate(prot_hit_num = n(), prot_family_member = 1L,
+                    prot_isess = TRUE, prot_tier = 1L, 
+                    pep_razor_unique = TRUE, pep_literal_unique = TRUE) %>% 
+      dplyr::ungroup()
+  }
+  
+  rm(list = "not_psmC")
+  
+  # check essential columns
   col_nms <- names(df)
   
   lapply(c("RAW_File", "dat_file", 

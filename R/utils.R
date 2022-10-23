@@ -1762,6 +1762,7 @@ annotPrn <- function (df, fasta, entrez)
     na_acc_type_to_other() %>% 
     # na_fasta_name_by_prot_acc() %>% 
     dplyr::select(-psm_index) %>% 
+    # dplyr::ungroup() %>% 
     reloc_col_after("prot_mass", "prot_acc")
   
   invisible(df)
@@ -3084,25 +3085,57 @@ my_geomean <- function (x, ...)
 
 
 #' Counts phospho.
-#' 
+#'
 #' Not currently used.
-#' 
-count_phosphopeps <- function() 
+#'
+#' @param collapses The modified residues to be collapsed with unmodified
+#'   counterparts.
+count_phosphopeps <- function(collapses = c("mn")) 
 {
   dat_dir <- get_gl_dat_dir()
   
   df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+                 header = TRUE, sep = "\t", comment.char = "#") 
   
+  not_single_sample <- sum(grepl("^log2_R[0-9]{3}", names(df))) > 1
+  
+  if (not_single_sample) {
+    df <- df %>% 
+      dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+  }
+
   id <- match_call_arg(normPSM, group_psm_by)
   
-  df_phos <- df %>% dplyr::filter(grepl("[sty]", .[[id]]))
+  df_phos <- df %>% 
+    dplyr::filter(grepl("[sty]", .[[id]]))
   
   n_phos_peps <- nrow(df_phos)
-  n_phos_sites <- stringr::str_count(df_phos[[id]], "[sty]") %>% sum()
   
-  ans <- data.frame(n_peps = n_phos_peps, n_sites = n_phos_sites)
+  pat <- paste(strsplit(collapses, "")[[1]], collapse = "|") %>% 
+    paste0("(", ., ")")
+
+  df_phos <- df_phos %>% 
+    dplyr::mutate(pep_seq_mod2 = gsub(pat, paste0("@", "\\1"), !!rlang::sym(id))) %>% 
+    dplyr::mutate_at(vars("pep_seq_mod2"), ~ purrr::map_chr(.x, my_upper, "@")) %>% 
+    dplyr::arrange(-pep_locprob) %>% 
+    dplyr::filter(!duplicated(pep_seq_mod2)) %>% 
+    dplyr::mutate(phos_class = dplyr::case_when(
+      pep_locprob >= .75 ~ 1L,
+      pep_locprob >= .50 ~ 2L,
+      pep_locprob >= .25 ~ 3L,
+      pep_locprob >= 0 ~ NA_integer_,
+    ))
+
+  n_phos_sites <- sum(stringr::str_count(df_phos[[id]], "[sty]"))
+  
+  n_classes_12 <- df_phos %>% 
+    dplyr::filter(phos_class <= 2L) %$% 
+    stringr::str_count(.[[id]], "[sty]") %>% 
+    sum()
+
+  ans <- data.frame(n_peps = n_phos_peps, 
+                    n_sites = n_phos_sites, 
+                    n_12 = n_classes_12)
   
   write.csv(ans, file.path(dat_dir, "Peptide/cache", "phos_pep_nums.csv"), 
     row.names = FALSE)

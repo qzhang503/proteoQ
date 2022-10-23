@@ -451,12 +451,26 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   }
   
   # data table for labels
-  dt <- purrr::map(contrast_groups, ~ {
-    to_csv_(dfw_sub_top20 %>%
-              dplyr::filter(Contrast == .x) %>%
-              dplyr::select(c("Index", id))) %>%
-      {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # zero-entry exception
-  })  %>%
+  if (FALSE) {
+    dt <- purrr::map(contrast_groups, ~ {
+      to_csv_(dfw_sub_top20 %>%
+                dplyr::filter(Contrast == .x) %>%
+                dplyr::select(c("Index", id))) %>%
+        {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # zero-entry exception
+    })  %>%
+      do.call(rbind, .) %>%
+      data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
+      dplyr::rename(!!rlang::sym(id) := id) %>%
+      dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
+  }
+
+  dt <- dfw_sub_top20 %>% 
+    split(.$Contrast) %>% 
+    lapply(`[`, c("Index", id)) %>% 
+    lapply(to_csv_) %>% 
+    lapply(function (x) {
+      if(!grepl("\n", x)) x <- paste0(x,"\n1,\"NA\"") else x
+    }) %>%
     do.call(rbind, .) %>%
     data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
     dplyr::rename(!!rlang::sym(id) := id) %>%
