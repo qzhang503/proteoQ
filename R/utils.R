@@ -43,13 +43,18 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
                     !is.na(!!rlang::sym(id)),) 
     
     if (!nrow(df))
-      stop("All values are NA under the column `", id, "` in the input data.")
+      stop("Zero row of data after the removals of duplicated or NA `", id, "`.")
 
     df <- df %>% 
       dplyr::ungroup() %>% 
       { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
         else . } %>% 
       reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
+    
+    if (!nrow(df))
+      stop("All intensity are NA or 0 in the input data.")
+    
+    df
   })
 
   Levels <- sub_grp %>%
@@ -3090,7 +3095,8 @@ my_geomean <- function (x, ...)
 #'
 #' @param collapses The modified residues to be collapsed with unmodified
 #'   counterparts.
-count_phosphopeps <- function(collapses = c("mn")) 
+#' @inheritParams normPSM
+count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -3099,7 +3105,7 @@ count_phosphopeps <- function(collapses = c("mn"))
   
   not_single_sample <- sum(grepl("^log2_R[0-9]{3}", names(df))) > 1
   
-  if (not_single_sample) {
+  if (not_single_sample && rm_allna) {
     df <- df %>% 
       dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   }

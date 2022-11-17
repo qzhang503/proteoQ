@@ -23,34 +23,39 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                       rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, 
                       rm_outliers = FALSE, 
                       annot_kinases = FALSE, plot_rptr_int = TRUE, 
-                      plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
-
+                      plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) 
+{
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) NA)
     
-    if (dat_dir == 1) 
+    if (is.na(dat_dir)) 
       stop("Variable `dat_dir` not found; ", 
-           "assign the working directory to the variable first.", 
-           call. = FALSE)
-  } else {
+           "assign the working directory to the variable first.")
+  } 
+  else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
     message("Variable `dat_dir` added to the Global Environment.")
   }
   
-  if (is.null(fasta)) stop("Path(s) to fasta file(s) not found.", call. = FALSE)
+  if (is.null(fasta)) 
+    stop("Path(s) to fasta file(s) not found.")
   
   group_psm_by <- rlang::enexpr(group_psm_by)
+  
   if (group_psm_by == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
     group_psm_by <- "pep_seq"
-  } else {
+  } 
+  else {
     group_psm_by <- rlang::as_string(group_psm_by)
     stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
   }
   
   group_pep_by <- rlang::enexpr(group_pep_by)
+  
   if (group_pep_by == rlang::expr(c("prot_acc", "gene"))) {
     group_pep_by <- "prot_acc"
-  } else {
+  } 
+  else {
     group_pep_by <- rlang::as_string(group_pep_by)
     stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   }
@@ -70,11 +75,14 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   
   if (length(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
-  } else if (length(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
+  } 
+  else if (length(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
-  } else if (length(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
+  } 
+  else if (length(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
-  } else {
+  } 
+  else {
     stop("Unknow data type or missing data files.", call. = FALSE)
   }
   
@@ -91,236 +99,76 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
   
   TMT_plex <- TMT_plex(label_scheme_full)
-  
   filepath <- file.path(dat_dir, "PSM/cache")
   filelist = list.files(path = filepath, pattern = "^F[0-9]{6}_hdr_rm.csv$")
-
-  if (length(filelist) == 0) 
+  
+  if (!length(filelist)) 
     stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
-  if (length(filelist) != 4) 
-    stop("Need all four PSM files using search parameters of:\n", 
-         "1. TMT at both N-terminal and K\n", 
-         "2. TMT at N-terminal but not K\n", 
-         "3. TMT at K but not N-terminal\n",
-         "4. TMT on neither N-terminal or K\n",
-         "The number of files under ", filepath, " is ", length(filelist), 
-         call. = FALSE)
-  
-  df <- purrr::map(filelist, ~ {
-    df <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
-                     header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , 
-                     skip = 0)
-
-    df$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
-    
-    
-    run_scripts <- FALSE
-    if (run_scripts) {
-      r_start <- which(names(df) == "pep_scan_title") + 1
-      int_end <- ncol(df) - 1
-      if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
-      
-      if (TMT_plex == 16) {
-        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                       "R130N", "R130C", "R131N", "R131C", 
-                       "R132N", "R132C", "R133N", "R133C", "R134N")
-        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                     "I130N", "I130C", "I131N", "I131C", 
-                     "I132N", "I132C", "I133N", "I133C", "I134N")
-      } else if (TMT_plex == 11) {
-        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                       "R130N", "R130C", "R131N", "R131C")
-        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                     "I130N", "I130C", "I131N", "I131C")
-      } else if (TMT_plex == 10) {
-        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                       "R130N", "R130C", "R131")
-        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                     "I130N", "I130C", "I131")
-      } else if(TMT_plex == 6) {
-        col_ratio <- c("R127", "R128", "R129", "R130", "R131")
-        col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
-      } else {
-        col_ratio <- NULL
-        col_int <- NULL
-      }
-      
-      if (TMT_plex > 0) {
-        colnames(df)[r_start:(r_start+TMT_plex-2)] <- col_ratio
-        colnames(df)[(r_start+TMT_plex-1):(r_start+TMT_plex+TMT_plex-2)] <- col_int
-        rm(r_start, int_end, col_ratio, col_int)
-      }
-    }
+  lapply(filelist, procTMT0) %>% unlist()
+}
 
 
-    dat_id <- df$dat_file %>% unique()
-    dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
-    stopifnot(length(dat_id)== 1, file.exists(dat_file))
-    
-    df_header <- readLines(dat_file)
-    
-    tmt_line <- df_header %>% 
-      .[grep("Fixed modifications", .)] %>% 
-      .[grep("TMT[0-9]{1}plex", .)]
-    
-    if (rlang::is_empty(tmt_line)) {
-      tmt_type <- "neither"
-    } else if (grepl("TMT[0-9]{1}plex\\s\\(K\\)", tmt_line) & 
-               grepl("TMT[0-9]{1}plex\\s\\(N-term\\)", tmt_line)) {
-      tmt_type <- "both"
-    } else if (grepl("TMT[0-9]{1}plex\\s\\(K\\)", tmt_line)) {
-      tmt_type <- "k_only"
-    } else if (grepl("TMT[0-9]{1}plex\\s\\(N-term\\)", tmt_line)) {
-      tmt_type <- "nt_only"
-    } 
-    
-    if (tmt_type == "nt_only") {
-      df <- df %>% 
-        dplyr::filter(grepl("K", .$pep_seq))
-    }
-    
-    df <- df %>% dplyr::mutate(tmt_type = tmt_type)
-    
-    return(df)
-  }) %>% 
-    purrr::map(~ {
-      .x %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]{0,1}", names(.)))
-    }) %>% 
-    do.call(rbind, .)
+#' Helper in reading TMTzero
+#' 
+#' @param file A file name.
+procTMT0 <- function (file)
+{
+  read.delim(file.path(dat_dir, "PSM/cache", file), sep = ',', 
+                   check.names = FALSE, header = TRUE, stringsAsFactors = FALSE, 
+                   quote = "\"",fill = TRUE , skip = 0) %>% 
+    add_mascot_raw() %>% 
+    dplyr::rename(raw_file = RAW_File) %>% 
+    split(.$raw_file) %>% 
+    lapply(calcTMTLabs, file)
+}
 
-  # convenience craps removals where their uniprot afasta names ended with "|"
-  if (rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
-  
-  dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% filter_dots]
-  
-  # note pep_seq: from such as MENGQSTAAK to K.MENGQSTAAK.L
+
+#' Calculates labeling efficiency
+#' 
+#' @param df A PSM table
+#' @param file A file name.
+calcTMTLabs <- function (df, file)
+{
   df <- df %>% 
-    dplyr::mutate(pep_len = str_length(pep_seq)) %>% 
-    split(., .$dat_file, drop = TRUE) %>% 
-    purrr::map(add_mascot_pepseqmod, use_lowercase_aa) %>% 
-    bind_rows()
+    filter(!is.na(prot_family_member), 
+           pep_rank == 1L) %>% 
+    mutate(pep_scan_num = gsub(".* scan\\=(.*)~$", "\\1", pep_scan_title)) %>% 
+    tidyr::unite(id, raw_file, pep_scan_num, sep = "@") %>% 
+    group_by(id) %>% 
+    filter(row_number() == 1L) %>% 
+    ungroup()
   
   df <- df %>% 
-    dplyr::mutate(prot_acc_orig = prot_acc) %>% 
-    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
-    annotPrn(fasta, entrez) %>% 
-    dplyr::mutate(prot_acc = prot_acc_orig) %>% 
-    dplyr::select(-prot_acc_orig)
+    filter(!grepl("Acetyl (Protein N-term)", pep_var_mod, fixed = TRUE))
   
-  prot_matches_sig <- df %>%
-    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-    dplyr::summarise(prot_matches_sig_new = n())
+  df$dat_file <- gsub("_hdr_rm\\.csv", "", file)
+  dat_id <- unique(df$dat_file)
+  dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
+  stopifnot(length(dat_id)== 1, file.exists(dat_file))
   
-  prot_sequences_sig <- df %>%
-    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-    dplyr::summarise(prot_sequences_sig_new = n())
+  var_mods <- readLines(dat_file) %>% find_mascot_vmods()
+  desc <- var_mods$Description
+  idx_k <- var_mods$Mascot_abbr[grep("TMT[^ ]* \\(K\\)", desc)]
+  idx_nt <- var_mods$Mascot_abbr[grep("TMT[^ ]* \\(N-term\\)", desc)]
+  # other_nt <- var_mods$Mascot_abbr[grep("Acetyl (Protein N-term)", desc, fixed = TRUE)]
+  rm(list = c("desc", "var_mods"))
   
-  df <- list(df, prot_matches_sig, prot_sequences_sig) %>% 
-    purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
-    dplyr::mutate(prot_matches_sig = prot_matches_sig_new, 
-                  prot_sequences_sig = prot_sequences_sig_new) %>%
-    dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
+  dfNT1 <- df %>% filter(grepl(idx_nt, pep_var_mod_pos)) # 127539, +NT_lab
+  dfNT1rK1 <- dfNT1 %>% filter(grepl("K", pep_seq)) # 78237, +NT_lab, with residue K
+  dfNT1rK1_0 <- dfNT1rK1 %>% filter(!grepl(idx_k, pep_var_mod_pos)) # 23, +NT_lab, -K_lab
+  n_k0 <- nrow(dfNT1rK1_0) # 23
   
-  rm(prot_matches_sig, prot_sequences_sig)
+  # No N-term; 
+  # may need to remove Acetyl (Protein N-term)
+  dfNT0 <- df %>% filter(!grepl(idx_nt, pep_var_mod_pos)) # 2780
+  dfNT0_rK0 <- dfNT0 %>% filter(!grepl("K", pep_seq)) # 871, -NT_lab, no residue K -> done
+  dfNT0_rK1 <- dfNT0 %>% filter(grepl("K", pep_seq)) # 1909, -NT_lab, with residue K
+  dfNT0_rK1_0 <- dfNT0_rK1 %>% filter(!grepl(idx_k, pep_var_mod_pos)) # 54,   -NT_lab, -K_lab
+  dfNT0_rK1_1 <- dfNT0_rK1 %>% filter( grepl(idx_k, pep_var_mod_pos)) # 1855, -NT_lab, +K_lab
+  n_nt0 <- nrow(dfNT0_rK0) + nrow(dfNT0_rK1_0) * 2 + nrow(dfNT0_rK1_1) # 871 + 2 * 54 + 1855 -> 2834
   
-  df <- df %>% 
-    filters_in_call(!!!filter_dots) %>% 
-    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc))
-  
-  # re-apply craps after annotation
-  if (rm_craps) {
-    craps <- load_craps(unique(df$acc_type) %>% .[!is.na(.)])
-    df <- df %>% dplyr::filter(! prot_acc %in% craps)
-  }
-  
-  if (rm_krts) {
-    df <- df %>% dplyr::filter(!grepl("^krt[0-9]+", gene, ignore.case = TRUE))
-  }
-  
-  if (annot_kinases) {
-    df <- df %>% 
-      split(., .$acc_type, drop = TRUE) %>% 
-      .[acc_types] %>% 
-      purrr::imap( ~ annotKin(.x, .y)) %>% 
-      do.call(rbind, .)
-  }
-  
-  df <- df %>% annotPeppos()
-
-  if (!("prot_cover" %in% names(df) && length(filelist) == 1)) {
-    df <- df %>% calc_cover(id = !!rlang::sym(group_pep_by))
-  } 
-  
-  df <- dplyr::bind_cols(
-    df %>% dplyr::select(grep("^pep_", names(.))), 
-    df %>% dplyr::select(-grep("^pep_", names(.))), 
-  )
-  
-  df <- dplyr::bind_cols(
-    df %>% dplyr::select(grep("^prot_", names(.))), 
-    df %>% dplyr::select(-grep("^prot_", names(.))), 
-  )
-  
-  if (length(grep("^R[0-9]{3}", names(df))) > 0) {
-    df_split <- df %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
-                       as.numeric) %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
-                       ~ ifelse(.x == -1, NA, .x)) %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
-                       ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
-      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
-      dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
-      dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc)
-  } else {
-    df_split <- df %>%
-      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
-      dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
-      dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc)
-  }
-  
-  df_split <- df_split %>% split(., .$RAW_File, drop = TRUE)
-
-  dat_files <- df %>% 
-    dplyr::select(dat_file, tmt_type) %>% 
-    dplyr::filter(!duplicated(dat_file))
-  
-  lab_eff <- purrr::map2_dbl(df_split, names(df_split), ~ {
-    res <- .x %>% 
-      dplyr::group_by(dat_file) %>% 
-      dplyr::summarize(N = n()) %>% 
-      dplyr::right_join(dat_files, by = "dat_file") %>% 
-      dplyr::arrange(-N, dat_file) %T>% 
-      write.csv(file.path(dat_dir, "PSM/cache", paste0(.y, ".csv")), row.names = FALSE)
-    
-    both <- res %>% 
-      dplyr::filter(tmt_type == "both") %>% 
-      dplyr::mutate(N = 2 *N) %>% 
-      .[["N"]]
-    
-    k_only <- res %>% 
-      dplyr::filter(tmt_type == "k_only") %>% 
-      .[["N"]]
-    
-    nt_only <- res %>% 
-      dplyr::filter(tmt_type == "nt_only") %>% 
-      .[["N"]]
-    
-    neither <- res %>% 
-      dplyr::filter(tmt_type == "neither") %>% 
-      dplyr::mutate(N = 2 *N) %>% 
-      .[["N"]]
-    
-    1 - (k_only + nt_only + neither) / (both + k_only + nt_only)
-  })
+  1 - (n_k0 + n_nt0)/nrow(df)
 }
 
 

@@ -26,6 +26,26 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     check_optional_cols() %>% 
     check_tmt126_row() %>% 
     check_tmt_nc()
+  
+  # BAD: only with MQ timsTOF missing PSM intensities
+  label_scheme_full <- local({
+    file <- file.path(dat_dir, "peptides.txt")
+    
+    if (file.exists(file)) {
+      df <- readr::read_tsv(file)
+      
+      sample_ids <- names(df) %>% 
+        .[grepl("^Experiment ", .)] %>% 
+        gsub("^Experiment ", "", .)
+      
+      label_scheme_full <- label_scheme_full %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sample_ids)) %>% 
+        dplyr::arrange(Sample_ID) %>% 
+        dplyr::mutate(Sample_ID = as.character(Sample_ID))
+    }
+    else
+      label_scheme_full
+  })
 
   TMT_plex <- TMT_plex(label_scheme_full) # after check_tmt_nc
   label_scheme_full <- check_tmt_plex(label_scheme_full, TMT_plex)

@@ -865,6 +865,42 @@ add_mod_conf <- function(df = NULL, dat_dir = NULL)
 }
 
 
+#' Finds the variable modifications.
+#' 
+#' For Mascot.
+#' 
+#' @param df_header Mascot output header.
+find_mascot_vmods <- function (df_header)
+{
+  zero_out <- tibble::tibble(Mascot_abbr = character(),
+                             Description = character(), 
+                             Delta_mass = character(), 
+                             Filename = character()) 
+  
+  spacer <- "\"\""
+  rows_spacer <- which(df_header == spacer)
+  
+  row_varmod <- grep("Variable modifications", df_header)[1]
+  
+  if (is.na(row_varmod)) 
+    return(zero_out)
+  
+  row_varmod_next <- row_varmod + 1L
+  
+  if (df_header[row_varmod_next] != spacer) 
+    return(zero_out)
+  
+  row_next_spacer <- rows_spacer[which(rows_spacer > row_varmod_next)][1]
+  
+  df_header[(row_varmod_next + 2) : (row_next_spacer - 1)] %>%
+    gsub("\"", "", ., fixed = TRUE) %>%
+    data.frame() %>%
+    tidyr::separate(".", sep = ",", extra = "drop", 
+                    c("Mascot_abbr", "Description", "Delta_mass")) %>%
+    dplyr::mutate(Filename = gsub("[\\\\\\/\\:\\*\\?\\'\\<\\>\\|]", ".", Description))
+}
+
+
 #' Adds the \code{pep_seq_mod} field to Mascot PSMs
 #' 
 #' @inheritParams locate_outliers
@@ -917,35 +953,8 @@ add_mascot_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE,
       tidyr::separate(".", sep = ",", c("Mascot_abbr", "Description", "Delta_mass"))
   })
   
-  var_mods <- local({
-    zero_out <- tibble::tibble(Mascot_abbr = character(),
-                               Description = character(), 
-                               Delta_mass = character(), 
-                               Filename = character()) 
-    
-    spacer <- "\"\""
-    rows_spacer <- which(df_header == spacer)
-    
-    row_varmod <- grep("Variable modifications", df_header)[1]
-    
-    if (is.na(row_varmod)) 
-      return(zero_out)
-    
-    row_varmod_next <- row_varmod + 1L
-    
-    if (df_header[row_varmod_next] != spacer) 
-      return(zero_out)
-    
-    row_next_spacer <- rows_spacer[which(rows_spacer > row_varmod_next)][1]
+  var_mods <- find_mascot_vmods(df_header)
 
-    df_header[(row_varmod_next + 2) : (row_next_spacer - 1)] %>%
-      gsub("\"", "", ., fixed = TRUE) %>%
-      data.frame() %>%
-      tidyr::separate(".", sep = ",", extra = "drop", 
-                      c("Mascot_abbr", "Description", "Delta_mass")) %>%
-      dplyr::mutate(Filename = gsub("[\\\\\\/\\:\\*\\?\\'\\<\\>\\|]", ".", Description))
-  })
-  
   if (is.null(df$pep_seq)) {
     stop("Column \"pep_seq\" not found.", call. = FALSE)
   }
@@ -2434,28 +2443,14 @@ make_mascot_intensities <- function(TMT_plex = 10L, nrow = 1L)
                      `colnames<-`(""))
 }
 
-#' Pads Mascot TMT channels to the highest plex
+
+#' Adds RAW_File column 
 #' 
-#' @param file An intermediate PSM table.
-#' @param ... filter_dots.
-pad_mascot_channels <- function(file = NULL, ...) 
+#' Mascot only
+#' 
+#' @param df A PSM table
+add_mascot_raw <- function (df)
 {
-  filter_dots <- rlang::enexprs(...) %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  dat_dir <- get_gl_dat_dir()
-  load(file.path(dat_dir, "label_scheme_full.rda"))
-  load(file.path(dat_dir, "fraction_scheme.rda"))
-  base_name <- gsub("_hdr_rm\\.csv$", "", file)
-  
-  df <- read.delim(file.path(dat_dir, "PSM/cache", file), 
-                   sep = ',', check.names = FALSE, 
-                   header = TRUE, stringsAsFactors = FALSE, 
-                   quote = "\"", fill = TRUE , skip = 0) %>% 
-    filters_in_call(!!!filter_dots)
-  
-  # parses `RAW_File`
   l <- df$pep_scan_title[1]
   
   if (grepl("File:~", l, fixed = TRUE)) { # MSConvert
@@ -2482,9 +2477,33 @@ pad_mascot_channels <- function(file = NULL, ...)
          "\"MSConvert\" or \"Proteome DisCoverer\".\n", 
          "Contact the developer about the new format.")
   }
+}
+
+
+#' Pads Mascot TMT channels to the highest plex
+#' 
+#' @param file An intermediate PSM table.
+#' @param ... filter_dots.
+pad_mascot_channels <- function(file = NULL, ...) 
+{
+  filter_dots <- rlang::enexprs(...) %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
   
-  rm(list = "l")
+  dat_dir <- get_gl_dat_dir()
+  load(file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
+  base_name <- gsub("_hdr_rm\\.csv$", "", file)
   
+  df <- read.delim(file.path(dat_dir, "PSM/cache", file), 
+                   sep = ',', check.names = FALSE, 
+                   header = TRUE, stringsAsFactors = FALSE, 
+                   quote = "\"", fill = TRUE , skip = 0) %>% 
+    filters_in_call(!!!filter_dots)
+  
+  # parses `RAW_File`
+  df <- add_mascot_raw(df)
+
   # with some refseq_acc
   df <- df %>%
     dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) 
