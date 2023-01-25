@@ -273,6 +273,32 @@ pepHM(
   filename = "ncl_bi1.png",
 )
 
+## multiple genes
+genes <- c("NCL", "Ncl")
+
+lapply(genes, function (gene) {
+  gn <- gene
+  
+  pepHM(
+    xmin = -2, 
+    xmax = 2, 
+    xmargin = 0.1, 
+    annot_cols = c("Group", "Color", "Alpha", "Shape"),
+    annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+    cluster_rows = FALSE, 
+    show_rownames = TRUE, 
+    show_colnames = TRUE, 
+    fontsize_row = 10, 
+    cellwidth = 12, 
+    cellheight = 12, 
+    width = 18,
+    height = 12,
+    arrange_pep = exprs(pep_start, pep_end), 
+    filter_sp = exprs(gene == !!gn), 
+    filename = !!paste0(gene, ".png"),
+  )
+})
+
 ## Customer annotation colors 
 annot_colors_group <- colorRampPalette(brewer.pal(n = 9, "Set1"))(12)
 names(annot_colors_group) <- c("W16.BI.TMT1", "W16.BI.TMT2", 

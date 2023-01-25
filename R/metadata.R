@@ -38,6 +38,13 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
         .[grepl("^Experiment ", .)] %>% 
         gsub("^Experiment ", "", .)
       
+      meta_ids <- label_scheme_full$Sample_ID
+      missings <- setdiff(sample_ids, meta_ids)
+      
+      if (length(missings))
+        stop("Sample IDs in MaxQuant 'peptides.txt' not found in '", expt_smry, 
+                "':\n", paste(missings, collapse = "\n"))
+      
       label_scheme_full <- label_scheme_full %>% 
         dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sample_ids)) %>% 
         dplyr::arrange(Sample_ID) %>% 
@@ -64,7 +71,9 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) 
   
   label_scheme_full <- label_scheme_full %>% 
-    rm_fully_empty_tmt_sets(frac_smry, TMT_plex, dat_dir, ext) %>% 
+    rm_fully_empty_tmt_sets(frac_smry, TMT_plex, dat_dir, ext) 
+  
+  label_scheme_full <- label_scheme_full %>% 
     dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
     dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel) %>% 
     check_metadata_integers(is_tmt, expt_smry)
@@ -745,6 +754,9 @@ rm_fully_empty_tmt_sets <- function (df, frac_smry = NULL, TMT_plex = 0L,
   }
   
   n_af <- nrow(df)
+  
+  if (!n_af)
+    stop("Zero zero in metadata; probably forget to set \"TMT_Set\" for LFQ.")
   
   if (n_af < n_bf) {
     file <- file.path(dat_dir, frac_smry)

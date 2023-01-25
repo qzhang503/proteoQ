@@ -27,18 +27,21 @@ find_fit_nms <- function(universe, selected, pat = NULL)
          "  universe = ", paste(universe, collapse = ", "), "\n", 
          "  selected = ", paste(selected, collapse = ", "))
   
-  if (!is.null(pat)) {
-    us <- gsub(paste0(pat, "(.*)\\)$"), "\\1", universe)
-    universe[us %in% selected]
+  us <- gsub(paste0(pat, "(.*)\\)$"), "\\1", universe)
+  ok <- us %in% selected
+  us <- us[ok]
+  universe <- universe[ok]
+  
+  ## MaxQuant sample IDs by alphabetic orders and can be different to the 
+  #  order of "selected"
+  if (!identical(us, selected)) {
+    us <- factor(us, levels = selected)
+    ord <- order(us)
+    us <- us[ord]
+    universe <- universe[ord]
   }
-  # old approach; can be deleted
-  else {
-    oks <- purrr::map(selected, ~ grepl(paste0(" (", .x, ")"), universe, 
-                                        fixed = TRUE)) %>% 
-      purrr::reduce(`|`) # .init = FALSE
-    
-    universe[oks]
-  }
+  
+  invisible(universe)
 }
 
 

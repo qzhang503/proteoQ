@@ -4,7 +4,7 @@
 \alias{count_phosphopeps}
 \title{Counts phospho.}
 \usage{
-count_phosphopeps(collapses = c("mn"), rm_allna = FALSE)
+count_phosphopeps(collapses = c("mn"), rm_allna = FALSE, pat_mod = "sty")
 }
 \arguments{
 \item{collapses}{The modified residues to be collapsed with unmodified
@@ -13,6 +13,8 @@ counterparts.}
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{pat_mod}{Pattern of modification}
 }
 \description{
 Not currently used.

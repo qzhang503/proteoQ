@@ -3095,8 +3095,9 @@ my_geomean <- function (x, ...)
 #'
 #' @param collapses The modified residues to be collapsed with unmodified
 #'   counterparts.
+#' @param pat_mod Pattern of modification
 #' @inheritParams normPSM
-count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE) 
+count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE, pat_mod = "sty") 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -3111,9 +3112,10 @@ count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE)
   }
 
   id <- match_call_arg(normPSM, group_psm_by)
+  pat_mod2 <- paste0("[", pat_mod, "]")
   
   df_phos <- df %>% 
-    dplyr::filter(grepl("[sty]", .[[id]]))
+    dplyr::filter(grepl(pat_mod2, .[[id]]))
   
   n_phos_peps <- nrow(df_phos)
   
@@ -3132,11 +3134,11 @@ count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE)
       pep_locprob >= 0 ~ NA_integer_,
     ))
 
-  n_phos_sites <- sum(stringr::str_count(df_phos[[id]], "[sty]"))
+  n_phos_sites <- sum(stringr::str_count(df_phos[[id]], pat_mod2))
   
   n_classes_12 <- df_phos %>% 
     dplyr::filter(phos_class <= 2L) %$% 
-    stringr::str_count(.[[id]], "[sty]") %>% 
+    stringr::str_count(.[[id]], pat_mod2) %>% 
     sum()
 
   ans <- data.frame(n_peps = n_phos_peps, 

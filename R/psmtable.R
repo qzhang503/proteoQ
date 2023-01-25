@@ -2453,13 +2453,20 @@ add_mascot_raw <- function (df)
 {
   l <- df$pep_scan_title[1]
   
-  if (grepl("File:~", l, fixed = TRUE)) { # MSConvert
-    df <- df %>% 
-      dplyr::mutate(RAW_File = pep_scan_title) %>% 
-      dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.raw\\~.*", 
-                                    "\\1", RAW_File)) %>% 
-      dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.d\\~.*", 
-                                    "\\1", RAW_File))
+  if (grepl("File:~", l, fixed = TRUE)) { 
+    if (grepl(".d~", l, fixed = TRUE)) { # Bruker .d
+      df <- df %>% 
+        dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
+                      RAW_File = gsub('^.*,[ ]{0,1}File:~(.*)\\.d~.*', '\\1', RAW_File)) 
+    }
+    else { # MSConvert
+      df <- df %>% 
+        dplyr::mutate(RAW_File = pep_scan_title) %>% 
+        dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.raw\\~.*", 
+                                      "\\1", RAW_File)) %>% 
+        dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.d\\~.*", 
+                                      "\\1", RAW_File))
+    }
   } 
   else if (grepl("File: ~", l, fixed = TRUE)) { # PD
     df <- df %>% 
