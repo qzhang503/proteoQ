@@ -1209,7 +1209,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   df <- df %>% filters_in_call(!!!filter_dots)
   
   if ("gene" %in% names(df)) {
-    df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
+    df <- df %>% dplyr::mutate(gene = forcats::fct_na_value_to_level(gene))
   }
   
   df <- df %>% 

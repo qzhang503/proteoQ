@@ -1741,7 +1741,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   # split by TMT and LCMS
   if (! "PSM_File" %in% names(tmtinj_raw_map)) {
     df_split <- df %>%
-      dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>% 
+      dplyr::left_join(tmtinj_raw_map, by = "RAW_File") %>% 
       dplyr::group_by(TMT_inj) %>%
       dplyr::mutate(psm_index = row_number()) %>%
       data.frame(check.names = FALSE) %>% 
