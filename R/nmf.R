@@ -546,7 +546,7 @@ plotNMFCoef <- function(id, rank, label_scheme_sub,
       annotation_col <- suppressMessages(
         annotation_col %>% 
           tibble::rownames_to_column() %>% 
-          dplyr::left_join(clus %>% tibble::rownames_to_column(), id = "rowname") %>% 
+          dplyr::left_join(clus %>% tibble::rownames_to_column(), by = "rowname") %>% 
           dplyr::select(- which(names(.) %in% c("neighbor", "sil_width"))) %>% 
           dplyr::rename(silhouette = cluster) %>% 
           dplyr::mutate(silhouette = factor(silhouette)) %>% 

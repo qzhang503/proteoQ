@@ -881,7 +881,7 @@ syn_empty_channels <- function (df)
   # updates Sample_ID's for Empty's
   df_na <- df_na %>% 
     tidyr::unite(Chan_Set_LCMS, TMT_Channel, TMT_Set, LCMS_Injection, remove = FALSE) %>% 
-    dplyr::left_join(emp, id = "Chan_Set_LCMS") %>% 
+    dplyr::left_join(emp, by = "Chan_Set_LCMS") %>% 
     dplyr::mutate(Sample_ID = Sample_ID_new) %>% 
     dplyr::select(-c("Sample_ID_new", "Chan_Set_LCMS"))
 

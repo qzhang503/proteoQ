@@ -5,6 +5,8 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -139,7 +139,7 @@ In this document, I first illustrate the following applications of proteoQ:
 -   Mixed-bed normalization using full or partial data.
 -   Removal of low-quality entries from PSM, peptide and protein data.
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, proteoM or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, [proteoM](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
 
 ### 1.1 Experiment setup
 

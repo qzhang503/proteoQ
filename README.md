@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2022-09-20
+2023-02-02
 
 - <a href="#introduction-to-proteoq"
   id="toc-introduction-to-proteoq">Introduction to proteoQ</a>
@@ -97,14 +97,12 @@ engines of [Mascot](https://http://www.matrixscience.com/),
 [MSFragger](http://msfragger.nesvilab.org/),
 [proteoM](https://github.com/qzhang503/proteoM) or [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill),
-for TMT
-(![\le](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cle "\le")
-16-plex), LFQ or SILAC experiments, using mass analyzers of Thermo’s
-Orbitrap or Bruker’s timsTOF. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
-alignment and normalization. The package further offers a suite of tools
-and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R routines.[^1]
+for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers
+of Thermo’s Orbitrap or Bruker’s timsTOF. Peptide and protein results
+are then produced with users’ selection of parameters in data
+filtration, alignment and normalization. The package further offers a
+suite of tools and functionalities in statistics, informatics and data
+visualization by creating ‘wrappers’ around published R routines.[^1]
 
 (Click <strong>[Recent
 Posts](https://proteoq.netlify.com/#posts)</strong> for additional
@@ -156,8 +154,9 @@ labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
 (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data
 were analyzed against the search engines of Mascot, MaxQuant, MSFragger,
-proteoM or Spectrum Mill. Ten percent of the PSM entries were sampled
-randomly from the complete data sets and stored in a companion package,
+[proteoM](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1)
+or Spectrum Mill. Ten percent of the PSM entries were sampled randomly
+from the complete data sets and stored in a companion package,
 `proteoQDA`. For simplicity, only TMT examples will be discussed in the
 document. Examples of LFQ analysis can be found in the help document of
 `proteoQ::load_expts`, which is another good stop for exploring
@@ -523,7 +522,16 @@ Taking the sample entries under `TMT_Set` one and `LCMS_Injection` one
 in label_scheme.xlsx as an example, we can see that a small portion of
 peptides have CV greater than 0.5 at log2 scale (**Figure 1A**).
 
-<img src="images/psm/purge/psm_no_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" /><img src="images/psm/purge/psm_maxcv_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" /><img src="images/psm/purge/psm_qt_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/psm/purge/psm_no_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images/psm/purge/psm_maxcv_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images/psm/purge/psm_qt_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" />
+<p class="caption">
+**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left:
+no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95
+percentile.
+</p>
+
+</div>
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
 large in TMT experiments [^6], which can be in part ascribed to a
@@ -761,7 +769,15 @@ expt_smry.xlsx. We also supply a file name, assuming that we want to
 keep the previously generated plots with default file names of
 `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`.
 
-<img src="images/peptide/histogram/bi1_n_1.png" title="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" style="display: block; margin: auto;" /><img src="images/peptide/histogram/bi1_z_1.png" title="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/histogram/bi1_n_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" /><img src="images/peptide/histogram/bi1_z_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" />
+<p class="caption">
+**Figure 2A-2B.** Histograms of peptide log2FC. Top:
+`scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`
+</p>
+
+</div>
 
 As expected, both the widths and the heights of log2FC profiles become
 more comparable after the scaling normalization. However, such
@@ -805,7 +821,16 @@ centering and a three-Gaussian assumption. More examples in the side
 effects can be found from the help document via `?standPep` and
 `?pepHist`.
 
-<img src="images/peptide/histogram/bi1_z_mc_2.png" title="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" style="display: block; margin: auto;" /><img src="images/peptide/histogram/mixed_bed_3.png" title="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/histogram/bi1_z_mc_2.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" /><img src="images/peptide/histogram/mixed_bed_3.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" />
+<p class="caption">
+**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering
+for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by
+Gaussian density
+</p>
+
+</div>
 
 ##### 1.3.4.3 Visualization of data subsets (filter\_)
 
@@ -1072,7 +1097,15 @@ prnHist(
 For simplicity, we only display the histograms with scaling
 normalization (**Figure 2E**).
 
-<img src="images/protein/histogram/bi1_z.png" title="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" style="display: block; margin: auto;" /><img src="images/protein/histogram/bi1_z_npep10.png" title="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/histogram/bi1_z.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" /><img src="images/protein/histogram/bi1_z_npep10.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" />
+<p class="caption">
+**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`.
+Left: before filtration; right, after filtration
+</p>
+
+</div>
 
 ##### 1.4.3.2 Side effects
 
@@ -1202,7 +1235,14 @@ pepMDS(
 )
 ```
 
-<img src="images/peptide/mds/mds.png" title="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/mds/mds.png" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<p class="caption">
+**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`
+</p>
+
+</div>
 
 It is clear that the WHIM2 and WHIM16 samples are well separated by the
 Euclidean distance of log2FC (**Figure 3A**). We next take the `JHU`
@@ -1220,7 +1260,15 @@ pepMDS(
 )
 ```
 
-<img src="images/peptide/mds/jhu.png" title="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" style="display: block; margin: auto;" /><img src="images/peptide/mds/new_jhu.png" title="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/mds/jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images/peptide/mds/new_jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<p class="caption">
+**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left:
+original aesthetics; right, modefied aesthetics
+</p>
+
+</div>
 
 We immediately spot that all samples are coded with the same color
 (**Figure 3B**). This is not a surprise as the values under column
@@ -1300,7 +1348,14 @@ to `WHIM` and `Batch`, respectively, for better intuition. We can
 alternatively add columns `WHIM` and `Batch` if we choose not to recycle
 and rename columns `Shape` and `Alpha`.
 
-<img src="images/peptide/mds/eucdist_jhu.png" title="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/mds/eucdist_jhu.png" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<p class="caption">
+**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
+</p>
+
+</div>
 
 The utility is currently applied to Euclidean distances with an argument
 `adjEucDist` for a probable compensation of distances between TMT
@@ -1313,7 +1368,15 @@ references at an earlier stage of sample handling as opposed to a later
 stage. I tried to go through the most fundamental calculations
 step-by-step to help myself understand the differences:
 
-<img src="images/protein/eucdist/interplex_errors.png" title="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" alt="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" width="100%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/eucdist/interplex_errors.png" alt="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" width="100%" />
+<p class="caption">
+**Figure 3E.** Accumulation of Euclidean distance in the interplex
+comparison of `log2FC`
+</p>
+
+</div>
 
 The adjustment might be more suitable for studies where both the samples
 and references are largely similar in proteome compositions. The setting
@@ -1397,7 +1460,15 @@ indicates that a high value of *proportion of variance explained* may
 not necessary be a go-to standard for differentiating sample types in
 that variance may be sensitive to leveraging data points.
 
-<img src="images/protein/pca/cent.png" title="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" style="display: block; margin: auto;" /><img src="images/protein/pca/sub_cent.png" title="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/cent.png" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" /><img src="images/protein/pca/sub_cent.png" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" />
+<p class="caption">
+**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left:
+without filtration; right, with filtration
+</p>
+
+</div>
 
 We next explore the analogous, but by turning off data centering:
 
@@ -1437,7 +1508,15 @@ different interpretation in biology, which may be in part ascribed to
 high deviation entries. The phenomena can, however, be conveniently
 explored via proteoQ.
 
-<img src="images/protein/pca/nocent.png" title="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" style="display: block; margin: auto;" /><img src="images/protein/pca/sub_nocent.png" title="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/nocent.png" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" /><img src="images/protein/pca/sub_nocent.png" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" />
+<p class="caption">
+**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off`
+without filtration; right, data centering `off` with filtration
+</p>
+
+</div>
 
 #### 2.2.4 Graphic controls
 
@@ -1488,7 +1567,14 @@ p <- ggplot(res$pca) +
 ggsave(file.path(dat_dir, "Protein/PCA/nocent_2.png"), width = 6, height = 4)
 ```
 
-<img src="images/protein/pca/nocent_2.png" title="**Figure 4E.** Custom plot." alt="**Figure 4E.** Custom plot." width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/nocent_2.png" alt="**Figure 4E.** Custom plot." width="45%" />
+<p class="caption">
+**Figure 4E.** Custom plot.
+</p>
+
+</div>
 
 #### 2.2.5 Beyond the first two dimensions
 
@@ -1504,7 +1590,14 @@ prnPCA(
 )
 ```
 
-<img src="images/protein/pca/d3.png" title="**Figure 4F.** Higher dimensions." alt="**Figure 4F.** Higher dimensions." width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/d3.png" alt="**Figure 4F.** Higher dimensions." width="45%" />
+<p class="caption">
+**Figure 4F.** Higher dimensions.
+</p>
+
+</div>
 
 Additional examples and analogous high-dimension MDS can be found from
 the help documents via `?prnPCA` and `?prnMDS`, respectively.
@@ -1547,7 +1640,15 @@ prnCorr_logFC(
 )
 ```
 
-<img src="images/peptide/corrplot/corr_pnnl.png" title="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" style="display: block; margin: auto;" /><img src="images/protein/corrplot/corr_pnnl.png" title="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/corrplot/corr_pnnl.png" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images/protein/corrplot/corr_pnnl.png" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
+<p class="caption">
+**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left:
+peptide; right, protein
+</p>
+
+</div>
 
 To visualize the correlation of intensity data, we can use
 `pepCorr_logInt` and `prnCorr_logInt` for peptide and protein data,
@@ -1588,7 +1689,14 @@ expt_smry.xlsx. For better convention, we rename them to `Group`, `Lab`,
 supplied a vararg of `filter_sp` where we assume exclusive interests in
 human proteins.
 
-<img src="images/protein/heatmap/protein.png" title="**Figure 6A.** Heat map visualization of protein log2FC" alt="**Figure 6A.** Heat map visualization of protein log2FC" width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/heatmap/protein.png" alt="**Figure 6A.** Heat map visualization of protein log2FC" width="80%" />
+<p class="caption">
+**Figure 6A.** Heat map visualization of protein log2FC
+</p>
+
+</div>
 
 Row ordering of data is also implemented in the heat map utility.
 
@@ -1622,7 +1730,14 @@ column. Analogous to the user-supplied `filter_` arguments, the row
 ordering varargs need to start with `arrange_` to indicate the task of
 row ordering.
 
-<img src="images/protein/heatmap/kinase.png" title="**Figure 6B.** Heat map visualization of kinase log2FC" alt="**Figure 6B.** Heat map visualization of kinase log2FC" width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/heatmap/kinase.png" alt="**Figure 6B.** Heat map visualization of kinase log2FC" width="80%" />
+<p class="caption">
+**Figure 6B.** Heat map visualization of kinase log2FC
+</p>
+
+</div>
 
 See `?standPep` for peptide examples.
 
@@ -1673,7 +1788,15 @@ contrasts with those in `pepSig`. The following plots show the batch
 difference between two TMT experiments for each of the three
 laboratories and the location difference between any two laboratories.
 
-<img src="images/protein/volcplot/batches.png" title="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" style="display: block; margin: auto auto auto 0;" /><img src="images/protein/volcplot/locations.png" title="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/protein/volcplot/batches.png" alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images/protein/volcplot/locations.png" alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
+<p class="caption">
+**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between
+batches; right: between locations.
+</p>
+
+</div>
 
 In general, the special characters of `+` and `-` in contrast terms need
 to be avoided in linear modeling. However, it may be sporadically
@@ -1692,30 +1815,17 @@ prnSig(
 
 Contrast fits require the coefficients of members under each contrast
 being summed to zero (see the help of limma). Taking the above as an
-example, the coefficients are
-![+1](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%2B1 "+1")
-and
-![-1](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-1 "-1")
-for the two conditions in the contrast of
-“![\<\mathbf{A}+\mathbf{B}\>-\mathbf{C}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%3C%5Cmathbf%7BA%7D%2B%5Cmathbf%7BB%7D%3E-%5Cmathbf%7BC%7D "<\mathbf{A}+\mathbf{B}>-\mathbf{C}")”,
-and
-![+1/2](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%2B1%2F2 "+1/2"),
-![+1/2](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%2B1%2F2 "+1/2")
-and
-![-1](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-1 "-1")
-for the three conditions in
-“![(\mathbf{A}+\mathbf{B})/2-\mathbf{C}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%28%5Cmathbf%7BA%7D%2B%5Cmathbf%7BB%7D%29%2F2-%5Cmathbf%7BC%7D "(\mathbf{A}+\mathbf{B})/2-\mathbf{C}")”.
-Moreover, we need to be aware of the difference between
-`prnSig(fml = ~ Term["A - C"]` and
+example, the coefficients are $+1$ and $-1$ for the two conditions in
+the contrast of “$<\mathbf{A}+\mathbf{B}>-\mathbf{C}$”, and $+1/2$,
+$+1/2$ and $-1$ for the three conditions in
+“$(\mathbf{A}+\mathbf{B})/2-\mathbf{C}$”. Moreover, we need to be aware
+of the difference between `prnSig(fml = ~ Term["A - C"]` and
 `prnSig(fml = ~ Term["A - C", "B - C"]` for the same pair of contrast
-“![\mathbf{A}-\mathbf{C}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathbf%7BA%7D-%5Cmathbf%7BC%7D "\mathbf{A}-\mathbf{C}")”.
-The sample spaces are defined by groups
-![\\{\mathbf{A, C}\\}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5C%7B%5Cmathbf%7BA%2C%20C%7D%5C%7D "\{\mathbf{A, C}\}")
-in the former and
-![\\{\mathbf{A, B, C}\\}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5C%7B%5Cmathbf%7BA%2C%20B%2C%20C%7D%5C%7D "\{\mathbf{A, B, C}\}")
-in the latter. Such difference might affect the underlying *sample
-variance* and subsequently p-values (see also George Casella and Roger L
-Berger 2002 ch. 11 for technical details).
+“$\mathbf{A}-\mathbf{C}$”. The sample spaces are defined by groups
+$\{\mathbf{A, C}\}$ in the former and $\{\mathbf{A, B, C}\}$ in the
+latter. Such difference might affect the underlying *sample variance*
+and subsequently p-values (see also George Casella and Roger L Berger
+2002 ch. 11 for technical details).
 
 In addition to the fixed effects shown above, significance tests with
 additive random effects are also supported. More examples can be found
@@ -1730,99 +1840,58 @@ can analyze and visualize the enrichment of gene sets under the context
 of volcano plots at given contrasts. Provided the richness of `R`
 utilities in linear modelings, proteoQ takes a naive approach thereafter
 to assess the *asymmetricity* of the distributions of protein
-probability
-![p](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;p "p")
-values (pVals) under volcano plots.
+probability $p$ values (pVals) under volcano plots.
 
 #### 2.7.1 GSPA
 
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`),
 individual protein pVals from linear modeling are first taken and
-*separated* into the groups of up
-(![u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u "u"))
-or down
-(![d](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;d "d"))
-expressed proteins within a gene set
-(![s](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;s "s")).
-Taking proteins from a
-![u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u "u")
-group as an example, the default is to calculate the geometric mean of
-pVals under
-![s](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;s "s")
-with a penalty-like term:
+*separated* into the groups of up ($u$) or down ($d$) expressed proteins
+within a gene set ($s$). Taking proteins from a $u$ group as an example,
+the default is to calculate the geometric mean of pVals under $s$ with a
+penalty-like term:
 
-![-log\_{10}P_u=(-\sum\_{i=1}^{n_u}log\_{10}p_i-\sum\_{j=1}^{m_u}log\_{10}p_j)/(n_u+m_u)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7DP_u%3D%28-%5Csum_%7Bi%3D1%7D%5E%7Bn_u%7Dlog_%7B10%7Dp_i-%5Csum_%7Bj%3D1%7D%5E%7Bm_u%7Dlog_%7B10%7Dp_j%29%2F%28n_u%2Bm_u%29 "-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i-\sum_{j=1}^{m_u}log_{10}p_j)/(n_u+m_u)")
+$$-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i-\sum_{j=1}^{m_u}log_{10}p_j)/(n_u+m_u)$$
 
-where
-![n_u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n_u "n_u")
-and
-![m_u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;m_u "m_u")
-are the numbers of entries with pVals smaller or greater than a
-significance cut-off, respectively, in the
-![u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u "u")
-group.
+where $n_u$ and $m_u$ are the numbers of entries with pVals smaller or
+greater than a significance cut-off, respectively, in the $u$ group.
 
 In practice, large pVals are often less interesting. To simplify the
-calculation, a representative
-![p](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;p "p")
-value of 0.1 is applied to the
-![m](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;m "m")
+calculation, a representative $p$ value of 0.1 is applied to the $m$
 insignificant proteins. This is equivalent to counting the number of
 insignificant entries. Thus, we have
 
-![-log\_{10}P_u=(-\sum\_{i=1}^{n_u}log\_{10}p_i+m_u)/(n_u+m_u)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7DP_u%3D%28-%5Csum_%7Bi%3D1%7D%5E%7Bn_u%7Dlog_%7B10%7Dp_i%2Bm_u%29%2F%28n_u%2Bm_u%29 "-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i+m_u)/(n_u+m_u)")
+$$-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i+m_u)/(n_u+m_u)$$
 
-Repeat the same for the
-![d](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;d "d")
-group, we have
+Repeat the same for the $d$ group, we have
 
-![-log\_{10}P_d=(-\sum\_{i=1}^{n_d}log\_{10}p_i+m_d)/(n_d+m_d)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7DP_d%3D%28-%5Csum_%7Bi%3D1%7D%5E%7Bn_d%7Dlog_%7B10%7Dp_i%2Bm_d%29%2F%28n_d%2Bm_d%29 "-log_{10}P_d=(-\sum_{i=1}^{n_d}log_{10}p_i+m_d)/(n_d+m_d)")
+$$-log_{10}P_d=(-\sum_{i=1}^{n_d}log_{10}p_i+m_d)/(n_d+m_d)$$
 
 The same calculations are iterated through all available gene sets for
-both the
-![u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u "u")
-and the
-![d](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;d "d")
-groups:
+both the $u$ and the $d$ groups:
 
-![-log\_{10}P\_{s,u}=(-\sum\_{i=1}^{n\_{s,u}}log\_{10}p_i+m\_{s,u})/(n\_{s,u}+m\_{s,u})](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7DP_%7Bs%2Cu%7D%3D%28-%5Csum_%7Bi%3D1%7D%5E%7Bn_%7Bs%2Cu%7D%7Dlog_%7B10%7Dp_i%2Bm_%7Bs%2Cu%7D%29%2F%28n_%7Bs%2Cu%7D%2Bm_%7Bs%2Cu%7D%29 "-log_{10}P_{s,u}=(-\sum_{i=1}^{n_{s,u}}log_{10}p_i+m_{s,u})/(n_{s,u}+m_{s,u})")
+$$-log_{10}P_{s,u}=(-\sum_{i=1}^{n_{s,u}}log_{10}p_i+m_{s,u})/(n_{s,u}+m_{s,u})$$
 
-![-log\_{10}P\_{s,d}=(-\sum\_{i=1}^{n\_{s,d}}log\_{10}p_i+m\_{s,d})/(n\_{s,d}+m\_{s,d})](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7DP_%7Bs%2Cd%7D%3D%28-%5Csum_%7Bi%3D1%7D%5E%7Bn_%7Bs%2Cd%7D%7Dlog_%7B10%7Dp_i%2Bm_%7Bs%2Cd%7D%29%2F%28n_%7Bs%2Cd%7D%2Bm_%7Bs%2Cd%7D%29 "-log_{10}P_{s,d}=(-\sum_{i=1}^{n_{s,d}}log_{10}p_i+m_{s,d})/(n_{s,d}+m_{s,d})")
+$$-log_{10}P_{s,d}=(-\sum_{i=1}^{n_{s,d}}log_{10}p_i+m_{s,d})/(n_{s,d}+m_{s,d})$$
 
-Next, the two
-![P](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;P "P")
-values are ordered in that
-![P\_{(1)} \le P\_{(2)}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;P_%7B%281%29%7D%20%5Cle%20P_%7B%282%29%7D "P_{(1)} \le P_{(2)}").
-The quotient,
-![P\_{\\{1\\}}/P\_{(2)}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;P_%7B%5C%7B1%5C%7D%7D%2FP_%7B%282%29%7D "P_{\{1\}}/P_{(2)}")
-is then taken to represent the bias in enrichment for a given gene set.
-Obviously the ordering between
-![P\_{s,u}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;P_%7Bs%2Cu%7D "P_{s,u}")
-and
-![P\_{s,d}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;P_%7Bs%2Cd%7D "P_{s,d}")
-is immaterial. It is just a means to ensue ratios ranging between zero
-and one with smaller values indicating greater asymmetricity, in
-accordance to the conventional notation of smaller pVals being more
-significant.
+Next, the two $P$ values are ordered in that $P_{(1)} \le P_{(2)}$. The
+quotient, $P_{\{1\}}/P_{(2)}$ is then taken to represent the bias in
+enrichment for a given gene set. Obviously the ordering between
+$P_{s,u}$ and $P_{s,d}$ is immaterial. It is just a means to ensue
+ratios ranging between zero and one with smaller values indicating
+greater asymmetricity, in accordance to the conventional notation of
+smaller pVals being more significant.
 
 Alternatively, the asymmetricity in the population of pVals maybe
 assessed via conventional significance test, i.e. moderated t-test,
-between the
-![u](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u "u")
-and the
-![d](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;d "d")
-groups (test statistic against
-![-log\_{10}p](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;-log_%7B10%7Dp "-log_{10}p")
+between the $u$ and the $d$ groups (test statistic against $-log_{10}p$
 values of proteins between the two groups). With either method, the
 corresponding mean(log2FC) are each calculated for the ups and the downs
 where the difference is used as the fold change of enrichment.
 
 At the input levels, the arguments `pval_cutoff` and `logFC_cutoff`
 allow us to set aside low impact genes, for instance, (re)distributing
-them between the
-![n](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n "n")-entry
-significance group and the
-![m](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;m "m")-entry
+them between the $n$-entry significance group and the $m$-entry
 insignificance group. On the output levels, argument `gspval_cutoff`
 sets a threshold in gene set significance for reporting. More details
 can be found from the help document via `?prnGSPA`.
@@ -1869,7 +1938,15 @@ gspaMap(
 This will produce the volcano plots of proteins under gene sets that
 have passed our selection criteria. Here, we show one of the examples:
 
-<img src="images/protein/volcplot/gspa_batch_geomean.png" title="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" style="display: block; margin: auto;" /><img src="images/protein/volcplot/gspa_batch_limma.png" title="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/volcplot/gspa_batch_geomean.png" alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" /><img src="images/protein/volcplot/gspa_batch_limma.png" alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" />
+<p class="caption">
+**Figure 8A.** An example of volcano plots of protein log2FC under a
+gene set. Top, method = mean; bottom, method = limma.
+</p>
+
+</div>
 
 #### 2.7.3 Custom data bases
 
@@ -1968,7 +2045,15 @@ gspaMap(
 As expected, in the examples of `MSig`, some breast cancer signatures in
 basal and luminal subtypes were captured.
 
-<img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png" title="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" style="display: block; margin: auto;" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" title="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" style="display: block; margin: auto;" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" title="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
+<p class="caption">
+**Figure 8B.** Examples of volcano plots of protein log2FC under
+molecular signatures.
+</p>
+
+</div>
 
 Currently, proteoQ does not keep track of the values of `gset_nms` in
 the various calls to `prnGSPA`. When mapping the findings from `prnGSPA`
@@ -2019,11 +2104,7 @@ maps or networks will be constructed only between gene sets and
 essential gene sets. As mentioned in section
 `Gene sets under volcano plots`, the essential gene sets were
 approximated with greedy set cover. This will reduce the dimensionality
-of data from
-![n \times n](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n%20%5Ctimes%20n "n \times n")
-to
-![n \times m](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n%20%5Ctimes%20m "n \times m")
-(![m \le n](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;m%20%5Cle%20n "m \le n")).
+of data from $n \times n$ to $n \times m$ ($m \le n$).
 
 We next gauge the redundancy of a gene set in relative to an essential
 set by counting the numbers of intersecting gene IDs. This is documented
@@ -2044,16 +2125,21 @@ prnGSPAHM(
 )
 ```
 
-The distance in heat is
-![D = 1-f](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;D%20%3D%201-f "D = 1-f")
-where
-![f](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;f "f")
-is the fraction of overlap in IDs between two gene sets. The smaller the
-distance, the greater the overlap is between two gene sets. For
-convenience, a `distance` column is also made available in the
-`_essmap.txt` file.
+The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap
+in IDs between two gene sets. The smaller the distance, the greater the
+overlap is between two gene sets. For convenience, a `distance` column
+is also made available in the `_essmap.txt` file.
 
-<img src="images/protein/gspa/all_sets.png" title="**Figure 8C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" alt="**Figure 8C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/gspa/all_sets.png" alt="**Figure 8C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
+<p class="caption">
+**Figure 8C.** Heat map visualization of the distance between all and
+essential gene sets. The contrasts are defined in ‘prnSig(W2_loc = )’ in
+section 2.4 Significance tests and volcano plot visualization
+</p>
+
+</div>
 
 As expected, we saw zero overlap between human and mouse gene sets.
 Within each organism, low-redundancy `red` cells overwhelm the heat map
@@ -2082,13 +2168,29 @@ pseudonym approach can be found from [Lab
 3.2](###%203.2%20Data%20subsets) in this document. More examples of the
 utility can be found via `?prnGSPAHM`.
 
-<img src="images/protein/gspa/show_human_redundancy.png" title="**Figure 8D.** Heat map visualization of human gene sets at a distance cut-off 0.2" alt="**Figure 8D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/gspa/show_human_redundancy.png" alt="**Figure 8D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
+<p class="caption">
+**Figure 8D.** Heat map visualization of human gene sets at a distance
+cut-off 0.2
+</p>
+
+</div>
 
 Aside from heat maps, `prnGSPAHM` produces the networks of gene sets via
 [`networkD3`](http://christophergandrud.github.io/networkD3/), for
 interactive exploration of gene set redundancy.
 
-<img src="images/protein/gspa/gspa_connet.png" title="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" style="display: block; margin: auto;" /><img src="images/protein/gspa/gspa_redund.png" title="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/gspa/gspa_connet.png" alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images/protein/gspa/gspa_redund.png" alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
+<p class="caption">
+**Figure 8E.** Snapshots of the networks of biological terms. Left,
+distance \<= 0.8; right, distance \<= 0.2.
+</p>
+
+</div>
 
 ### 2.9 Trend Analysis
 
@@ -2132,7 +2234,14 @@ samples during the trend visualization. In the above example, the
 `expt_smry.xlsx::Order` column for sample arrangement (see also Section
 2.3 Correlation plots).
 
-<img src="images/protein/trend/prn_trend_n6.png" title="**Figure 9A.** Trends of protein log2FC (n_clust = 6)." alt="**Figure 9A.** Trends of protein log2FC (n_clust = 6)." width="80%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/protein/trend/prn_trend_n6.png" alt="**Figure 9A.** Trends of protein log2FC (n_clust = 6)." width="80%" />
+<p class="caption">
+**Figure 9A.** Trends of protein log2FC (n_clust = 6).
+</p>
+
+</div>
 
 We can subset the secondary input data by `filter2_` varargs. In the
 example shown below, we choose to visualize only the pattern of trends
@@ -2149,7 +2258,14 @@ plot_prnTrend(
 )
 ```
 
-<img src="images/protein/trend/cl4_nclust6.png" title="**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." alt="**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/protein/trend/cl4_nclust6.png" alt="**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" />
+<p class="caption">
+**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6).
+</p>
+
+</div>
 
 We can also select certain sample groups for visualization, for
 instance, the samples under the column of `expt_smry.xlsx::BI`:
@@ -2162,7 +2278,14 @@ plot_prnTrend(
 )
 ```
 
-<img src="images/protein/trend/bi_nclust6.png" title="**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6)." alt="**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/protein/trend/bi_nclust6.png" alt="**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" />
+<p class="caption">
+**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6).
+</p>
+
+</div>
 
 Note the difference between
 
@@ -2340,7 +2463,16 @@ plot_metaNMF(
 The silhouette information was obtained via the R package `cluster` and
 shown as a track on the top of consensus and coefficient heat maps.
 
-<img src="images/protein/nmf/bi_r5_con_rank5.png" title="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images/protein/nmf/bi_r5_coef_rank5.png" title="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/protein/nmf/bi_r5_con_rank5.png" alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" /><img src="images/protein/nmf/bi_r5_coef_rank5.png" alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" />
+<p class="caption">
+**Figure 10A-10B.** Heat map visualization of protein NMF results with
+default method (results from method = “lee” not shown). Left: concensus;
+right: coefficients; metagenes not shown.
+</p>
+
+</div>
 
 While utility `plot_prnTrend` in trend visualization (**Section** 2.7)
 can take a customized theme for uses in
@@ -2467,7 +2599,14 @@ the above argument is valid, a scaling normalize would moderate, and
 thus bias, the quantitative difference in proteomes between `WHIM2` and
 `WHIM16`.
 
-<img src="images/peptide/histogram/peptide_refw2.png" title="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/histogram/peptide_refw2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
+<p class="caption">
+**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference.
+</p>
+
+</div>
 
 We may alternatively seek a “center-of-mass” representation for uses as
 references where each sample may be regarded as a weighted particle in
@@ -2521,7 +2660,15 @@ With the new reference, we have achieved log2FC profiles that are more
 comparable in breadth between `WHIM2` and `WHIM16` samples and a
 subsequent scaling normalization seems more suitable.
 
-<img src="images/peptide/histogram/peptide_refw2w16.png" title="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/peptide/histogram/peptide_refw2w16.png" alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" />
+<p class="caption">
+**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and
+WHIM16 reference.
+</p>
+
+</div>
 
 #### 3.1.2 References on data CV
 
@@ -2569,7 +2716,15 @@ purgePep(
 )
 ```
 
-<img src="images/peptide/purge/bi1.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images/peptide/purge/bi1_ptcv.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/peptide/purge/bi1.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" /><img src="images/peptide/purge/bi1_ptcv.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" />
+<p class="caption">
+**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2
+reference. Left: before trimming; right: after trimming.
+</p>
+
+</div>
 
 ### 3.2 Data subsets and additions
 
@@ -2674,7 +2829,16 @@ containing lower-case letters ‘s’, ‘t’ or ‘y’ under the `pep_seq_mod
 column in `Peptide.txt`. This corresponds to the subsettting of peptides
 with phosphorylation(s) in serine, thereonine or tyrosine.[^11]
 
-<img src="images/peptide/histogram/pSTY_bi1_scaley_no.png" title="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" style="display: block; margin: auto auto auto 0;" /><img src="images/peptide/histogram/pSTY_bi1_scaley_yes.png" title="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/peptide/histogram/pSTY_bi1_scaley_no.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" /><img src="images/peptide/histogram/pSTY_bi1_scaley_yes.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" />
+<p class="caption">
+**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without
+y-axix scaling; right: phosphopeptides with y-axix scaling. The density
+curves are from the combined data of global + phospho.
+</p>
+
+</div>
 
 Ideally, the profiles of the log2FC between the `phospho` subsets and
 the overall data would either align at the maximum density or perhaps
@@ -2713,7 +2877,16 @@ pepHist(
 )
 ```
 
-<img src="images/peptide/histogram/bi1_nac_scaley_no.png" title="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" style="display: block; margin: auto auto auto 0;" /><img src="images/peptide/histogram/bi1_nac_scaley_yes.png" title="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" style="display: block; margin: auto auto auto 0;" />
+<div class="figure" style="text-align: left">
+
+<img src="images/peptide/histogram/bi1_nac_scaley_no.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" /><img src="images/peptide/histogram/bi1_nac_scaley_yes.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" />
+<p class="caption">
+**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal
+acetylated proteins. Left: without y-axix scaling; right: with y-axix
+scaling.
+</p>
+
+</div>
 
 Pseudonyms and convenience columns can be used interexchangeably for
 simple conditions. In the following example, we assume that peptide
@@ -2834,7 +3007,14 @@ over `Protein.txt`. Without specifying the value of `df`, proteoQ will
 look for the `n_not_na` column that are indeed absent from
 `Protein_pVals.txt`.
 
-<img src="images/protein/heatmap/mostly_na_vals.png" title="**Figure S2E.** Scarce heat map." alt="**Figure S2E.** Scarce heat map." width="60%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/heatmap/mostly_na_vals.png" alt="**Figure S2E.** Scarce heat map." width="60%" />
+<p class="caption">
+**Figure S2E.** Scarce heat map.
+</p>
+
+</div>
 
 Alternatively, we may add the custom column to `Protein_pVals.txt`:
 
@@ -3010,7 +3190,14 @@ The correlation plots indicate that the random effects of batches and
 laboratory locations are much smaller than the fixed effect of the
 biological differences of `WHIM2` and `WHIM16`.
 
-<img src="images/protein/model/raneff_models.png" title="**Figure S3.** Pearson r of protein significance p-values." alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/model/raneff_models.png" alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" />
+<p class="caption">
+**Figure S3.** Pearson r of protein significance p-values.
+</p>
+
+</div>
 
 ## 4 Column keys
 

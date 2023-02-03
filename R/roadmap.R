@@ -19,3 +19,4 @@
 #   - extract_raws
 #   - my_tolower
 #   - my_upper
+#   - check_raws

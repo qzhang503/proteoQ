@@ -1925,7 +1925,7 @@ check_raws <- function(df)
          call. = FALSE)
   
   ## RAW_File may not be unique if the same RAW goes into different DAT files (searches)
-  # df <- df %>% dplyr::left_join(tmtinj_raw, id = "RAW_File")
+  # df <- df %>% dplyr::left_join(tmtinj_raw, by = "RAW_File")
   invisible (list(lookup = tmtinj_raw, df = df))
 }
 
