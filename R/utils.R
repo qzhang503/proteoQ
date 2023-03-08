@@ -3940,56 +3940,28 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
 #' @examples
 #' \dontrun{
 #' dat_dir <- "Y:/qzhang/MaxQuant"
+#' pre_mq_meta()
 #' make_mq_meta2()
 #' }
 make_mq_meta2 <- function (dat_dir = proteoQ:::get_gl_dat_dir(), 
                            mqpar = "mqpar.xml", 
                            filename = "mq_meta.txt", out = "new_mqpar.xml") 
 {
-  update_nodes <- function(mqxml, field = "filePaths", type = "string", 
-                           vals = lookup$Name) {
-    row_1 <- grep(paste0("<", field, ">"), mqxml)
-    row_2 <- grep(paste0("</", field, ">"), mqxml)
-    
-    lines <- paste0(paste0("\t\t\t<", type, ">"), 
-                    vals, 
-                    paste0("</", type, ">"))
-    
-    if (field == "filePaths") {
-      paths <- mqxml[(row_1+1):(row_2-1)] %>% 
-        gsub("^.*<string>", "", .) %>% 
-        gsub("</string>$", "", .) %>% 
-        gsub("(.*\\\\).*", "\\1", .) %>% 
-        gsub("(.*/).*", "\\1", .)
-    } else {
-      paths <- ""
-    }
-    
-    lines <- paste0(paste0("\t\t\t<", type, ">"), 
-                    paths, 
-                    vals, 
-                    paste0("</", type, ">"))
-    
-    bf <- mqxml[1:row_1]
-    af <- mqxml[row_2:length(mqxml)]
-    mqxml <- bf %>% append(lines) %>% append(af) 
-  }
-  
-  
   fn_suffix <- gsub("^.*\\.([^\\.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
   
-  if (fn_suffix %in% c("xls", "xlsx")) {
-    lookup <- readxl::read_excel(file.path(dat_dir, filename))
+  lookup <- if (fn_suffix %in% c("xls", "xlsx")) {
+    readxl::read_excel(file.path(dat_dir, filename))
   } else if (fn_suffix == "csv") {
-    lookup <- readr::read_csv(file.path(dat_dir, filename))
+    readr::read_csv(file.path(dat_dir, filename))
   } else if (fn_suffix == "txt") {
-    lookup <- readr::read_tsv(file.path(dat_dir, filename))
+    readr::read_tsv(file.path(dat_dir, filename))
   } else {
     stop(filename, " needs to be '.xls' or '.xlsx'.")
   }
   
-  lookup <- lookup %>% dplyr::filter(rowSums(!is.na(.)) > 0)
+  lookup <- lookup %>% 
+    dplyr::filter(rowSums(!is.na(.)) > 0)
 
   if ((!"PTM" %in% names(lookup)) || all(is.na(lookup$PTM))) {
     lookup$PTM <- "False"
@@ -4007,7 +3979,10 @@ make_mq_meta2 <- function (dat_dir = proteoQ:::get_gl_dat_dir(),
     lookup$Reference <- ""
   }
   
-  
+  if (!grepl("\\.d$", lookup$Name[[1]])) {
+    lookup$Name <- paste0(lookup$Name, ".d")
+  }
+
   mqxml <- readLines(file.path(dat_dir, mqpar)) %>% 
     update_nodes("filePaths", "string", lookup$Name) %>% 
     update_nodes("experiments", "string", lookup$Experiment) %>% 
@@ -4016,6 +3991,65 @@ make_mq_meta2 <- function (dat_dir = proteoQ:::get_gl_dat_dir(),
     update_nodes("paramGroupIndices", "int", lookup$Group) %>% 
     update_nodes("referenceChannel", "string", lookup$Reference) %T>% 
     writeLines(file.path(dat_dir, out))
+}
+
+
+#' Helper of \link{make_mq_meta2}
+#' 
+#' @param mqxml The XML from mqpar.xml.
+#' @param field The field to be updated.
+#' @param type The type of data.
+#' @param vals The Values of data.
+update_nodes <- function(mqxml, field = "filePaths", type = "string", vals) 
+{
+  row_1 <- grep(paste0("<", field, ">"), mqxml)
+  row_2 <- grep(paste0("</", field, ">"), mqxml)
+  
+  lines <- paste0(paste0("\t\t\t<", type, ">"), 
+                  vals, 
+                  paste0("</", type, ">"))
+  
+  if (field == "filePaths") {
+    paths <- mqxml[(row_1+1):(row_2-1)] %>% 
+      gsub("^.*<string>", "", .) %>% 
+      gsub("</string>$", "", .) %>% 
+      gsub("(.*\\\\).*", "\\1", .) %>% 
+      gsub("(.*/).*", "\\1", .)
+  } else {
+    paths <- ""
+  }
+  
+  lines <- paste0(paste0("\t\t\t<", type, ">"), 
+                  paths, 
+                  vals, 
+                  paste0("</", type, ">"))
+  
+  bf <- mqxml[1:row_1]
+  af <- mqxml[row_2:length(mqxml)]
+  mqxml <- bf %>% append(lines) %>% append(af) 
+}
+
+
+#' Updates MaxQuant experimentalDesignTemplate.txt
+#' 
+#' @param dat_dir The working directory.
+#' @param expt_smry The filename of proteoQ metadata.
+#' @param filename The filename of MaxQuant metadata.
+pre_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), 
+                         expt_smry = "expt_smry.xlsx", 
+                         filename = "combined/experimentalDesignTemplate.txt")
+{
+  meta_proteoq <- file.path(dat_dir, expt_smry) %>% 
+    readxl::read_excel() %>% 
+    dplyr::select(c("Sample_ID", "RAW_File")) %>% 
+    dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File))
+  
+  meta_mq <- file.path(dat_dir, filename) %>% 
+    readr::read_tsv() %>% 
+    dplyr::left_join(meta_proteoq, by = c("Name" = "RAW_File")) %>% 
+    dplyr::mutate(Experiment = Sample_ID) %>% 
+    dplyr::select(-Sample_ID) %T>%
+    readr::write_tsv(file.path(dat_dir, "mq_meta.txt"))
 }
 
 
@@ -4335,7 +4369,8 @@ find_psmQ_files <- function (dat_dir)
   
   if (length(filelistQ) && length(filelistC)) {
     message("Both `psmQ[...].txt` and `psmC[...].txt` are present; ", 
-            "`psmQ[...].txt` will be used.")
+            "\"psmQ[...].txt\" will be used in baseline analysis.\n", 
+            "Need \"psmC[...].txt\" for optional matches between runs in LFQ.")
     
     filelist <- filelistQ
   } 
@@ -4694,6 +4729,22 @@ procBrukerMGF <- function (file)
 }
 
 
+#' Fix the \code{File} field in \code{Title} lines.
+#' 
+#' The first tilde in the \code{Title} lines needs to before \code{File}.
+#' 
+#' @param file A file name with prepending path.
+fixBrukerMGF <- function (file)
+{
+  lines <- readLines(file)
+  rows <- which(stringi::stri_startswith_fixed(lines, "TITLE="))
+  tits <- lapply(rows, function (i) gsub("File:~", "~File:", lines[i]))
+  lines[rows] <- tits
+  
+  writeLines(unlist(lines), file)
+}
+
+
 #' Reprocesses of Bruker MGF files.
 #' 
 #' @param file A file name with prepending path.
@@ -4748,6 +4799,30 @@ mprocBrukerMGF <- function (filepath, n_cores = 1L)
 }
 
 
+#' Batch-fixing of Bruker MGF files.
+#' 
+#' The first tilde in the \code{Title} lines needs to before \code{File}.
+#' 
+#' @param filepath A file path to MGF.
+#' @param n_cores The number of CPU cores.
+#' @export
+mfixBrukerMGF <- function (filepath, n_cores = 1L) 
+{
+  files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
+                      recursive = TRUE)
+  
+  if (n_cores > 1L) {
+    n_cores <- min(parallel::detectCores(), n_cores)
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    parallel::clusterApply(cl, files, fixBrukerMGF)
+    parallel::stopCluster(cl)
+  }
+  else {
+    lapply(files, fixBrukerMGF)
+  }
+}
+
+
 #' Checks lengths of aesthetics.
 #'
 #' The length between metadata and manual aesthetics.
@@ -4765,4 +4840,102 @@ check_aes_length <- function (label_scheme = NULL, x = "Size",
   if (len_1 != len_2)
     stop("Unequal lengths: metadata ", x, " = ", len_1, ", ", aes, " = ", len_2)
 }
+
+
+#' Adds column \code{raw_file}.
+#' 
+#' @param df A PSM table.
+add_col_rawfile <- function (df)
+{
+  if ("raw_file" %in% names(df)) {
+    df <- df %>% 
+      dplyr::rename(RAW_File = raw_file) %>% 
+      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File))
+    
+    df <- df %>%
+      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title))
+  } 
+  else {
+    df <- df %>%
+      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title)) %>% 
+      dplyr::mutate(RAW_File = pep_scan_title) %>% 
+      dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.raw[\\\"]{0,1}; .*", "\\1", 
+                                    RAW_File)) %>% 
+      dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                    RAW_File))
+  }
+  
+  # (with some refseq_acc)
+  df <- df %>%
+    dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) 
+}
+
+
+#' Loads psmC.txt
+#' 
+#' @param file The file name of \code{psmC[...].txt}.
+load_psmC <- function(file = NULL, ...) 
+{
+  dat_dir <- get_gl_dat_dir()
+  base_name <- gsub("\\.txt$", "", file)
+  
+  dfC <- suppressWarnings(
+    readr::read_tsv(file.path(dat_dir, file), 
+                    col_types = cols(
+                      prot_acc = col_character(), 
+                      prot_issig = col_logical(), 
+                      # prot_isess = col_logical(),
+                      # prot_tier = col_integer(), 
+                      # prot_hit_num = col_integer(), 
+                      # prot_family_member = col_integer(), 
+                      prot_es = col_number(), 
+                      prot_es_co = col_number(), 
+                      pep_seq = col_character(), 
+                      pep_n_ms2 = col_integer(), 
+                      pep_scan_title = col_character(), 
+                      pep_exp_mz = col_number(),
+                      pep_exp_mr = col_number(), 
+                      pep_exp_z = col_character(), 
+                      pep_calc_mr = col_number(), 
+                      pep_delta = col_number(),
+                      pep_tot_int = col_number(), 
+                      pep_ret_range = col_number(), 
+                      pep_scan_num = col_character(), # timsTOF
+                      pep_mod_group = col_integer(), 
+                      pep_frame = col_integer(), 
+                      pep_fmod = col_character(),
+                      pep_vmod = col_character(),
+                      pep_isdecoy = col_logical(),
+                      pep_ivmod = col_character(),
+                      pep_len = col_integer(), 
+                      pep_issig = col_logical(),
+                      pep_score = col_double(),
+                      pep_expect = col_double(),
+                      pep_rank = col_integer(), 
+                      pep_locprob = col_double(),
+                      pep_locdiff = col_double(),
+                      # pep_rank_nl = col_integer(), 
+                      # pep_literal_unique = col_logical(),
+                      # pep_razor_unique = col_logical(),
+                      raw_file = col_character(), ), 
+                    show_col_types = FALSE)
+  )
+  
+  ans <- dfC %>% 
+    add_col_rawfile() %>% 
+    dplyr::select(c("pep_seq", "pep_tot_int", "pep_ret_range", "pep_scan_num", 
+                    # "pep_scan_title", 
+                    "pep_n_ms2", "pep_exp_mz", "pep_exp_mr", "pep_delta", 
+                    # "pep_calc_mr", "pep_mod_group", "pep_isdecoy", "pep_len", 
+                    "pep_issig", "pep_score", "pep_locprob", "pep_locdiff", 
+                    "pep_rank", "pep_expect", 
+                    "RAW_File", "pep_ivmod", "pep_fmod", "pep_vmod", 
+                    "pep_exp_z", )) %>% 
+    dplyr::mutate(I000 = pep_tot_int) %>% 
+    dplyr::mutate(R000 = I000/I000, 
+                  R000 = ifelse(is.infinite(R000), NA_real_, R000)) %>% 
+    dplyr::mutate(dat_file = base_name)
+}
+
 

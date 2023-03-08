@@ -17,6 +17,10 @@
 
 # psmtable.R:
 #   - extract_raws
+#   - find_mascot_psmraws
+#   - find_mq_psmraws
+#   - find_sm_psmraws
+# 
 #   - my_tolower
 #   - my_upper
 #   - check_raws

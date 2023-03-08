@@ -12,6 +12,7 @@ pepSig(
   rm_allna = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",
+  method_replace_na = c("none", "min"),
   var_cutoff = 0.001,
   pval_cutoff = 1,
   logFC_cutoff = log2(1),
@@ -28,6 +29,7 @@ prnSig(
   rm_allna = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",
+  method_replace_na = c("none", "min"),
   var_cutoff = 0.001,
   pval_cutoff = 1,
   logFC_cutoff = log2(1),
@@ -62,6 +64,14 @@ be used for models with random effects.}
 for uses with \link[stats]{p.adjust}. The default is "BH". See
 ?p.adjust.methods for additional choices.}
 
+\item{method_replace_na}{The method to replace NA values by rows. The default
+is \code{none} by doing nothing. At \code{method_replace_na = min}, the row
+minimums will be used. The argument is only a device to assess \code{pVals},
+e.g., by handling the circumstance of all NA values under one group and
+non-trivial values under another. The setting of \code{min} might be useful
+at the experimenters' discretion of ascribing \code{NA} values to the lack
+of signals. The argument has no effects with \code{impute_na = TRUE}.}
+
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be excluded from
 linear modeling. The default is 1E-3.}
@@ -90,27 +100,26 @@ determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
 \item{filename}{A file name to output results. The default is
-\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for
-proteins.}
+\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
 
-\item{...}{User-defined formulas for linear modeling. The syntax starts with
-a tilde, followed by the name of an available column key in
+\item{...}{User-defined formulas for linear modeling. The syntax starts with a
+tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
 quoted with one to multiple contrast groups separated by commas. The
-default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
-Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
+ default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
+ Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
 \code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
-contrast are supported for uses with random effects: \cr \code{~ Term["A -
-C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
+ contrast are supported for uses with random effects: \cr \code{~ Term["A -
+ C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
 expression(s) for the row filtration against data in a primary file of
 \code{Peptide[_impNA].txt} or \code{Protein[_impNA].txt}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements.}
 }
 \value{
 The primary output is \code{.../Peptide/Model/Peptide_pVals.txt} for
-  peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein
-  data. At \code{impute_na = TRUE}, the corresponding outputs are
-  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
+ peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein data.
+ At \code{impute_na = TRUE}, the corresponding outputs are
+ \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }
 \description{
 \code{pepSig} performs significance tests against peptide log2FC.
@@ -222,58 +231,61 @@ prnVol()
 
 }
 \seealso{
-\emph{Metadata} \cr 
- \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+\emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+ and a reduced working example in data normalization \cr
 
- \emph{Data normalization} \cr 
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
- \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
- \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
- \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
- ontology}} \cr 
- \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
- signatures} \cr 
+ \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+ PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+ PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+ examples in peptide data merging \cr \code{\link{standPep}} for extended
+ examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+ extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization.
+ \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+ in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+ extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+ and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+ \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+ \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings
+ \cr
+
+ \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+ missing value imputation \cr
+
+ \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+ significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+ volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+ analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+ GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+ and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+ set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+ online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+ visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+ visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+ visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+ visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+ correlation plots \cr \code{\link{anal_prnTrend}} and
+ \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+ \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+ \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+
+ \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+ UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+ among RefSeq accessions, gene names and Entrez IDs \cr
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology}} \cr
+ \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+ signatures} \cr
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
- 
- \emph{Column keys in PSM, peptide and protein outputs} \cr 
+
+ \emph{Column keys in PSM, peptide and protein outputs} \cr
  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr

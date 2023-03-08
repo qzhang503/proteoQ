@@ -2453,13 +2453,13 @@ add_mascot_raw <- function (df)
 {
   l <- df$pep_scan_title[1]
   
-  if (grepl("File:~", l, fixed = TRUE)) { 
+  if (grepl("File:~", l, fixed = TRUE)) {
     if (grepl(".d~", l, fixed = TRUE)) { # Bruker .d
       df <- df %>% 
         dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
-                      RAW_File = gsub('^.*,[ ]{0,1}File:~(.*)\\.d~.*', '\\1', RAW_File)) 
+                      RAW_File = gsub('^.*,[ ]{0,1}File:~(.*)\\.d~.*', '\\1', RAW_File))
     }
-    else { # MSConvert
+    else { # Thermo .raw
       df <- df %>% 
         dplyr::mutate(RAW_File = pep_scan_title) %>% 
         dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.raw\\~.*", 
@@ -2472,12 +2472,28 @@ add_mascot_raw <- function (df)
     df <- df %>% 
       dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
                     RAW_File = gsub('^.*/([^/]*)\\.raw\\~.*', '\\1', RAW_File), 
-                    RAW_File = gsub('^.*/([^/]*)\\.d\\~.*', '\\1', RAW_File)) 
+                    RAW_File = gsub('^.*/([^/]*)\\.d\\~.*', '\\1', RAW_File))
   }
   else if (grepl(", File:", l, fixed = TRUE)) { # custom from Bruker MGF, add "~" later...
     df <- df %>% 
       dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
-                    RAW_File = gsub('^.*, File:(.*)\\.(raw|d)\\, .*', '\\1', RAW_File)) 
+                    RAW_File = gsub('^.*, File:(.*)\\.(raw|d)\\, .*', '\\1', RAW_File))
+  }
+  else if (grepl("~File:", l, fixed = TRUE)) {
+    if (grepl(".d~", l, fixed = TRUE)) { # Bruker .d
+      df <- df %>% 
+        dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
+                      RAW_File = gsub('^.*,[ ]{0,1}~File:(.*)\\.d~.*', '\\1', RAW_File))
+    }
+    else { # Thermo .raw
+      # not yet tested; may not occur at all
+      df <- df %>% 
+        dplyr::mutate(RAW_File = pep_scan_title) %>% 
+        dplyr::mutate(RAW_File = gsub("^[^ ]+ ~File:(.*)\\.raw\\~.*", 
+                                      "\\1", RAW_File)) %>% 
+        dplyr::mutate(RAW_File = gsub("^[^ ]+ ~File:(.*)\\.d\\~.*", 
+                                      "\\1", RAW_File))
+    }
   }
   else {
     stop("Mascot RAW_File name in \"pep_scan_title\" is not in the format of ", 
@@ -3193,9 +3209,9 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC}
 #' of peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
 #' denote peptide sequences with applicable variable modifications.
-#' 
+#'
 #' \cr \strong{Nomenclature of \code{pep_seq_mod}}:
-#' 
+#'
 #' \tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
 #' Non-terminal \tab A letter from upper to lower case, e.g., \code{mtFPEADILLK}
 #' \cr N-term \tab A hat to the left of a peptide sequence, e.g.,
@@ -3231,10 +3247,14 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'    Mill} to the \code{dat_dir} directory. The file name(s) should start with
 #'   \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
 #'   PSMexport.ssv, PSMexport_this.ssv etc.)}.
-#' 
+#'
 #' @param rm_allna Logical; if TRUE, removes data rows that are exclusively NA
 #'   across ratio columns of \code{log2_R126} etc. The setting also applies to
 #'   \code{log2_R000} in LFQ.
+#' @param lfq_mbr Logical; if TRUE, performs match-between-run (MBR) with LFQ
+#'   data. Both \code{psmQ.txt} and \code{psmC.txt} are required with the
+#'   feature.
+#' @param mbr_ret_tol Retention time tolerance (in seconds) for LFQ-MBR.
 #' @param type_sd Character string; the type of log2Ratios for SD calculations.
 #'   The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.
 #' @param ... \code{filter_}: Variable argument statements for the filtration of
@@ -3250,63 +3270,67 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' @inheritParams splitPSM_mf
 #' @inheritParams cleanupPSM
 #' @inheritParams annotPSM
-#' @seealso
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#' @seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata
+#'   preparation and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of \code{filter_...}} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'   \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples
+#'   in PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples
+#'   in PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'   examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'   examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'   extended examples in peptide to protein summarization \cr
+#'   \code{\link{standPrn}} for extended examples in protein data normalization.
+#'   \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'   in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'   extended examples in histogram visualization. \cr
+#'   \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for
+#'   extracting MS file names \cr
+#'
+#'   \emph{Variable arguments of \code{filter_...}} \cr
+#'   \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'   \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'   \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'   \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'   data subsetting by character strings \cr
+#'
+#'   \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'   missing value imputation \cr
+#'
+#'   \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'   significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'   volcano plot visualization \cr \code{\link{prnGSPA}} for gene set
+#'   enrichment analysis by protein significance pVals \cr \code{\link{gspaMap}}
+#'   for mapping GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}}
+#'   for heat map and network visualization of GSPA results \cr
+#'   \code{\link{prnGSVA}} for gene set variance analysis \cr
+#'   \code{\link{prnGSEA}} for data preparation for online GSEA. \cr
+#'   \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'   \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr
+#'   \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr
+#'   \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'   \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'   \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'   correlation plots \cr \code{\link{anal_prnTrend}} and
+#'   \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'   \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'   \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'   \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'   \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'   \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'   UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'   among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
+#'   \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'
+#'   \emph{Column keys in PSM, peptide and protein outputs} \cr
+#'   system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'   system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'   system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'
 #' @section \code{Variable arguments and data files}: Variable argument (vararg)
 #'   statements of \code{filter_} and \code{arrange_} are available in
 #'   \code{proteoQ} for flexible filtration and ordering of data rows, via
@@ -3323,48 +3347,48 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'   table below summarizes the \code{df} and the \code{df2} for varargs in
 #'   \code{proteoQ}.
 #'
-#'  \tabular{lllll}{ 
+#'  \tabular{lllll}{
 #'  \strong{Utility} \tab \strong{Vararg_} \tab \strong{df} \tab \strong{Vararg2_} \tab \strong{df2} \cr
-#'  normPSM \tab filter_ \tab Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt}; 
-#'  SM, \code{PSMexport[...].ssv} \tab NA \tab NA \cr 
-#'  PSM2Pep \tab NA \tab NA \tab NA \tab NA \cr 
-#'  mergePep \tab filter_ \tab \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \tab NA \cr 
-#'  standPep \tab slice_ \tab \code{Peptide.txt} \tab NA \tab NA \cr 
-#'  Pep2Prn \tab filter_ \tab \code{Peptide.txt} \tab NA \tab NA \cr 
-#'  standPrn \tab slice_\tab \code{Protein.txt} \tab NA \tab NA \cr 
-#'  pepHist \tab filter_\tab \code{Peptide.tx}t \tab NA \tab NA \cr 
-#'  prnHist \tab filter_\tab \code{Protein.txt} \tab NA \tab NA \cr 
-#'  pepSig \tab filter_\tab \code{Peptide[_impNA].txt} \tab NA \tab NA \cr 
-#'  prnSig \tab filter_\tab \code{Protein[_impNA].txt} \tab NA \tab NA \cr 
-#'  pepMDS \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnMDS \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  pepPCA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnPCA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  pepLDA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnLDA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  pepEucDist \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnEucDist \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  pepCorr_logFC \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnCorr_logFC \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  pepHM \tab filter_, arrange_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  prnHM \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  
-#'  anal_prnTrend \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  plot_prnTrend \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr 
-#'  
-#'  anal_pepNMF \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  anal_prnNMF \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  plot_pepNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_consensus.txt} \cr 
-#'  plot_prnNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_consensus.txt} \cr 
-#'  plot_pepNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_coef.txt} \cr 
-#'  plot_prnNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_coef.txt} \cr 
-#'  plot_metaNMF \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
-#'  
-#'  prnGSPA \tab filter_\tab \code{Protein[_impNA]_pVals.txt} \tab NA \tab NA \cr 
-#'  prnGSPAHM \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr 
-#'  gspaMap \tab filter_\tab \code{Protein[_impNA]_pVal.txt} \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr 
-#'  
-#'  anal_prnString \tab filter_\tab \code{Protein[_impNA][_pVals].tx}t \tab NA \tab NA \cr 
+#'  normPSM \tab filter_ \tab Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt};
+#'  SM, \code{PSMexport[...].ssv} \tab NA \tab NA \cr
+#'  PSM2Pep \tab NA \tab NA \tab NA \tab NA \cr
+#'  mergePep \tab filter_ \tab \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \tab NA \cr
+#'  standPep \tab slice_ \tab \code{Peptide.txt} \tab NA \tab NA \cr
+#'  Pep2Prn \tab filter_ \tab \code{Peptide.txt} \tab NA \tab NA \cr
+#'  standPrn \tab slice_\tab \code{Protein.txt} \tab NA \tab NA \cr
+#'  pepHist \tab filter_\tab \code{Peptide.tx}t \tab NA \tab NA \cr
+#'  prnHist \tab filter_\tab \code{Protein.txt} \tab NA \tab NA \cr
+#'  pepSig \tab filter_\tab \code{Peptide[_impNA].txt} \tab NA \tab NA \cr
+#'  prnSig \tab filter_\tab \code{Protein[_impNA].txt} \tab NA \tab NA \cr
+#'  pepMDS \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnMDS \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  pepPCA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnPCA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  pepLDA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnLDA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  pepEucDist \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnEucDist \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  pepCorr_logFC \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnCorr_logFC \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  pepHM \tab filter_, arrange_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  prnHM \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'
+#'  anal_prnTrend \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  plot_prnTrend \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr
+#'
+#'  anal_pepNMF \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  anal_prnNMF \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'  plot_pepNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_consensus.txt} \cr
+#'  plot_prnNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_consensus.txt} \cr
+#'  plot_pepNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_coef.txt} \cr
+#'  plot_prnNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_coef.txt} \cr
+#'  plot_metaNMF \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr
+#'
+#'  prnGSPA \tab filter_\tab \code{Protein[_impNA]_pVals.txt} \tab NA \tab NA \cr
+#'  prnGSPAHM \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr
+#'  gspaMap \tab filter_\tab \code{Protein[_impNA]_pVal.txt} \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr
+#'
+#'  anal_prnString \tab filter_\tab \code{Protein[_impNA][_pVals].tx}t \tab NA \tab NA \cr
 #'  }
 #'
 #' @return Outputs are interim and final PSM tables under the directory of
@@ -3388,6 +3412,7 @@ normPSM <- function(dat_dir = NULL,
                     rptr_intco = 0, rptr_intrange = c(0, 100), 
                     rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
                     rm_allna = FALSE, type_sd = c("log2_R", "N_log2_R", "Z_log2_R"), 
+                    lfq_mbr = FALSE, mbr_ret_tol = 60, 
                     purge_phosphodata = TRUE, 
                     annot_kinases = FALSE, 
                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
@@ -3427,6 +3452,8 @@ normPSM <- function(dat_dir = NULL,
   if (is.null(fasta)) 
     stop("Path(s) to fasta file(s) cannot be empty.", call. = FALSE)
   
+  lapply(fasta, function (x) if (!file.exists(x)) stop("FASTA not found: ", x))
+
   # ---
   group_psm_by <- rlang::enexpr(group_psm_by)
   oks <- eval(formals()[["group_psm_by"]])
@@ -3541,7 +3568,8 @@ normPSM <- function(dat_dir = NULL,
                      plot_log2FC_cv, 
                      use_lowercase_aa, 
                      purge_phosphodata, 
-                     scale_rptr_int), 
+                     scale_rptr_int, 
+                     lfq_mbr), 
                    rlang::is_logical, logical(1)))
   
   reload_expts()
@@ -3556,6 +3584,8 @@ normPSM <- function(dat_dir = NULL,
                       rm_craps = rm_craps, 
                       rm_krts = rm_krts, 
                       rm_allna = rm_allna, 
+                      lfq_mbr = lfq_mbr, 
+                      mbr_ret_tol = mbr_ret_tol, 
                       purge_phosphodata = purge_phosphodata, 
                       annot_kinases = annot_kinases, 
                       plot_rptr_int = plot_rptr_int, 
@@ -4676,8 +4706,21 @@ add_maxquant_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE) 
 {
-  if (!use_lowercase_aa) return(df)
+  if (!use_lowercase_aa) 
+    return(df)
   
+  # is.na(pep_start) if peptides not in FASTA (e.g. the "contam_" entries)
+  # or not belong to proteins (incorrectly assigned by search engine)
+  #   (e.g. DAQIFIQK not in P24270)
+  df <- local({
+    protnac_ok1 <- (df[["pep_start"]] == 1L)
+    protnac_ok2 <- (df[["pep_start"]] == 2L) & (df[["pep_res_before"]] == "M")
+    not_protnac <- !(protnac_ok1 | protnac_ok2)
+    bad_pnts <- not_protnac & grepl("^n\\[43\\]", df[["pep_seq_mod"]])
+    bad_pnts[is.na(bad_pnts)] <- FALSE
+    df[!bad_pnts, ]
+  })
+
   # (1) all non-terminal modifications
   df <- df %>% 
     dplyr::mutate(pep_seq_mod = gsub("([A-Z]){1}\\[[^\\(\\)]*\\]", 
@@ -6827,29 +6870,8 @@ pad_tmt_channels <- function(file = NULL, ...)
                     show_col_types = FALSE)
   ) %>% 
     filters_in_call(!!!filter_dots)
-
-  if ("raw_file" %in% names(df)) {
-    df <- df %>% 
-      dplyr::rename(RAW_File = raw_file) %>% 
-      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
-      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File))
-    
-    df <- df %>%
-      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title))
-  } 
-  else {
-    df <- df %>%
-      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title)) %>% 
-      dplyr::mutate(RAW_File = pep_scan_title) %>% 
-      dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.raw[\\\"]{0,1}; .*", "\\1", 
-                                    RAW_File)) %>% 
-      dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.d[\\\"]{0,1}; .*", "\\1", 
-                                    RAW_File))
-  }
   
-  # (with some refseq_acc)
-  df <- df %>%
-    dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) 
+  df <- add_col_rawfile(df)
   
   this_plex <- sum(grepl("^I[0-9]{3}[NC]{0,1}$", names(df)))
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -7137,6 +7159,8 @@ check_dup_unimods <- function (varmods)
 #' Splits PSM tables from \link{matchMS}.
 #' 
 #' @inheritParams splitPSM
+#' @inheritParams PSM2Pep
+#' @inheritParams normPSM
 splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                         fasta = NULL, entrez = NULL, pep_unique_by = "group", 
                         scale_rptr_int = FALSE, 
@@ -7144,7 +7168,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
-                        use_lowercase_aa = TRUE, parallel = TRUE, ...) 
+                        use_lowercase_aa = TRUE, parallel = TRUE, 
+                        lfq_mbr = FALSE, mbr_ret_tol = 60L, ...) 
 {
   # --- Outlines ---
   # (1.1) row filtration, column padding and psm file combinations
@@ -7226,6 +7251,29 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     pad_psm_fields() %>% 
     dplyr::bind_rows()
   
+  if (lfq_mbr) {
+    filelistC <- list.files(path = file.path(dat_dir), pattern = "^psmC.*\\.txt$")
+    
+    if (!length(filelistC)) {
+      warning("\"psmC[...].txt\" not found for MBR.")
+      dfC <- NULL
+    }
+    else {
+      if (TMT_plex) {
+        warning("No MBR for TMT.")
+        dfC <- NULL
+      }
+      else {
+        dfC <- filelistC %>% 
+          lapply(load_psmC) %>% 
+          dplyr::bind_rows()
+      }
+    }
+  }
+  else {
+    dfC <- NULL
+  }
+
   # for psmC.txt to bypass
   not_psmC <- c("prot_hit_num", "prot_family_member", "prot_isess", "prot_tier")
   
@@ -7316,6 +7364,16 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     purrr::map(add_pepseqmod, use_lowercase_aa, purge_phosphodata) %>% 
     dplyr::bind_rows() 
   
+  if (!is.null(dfC)) {
+    dfC$pep_ivmod <- with(dfC, gsub(" .*", "", pep_ivmod))
+    
+    dfC <- dfC %>% 
+      split(.$dat_file, drop = TRUE) %>% 
+      purrr::map(add_pepseqmod, use_lowercase_aa, purge_phosphodata) %>% 
+      dplyr::bind_rows() %>% 
+      dplyr::filter(pep_seq_mod %in% unique(df[["pep_seq_mod"]]))
+  }
+
   # (1.4.2) phospho
   # (may be deleted later)
   if (all(c("pep_vmod", "pep_locprob", "pep_locdiff") %in% col_nms2)) {
@@ -7389,7 +7447,6 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     calc_cover(id = !!rlang::sym(group_pep_by)) 
 
   # (2.7) apply parsimony
-  # redundant prot_acc's removed with the heaviest being kept
   df <- df %>% 
     dplyr::arrange(pep_rank, -prot_mass)
 
@@ -7399,10 +7456,30 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     uniq_by <- c("dat_file", uniq_by)
   
   # (often `pep_rank_nl == 1` after this step)
-  rows <- !duplicated(df[, uniq_by])
-  df <- df[rows, ]
-  rm(list = c("rows"))
-  
+  df <- df[!duplicated(df[, uniq_by]), ]
+
+  if (!is.null(dfC)) {
+    dfC <- dfC[!duplicated(dfC[, uniq_by]), ]
+
+    # remove dfC entries that are already in df (no need for MBR)
+    # (timsTOF mgf: possible with one query at multiple scan numbers)
+    uids <- df %>% 
+      tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
+      `[[`("uniq_id")
+    
+    dfC <- dfC %>% 
+      dplyr::mutate(dat_file. = dat_file, 
+                    dat_file  = gsub("^psmC", "psmQ", dat_file)) %>% 
+      tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
+      dplyr::filter(!uniq_id %in% uids) %>% 
+      dplyr::mutate(dat_file = dat_file.) %>% 
+      dplyr::select(-dat_file.)
+    
+    rm(list = c("uids"))
+    
+    df <- add_mbr_psms(df, dfC, mbr_ret_tol = mbr_ret_tol)
+  }
+
   # only for the demonstration of finer redundancy being kept at 
   #   "pep_seq_mod" and/or "neuloss"
   if (FALSE) {
@@ -7576,6 +7653,173 @@ add_n_pepexpz <- function (df, group_psm_by = "pep_seq", use_unique = TRUE)
 }
 
 
+#' Adds MBR PSMs from psmC
+#'
+#' The field of \code{pep_scan_title} from MBR does not contain new information
+#' and purposely left as NA.
+#'
+#' @param dfq psmQ data.
+#' @param dfc psmC data.
+#' @param cols Columns for use as unique identifiers of PSMs.
+#' @inheritParams normPSM
+#' @importFrom fastmatch %fin%
+add_mbr_psms <- function (dfq, dfc, group_psm_by = "pep_seq_mod", 
+                          # cols = c("pep_ret_range", "pep_exp_z"), 
+                          cols = c("pep_ret_range"), 
+                          mbr_ret_tol = 60) 
+{
+  cols_mbr <- c("pep_seq", "I000", "pep_ret_range", "pep_scan_num", 
+                "pep_ivmod", "pep_fmod", "pep_vmod", "pep_exp_z", "dat_file", 
+                "pep_n_ms2", "pep_exp_mz", "pep_exp_mr", "pep_delta", "pep_issig", 
+                "pep_score", "pep_locprob", "pep_locdiff", "pep_rank", 
+                "pep_expect", "R000")
+  cols_dfq <- c("prot_acc", "prot_mass", "prot_issig", "prot_isess", "prot_hit_num", 
+                "prot_family_member", "prot_tier", "prot_es", "prot_es_co", 
+                "pep_literal_unique", "pep_razor_unique", "pep_calc_mr", 
+                "pep_ivmod", "pep_fmod", "pep_vmod", "pep_exp_z", "pep_len", 
+                "pep_mod_group", "pep_isdecoy", 
+                "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
+                "other_acc", "entrez", "species", "acc_type", "shared_prot_accs", 
+                "shared_genes", "pep_isunique", "pep_start", "pep_end", 
+                "pep_res_before", "pep_res_after", "pep_istryptic", 
+                "pep_semitryptic", "pep_miss", "prot_icover", "prot_cover", 
+                "gene", "prot_desc", "prot_len")
+  
+  # separate dfq into dfq0 and dfq1
+  qnotc <- setdiff(unique(dfq[[group_psm_by]]), unique(dfc[[group_psm_by]]))
+  qonly <- dfq[[group_psm_by]] %fin% qnotc
+  dfq0 <- dfq[qonly, ]
+  dfq1 <- dfq[!qonly, ]
+  rm(list = c("qonly", "qnotc", "dfq"))
+  
+  # separate dfq1 into complete (dfqu) and incomplete (dfqm) groups
+  # dfqm: missing results in some RAW_Files and seeks for MBR
+  dfq1 <- tidyr::complete(dfq1, !!rlang::sym(group_psm_by), RAW_File)
+  dfqs <- split(dfq1, dfq1[[group_psm_by]])
+  rows <- unlist(lapply(dfqs, function (x) any(is.na(x[["prot_acc"]]))))
+  dfqu <- dplyr::bind_rows(dfqs[!rows])
+  dfqm <- dfqs[rows] 
+  pepsq <- names(dfqm)
+  rm(list = "rows")
+  
+  # subset dfc
+  uniq_by <- c(group_psm_by, cols)
+  dfc <- dfc[!duplicated(dfc[, uniq_by]), ]
+  
+  # remove dfc pep_seq_mod that are not found in dfq
+  cnotq <- setdiff(dfc[[group_psm_by]], pepsq)
+  oks <- ! dfc[[group_psm_by]] %fin% cnotq
+  dfc <- dfc[oks, ]
+  rm(list = c("cnotq", "oks"))
+  
+  # order dfc and dfqm by `group_psm_by`
+  ords <- order(dfc[[group_psm_by]])
+  dfc  <- dfc[ords, ]
+  rm(list = c("ords"))
+  
+  ords <- order(pepsq)
+  dfqm <- dfqm[ords]
+  pepsq <- pepsq[ords]
+  rm(list = c("ords"))
+  
+  # split dfc by pep_seq_mod
+  dfc <- split(dfc, dfc[[group_psm_by]])
+  pepsc <- names(dfc)
+  
+  if (!identical(pepsc, pepsq)) {
+    stop("Unhandled situation; please use \"lfq_mbr = FALSE\".\n", 
+         "Report the bug: ", 
+         "mismatches in the order \"pep_seq_mod\" between psmC and psmQ.")
+  }
+
+  n_cores <- parallel::detectCores()
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  
+  parallel::clusterExport(
+    cl,
+    c("smbr_psms", "mmbr_psms"), 
+    envir = environment(proteoQ:::smbr_psms)
+  )
+  
+  ans <- parallel::clusterMap(
+    cl, mmbr_psms, 
+    proteoM:::chunksplit(dfqm, n_cores, "list"), 
+    proteoM:::chunksplit(dfc,  n_cores, "list"), 
+    MoreArgs = list(cols_mbr = cols_mbr, 
+                    cols_dfq = cols_dfq, 
+                    mbr_ret_tol = mbr_ret_tol), 
+    .scheduling = "dynamic")
+  
+  parallel::stopCluster(cl)
+  
+  ans <- dplyr::bind_rows(ans)
+  ans <- bind_rows(ans, dfqu, dfq0)
+  ans <- ans[!is.na(ans[["prot_acc"]]), ]
+}
+
+
+#' Helper of \link{smbr_psms}.
+#' 
+#' Batch processing of \link{smbr_psms}.
+#' 
+#' @param dfqm psmQ subset with missing intensity values for MBR.
+#' @param dfc Data from psmC.
+#' @param cols_mbr Columns for MBR information borrowing.
+#' @param cols_dfq Columns for copying from dfq.
+#' @inheritParams add_mbr_psms
+mmbr_psms <- function (dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 60)
+{
+  ans <- mapply(smbr_psms, dfqm, dfc, 
+                MoreArgs = list(
+                  cols_mbr = cols_mbr, 
+                  cols_dfq = cols_dfq, 
+                  mbr_ret_tol = mbr_ret_tol), 
+                SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  
+  dplyr::bind_rows(ans)
+}
+
+
+#' Single MBR.
+#' 
+#' At the same \code{group_psm_by}.
+#' 
+#' @param dfqi An i-th entry of dfq.
+#' @param dfci An i-th entry of dfc.
+#' @param cols_mbr Columns for MBR information borrowing.
+#' @param cols_dfq Columns for copying from dfq.
+#' @inheritParams add_mbr_psms
+smbr_psms <- function (dfqi, dfci, cols_mbr, cols_dfq, mbr_ret_tol = 60)
+{
+  rows <- is.na(dfqi[["pep_ret_range"]])
+  retq <- median(dfqi[["pep_ret_range"]], na.rm = TRUE)
+  dfqi_first <- dfqi[!rows, ][1, ]
+  is_razor <- dfqi_first[["pep_literal_unique"]]
+  is_uniq  <- dfqi_first[["pep_razor_unique"]]
+  
+  for (j in seq_len(nrow(dfqi))) {
+    if (rows[j]) {
+      dfqj <- dfqi[j, ]
+      dfcj <- dplyr::filter(dfci, RAW_File == dfqj[["RAW_File"]])
+
+      okrets <- abs(dfcj[["pep_ret_range"]] - retq) <= mbr_ret_tol
+      dfcj <- dfcj[okrets, ]
+      dfcj <- dfcj[1, ]
+      
+      dfqj[, cols_mbr] <- dfcj[, cols_mbr]
+      dfqj[, cols_dfq] <- dfqi_first[, cols_dfq]
+      dfqj[["pep_unique_int"]] <- if (is_uniq) dfqj[["pep_tot_int"]] else 0
+      dfqj[["pep_razor_int"]]  <- if (is_razor) dfqj[["pep_tot_int"]] else 0
+      
+      dfqi[j, ] <- dfqj
+    }
+  }
+  
+  dfqi
+}
+
+
+
 
 
 theme_psm_violin <- theme_bw() +
@@ -7603,6 +7847,7 @@ theme_psm_violin <- theme_bw() +
     legend.text.align = 0,
     legend.box = NULL
   )
+
 
 
 

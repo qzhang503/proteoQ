@@ -596,7 +596,25 @@ check_optional_cols <- function (df)
 check_empty_rows <- function (df) 
 {
   rows <- (rowSums(is.na(df)) < ncol(df))
-  df[rows, ]
+  df <- df[rows, ]
+  
+  nms <- colnames(df)
+  tier_one <- c("Sample_ID", "TMT_Channel", "TMT_Set", "LCMS_Injection", 
+                "RAW_File", "Reference", "Select")
+  tier_oth <- nms[!nms %in% tier_one]
+  tier_one <- tier_one[tier_one %in% nms]
+  
+  df1 <- df[, tier_one]
+  rows1 <- (rowSums(is.na(df1)) < ncol(df1))
+  df1 <- df1[rows1, ]
+  
+  if (nrow(df1) < nrow(df)) {
+    bads <- which(!rows1) %>% 
+      purrr::reduce(paste, sep = ", ") %>% 
+      warning("Check the \"expt_smry\" for unbalanced row(s):\n", ., ".")
+  }
+
+  df
 }
 
 

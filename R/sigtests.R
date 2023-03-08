@@ -451,6 +451,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, rm_allna, 
+                    method_replace_na, 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
                     data_type, anal_type, ...) 
@@ -508,6 +509,24 @@ sigTest <- function(df, id, label_scheme_sub,
              anal_type = anal_type, 
              rm_allna = rm_allna) %>% 
       .$log2R
+    
+    if ((!impute_na) && method_replace_na == "min") {
+      row_mins <- apply(dfw, 1, FUN = min, na.rm = TRUE)
+      row_sds  <- apply(dfw, 1, FUN = sd,  na.rm = TRUE)
+      row_sds[is.na(row_sds)] <- 5E-3
+      n_nas <- rowSums(is.na(dfw))
+      
+      for (i in seq_along(row_mins)) {
+        n_i <- n_nas[[i]]
+        
+        if (n_i > 0) {
+          vals <- rnorm(n_i, mean = row_mins[[i]] - 1, sd = row_sds[[i]]/5)
+          x <- dfw[i, ]
+          x[is.na(x)] <- vals
+          dfw[i, ] <- x
+        }
+      }
+    }
     
     # `complete_cases` depends on lm contrasts
     purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
@@ -569,6 +588,7 @@ sigTest <- function(df, id, label_scheme_sub,
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
+                    method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -593,6 +613,18 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
     "limma"
   else
     rlang::as_string(method)
+  
+  # replace NA other than mice imputation
+  # (only for sigTest)
+  method_replace_na <- rlang::enexpr(method_replace_na)
+  
+  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min")))
+    "none"
+  else
+    rlang::as_string(method_replace_na)
+  
+  stopifnot(method_replace_na %in% c("none", "min"), 
+            length(method_replace_na) == 1L)
   
   stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   
@@ -620,6 +652,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
+            method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 
             anal_type = "Model")(method = method, 
@@ -652,107 +685,116 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'@inheritParams prnHist
 #'@inheritParams prnHM
 #'@inheritParams normPSM
-#' @param filename A file name to output results. The default is
-#'   \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for
-#'   proteins.
-#' @param method Character string; the method of linear modeling. The default is
-#'   \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
-#'   for models without random effects and the \code{\link[lmerTest]{lmer}} will
-#'   be used for models with random effects.
-#' @param padj_method Character string; the method of multiple-test corrections
-#'   for uses with \link[stats]{p.adjust}. The default is "BH". See
-#'   ?p.adjust.methods for additional choices.
-#' @param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
-#'   Entries with variances smaller than the threshold will be excluded from
-#'   linear modeling. The default is 1E-3.
-#' @param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
-#'   with \code{pVals} smaller than the threshold will be excluded from multiple
-#'   test corrections. The default is at \code{1} to include all entries.
-#' @param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
-#'   absolute \code{log2FC} smaller than the threshold will be removed from
-#'   multiple test corrections. The default is at \code{log2(1)} to include all
-#'   entries.
-#' @param ... User-defined formulas for linear modeling. The syntax starts with
-#'   a tilde, followed by the name of an available column key in
-#'   \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-#'   quoted with one to multiple contrast groups separated by commas. The
+#'@param filename A file name to output results. The default is
+#'  \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.
+#'@param method Character string; the method of linear modeling. The default is
+#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
+#'  be used for models with random effects.
+#'@param padj_method Character string; the method of multiple-test corrections
+#'  for uses with \link[stats]{p.adjust}. The default is "BH". See
+#'  ?p.adjust.methods for additional choices.
+#'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
+#'  Entries with variances smaller than the threshold will be excluded from
+#'  linear modeling. The default is 1E-3.
+#'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
+#'  with \code{pVals} smaller than the threshold will be excluded from multiple
+#'  test corrections. The default is at \code{1} to include all entries.
+#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
+#'  absolute \code{log2FC} smaller than the threshold will be removed from
+#'  multiple test corrections. The default is at \code{log2(1)} to include all
+#'  entries.
+#'@param method_replace_na The method to replace NA values by rows. The default
+#'  is \code{none} by doing nothing. At \code{method_replace_na = min}, the row
+#'  minimums will be used. The argument is only a device to assess \code{pVals},
+#'  e.g., by handling the circumstance of all NA values under one group and
+#'  non-trivial values under another. The setting of \code{min} might be useful
+#'  at the experimenters' discretion of ascribing \code{NA} values to the lack
+#'  of signals. The argument has no effects with \code{impute_na = TRUE}.
+#'@param ... User-defined formulas for linear modeling. The syntax starts with a
+#'  tilde, followed by the name of an available column key in
+#'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
+#'  quoted with one to multiple contrast groups separated by commas. The
 #'   default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
 #'   Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
-#'   \code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
+#'  \code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
 #'   contrast are supported for uses with random effects: \cr \code{~ Term["A -
 #'   C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
-#'   expression(s) for the row filtration against data in a primary file of
-#'   \code{Peptide[_impNA].txt} or \code{Protein[_impNA].txt}. See also
-#'   \code{\link{normPSM}} for the format of \code{filter_} statements.
-#' @return The primary output is \code{.../Peptide/Model/Peptide_pVals.txt} for
-#'   peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein
-#'   data. At \code{impute_na = TRUE}, the corresponding outputs are
-#'   \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
+#'  expression(s) for the row filtration against data in a primary file of
+#'  \code{Peptide[_impNA].txt} or \code{Protein[_impNA].txt}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements.
+#'@return The primary output is \code{.../Peptide/Model/Peptide_pVals.txt} for
+#'  peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein data.
+#'  At \code{impute_na = TRUE}, the corresponding outputs are
+#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
-#' @example inst/extdata/examples/prnSig_.R
-#' @seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@example inst/extdata/examples/prnSig_.R
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
+#'
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
+#'
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
-#' @import dplyr ggplot2
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#'@import dplyr ggplot2
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
-#' @export
+#'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
+                    method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -778,7 +820,21 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   else
     rlang::as_string(method)
   
-  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+  stopifnot(method %in% c("limma", "lm"), 
+            length(method) == 1L)
+  
+  # replace NA other than mice imputation
+  # (only for sigTest)
+  method_replace_na <- rlang::enexpr(method_replace_na)
+  
+  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min")))
+    "none"
+  else
+    rlang::as_string(method_replace_na)
+  
+  stopifnot(method_replace_na %in% c("none", "min"), 
+            length(method_replace_na) == 1L)
+  
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -803,6 +859,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
+            method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 
             anal_type = "Model")(method = method, 

@@ -27,6 +27,7 @@ Processes MaxQuant mqpar.xml
 \examples{
 \dontrun{
 dat_dir <- "Y:/qzhang/MaxQuant"
+pre_mq_meta()
 make_mq_meta2()
 }
 }

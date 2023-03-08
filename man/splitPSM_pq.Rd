@@ -21,6 +21,8 @@ splitPSM_pq(
   rptr_intrange = c(0, 100),
   use_lowercase_aa = TRUE,
   parallel = TRUE,
+  lfq_mbr = FALSE,
+  mbr_ret_tol = 60L,
   ...
 )
 }
@@ -118,6 +120,12 @@ table below for details. The default is TRUE.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
+
+\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with LFQ
+data. Both \code{psmQ.txt} and \code{psmC.txt} are required with the
+feature.}
+
+\item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 
 \item{...}{Not currently used.}
 }
