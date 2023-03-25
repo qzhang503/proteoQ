@@ -3024,8 +3024,14 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
                                            width = !!width, height = !!height, 
                                            limitsize = FALSE, 
                                            !!!ggsave_dots))
-
-    suppressWarnings(try(eval(my_call, rlang::caller_env())))
+    
+    ok <- tryCatch(eval(my_call, rlang::caller_env()), 
+                   error = function (e) NA_character_)
+    
+    if (is.na(ok)) {
+      my_call$width <- 40
+      suppressWarnings(try(eval(my_call, rlang::caller_env())))
+    }
   }
 }
 
