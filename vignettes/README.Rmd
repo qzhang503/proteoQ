@@ -1,12 +1,10 @@
 ---
 title: "proteoQ"
 author:
-- name: John Doe
+- name: Qiang Zhang
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -15,12 +13,14 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  word_document:
-    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
     variant: gfm
+  word_document:
+    toc: yes
+  github_document:
+    toc: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -89,9 +89,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-The proteo[X] family currently contains members of  
+The family currently contains members of  
 
--   [proteoM](https://github.com/qzhang503/proteoM) for database searches.  
+-   [Mzion](https://github.com/qzhang503/mzion) for database searches.  
 -   [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics and informatics.
 -   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary data.  
 
@@ -102,7 +102,7 @@ Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label
 
 The tool interacts with an Excel spread sheet (or `.csv`) for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
 
-The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [proteoM](https://github.com/qzhang503/proteoM) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill), for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers of Thermo's Orbitrap or Bruker's timsTOF. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
+The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [Mzion](https://github.com/qzhang503/mzion) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill), for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers of Thermo's Orbitrap or Bruker's timsTOF. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
 
 [^1]: To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. <https://github.com/qzhang503/proteoQ>.  
 
@@ -123,11 +123,6 @@ devtools::install_github("qzhang503/proteoQ")
 devtools::install_github("qzhang503/proteoQDA")
 ```
 
-or to use a daily version: 
-```{r daily, include = TRUE, eval = FALSE}
-devtools::install_github("qzhang503/proteoQ@QZ_20190930")
-```
-
 
 ## 1 Data normalization
 
@@ -139,7 +134,7 @@ In this document, I first illustrate the following applications of proteoQ:
 -   Mixed-bed normalization using full or partial data.
 -   Removal of low-quality entries from PSM, peptide and protein data.
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, [proteoM](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, [Mzion](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
 
 ### 1.1 Experiment setup
 
@@ -161,12 +156,12 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),  [proteoM](https://github.com/qzhang503/proteoM) or Spectrum Mill with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),  [Mzion](https://github.com/qzhang503/mzion) or Spectrum Mill with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
 -   MSFragger: start with `psm` and end with `.tsv`;
--   proteoM: start with `psmQ` and end with `.txt`;
+-   Mzion: start with `psmQ` and end with `.txt`;
 -   Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 The corresponding PSMs are available through one of the followings `copy_` utilities:
@@ -181,7 +176,7 @@ copy_maxquant_gtmt()
 # or MSFragger
 copy_msfragger_gtmt()
 
-# or proteoM
+# or Mzion
 copy_proteom_gtmt()
 
 # or Spectrum Mill
@@ -237,6 +232,9 @@ We start the section by processing the PSM files from Mascot searches:
 
 ```{r PSM summary, eval = FALSE}
 # columns keys in PSM files suitable for varargs of `filter_`
+#
+# (need utility `join_mgfs` with MSGF+ outputs)
+
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 

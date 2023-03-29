@@ -480,12 +480,12 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 
-\emph{MS1 peptide masses} \cr \code{\link[proteoM]{calc_pepmasses}}
+\emph{MS1 peptide masses} \cr \code{\link[mzion]{calc_pepmasses}}
  for mono-isotopic masses of peptides from fasta databases \cr
- \code{\link[proteoM]{calc_monopeptide}} for mono-isotopic masses of peptides
- from individual sequences \cr \code{\link[proteoM]{parse_unimod}} for
+ \code{\link[mzion]{calc_monopeptide}} for mono-isotopic masses of peptides
+ from individual sequences \cr \code{\link[mzion]{parse_unimod}} for
  parsing \href{https://www.unimod.org/}{Unimod} fixed modifications, variable
- modifications and neutral losses. \cr \code{\link[proteoM]{find_unimod}} for
+ modifications and neutral losses. \cr \code{\link[mzion]{find_unimod}} for
  finding a Unimod
 }
 \concept{Monoisotopic masses of peptides}

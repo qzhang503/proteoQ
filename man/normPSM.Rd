@@ -28,10 +28,9 @@ normPSM(
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
-  use_lowercase_aa = TRUE,
+  use_lowercase_aa = FALSE,
   corrected_int = TRUE,
   rm_reverses = TRUE,
-  parallel = TRUE,
   ...
 )
 }
@@ -171,9 +170,6 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
 LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
-
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The

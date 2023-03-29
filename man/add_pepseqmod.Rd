@@ -18,5 +18,5 @@ variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
 }
 \description{
-For proteoM.
+For mzion.
 }

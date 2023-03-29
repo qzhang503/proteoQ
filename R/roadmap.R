@@ -1,5 +1,5 @@
 #################################
-# proteoM -> proteoQ
+# mzion -> proteoQ
 #################################
 # normPSM
 #   splitPSM_pq (psmtable.R)

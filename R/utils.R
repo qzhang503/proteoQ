@@ -4190,47 +4190,51 @@ set_ggsave_dots <- function(dots, dummies = c("filename", "plot", "device", "pat
 #' @inheritParams load_expts
 find_search_engine <- function(dat_dir = NULL) 
 {
-  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)) 
+    dat_dir <- get_gl_dat_dir()
   
   pat_mascot <- "^F[0-9]+.*\\.csv$"
   pat_mq <- "^msms.*\\.txt$"
   pat_mf <- "^psm.*\\.tsv$"
   pat_sm <- "^PSMexport.*\\.ssv$"
   pat_pq <- "^psm[QC]{1}.*\\.txt$"
+  pat_msgf <- "(^peptide)|(^protein)|(^psm)\\.tsv$"
   
   mascot <-list.files(path = file.path(dat_dir), pattern = pat_mascot) %>% 
-    purrr::is_empty() %>% `!`
+    length() %>% `>`(0L)
   mq <- list.files(path = file.path(dat_dir), pattern = pat_mq) %>% 
-    purrr::is_empty() %>% `!`
+    length() %>% `>`(0L)
   mf <- list.files(path = file.path(dat_dir), pattern = pat_mf) %>% 
-    purrr::is_empty() %>% `!`
+    length() %>% `>`(0L)
   sm <- list.files(path = file.path(dat_dir), pattern = pat_sm) %>% 
-    purrr::is_empty() %>% `!`
+    length() %>% `>`(0L)
   pq <- list.files(path = file.path(dat_dir), pattern = pat_pq) %>% 
-    purrr::is_empty() %>% `!`
+    length() %>% `>`(0L)
+  msgf <- local({
+    files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
+    files <- files[!grepl("(^peptide)|(^protein)|(^psm)", files)]
+    length(files) > 0L
+  })
 
-  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, pq = pq)
-  engine <- engines %>% .[.] %>% names()
-  
-  if (purrr::is_empty(engine)) {
+  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, pq = pq, msgf = msgf)
+  oks <- names(engines[engines])
+
+  if (!length(oks)) {
     stop("No PSM files found.\n", 
          "File name(s) need to be in the format of \n",
          paste(c(paste("  Mascot", pat_mascot, sep = ": "), 
                  paste("  MaxQuant", pat_mq, sep = ": "), 
                  paste("  MSFragger", pat_mf, sep = ": "), 
                  paste("  proteoQ", pat_pq, sep = ": "), 
+                 paste("  MSGF", pat_msgf, sep = ": "), 
                  paste("  Spectrum Mill", pat_sm, sep = ": ")), 
-               collapse = "\n"), 
-         call. = FALSE)
+               collapse = "\n"))
   }
   
-  if (length(engine) > 1) {
-    stop("More than one data type found: ", 
-         purrr::reduce(engine, paste, sep = ", "), ".", 
-         call. = FALSE)
-  }
+  if (length(oks) > 1L)
+    stop("Multiple data types found: ", paste(oks, collapse = ", "))
   
-  invisible(engine)
+  invisible(oks)
 }
 
 
@@ -4405,7 +4409,7 @@ find_psmQ_files <- function (dat_dir)
 #' @import readr
 get_col_types <- function () 
 {
-  # just a remainder of proteoM columns
+  # just a remainder of mzion columns
   col_types_pq <- cols(
     prot_acc = col_character(), 
     prot_issig = col_logical(), 

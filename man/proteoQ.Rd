@@ -7,7 +7,7 @@
 \description{
 The proteoQ provides four categories of functions in data preprocessing, (2)
 annotation, (3) quality assurance assessments and (4) informatic analysis.
-The companion package, proteoM, performs database searches.
+The companion package, mzion, performs database searches.
 }
 \section{Utilities in data preprocessing}{
  normPSM -> (purgePSM) -> PSM2Pep ->

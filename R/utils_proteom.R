@@ -6,7 +6,7 @@ find_mod_indexesQ <- function (dat_dir)
 {
   rda <- file.path(dat_dir, "Calls", "ms2match.rda")
   
-  # single psmQ.txt with proteoM and proteoQ under the same folder
+  # single psmQ.txt with mzion and proteoQ under the same folder
   if (file.exists(rda)) {
     load(rda)
     mod_indexes <- call_pars$mod_indexes
@@ -24,7 +24,7 @@ find_mod_indexesQ <- function (dat_dir)
   
   if (!identical(mods, unique(mods))) {
     stop("Not all sets of deduced `mod_indexes` are identical.\n", 
-         "Probably different sets of variable modifications in proteoM searches.")
+         "Probably different sets of variable modifications in mzion searches.")
   }
   
   mods[[1]]

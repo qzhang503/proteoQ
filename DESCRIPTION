@@ -62,7 +62,7 @@ Imports:
     parallel,
     pheatmap,
     proteoCpp, 
-    proteoM, 
+    mzion, 
     proxyC,
     rlang,
     Biobase,

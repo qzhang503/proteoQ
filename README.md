@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2023-02-02
+2023-03-29
 
 - <a href="#introduction-to-proteoq"
   id="toc-introduction-to-proteoq">Introduction to proteoQ</a>
@@ -59,10 +59,9 @@ true
   - <a href="#52-vararg-table" id="toc-52-vararg-table">5.2 Vararg table</a>
 - <a href="#references" id="toc-references">References</a>
 
-The proteo\[X\] family currently contains members of
+The family currently contains members of
 
-- [proteoM](https://github.com/qzhang503/proteoM) for database
-  searches.  
+- [Mzion](https://github.com/qzhang503/mzion) for database searches.  
 - [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics
   and informatics.
 - [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary
@@ -95,7 +94,7 @@ processes the peptide spectrum matches (PSM) tables from the search
 engines of [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/),
 [MSFragger](http://msfragger.nesvilab.org/),
-[proteoM](https://github.com/qzhang503/proteoM) or [Spectrum
+[Mzion](https://github.com/qzhang503/mzion) or [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill),
 for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers
 of Thermo’s Orbitrap or Bruker’s timsTOF. Peptide and protein results
@@ -125,12 +124,6 @@ devtools::install_github("qzhang503/proteoQ")
 devtools::install_github("qzhang503/proteoQDA")
 ```
 
-or to use a daily version:
-
-``` r
-devtools::install_github("qzhang503/proteoQ@QZ_20190930")
-```
-
 ## 1 Data normalization
 
 In this document, I first illustrate the following applications of
@@ -154,11 +147,11 @@ labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
 (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data
 were analyzed against the search engines of Mascot, MaxQuant, MSFragger,
-[proteoM](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1)
-or Spectrum Mill. Ten percent of the PSM entries were sampled randomly
-from the complete data sets and stored in a companion package,
-`proteoQDA`. For simplicity, only TMT examples will be discussed in the
-document. Examples of LFQ analysis can be found in the help document of
+[Mzion](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or
+Spectrum Mill. Ten percent of the PSM entries were sampled randomly from
+the complete data sets and stored in a companion package, `proteoQDA`.
+For simplicity, only TMT examples will be discussed in the document.
+Examples of LFQ analysis can be found in the help document of
 `proteoQ::load_expts`, which is another good stop for exploring
 `proteoQ`.
 
@@ -187,14 +180,14 @@ The data processing begins with PSM table(s) from
 [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/),
 [MaxQuant,
 MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),
-[proteoM](https://github.com/qzhang503/proteoM) or Spectrum Mill with
-the following compilation in file names:
+[Mzion](https://github.com/qzhang503/mzion) or Spectrum Mill with the
+following compilation in file names:
 
 - Mascot: begin with letter `F`, followed by digits and ends with
   `.csv`;
 - MaxQuant: start with `msms` and end with `.txt`;
 - MSFragger: start with `psm` and end with `.tsv`;
-- proteoM: start with `psmQ` and end with `.txt`;
+- Mzion: start with `psmQ` and end with `.txt`;
 - Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 The corresponding PSMs are available through one of the followings
@@ -210,7 +203,7 @@ copy_maxquant_gtmt()
 # or MSFragger
 copy_msfragger_gtmt()
 
-# or proteoM
+# or Mzion
 copy_proteom_gtmt()
 
 # or Spectrum Mill
@@ -297,6 +290,9 @@ We start the section by processing the PSM files from Mascot searches:
 
 ``` r
 # columns keys in PSM files suitable for varargs of `filter_`
+#
+# (need utility `join_mgfs` with MSGF+ outputs)
+
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 

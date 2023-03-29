@@ -118,9 +118,6 @@ the precursor intensity under the same PSM query.}
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
-
 \item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with LFQ
 data. Both \code{psmQ.txt} and \code{psmC.txt} are required with the
 feature.}

@@ -2996,7 +2996,7 @@ assign_duppeps <- function(df, group_psm_by = "pep_seq",
       if (duppeps_repair == "denovo") {
         df <- local({
           # grps <- readRDS(file.path(dat_dir, "grps.rds"))
-          grps <- proteoM:::groupProts(unique(df[, c("prot_acc", "pep_seq")]), 
+          grps <- mzion:::groupProts(unique(df[, c("prot_acc", "pep_seq")]), 
                                        out_path = dat_dir)
           sets <- readRDS(file.path(dat_dir, "prot_pep_setcover.rds"))
           ids <- with(sets, paste0(prot_acc, ".", pep_seq))

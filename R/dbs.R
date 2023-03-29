@@ -1,7 +1,7 @@
 #' Reads a file in fasta format
 #'
 #' Reads a file in fasta format by line (used in both
-#' \link[proteoQ]{load_fasta} and \link[proteoM]{load_fasta2}).
+#' \link[proteoQ]{load_fasta} and \link[mzion]{load_fasta2}).
 #'
 #' @param file A character string to the name of a protein fasta file.
 #' @param acc_pattern A regular expression describing the pattern to separate

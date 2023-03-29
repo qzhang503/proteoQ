@@ -1642,7 +1642,7 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
 
 
 ##########################################
-# From proteoM
+# From mzion
 ##########################################
 
 #' Greedy set cover.

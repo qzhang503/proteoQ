@@ -116,9 +116,6 @@ the precursor intensity under the same PSM query.}
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
-
 \item{...}{Not currently used.}
 }
 \description{
