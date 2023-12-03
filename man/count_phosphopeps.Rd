@@ -4,9 +4,16 @@
 \alias{count_phosphopeps}
 \title{Counts phospho.}
 \usage{
-count_phosphopeps(collapses = c("mn"), rm_allna = FALSE, pat_mod = "sty")
+count_phosphopeps(
+  filename = "Peptide.txt",
+  collapses = c("mn"),
+  rm_allna = FALSE,
+  pat_mod = "sty"
+)
 }
 \arguments{
+\item{filename}{The file name of peptide table.}
+
 \item{collapses}{The modified residues to be collapsed with unmodified
 counterparts.}
 

@@ -14,6 +14,7 @@ splitPSM_msgf(
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_allna = FALSE,
+  rm_reverses = TRUE,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,

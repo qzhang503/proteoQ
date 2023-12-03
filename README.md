@@ -1,63 +1,43 @@
 proteoQ
 ================
 true
-2023-03-29
+2023-05-17
 
-- <a href="#introduction-to-proteoq"
-  id="toc-introduction-to-proteoq">Introduction to proteoQ</a>
-- <a href="#installation" id="toc-installation">Installation</a>
-- <a href="#1-data-normalization" id="toc-1-data-normalization">1 Data
-  normalization</a>
-  - <a href="#11-experiment-setup" id="toc-11-experiment-setup">1.1
-    Experiment setup</a>
-  - <a href="#12-psm-summarization" id="toc-12-psm-summarization">1.2 PSM
-    summarization</a>
-  - <a href="#13-psms-to-peptides" id="toc-13-psms-to-peptides">1.3 PSMs to
-    peptides</a>
-  - <a href="#14-peptides-to-proteins" id="toc-14-peptides-to-proteins">1.4
-    Peptides to proteins</a>
-  - <a href="#15-workflow-scripts" id="toc-15-workflow-scripts">1.5 Workflow
-    scripts</a>
-  - <a href="#16-quick-start" id="toc-16-quick-start">1.6 Quick start</a>
-- <a href="#2-basic-informatics" id="toc-2-basic-informatics">2 Basic
-  informatics</a>
-  - <a href="#21-mds" id="toc-21-mds">2.1 MDS</a>
-  - <a href="#22-pca" id="toc-22-pca">2.2 PCA</a>
-  - <a href="#23-lda" id="toc-23-lda">2.3 LDA</a>
-  - <a href="#24-correlation-plots" id="toc-24-correlation-plots">2.4
-    Correlation plots</a>
-  - <a href="#25-heat-maps" id="toc-25-heat-maps">2.5 Heat maps</a>
-  - <a href="#26-significance-tests" id="toc-26-significance-tests">2.6
-    Significance tests</a>
-  - <a href="#27-gene-sets-under-volcano-plots"
-    id="toc-27-gene-sets-under-volcano-plots">2.7 Gene sets under volcano
-    plots</a>
-  - <a href="#28-gene-set-networks" id="toc-28-gene-set-networks">2.8 Gene
-    set networks</a>
-  - <a href="#29-trend-analysis" id="toc-29-trend-analysis">2.9 Trend
-    Analysis</a>
-  - <a href="#210-nmf-analysis" id="toc-210-nmf-analysis">2.10 NMF
-    Analysis</a>
-  - <a href="#211-string-analysis" id="toc-211-string-analysis">2.11 STRING
-    Analysis</a>
-  - <a href="#212-missing-value-imputation"
-    id="toc-212-missing-value-imputation">2.12 Missing value imputation</a>
-- <a href="#3-labs" id="toc-3-labs">3 Labs</a>
-  - <a href="#31-reference-choices" id="toc-31-reference-choices">3.1
-    Reference choices</a>
-  - <a href="#32-data-subsets-and-additions"
-    id="toc-32-data-subsets-and-additions">3.2 Data subsets and
-    additions</a>
-  - <a href="#33-random-effects" id="toc-33-random-effects">3.3 Random
-    effects</a>
-- <a href="#4-column-keys" id="toc-4-column-keys">4 Column keys</a>
-  - <a href="#41-psms" id="toc-41-psms">4.1 PSMs</a>
-  - <a href="#42-peptides" id="toc-42-peptides">4.2 Peptides</a>
-  - <a href="#43-proteins" id="toc-43-proteins">4.3 Proteins</a>
-- <a href="#5-appendix" id="toc-5-appendix">5 Appendix</a>
-  - <a href="#51-psm-exports" id="toc-51-psm-exports">5.1 PSM exports</a>
-  - <a href="#52-vararg-table" id="toc-52-vararg-table">5.2 Vararg table</a>
-- <a href="#references" id="toc-references">References</a>
+- [Introduction to proteoQ](#introduction-to-proteoq)
+- [Installation](#installation)
+- [1 Data normalization](#1-data-normalization)
+  - [1.1 Experiment setup](#11-experiment-setup)
+  - [1.2 PSM summarization](#12-psm-summarization)
+  - [1.3 PSMs to peptides](#13-psms-to-peptides)
+  - [1.4 Peptides to proteins](#14-peptides-to-proteins)
+  - [1.5 Workflow scripts](#15-workflow-scripts)
+  - [1.6 Quick start](#16-quick-start)
+- [2 Basic informatics](#2-basic-informatics)
+  - [2.1 MDS](#21-mds)
+  - [2.2 PCA](#22-pca)
+  - [2.3 LDA](#23-lda)
+  - [2.4 Correlation plots](#24-correlation-plots)
+  - [2.5 Heat maps](#25-heat-maps)
+  - [2.6 Significance tests](#26-significance-tests)
+  - [2.7 Gene sets under volcano
+    plots](#27-gene-sets-under-volcano-plots)
+  - [2.8 Gene set networks](#28-gene-set-networks)
+  - [2.9 Trend Analysis](#29-trend-analysis)
+  - [2.10 NMF Analysis](#210-nmf-analysis)
+  - [2.11 STRING Analysis](#211-string-analysis)
+  - [2.12 Missing value imputation](#212-missing-value-imputation)
+- [3 Labs](#3-labs)
+  - [3.1 Reference choices](#31-reference-choices)
+  - [3.2 Data subsets and additions](#32-data-subsets-and-additions)
+  - [3.3 Random effects](#33-random-effects)
+- [4 Column keys](#4-column-keys)
+  - [4.1 PSMs](#41-psms)
+  - [4.2 Peptides](#42-peptides)
+  - [4.3 Proteins](#43-proteins)
+- [5 Appendix](#5-appendix)
+  - [5.1 PSM exports](#51-psm-exports)
+  - [5.2 Vararg table](#52-vararg-table)
+- [References](#references)
 
 The family currently contains members of
 
@@ -93,15 +73,14 @@ proteoQ consists of data processing and informatics analysis. It first
 processes the peptide spectrum matches (PSM) tables from the search
 engines of [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/),
-[MSFragger](http://msfragger.nesvilab.org/),
-[Mzion](https://github.com/qzhang503/mzion) or [Spectrum
-Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill),
-for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers
-of Thermo’s Orbitrap or Bruker’s timsTOF. Peptide and protein results
-are then produced with users’ selection of parameters in data
-filtration, alignment and normalization. The package further offers a
-suite of tools and functionalities in statistics, informatics and data
-visualization by creating ‘wrappers’ around published R routines.[^1]
+[MSFragger](http://msfragger.nesvilab.org/) or
+[Mzion](https://github.com/qzhang503/mzion), for TMT ($\le$ 16-plex),
+LFQ or SILAC experiments, using mass analyzers of Thermo’s Orbitrap or
+Bruker’s timsTOF. Peptide and protein results are then produced with
+users’ selection of parameters in data filtration, alignment and
+normalization. The package further offers a suite of tools and
+functionalities in statistics, informatics and data visualization by
+creating ‘wrappers’ around published R routines.[^1]
 
 (Click <strong>[Recent
 Posts](https://proteoq.netlify.com/#posts)</strong> for additional
@@ -191,7 +170,8 @@ following compilation in file names:
 - Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 The corresponding PSMs are available through one of the followings
-`copy_` utilities:
+`copy_` utilities (suggest go directly with real PSM outputs from a
+search engine):
 
 ``` r
 # Mascot
@@ -205,9 +185,6 @@ copy_msfragger_gtmt()
 
 # or Mzion
 copy_proteom_gtmt()
-
-# or Spectrum Mill
-# (temporarily unavailable)
 ```
 
 To illustrate, I copy over Mascot PSMs to a working directory,
@@ -3225,8 +3202,8 @@ Spectrum Mill, with the following additions or modifications:
 | prot_matches_sig    | Mascot count of PSMs that have significant scores under a proposed protein                                                                                                                | v.s.                                                                                                                                                                                                                                         |
 | prot_sequences      | Mascot count of distinct sequences                                                                                                                                                        | v.s.                                                                                                                                                                                                                                         |
 | prot_sequences_sig  | Mascot count of distinct sequences that have significant scores under a proposed protein                                                                                                  | v.s.                                                                                                                                                                                                                                         |
-| prot_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                                                                                                        | By each TMT (LFQ) experiment and/or LC/MS series; the counts exclude entries that are void in reporter-ion intensity across all channels or filtered by users.                                                                               |
-| prot_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                                                                                                           | v.s.; at `group_psm_by = pep_seq_mod`, the same peptide with different variable modifications will be counted as different sequences.                                                                                                        |
+| prot_n_psm          | Count of significant PSMs in quantitation under a proposed protein                                                                                                                        | By each TMT (LFQ) experiment and/or LC/MS series; the counts exclude entries that are void in reporter-ion intensity across all channels or filtered by users.                                                                               |
+| prot_n_pep          | Count of significant peptide sequences in quantitation under a proposed protein                                                                                                           | v.s.; at `group_psm_by = pep_seq_mod`, the same peptide with different variable modifications will be counted as different sequences.                                                                                                        |
 | prot_len            | Number of amino acid residues under a proposed protein                                                                                                                                    |                                                                                                                                                                                                                                              |
 | prot_pi             | Mascot calculation of protein isoelectric point                                                                                                                                           |                                                                                                                                                                                                                                              |
 | prot_tax_str        | Mascot protein taxonomy as string                                                                                                                                                         |                                                                                                                                                                                                                                              |
@@ -3242,7 +3219,7 @@ Spectrum Mill, with the following additions or modifications:
 | prot_es_co          | Protein enrichment score cut-off                                                                                                                                                          |                                                                                                                                                                                                                                              |
 | pep_query           | Mascot ordinal number of query after sorting by Mr                                                                                                                                        |                                                                                                                                                                                                                                              |
 | pep_rank            | Mascot peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.                                                                                            |                                                                                                                                                                                                                                              |
-| pep_n\_psm          | Count of significant PSMs in quantitation under a proposed peptide                                                                                                                        | See also `prot_n_psm`.                                                                                                                                                                                                                       |
+| pep_n_psm           | Count of significant PSMs in quantitation under a proposed peptide                                                                                                                        | See also `prot_n_psm`.                                                                                                                                                                                                                       |
 | pep_isbold          | Mascot: if grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query.                                        |                                                                                                                                                                                                                                              |
 | pep_isunique        | Peptide sequence is unique or not.                                                                                                                                                        | Floating indicator at the levels of protein groups, protein IDs or none, according to `normPSM(pep_unique_by = ...)`.                                                                                                                        |
 | pep_literal_unique  | Peptide sequence is unique to hit or not.                                                                                                                                                 | Mascot: need enabled same-set and sub-set proteins during PSM exports.                                                                                                                                                                       |
@@ -3253,7 +3230,7 @@ Spectrum Mill, with the following additions or modifications:
 | pep_exp_mz          | Experimental m/z value                                                                                                                                                                    |                                                                                                                                                                                                                                              |
 | pep_exp_mr          | Molecular mass calculated from experimental m/z value                                                                                                                                     |                                                                                                                                                                                                                                              |
 | pep_exp_z           | Experimental charge state                                                                                                                                                                 |                                                                                                                                                                                                                                              |
-| pep_n\_exp_z        | Number of unique charge states under a peptide sequence                                                                                                                                   | The levels of peptide uniqueness are according to `group_psm_by`.                                                                                                                                                                            |
+| pep_n_exp_z         | Number of unique charge states under a peptide sequence                                                                                                                                   | The levels of peptide uniqueness are according to `group_psm_by`.                                                                                                                                                                            |
 | pep_calc_mr         | Molecular mass calculated from matched peptide sequence                                                                                                                                   |                                                                                                                                                                                                                                              |
 | pep_delta           | pep_exp_mr – pep_calc_mr                                                                                                                                                                  |                                                                                                                                                                                                                                              |
 | pep_score           | Score of PSM                                                                                                                                                                              | MaxQuant, `Score`. MSFragger, `Hyperscore`. Spectrum Mill, `score`.                                                                                                                                                                          |
@@ -3281,7 +3258,7 @@ Spectrum Mill, with the following additions or modifications:
 | pep_ret_range       | Range of LCMS retention times of a peptide match                                                                                                                                          |                                                                                                                                                                                                                                              |
 | pep_ret_sd          | Standard deviation of `pep_ret_range`                                                                                                                                                     | The levels of peptide uniqueness are according to `group_psm_by`.                                                                                                                                                                            |
 | pep_ms2_sumint      | Mascot sum of MS2 fragment-ion intensity of a peptide match                                                                                                                               |                                                                                                                                                                                                                                              |
-| pep_n\_ions         | Mascot count of matched and unmatched fragment ions of a peptide query                                                                                                                    |                                                                                                                                                                                                                                              |
+| pep_n_ions          | Mascot count of matched and unmatched fragment ions of a peptide query                                                                                                                    |                                                                                                                                                                                                                                              |
 | pep_locprob         | The highest probablity from site analysis of the variable modification sites                                                                                                              | The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot.                                                                                                                    |
 | pep_locdiff         | pep_locprob – pep_locprob2                                                                                                                                                                |                                                                                                                                                                                                                                              |
 | pep_phospho_locprob | The highest probability in phosphorylation sites                                                                                                                                          |                                                                                                                                                                                                                                              |
@@ -3289,7 +3266,7 @@ Spectrum Mill, with the following additions or modifications:
 | pep_ions_first      | Mascot: the first series of ions being matched under a PSM query                                                                                                                          | Need enabled `MS/MS peak lists` during PSM exports                                                                                                                                                                                           |
 | pep_ions_second     | Mascot: the second series of ions being matched under a PSM query                                                                                                                         | v.s.                                                                                                                                                                                                                                         |
 | pep_ions_third      | Mascot: the third series of ions being matched under a PSM query                                                                                                                          | v.s.                                                                                                                                                                                                                                         |
-| pep_n\_ms2          | Number of entries in a peak list                                                                                                                                                          |                                                                                                                                                                                                                                              |
+| pep_n_ms2           | Number of entries in a peak list                                                                                                                                                          |                                                                                                                                                                                                                                              |
 | pep_scan_num        | MS scan number of peptide                                                                                                                                                                 |                                                                                                                                                                                                                                              |
 | pep_mod_group       | Index of peptide modification group                                                                                                                                                       |                                                                                                                                                                                                                                              |
 | pep_fmod            | Fix modifications of peptide                                                                                                                                                              |                                                                                                                                                                                                                                              |
@@ -3360,9 +3337,9 @@ in the following:
 | prot_tier           | Protein tier                                                                                                  |                                                                                                                  |
 | prot_es             | Protein enrichment score                                                                                      |                                                                                                                  |
 | prot_es_co          | Protein enrichment score cut-off                                                                              |                                                                                                                  |
-| prot_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                            | Joint results from individual PSM tables; the counts exclude entries that are filtered by users.                 |
-| prot_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                               | v.s.                                                                                                             |
-| pep_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                                           | v.s.                                                                                                             |
+| prot_n_psm          | Count of significant PSMs in quantitation under a proposed protein                                            | Joint results from individual PSM tables; the counts exclude entries that are filtered by users.                 |
+| prot_n_pep          | Count of significant peptide sequences in quantitation under a proposed protein                               | v.s.                                                                                                             |
+| pep_n_psm           | Counts of significant PSMs in quantitation under a proposed peptide                                           | v.s.                                                                                                             |
 | pep_isunique        | Peptide sequence is unique or not.                                                                            | See also PSM keys for levels of uniqueness                                                                       |
 | pep_literal_unique  | Peptide sequence is unique to hit or not.                                                                     | v.s.                                                                                                             |
 | pep_razor_unique    | Peptide sequence is unique to group or not.                                                                   | v.s.                                                                                                             |
@@ -3385,7 +3362,7 @@ in the following:
 | pep_score_co        | Peptide enrichment score cut-off                                                                              | Median description from PSMs.                                                                                    |
 | pep_score           | Score of peptide                                                                                              | v.s.                                                                                                             |
 | pep_expect          | Expectation value or posterior error probability of PSM(s)                                                    | Geometric-mean description from PSMs.                                                                            |
-| pep_n\_exp_z        | Number of unique charge states under a peptide sequence                                                       | Median description from PSMs. The levels of peptide uniqueness are according to `group_psm_by`.                  |
+| pep_n_exp_z         | Number of unique charge states under a peptide sequence                                                       | Median description from PSMs. The levels of peptide uniqueness are according to `group_psm_by`.                  |
 | pep_ret_range       | Range of LCMS retention times of a peptide match                                                              | v.s.                                                                                                             |
 | pep_ret_sd          | Standard deviation of `pep_ret_range` across samples and LCMS series                                          |                                                                                                                  |
 | pep_locprob         | The highest probablity from site analysis of the variable modification sites                                  | Median description from PSMs.                                                                                    |
@@ -3455,10 +3432,10 @@ described in the following:
 | prot_empai      | Mascot empirical protein abundance index                                                |                                                                            |
 | prot_icover     | Protein sequence coverage by counts of tryptic peptides                                 |                                                                            |
 | prot_cover      | Protein sequence coverage                                                               |                                                                            |
-| prot_n\_psm     | Count of significant PSMs in quantitation under a proposed protein                      |                                                                            |
-| prot_n\_uniqpsm | Count of unique, significant PSMs in quantitation under a proposed protein              |                                                                            |
-| prot_n\_pep     | Count of significant peptide sequences in quantitation under a proposed protein         |                                                                            |
-| prot_n\_uniqpep | Count of unique, significant peptide sequences in quantitation under a proposed protein |                                                                            |
+| prot_n_psm      | Count of significant PSMs in quantitation under a proposed protein                      |                                                                            |
+| prot_n_uniqpsm  | Count of unique, significant PSMs in quantitation under a proposed protein              |                                                                            |
+| prot_n_pep      | Count of significant peptide sequences in quantitation under a proposed protein         |                                                                            |
+| prot_n_uniqpep  | Count of unique, significant peptide sequences in quantitation under a proposed protein |                                                                            |
 | prot_tot_int    | Total MS1 intenisty of peptides under a proposed protein                                | Sum statistics from peptide intensities                                    |
 | prot_unique_int | Unique MS1 intenisty of peptides under a proposed protein                               | v.s.                                                                       |
 | prot_razor_int  | Razor MS1 intenisty of peptides under a proposed protein                                | v.s.                                                                       |

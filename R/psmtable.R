@@ -3443,7 +3443,7 @@ normPSM <- function(dat_dir = NULL,
   }
 
   if (is.null(fasta)) 
-    stop("Path(s) to fasta file(s) cannot be empty.", call. = FALSE)
+    stop("Path(s) to fasta file(s) cannot be empty.")
   
   lapply(fasta, function (x) if (!file.exists(x)) stop("FASTA not found: ", x))
 
@@ -3460,7 +3460,7 @@ normPSM <- function(dat_dir = NULL,
     stop("\"group_psm_by\" is not one of ", paste(oks, collapse = ", "))
   
   if (length(group_psm_by) != 1L) 
-    stop("Length of \"group_psm_by\" is not one.", call. = FALSE)
+    stop("Length of \"group_psm_by\" is not one.")
 
   rm(list = c("oks"))
 
@@ -3485,9 +3485,16 @@ normPSM <- function(dat_dir = NULL,
   # ---
   type_sd <- rlang::enexpr(type_sd)
   type_sd <- if (length(type_sd) > 1L) "log2_R" else rlang::as_string(type_sd)
-
-  stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
-            length(type_sd) == 1L)
+  alw_type_sd <- c("log2_R", "N_log2_R", "Z_log2_R")
+  
+  
+  if (! type_sd %in% alw_type_sd)
+    stop("The `type_sd` is not one of ", paste(alw_type_sd, collapse = ", "))
+  
+  if (length(type_sd) != 1L)
+    stop("The length of `type_sd` needs to be one.")
+  
+  rm(list = c("alw_type_sd"))
 
   # ---
   dir.create(file.path(dat_dir, "PSM/cache"), 
@@ -3662,6 +3669,7 @@ normPSM <- function(dat_dir = NULL,
                         rm_craps = rm_craps, 
                         rm_krts = rm_krts, 
                         rm_allna = rm_allna, 
+                        rm_reverses = rm_reverses, 
                         purge_phosphodata = purge_phosphodata, 
                         annot_kinases = annot_kinases, 
                         plot_rptr_int = plot_rptr_int, 
@@ -6765,7 +6773,7 @@ splitPSM_msgf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                           fasta = NULL, entrez = NULL, pep_unique_by = "group", 
                           scale_rptr_int = FALSE, 
                           rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
-                          purge_phosphodata = TRUE, 
+                          rm_reverses = TRUE, purge_phosphodata = TRUE, 
                           annot_kinases = FALSE, plot_rptr_int = TRUE, 
                           rptr_intco = 0, rptr_intrange = c(0, 100), 
                           use_lowercase_aa = TRUE, parallel = TRUE, 
@@ -6866,6 +6874,10 @@ splitPSM_msgf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (1.3) clean up prot_acc
   df <- df %>% 
     { if (rm_craps) dplyr::filter(., !grepl("\\|$", prot_acc)) else . } 
+  
+  if (rm_reverses) {
+    df <- df %>% dplyr::filter(!pep_isdecoy)
+  }
   
   # (1.4) add pep_seq_mod
   # (removals NL indicators at the end of `pep_ivmod`; 
@@ -6985,7 +6997,7 @@ splitPSM_msgf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' 
 #' @param filename The file name that contains MSGF modifications.
 #' @param dat_dir The working directory.
-procMSGFmods <- function (filename = "MSFG_mods.txt", dat_dir = NULL)
+procMSGFmods <- function (filename = "MSGF_mods.txt", dat_dir = NULL)
 {
   if (is.null(dat_dir))
     dat_dir <- get_gl_dat_dir()
@@ -7019,7 +7031,7 @@ fml2mass <- function (mods)
   ys <- gsub("[^,]+?\\,(.*)", "\\1", mods) # sites
   ys <- gsub(",.*", "", ys)
   
-  oks <- grepl("[A-Z]", xs)
+  oks <- grepl("[A-Z]", xs) # formulas
   xsa <- as.character(round(as.numeric(xs[!oks]), 3L))
   xsb <- xs[oks]
   ysa <- ys[!oks]
@@ -7027,6 +7039,10 @@ fml2mass <- function (mods)
   
   if (length(xsb)) {
     xsb <- gsub("([+-]*[0-9]+)", paste0("(", "\\1", ")"), xsb)
+    # HO(3)P -> H(1)O(3)P(1)
+    xsb <- gsub("([A-Z]){1}", paste0("\\1", "(1)"), xsb)
+    xsb <- gsub("\\(1\\)(\\([+-]{0,1}\\d+\\))", "\\1", xsb)
+
     xsm <- lapply(xsb, mzion::calc_unimod_compmass)
     xsm <- lapply(xsm, `[[`, "mono_mass")
     xsm <- round(unlist(xsm), digits = 3L)
@@ -7037,7 +7053,15 @@ fml2mass <- function (mods)
   else
     names(xs) <- ys
   
-  xs
+  # multiple sites under the same modification
+  ans <- mapply(function (x, y) {
+    x <- rep(x, length(y))
+    names(x) <- y
+    x
+  }, xs, strsplit(names(xs), ""), 
+  USE.NAMES = FALSE)
+  
+  ans <- unlist(ans, recursive = FALSE, use.names = TRUE)
 }
 
 
@@ -7046,15 +7070,53 @@ fml2mass <- function (mods)
 #' @param dat_dir The working directory.
 #' @param mgf_path The path to MGF files. The default is
 #'   \code{file.path(dat_dir, "mgf")}.
+#' @param mod_file The name of the file specifying the MSGF+ modifications. The
+#'   \code{mod_file} needs be under the \code{dat_dir}.
+#' @param fdr_type The type of FDR control. The default is \code{psm}.
 #' @param target_fder A targeted false-discovery rate (FDR).
+#' @param ... varargs; not currently used.
+#' @inheritParams normPSM
 #' @export
-join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
+join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, 
+                       mod_file = "MSGF_mods.txt", 
+                       rm_reverses = FALSE, fdr_type = c("psm", "peptide"), 
+                       target_fdr = 0.01, ...)
 {
+  # fdr_type
+  fdr_type <- rlang::enexpr(fdr_type)
+  oks <- eval(formals()[["fdr_type"]])
+  fdr_type <- if (length(fdr_type) > 1L) oks[[1]] else rlang::as_string(fdr_type)
+
+  if (!fdr_type %in% oks)
+    stop("\"fdr_type\" is not one of ", paste(oks, collapse = ", "))
+  
+  # dots
+  dots <- rlang::enexprs(...)
+  
+  filter_dots <- rlang::enexprs(...) %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  dots <- dots %>% .[! . %in% filter_dots]
+  
+  # preprocessing
   if (is.null(dat_dir)) 
     dat_dir <- get_gl_dat_dir()
   
   if (is.null(mgf_path)) 
     mgf_path <- file.path(dat_dir, "mgf")
+  
+  mod_path <- file.path(dat_dir, mod_file)
+  
+  if (!file.exists(mod_path)) 
+    warning("MSGF+ modification file not found: ", mod_path)
+  
+  rm(list = c("mod_path"))
+  
+  expts <- file.path(file.path(dat_dir, "label_scheme_full.rda"))
+  
+  if (!file.exists(expts))
+    stop("Run `load_expts()` first.")
   
   load(file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -7079,19 +7141,31 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
                       mgf_cutmzs = numeric(), mgf_cutpercs = numeric(),
                       quant = quant, 
                       digits = 4L)
+  else
+    message("Cached MGF results found: ", mgf_file)
   
   mgfs <- mzion:::map_raw_n_scan(qs::qread(mgf_file), mgf_path)
   mgfs[["raw_file"]] <- gsub("\\.raw$", "", mgfs[["raw_file"]], ignore.case = TRUE)
   mgfs <- split(mgfs, mgfs[["raw_file"]])
+  mgf_raws <- names(mgfs)
   
-  files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
-  raws  <- gsub("\\.[^.]*$", "", files)
+  msgf_files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
+  msgf_raws  <- gsub("\\.[^.]*$", "", msgf_files)
+  n_msgf     <- length(msgf_raws)
   
-  if (length(mgfs) != length(files))
-    stop("Unequal number of `raw_file`s between MGF and MSGF+ outputs")
+  if (!n_msgf)
+    stop("No MSGF+ tsv files found under: ", dat_dir)
   
-  if (!all(raws %in% names(mgfs)))
+  if (length(mgf_raws) != n_msgf)
+    stop("Unequal number of raw_files between MGF and MSGF+ outputs")
+  
+  if (!all(msgf_raws %in% mgf_raws))
     stop("Not all `raw_files`s found in MGF.")
+
+  # ensure the same order between files and mgfs
+  mgfs <- mgfs[msgf_raws]
+  mgf_raws <- names(mgfs)
+  # identical(mgf_raws, msgf_raws)
   
   df <- mapply(function (file, mgf) {
     readr::read_tsv(file.path(dat_dir, file)) %>% 
@@ -7099,7 +7173,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
       dplyr::mutate(scan_num = as.character(scan_num)) %>% 
       dplyr::left_join(mgf, by = "scan_num") # %>% 
     # dplyr::filter(!is.na(ms1_int))
-  }, files, mgfs[raws], # ensure the same order between files and mgfs
+  }, msgf_files, mgfs,
   SIMPLIFY = FALSE, USE.NAMES = FALSE)
   
   df <- df %>% 
@@ -7110,9 +7184,16 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
                   pep_score = MSGFScore, 
                   pep_expect = SpecEValue, 
                   pep_scan_num = scan_num) %>% 
-    dplyr::filter(!grepl("XXX_", prot_acc), 
-                  QValue <= .01)
-  
+    dplyr::mutate(pep_isdecoy = ifelse(grepl("XXX_", prot_acc), TRUE, FALSE))
+
+  if (rm_reverses) 
+    df <- dplyr::filter(df, !pep_isdecoy)
+
+  df <- if (fdr_type == "psm")
+    dplyr::filter(df, QValue <= .01)
+  else if (fdr_type == "peptide")
+    dplyr::filter(df, PepQValue <= .01)
+
   df[["pep_seq"]] <- gsub("[+-]\\d+\\.\\d+", "", df[["Peptide"]])
   lens <- stringi::stri_length(df[["pep_seq"]]) # - 4L
   df[["pep_res_before"]] <- substring(df[["Peptide"]], 1L, 1L)
@@ -7137,6 +7218,8 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
     dplyr::left_join(prps, by = "uniq_id") %>% 
     dplyr::select(-uniq_id)
   
+  # if (length(dots)) df <- filters_in_call(df, !!!filter_dots)
+
   df <- df %>% 
     dplyr::rename(pep_tot_int = ms1_int, 
                   pep_scan_title = scan_title, 
@@ -7747,8 +7830,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # ---
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "fraction_scheme.rda"))
+  load(file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
   
   TMT_plex <- TMT_plex(label_scheme_full)
   filelist <- find_psmQ_files(dat_dir)

@@ -89,26 +89,27 @@ knitr::opts_chunk$set(
 )
 ```
 
-The family currently contains members of  
+The family currently contains members of
 
--   [Mzion](https://github.com/qzhang503/mzion) for database searches.  
+-   [Mzion](https://github.com/qzhang503/mzion) for database searches.\
 -   [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics and informatics.
--   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary data.  
+-   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary data.
 
 The document is mainly about proteoQ.
 
 ## Introduction to proteoQ
-Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for the *mining* of proteomics data. It takes database search results from various search engines.  
+
+Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for the *mining* of proteomics data. It takes database search results from various search engines.
 
 The tool interacts with an Excel spread sheet (or `.csv`) for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
 
-The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [Mzion](https://github.com/qzhang503/mzion) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill), for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers of Thermo's Orbitrap or Bruker's timsTOF. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
+The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) or [Mzion](https://github.com/qzhang503/mzion), for TMT ($\le$ 16-plex), LFQ or SILAC experiments, using mass analyzers of Thermo's Orbitrap or Bruker's timsTOF. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
 
-[^1]: To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. <https://github.com/qzhang503/proteoQ>.  
+[^1]: To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. <https://github.com/qzhang503/proteoQ>.
 
 (Click <strong>[Recent Posts](https://proteoq.netlify.com/#posts)</strong> for additional examples.)
 
-(Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.)  
+(Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.)
 
 ## Installation
 
@@ -123,7 +124,6 @@ devtools::install_github("qzhang503/proteoQ")
 devtools::install_github("qzhang503/proteoQDA")
 ```
 
-
 ## 1 Data normalization
 
 In this document, I first illustrate the following applications of proteoQ:
@@ -134,7 +134,7 @@ In this document, I first illustrate the following applications of proteoQ:
 -   Mixed-bed normalization using full or partial data.
 -   Removal of low-quality entries from PSM, peptide and protein data.
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, [Mzion](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, [Mzion](https://www.biorxiv.org/content/10.1101/2023.01.17.524387v1) or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.
 
 ### 1.1 Experiment setup
 
@@ -156,7 +156,7 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),  [Mzion](https://github.com/qzhang503/mzion) or Spectrum Mill with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/), [Mzion](https://github.com/qzhang503/mzion) or Spectrum Mill with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
@@ -164,7 +164,7 @@ The data processing begins with PSM table(s) from [Mascot](https://proteoq.netli
 -   Mzion: start with `psmQ` and end with `.txt`;
 -   Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
-The corresponding PSMs are available through one of the followings `copy_` utilities:
+The corresponding PSMs are available through one of the followings `copy_` utilities (suggest go directly with real PSM outputs from a search engine):
 
 ```{r copy_psm, include = TRUE, eval = FALSE}
 # Mascot
@@ -178,9 +178,6 @@ copy_msfragger_gtmt()
 
 # or Mzion
 copy_proteom_gtmt()
-
-# or Spectrum Mill
-# (temporarily unavailable)
 ```
 
 To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
@@ -190,14 +187,13 @@ dat_dir <- "~/proteoQ/examples"
 copy_mascot_gtmt(dat_dir)
 ```
 
-
 #### 1.1.3 Metadata
 
 The workflow involves an Excel (or `.csv`) template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indexes, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^4] Unless otherwise mentioned, we will assume these default file names throughout the document.
 
 [^4]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
 
-Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. For details, see the help via `?proteoQ::load_expts()`.  
+Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. For details, see the help via `?proteoQ::load_expts()`.
 
 ```{r str_expt_smry, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 str_expt_smry <- "images/installation/three_tier_expt_smry.png"
@@ -324,7 +320,7 @@ To finish our discussion of PSM processing, let us consider having one more bash
 
 The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt` etc. from a preceding step of `normPSM` and updates the files accordingly.[^5] To revert programmatically the data nullification made by `purgePSM` (should there be any), we would need to start over with `normPSM`. Alternatively, we may make a temporary copy of these files for a probable undo.
 
-[^5]: The separation of `purgePSM` from `normPSM` is more administrative than technical: the purge operates against CV columns which are not originally present in the PSM tables from search engines.   
+[^5]: The separation of `purgePSM` from `normPSM` is more administrative than technical: the purge operates against CV columns which are not originally present in the PSM tables from search engines.
 
 This process takes place sample (column)-wisely while holding the places for data points that have been nullified. It is different to the above row filtration processes by `filter_` in that there is no *row removals* with purging.
 
@@ -1216,6 +1212,7 @@ In addition to the fixed effects shown above, significance tests with additive r
 There are a handful of `R` tools for gene set enrichment analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can analyze and visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, proteoQ takes a naive approach thereafter to assess the *asymmetricity* of the distributions of protein probability $p$ values (pVals) under volcano plots.
 
 #### 2.7.1 GSPA
+
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`), individual protein pVals from linear modeling are first taken and *separated* into the groups of up ($u$) or down ($d$) expressed proteins within a gene set ($s$). Taking proteins from a $u$ group as an example, the default is to calculate the geometric mean of pVals under $s$ with a penalty-like term:
 
 $$-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i-\sum_{j=1}^{m_u}log_{10}p_j)/(n_u+m_u)$$
@@ -1243,6 +1240,7 @@ Alternatively, the asymmetricity in the population of pVals maybe assessed via c
 At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to set aside low impact genes, for instance, (re)distributing them between the $n$-entry significance group and the $m$-entry insignificance group. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`.
 
 #### 2.7.2 Examples
+
 We began with the analysis of `GSPA` against enrichment terms defined in [`gene ontology (GO)`](http://current.geneontology.org/products/pages/downloads.html), [`molecular signatures (MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) and [`PhosphoSitePlus (PSP)`](https://www.phosphosite.org/):
 
 ```{r prnGSPA, eval = FALSE}
@@ -1280,7 +1278,8 @@ knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
 ```
 
 #### 2.7.3 Custom data bases
-In general, any data bases for any species finished at a format similar to the `go_hs.rds` shown below are applicable for `prnGSPA` analysis and subsequent `gspaMap` visualization. I will deliberate the examples of custom `GO` and `MSig`.  
+
+In general, any data bases for any species finished at a format similar to the `go_hs.rds` shown below are applicable for `prnGSPA` analysis and subsequent `gspaMap` visualization. I will deliberate the examples of custom `GO` and `MSig`.
 
 The gene sets of `GO` and `MSig` are available for species human, mouse and rat in proteoQ. For custom gene sets and/or additional species, the utility `prepGO` will download and prepare `GO` data according to custom-supplied URLs. In the follow examples, we prepare the `GO` data of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively, under the file folder `~\\proteoQ\\dbs\\go`:
 
@@ -1374,11 +1373,13 @@ Currently, proteoQ does not keep track of the values of `gset_nms` in the variou
 For simplicity, it is generally applicable to include all the data bases that have been applied to `prnGSPA` in a custom workflow and, in that way, no terms will be missed for visualization with `gspaMap`. This is also suitable in that `gspaMap` merely perform volcano plot visualization by gene sets and no [`multiple-test`](https://proteoq.netlify.app/post/bh-procedure/) correlations are involved. In other words, there is no penalty for including more gene sets than necessary, other than some negligible costs of computer memory and time.
 
 #### 2.7.4 More outputs and analogous analysis
+
 In addition to finding gene sets that are biased in pVal distributions, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondence between essential and all of the gene sets are stored in `_essmap.txt` files under the `Protein/GSPA` folder.
 
 The utility in proteoQ for conventional GSEA analysis is `prnGSEA()`. Gene set variance analysis (GSVA) is available through `prnGSVA`. Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from an `R` console.
 
 ### 2.8 Gene set networks
+
 In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced more plots where many of them might never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.
 
 In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n \times n$ to $n \times m$ ($m \le n$).

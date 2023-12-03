@@ -154,6 +154,12 @@ calcTMTLabs <- function (df, file)
   # other_nt <- var_mods$Mascot_abbr[grep("Acetyl (Protein N-term)", desc, fixed = TRUE)]
   rm(list = c("desc", "var_mods"))
   
+  if (!length(idx_k))
+    stop("TMT (K) need to be a variable modification.")
+  
+  if (!length(idx_nt))
+    stop("TMT (N-term) need to be a variable modification.")
+  
   dfNT1 <- df %>% filter(grepl(idx_nt, pep_var_mod_pos)) # 127539, +NT_lab
   dfNT1rK1 <- dfNT1 %>% filter(grepl("K", pep_seq)) # 78237, +NT_lab, with residue K
   dfNT1rK1_0 <- dfNT1rK1 %>% filter(!grepl(idx_k, pep_var_mod_pos)) # 23, +NT_lab, -K_lab

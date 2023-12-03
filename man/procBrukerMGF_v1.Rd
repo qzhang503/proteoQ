@@ -10,7 +10,7 @@ procBrukerMGF_v1(file)
 \item{file}{A file name with prepending path.}
 }
 \description{
-Reprocesses of Bruker MGF files.
+To be deleted
 }
 \examples{
 \donttest{

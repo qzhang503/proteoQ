@@ -480,8 +480,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     col_order <- df[["col_order"]][1]
     
     Levels <- label_scheme_sub %>% 
-      dplyr::arrange(!!col_order) %>% 
-      dplyr::select(!!col_group) %>% 
+      dplyr::arrange(!!rlang::sym(col_order)) %>% 
+      dplyr::select(!!rlang::sym(col_group)) %>% 
       unique() %>% 
       unlist()
     

@@ -4,7 +4,7 @@
 \alias{procMSGFmods}
 \title{Processes MSGF modifications.}
 \usage{
-procMSGFmods(filename = "MSFG_mods.txt", dat_dir = NULL)
+procMSGFmods(filename = "MSGF_mods.txt", dat_dir = NULL)
 }
 \arguments{
 \item{filename}{The file name that contains MSGF modifications.}

@@ -199,6 +199,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
       dplyr::select(which(not_all_zero(.))) %>%
       dplyr::select(which(colSums(!is.na(.)) > 0)) 
     
+    cut_points <- unique(cut_points)
+    
     df_melt <- df_melt %>% 
       dplyr::mutate_at(.vars = "col_cut", cut, 
                        breaks = cut_points, 

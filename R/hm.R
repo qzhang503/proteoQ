@@ -95,7 +95,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   # (3) values back to default
   purrr::walk2(dummies, msgs, ~ {
     if (!is.null(get(.x, envir = rlang::env_parent(), inherits = FALSE))) {
-      warning(.y, call. = FALSE)
+      warning(.y)
       assign(.x, NULL, envir = rlang::env_parent(), inherits = FALSE)
     } 
   })
@@ -153,8 +153,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     dots$clustering_method <- NULL
     
     warning("Argument `clustering_method` disabled; 
-            use `hc_method_rows` and `hc_method_cols` instead.", 
-            call. = FALSE)    
+            use `hc_method_rows` and `hc_method_cols` instead.")    
   }
 
   n_color <- 500
@@ -194,9 +193,10 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   df <- df %>%
     dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>%
     dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],
-                                                 na.rm = TRUE))) %>%
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), 
-                     ~ setHMlims(.x, xmin, xmax)) %>%
+                                                 na.rm = TRUE)))
+  
+  df <- df %>%
+    # dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), ~ setHMlims(.x, xmin, xmax)) %>%
     dplyr::filter(!duplicated(!!rlang::sym(id)),
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
@@ -207,7 +207,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     arrangers_in_call(!!!arrange_dots)
   
   if (!nrow(df)) 
-    stop("Zero data rows available after data filtration.", call. = FALSE)
+    stop("Zero data rows available after data filtration.")
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -221,16 +221,16 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     dplyr::filter(!is.na(.[[id]])) %>% 
     `rownames<-`(.[[id]])
   
+  rm(list = c("dfR"))
+  
   if (!is.null(dots$annotation_row)) {
     dots$annotation_row <- NULL
-    warning("Argument `annotation_row` disabled; use `annot_rows` instead.", 
-            call. = FALSE)
+    warning("Argument `annotation_row` disabled; use `annot_rows` instead.")
   }
   
   if (!is.null(dots$annotation_col)) {
     dots$annotation_col <- NULL
-    warning("Argument `annotation_col` disabled; use `annot_cols` instead.", 
-            call. = FALSE)
+    warning("Argument `annotation_col` disabled; use `annot_cols` instead.")
   }
 
   annotation_col <- if (is.null(annot_cols))
@@ -254,8 +254,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     eval(dots$annotation_colors, envir = rlang::caller_env())
 
   if (complete_cases) {
-    df_hm <- df %>%
-      dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
+    df_hm <- dplyr::filter(df, complete.cases(.[, names(.) %in% sample_ids]))
   } 
   else {
     df_hm <- df
@@ -267,12 +266,11 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
   
   if (!nrow(df_hm))
-    stop("Zero data rows after removing all-NA rows.", call. = FALSE)
+    stop("Zero data rows after removing all-NA rows.")
 
   # sample orders
-  if (cluster_cols && (!is.null(col_order))) {
+  if (cluster_cols && (!is.null(col_order)))
     message("No column-ordering of samples at `cluster_cols = TRUE`.")
-  }
 
   if ((!cluster_cols) && (!is.null(col_order)) && 
       length(unique(label_scheme_sub[[col_order]])) > 1L) {
@@ -286,8 +284,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
       
       if (nrow(plot_orders) != length(sample_ids)) {
         stop("The number of entries under `", rlang::as_string(col_order), 
-             "` is different to the number of selected samples.", 
-             call. = FALSE)
+             "` is different to the number of selected samples.")
       }
       
       df_hm <- df_hm[, as.character(plot_orders$Sample_ID), drop = FALSE]
@@ -304,7 +301,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     )
     
     if (class(h) != "hclust" && h == 1L) {
-      warning("Row clustering cannot be performed.", call. = FALSE)
+      warning("Row clustering cannot be performed.")
       h <- FALSE
     }
 
@@ -317,7 +314,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   }
   
   if (cluster_cols) {
-    d_cols <- stats::dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
+    d_cols <- stats::dist(t(df_hm), method = clustering_distance_cols, 
+                          p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
 
     h_cols <- tryCatch(
@@ -326,7 +324,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     )
     
     if ((class(h_cols) != "hclust") && (h_cols == 1)) {
-      warning("Column clustering cannot be performed.", call. = FALSE)
+      warning("Column clustering cannot be performed.")
       h_cols <- FALSE
     }
     
@@ -346,6 +344,9 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
                         "clustering_distance_rows", "clustering_distance_cols", 
                         "clustering_method", 
                         "color", "annotation_colors", "breaks")]
+  
+  # setHMlims after hclust
+  df_hm <- setHMlims(df_hm, xmin, xmax)
   
   # references under expt_smry::Sample_ID may be included
   p <- my_pheatmap(

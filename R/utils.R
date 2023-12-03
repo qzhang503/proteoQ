@@ -1257,6 +1257,7 @@ parse_acc <- function(df)
     "^[[:alnum:]]+_[A-Z]{1,10}$"
   pat_ref_acc <- 
     "^[XNY]{1}[MRP]{1}_"
+  pat_uni_both <- "^..\\|[[:alnum:]]+\\|[^_]+_[A-Z]{1,10}$"
   
   acc_types <- purrr::map_chr(prot_accs, ~ {
     if (grepl(pat_uni_id, .x)) 
@@ -1733,6 +1734,15 @@ annotPrn <- function (df, fasta, entrez)
     invisible(df)
   }
   
+  # currently with MSGF+ outputs at UniProt DB
+  uniboth <- grepl("^..\\|[[:alnum:]]+\\|[^_]+_[A-Z]{1,10}$", df[["prot_acc"]])
+  
+  if (sum(uniboth)) {
+    df[["prot_acc"]][uniboth] <- 
+      gsub("^..\\|([[:alnum:]]+)\\|[^_]+_[A-Z]{1,10}$", "\\1", 
+           df[["prot_acc"]][uniboth])
+  }
+
   acc_lookup <- parse_fasta(df, fasta, entrez)
   
   acc_lookup <- dplyr::bind_cols(
@@ -2618,6 +2628,7 @@ cmbn_meta <- function(data, metadata)
 
 
 #' Checks file names for ggsave
+#' 
 #' @param filename Character string; An output file name.
 gg_imgname <- function(filename) 
 {
@@ -3099,46 +3110,106 @@ my_geomean <- function (x, ...)
 #'
 #' Not currently used.
 #'
+#' @param filename The file name of peptide table.
 #' @param collapses The modified residues to be collapsed with unmodified
 #'   counterparts.
 #' @param pat_mod Pattern of modification
 #' @inheritParams normPSM
-count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE, pat_mod = "sty") 
+count_phosphopeps <- function(filename = "Peptide.txt", collapses = c("mn"), 
+                              rm_allna = FALSE, pat_mod = "sty") 
 {
   dat_dir <- get_gl_dat_dir()
   
-  df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
+  df <- read.csv(file.path(dat_dir, "Peptide", filename), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") 
   
-  not_single_sample <- sum(grepl("^log2_R[0-9]{3}", names(df))) > 1
+  not_single_sample <- (sum(grepl("^log2_R[0-9]{3}", names(df))) > 1)
   
   if (not_single_sample && rm_allna) {
     df <- df %>% 
       dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   }
-
+  
   id <- match_call_arg(normPSM, group_psm_by)
-  pat_mod2 <- paste0("[", pat_mod, "]")
+  use_lowercase_aa <- match_call_arg(normPSM, use_lowercase_aa)
   
-  df_phos <- df %>% 
-    dplyr::filter(grepl(pat_mod2, .[[id]]))
-  
-  n_phos_peps <- nrow(df_phos)
-  
-  pat <- paste(strsplit(collapses, "")[[1]], collapse = "|") %>% 
-    paste0("(", ., ")")
+  if (use_lowercase_aa) {
+    pat_mod2 <- paste0("[", pat_mod, "]")
+    df_phos <- df %>% dplyr::filter(grepl(pat_mod2, .[[id]]))
+    n_phos_peps <- nrow(df_phos)
+    
+    pat <- paste(strsplit(collapses, "")[[1]], collapse = "|") %>% 
+      paste0("(", ., ")")
+    
+    df_phos <- df_phos %>% 
+      dplyr::mutate(pep_seq_mod2 = gsub(pat, paste0("@", "\\1"), !!rlang::sym(id))) %>% 
+      dplyr::mutate_at(vars("pep_seq_mod2"), ~ purrr::map_chr(.x, my_upper, "@")) %>% 
+      dplyr::arrange(-pep_locprob) %>% 
+      dplyr::filter(!duplicated(pep_seq_mod2)) %>% 
+      dplyr::mutate(phos_class = dplyr::case_when(
+        pep_locprob >= .75 ~ 1L,
+        pep_locprob >= .50 ~ 2L,
+        pep_locprob >= .25 ~ 3L,
+        pep_locprob >= 0 ~ NA_integer_,
+      ))
+  }
+  else {
+    hdr_files <- list.files(file.path(dat_dir, "PSM/cache"), "_header\\.txt$", 
+                            full.names = TRUE)
+    
+    if (!length(hdr_files)) {
+      message("Mascot header file not found")
+      return(NULL)
+    }
+    
+    hdr_files <- hdr_files[[1]]
+    hdr <- readLines(hdr_files)
+    
+    lvs <- local({
+      l1 <- grep("Variable modifications,-----", hdr)[[1]]
+      l2 <- grep("Search Parameters,------", hdr)[[1]]
+      lvs <- hdr[(l1+1):(l2-1)]
+      lvs <- lvs[lvs != "\"\""]
+      lvs <- lvs[!grepl("-term", lvs)]
+    })
+    
+    pat_mod <- lapply(strsplit(toupper(pat_mod), "")[[1]], function (x) {
+      l <- lvs[grepl(paste0(" \\(.*", x), lvs)]
+      l <- gsub("\"", "", l)
+      gsub("([^\\,])\\,.*", "\\1", l)
+    }) %>% 
+      unlist() %>% 
+      unique() %>% 
+      paste(collapse = "")
 
-  df_phos <- df_phos %>% 
-    dplyr::mutate(pep_seq_mod2 = gsub(pat, paste0("@", "\\1"), !!rlang::sym(id))) %>% 
-    dplyr::mutate_at(vars("pep_seq_mod2"), ~ purrr::map_chr(.x, my_upper, "@")) %>% 
-    dplyr::arrange(-pep_locprob) %>% 
-    dplyr::filter(!duplicated(pep_seq_mod2)) %>% 
-    dplyr::mutate(phos_class = dplyr::case_when(
-      pep_locprob >= .75 ~ 1L,
-      pep_locprob >= .50 ~ 2L,
-      pep_locprob >= .25 ~ 3L,
-      pep_locprob >= 0 ~ NA_integer_,
-    ))
+    pat_mod2 <- paste0("[", pat_mod, "]")
+    df_phos <- df %>% dplyr::filter(grepl(pat_mod2, .[[id]]))
+    n_phos_peps <- nrow(df_phos)
+    
+    ## convert collapses: "mn" -> "24"
+    collapses <- lapply(strsplit(toupper(collapses), "")[[1]], function (x) {
+      l <- lvs[grepl(paste0(" \\(.*", x), lvs)]
+      l <- gsub("\"", "", l)
+      gsub("([^\\,])\\,.*", "\\1", l)
+    }) %>% 
+      unlist() %>% 
+      unique() %>% 
+      paste(collapse = "")
+    
+    pat <- paste(strsplit(collapses, "")[[1]], collapse = "|") %>% 
+      paste0("(", ., ")")
+
+    df_phos <- df_phos %>% 
+      dplyr::mutate(pep_seq_mod2 = gsub(pat, "0", !!rlang::sym(id))) %>% 
+      dplyr::arrange(-pep_locprob) %>% 
+      dplyr::filter(!duplicated(pep_seq_mod2)) %>% 
+      dplyr::mutate(phos_class = dplyr::case_when(
+        pep_locprob >= .75 ~ 1L,
+        pep_locprob >= .50 ~ 2L,
+        pep_locprob >= .25 ~ 3L,
+        pep_locprob >= 0 ~ NA_integer_,
+      ))
+  }
 
   n_phos_sites <- sum(stringr::str_count(df_phos[[id]], pat_mod2))
   
@@ -3146,15 +3217,15 @@ count_phosphopeps <- function(collapses = c("mn"), rm_allna = FALSE, pat_mod = "
     dplyr::filter(phos_class <= 2L) %$% 
     stringr::str_count(.[[id]], pat_mod2) %>% 
     sum()
-
+  
   ans <- data.frame(n_peps = n_phos_peps, 
                     n_sites = n_phos_sites, 
                     n_12 = n_classes_12)
-  
-  write.csv(ans, file.path(dat_dir, "Peptide/cache", "phos_pep_nums.csv"), 
-    row.names = FALSE)
-  
-  invisible(ans)
+  out_name <- paste0("phospep_", gsub("\\.[^.]*$", "", filename), ".tsv")
+  write.table(ans, file.path(dat_dir, "Peptide/cache", out_name), 
+              sep = "\t", row.names = FALSE)
+
+  ans
 }
 
 
@@ -4198,7 +4269,8 @@ find_search_engine <- function(dat_dir = NULL)
   pat_mf <- "^psm.*\\.tsv$"
   pat_sm <- "^PSMexport.*\\.ssv$"
   pat_pq <- "^psm[QC]{1}.*\\.txt$"
-  pat_msgf <- "(^peptide)|(^protein)|(^psm)\\.tsv$"
+  # pat_msgf <- "(^peptide)|(^protein)|(^psm)\\.tsv$"
+  pat_msgf <- "^psmMSGF.*\\.txt$$"
   
   mascot <-list.files(path = file.path(dat_dir), pattern = pat_mascot) %>% 
     length() %>% `>`(0L)
@@ -4210,11 +4282,17 @@ find_search_engine <- function(dat_dir = NULL)
     length() %>% `>`(0L)
   pq <- list.files(path = file.path(dat_dir), pattern = pat_pq) %>% 
     length() %>% `>`(0L)
-  msgf <- local({
-    files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
-    files <- files[!grepl("(^peptide)|(^protein)|(^psm)", files)]
-    length(files) > 0L
-  })
+  
+  msgf <- list.files(path = file.path(dat_dir), pattern = pat_msgf) %>% 
+    length() %>% `>`(0L)
+  
+  if (FALSE) {
+    msgf <- local({
+      files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
+      files <- files[!grepl("(^peptide)|(^protein)|(^psm)", files)]
+      length(files) > 0L
+    })
+  }
 
   engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, pq = pq, msgf = msgf)
   oks <- names(engines[engines])
@@ -4706,6 +4784,164 @@ parse_filename <- function (filename, dat_dir, must_exists = FALSE)
 }
 
 
+#' Subsets Bruker's MGF data
+#' 
+#' Applied after the fixes of TITLE lines.
+#'
+#' @param file A file name
+#' @param begin_offset The number of lines before a BEGIN line.
+#' @param charge_offset The number lines after a BEGIN line to a following
+#'   CHARGE line.
+#' @param topn_ms2ions Top-n MS2 ions to be retained.
+subsetBrukerMGF <- function (file, begin_offset = 5L, charge_offset = 5L, 
+                             topn_ms2ions = Inf) 
+{
+  message("Processing: ", file)
+  
+  lines  <- readLines(file)
+  begins <- .Internal(which(stringi::stri_startswith_fixed(lines, "BEGIN IONS")))
+  ends   <- .Internal(which(stringi::stri_endswith_fixed(lines, "END IONS")))
+  hdrs   <- 1:(begins[1]-begin_offset-1L)
+  
+  z_lns <- lines[begins+charge_offset]
+  oks   <- grepl("^CHARGE", z_lns) & (z_lns != "CHARGE=1+")
+  b_oks <- begins[oks] - begin_offset
+  e_oks <- ends[oks]
+  
+  ranges <- mapply(function (x, y) x:y, b_oks, e_oks, SIMPLIFY = TRUE)
+  ranges <- do.call(`c`, ranges)
+  ranges <- c(hdrs, ranges)
+  lines <- lines[ranges]
+  rm(list = c("begins", "ends", "b_oks", "e_oks", "oks", "ranges", "z_lns"))
+
+  if (is.infinite(topn_ms2ions)) {
+    writeLines(lines, file)
+    return(NULL)
+  }
+  
+  pat_mgf <- mzion:::find_mgf_type(file)
+  
+  type_mgf <- pat_mgf$type
+  n_bf_begin <- pat_mgf$n_bf_begin
+  n_spacer <- pat_mgf$n_spacer
+  n_hdr <- pat_mgf$n_hdr
+  n_to_pepmass <- pat_mgf$n_to_pepmass
+  n_to_title <- pat_mgf$n_to_title
+  n_to_scan <- pat_mgf$n_to_scan
+  n_to_rt <- pat_mgf$n_to_rt
+  n_to_charge <- pat_mgf$n_to_charge
+  sep_ms2s <- pat_mgf$sep_ms2s
+  nfields_ms2s <- pat_mgf$nfields_ms2s
+  sep_pepmass <- pat_mgf$sep_pepmass
+  nfields_pepmass <- pat_mgf$nfields_pepmass
+  raw_file <- pat_mgf$raw_file
+  
+  begins <- .Internal(which(stringi::stri_startswith_fixed(lines, "BEGIN IONS")))
+  ends <- .Internal(which(stringi::stri_endswith_fixed(lines, "END IONS")))
+  
+  ## MS2
+  # (-1L: one line above "END IONS")
+  ms2s <- mapply(function (x, y) lines[(x + n_hdr) : (y - 1L)], 
+                 begins, ends, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  
+  ms2s <- lapply(ms2s, stringi::stri_split_fixed, pattern = sep_ms2s, 
+                 n = nfields_ms2s, simplify = TRUE)
+  
+  ms2_moverzs <- lapply(ms2s, function (x) as.numeric(x[, 1]))
+  # not as.integer; intensity may be > .Machine$integer.max
+  ms2_ints <- lapply(ms2s, function (x) as.numeric(x[, 2]))
+  rm(list = c("ms2s"))
+  
+  mz_n_int <- mzion:::sub_mgftopn(ms2_moverzs = ms2_moverzs, 
+                                  ms2_ints = ms2_ints, 
+                                  topn_ms2ions = topn_ms2ions, 
+                                  min_ms2mass = 0L, 
+                                  max_ms2mass = 5000L)
+  
+  ms2_moverzs <- mz_n_int[["ms2_moverzs"]]
+  ms2_ints <- mz_n_int[["ms2_ints"]]
+  
+  ms2_out <- mapply(function (x, y) paste0(x, "\t", y, "\t"), 
+                    ms2_moverzs, ms2_ints, SIMPLIFY = FALSE)
+  
+  aboves <- begins - (n_bf_begin + 1L)
+  belows <- begins + (n_hdr - 1L)
+  ms1_out <- mapply(function (x, y) lines[x:y], aboves, belows, SIMPLIFY = FALSE)
+  
+  ans <- mapply(function (m1, m2) c(m1, m2, "END IONS"), ms1_out, ms2_out)
+  ans <- unlist(ans)
+  writeLines(c(lines[hdrs], ans), file)
+}
+
+
+#' Parallel subsetBrukerMGF
+#' 
+#' @param filepath A file path to MGF.
+#' @param n_cores The number of CPU cores.
+#' @inheritParams subsetBrukerMGF
+#' @export
+msubsetBrukerMGF <- function (filepath, begin_offset = 5L, charge_offset = 5L, 
+                              topn_ms2ions = Inf, n_cores = 1L) 
+{
+  files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
+                      recursive = TRUE)
+  
+  len <- length(files)
+  
+  if (!len)
+    stop("No MGF files found.")
+  
+  if (n_cores > 1L)
+    n_cores <- min(parallel::detectCores(), n_cores, len)
+  
+  if (n_cores > 1L) {
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    parallel::clusterApply(cl, files, subsetBrukerMGF, 
+                           begin_offset = begin_offset, 
+                           charge_offset = charge_offset, 
+                           topn_ms2ions = topn_ms2ions)
+    parallel::stopCluster(cl)
+  }
+  else
+    lapply(files, subsetBrukerMGF, begin_offset = begin_offset, 
+           charge_offset = charge_offset, topn_ms2ions = topn_ms2ions)
+}
+
+
+#' Reprocesses of Bruker MGF files.
+#' 
+#' To be deleted
+#' 
+#' @param file A file name with prepending path.
+#' @examples
+#' \donttest{
+#' filepath = "F:/timsTOF/mgf"
+#' mprocBrukerMGF(filepath)
+#' }
+procBrukerMGF_v1 <- function (file) 
+{
+  message("Processing: ", file)
+  
+  lines <- readLines(file)
+  
+  fi <- local({
+    hdr <- lines[1:50L]
+    ln <- hdr[grepl("###.*\\.d$", hdr)]
+    nm <- gsub("###\t(.*\\.d$)", "\\1", ln)
+    paste0("File:", nm)
+  })
+  
+  rows <- which(stringi::stri_startswith_fixed(lines, "TITLE="))
+  
+  tits <- lapply(rows, function (i) 
+    gsub("^([^,]*?), (.*)", paste("\\1", fi, "\\2", sep = ", "), lines[i]))
+  
+  lines[rows] <- tits
+  
+  writeLines(unlist(lines), file)
+}
+
+
 #' Reprocesses of Bruker MGF files.
 #' 
 #' @param file A file name with prepending path.
@@ -4739,6 +4975,34 @@ procBrukerMGF <- function (file)
 }
 
 
+#' Batch-reprocessing of Bruker MGF files.
+#' 
+#' @param filepath A file path to MGF.
+#' @param n_cores The number of CPU cores.
+#' @export
+mprocBrukerMGF <- function (filepath, n_cores = 1L) 
+{
+  files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
+                      recursive = TRUE)
+  
+  len <- length(files)
+  
+  if (!len)
+    stop("No MGF files found.")
+  
+  if (n_cores > 1L)
+    n_cores <- min(parallel::detectCores(), n_cores, len)
+  
+  if (n_cores > 1L) {
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    parallel::clusterApply(cl, files, procBrukerMGF)
+    parallel::stopCluster(cl)
+  }
+  else
+    lapply(files, procBrukerMGF)
+}
+
+
 #' Fix the \code{File} field in \code{Title} lines.
 #' 
 #' The first tilde in the \code{Title} lines needs to before \code{File}.
@@ -4755,60 +5019,6 @@ fixBrukerMGF <- function (file)
 }
 
 
-#' Reprocesses of Bruker MGF files.
-#' 
-#' @param file A file name with prepending path.
-#' 
-#' @examples
-#' \donttest{
-#' filepath = "F:/timsTOF/mgf"
-#' mprocBrukerMGF(filepath)
-#' }
-procBrukerMGF_v1 <- function (file) 
-{
-  message("Processing: ", file)
-  
-  lines <- readLines(file)
-  
-  fi <- local({
-    hdr <- lines[1:50L]
-    ln <- hdr[grepl("###.*\\.d$", hdr)]
-    nm <- gsub("###\t(.*\\.d$)", "\\1", ln)
-    paste0("File:", nm)
-  })
-  
-  rows <- which(stringi::stri_startswith_fixed(lines, "TITLE="))
-  
-  tits <- lapply(rows, function (i) 
-    gsub("^([^,]*?), (.*)", paste("\\1", fi, "\\2", sep = ", "), lines[i]))
-  
-  lines[rows] <- tits
-  
-  writeLines(unlist(lines), file)
-}
-
-#' Batch-reprocessing of Bruker MGF files.
-#' 
-#' @param filepath A file path to MGF.
-#' @param n_cores The number of CPU cores.
-#' @export
-mprocBrukerMGF <- function (filepath, n_cores = 1L) 
-{
-  files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
-                      recursive = TRUE)
-  
-  if (n_cores > 1L) {
-    n_cores <- min(parallel::detectCores(), n_cores)
-    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    parallel::clusterApply(cl, files, procBrukerMGF)
-    parallel::stopCluster(cl)
-  }
-  else {
-    lapply(files, procBrukerMGF)
-  }
-}
-
-
 #' Batch-fixing of Bruker MGF files.
 #' 
 #' The first tilde in the \code{Title} lines needs to before \code{File}.
@@ -4821,15 +5031,21 @@ mfixBrukerMGF <- function (filepath, n_cores = 1L)
   files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
                       recursive = TRUE)
   
+  len <- length(files)
+  
+  if (!len)
+    stop("No MGF files found.")
+  
+  if (n_cores > 1L)
+    n_cores <- min(parallel::detectCores(), n_cores, len)
+  
   if (n_cores > 1L) {
-    n_cores <- min(parallel::detectCores(), n_cores)
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     parallel::clusterApply(cl, files, fixBrukerMGF)
     parallel::stopCluster(cl)
   }
-  else {
+  else
     lapply(files, fixBrukerMGF)
-  }
 }
 
 

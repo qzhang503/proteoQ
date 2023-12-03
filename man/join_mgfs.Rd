@@ -4,13 +4,31 @@
 \alias{join_mgfs}
 \title{Joins MGF data to MSGF outputs.}
 \usage{
-join_mgfs(dat_dir = NULL, mgf_path = NULL, target_fdr = 0.01)
+join_mgfs(
+  dat_dir = NULL,
+  mgf_path = NULL,
+  mod_file = "MSGF_mods.txt",
+  rm_reverses = FALSE,
+  fdr_type = c("psm", "peptide"),
+  target_fdr = 0.01,
+  ...
+)
 }
 \arguments{
 \item{dat_dir}{The working directory.}
 
 \item{mgf_path}{The path to MGF files. The default is
 \code{file.path(dat_dir, "mgf")}.}
+
+\item{mod_file}{The name of the file specifying the MSGF+ modifications. The
+\code{mod_file} needs be under the \code{dat_dir}.}
+
+\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
+LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
+
+\item{fdr_type}{The type of FDR control. The default is \code{psm}.}
+
+\item{...}{varargs; not currently used.}
 
 \item{target_fder}{A targeted false-discovery rate (FDR).}
 }
