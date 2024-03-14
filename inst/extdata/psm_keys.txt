@@ -39,7 +39,7 @@ pep_exp_mr	Molecular mass calculated from experimental m/z value
 pep_exp_z	Experimental charge state	
 pep_n_exp_z	Number of unique charge states under a peptide sequence	The levels of peptide uniqueness are according to `group_psm_by`.
 pep_calc_mr	Molecular mass calculated from matched peptide sequence	
-pep_delta	pep_exp_mr – pep_calc_mr	
+pep_delta	pep_exp_mr - pep_calc_mr	
 pep_score	Score of PSM	"MaxQuant, `Score`. MSFragger, `Hyperscore`. Spectrum Mill, `score`."
 pep_homol	Mascot homology threshold score for PSM	
 pep_ident	Mascot identity threshold score for PSM	
@@ -56,7 +56,7 @@ pep_istryptic	Is a peptide sequence a canonical tryptic peptide or not
 pep_semitryptic	Charateristics of semi-tryptic peptides	
 pep_frame	Mascot calculation of translation frame number	
 pep_var_mod	Mascot variable modifications from all sources as list of names	
-pep_var_mod_pos	"Mascot variable modifications as a string of digits, e.g. ’0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	
+pep_var_mod_pos	"Mascot variable modifications as a string of digits, e.g. 0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	
 pep_summed_mod_pos	"Mascot: when two variable modifications occur at the same site, a string of digits defining the second mod"	
 pep_local_mod_pos	Mascot query-level variable modifications as a string of digits. The names of the mods will be listed in pep_var_mod	
 pep_num_match	Mascot count of fragment ion matches in ion series used to calculate the score	
@@ -67,7 +67,7 @@ pep_ret_sd	Standard deviation of `pep_ret_range`	The levels of peptide uniquenes
 pep_ms2_sumint	Mascot sum of MS2 fragment-ion intensity of a peptide match	
 pep_n_ions	Mascot count of matched and unmatched fragment ions of a peptide query	
 pep_locprob	The highest probablity from site analysis of the variable modification sites	"The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot."
-pep_locdiff	pep_locprob – pep_locprob2	
+pep_locdiff	pep_locprob - pep_locprob2	
 pep_phospho_locprob	The highest probability in phosphorylation sites	
 pep_phospho_locdiff	The difference between the highest and the second highest probability of phosphorylation sites	
 pep_ions_first	Mascot: the first series of ions being matched under a PSM query	Need enabled `MS/MS peak lists` during PSM exports
@@ -106,15 +106,15 @@ shared_prot_accs	List of protein accesssions under the same group	MSFragger at U
 shared_genes	List of genes under the same group	
 kin_attr	Is protein with an attribute of kinase or not	
 kin_class	"Class of kinases, e.g., TK, TKL..."	
-kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
+kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
 		
 		
 dat_file	File name of PSM results	
 ...	Additional column keys	
 raw_file	MS file name where peptides or proteins are identified	
 I126 etc.	Reporter-ion intensity from MS/MS ion search; I000 in LFQ	
-N_I126 etc.	Normalized I126 etc.; N_I000 in LFQ	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity across samples.
-R126 etc.	Linear FC relative to TMT-126; R000 in LFQ	
+N_I126 etc.	Normalized I126 etc.; N_I000 in LFQ	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity across samples.
+R126 etc.	Linear FC relative to TMT-126; R000 in LFQ	
 sd_log2_R126 etc.	Standard deviation of peptide log2FC; sd_log2_R000 in LFQ	Calculated from contributing PSMs under each TMT channel.
-log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT; log2_R000 in LFQ	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.
+log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT; log2_R000 in LFQ	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.
 N_log2_R126 etc.	Median-centered log2_R...; N_log2_R000 in LFQ	

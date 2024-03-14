@@ -3073,12 +3073,12 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   filelist <- list.files(
     path = file.path(dat_dir, "PSM/cache"),
     pattern = "^TMT.*LCMS.*_Clean.txt$"
-  ) %>%
+  ) |>
     reorder_files()
   
-  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
-    unique() %>% 
-    as.integer() %>% 
+  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) |>
+    unique() |>
+    as.integer() |>
     sort() 
   
   for (set_idx in set_indexes) {
@@ -3091,14 +3091,27 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # --- LCMS injections under the same TMT experiment ---
     
     for (idx in seq_along(sublist)) {
+      sublist_i <- sublist[idx]
+      
       df <- suppressWarnings(
-        readr::read_tsv(file.path(dat_dir, "PSM/cache", sublist[idx]), 
+        readr::read_tsv(file.path(dat_dir, "PSM/cache", sublist_i), 
                         col_types = get_col_types(), 
-                        show_col_types = FALSE)
-      )
+                        show_col_types = FALSE))
+      nms <- names(df)
+      nrow <- nrow(df)
 
-      df <- df %>% 
-        add_pep_retsd(group_psm_by) %>% 
+      local({
+        df_sub <- df[, grepl("^I[0-9]{3}[NC]{0,1}", nms)]
+        bads <- colSums(is.na(df_sub)) == nrow
+        bads <- bads[bads]
+        
+        if (length(bads))
+          warning(sublist_i, ": all-NA channels detected: ", 
+                  paste(names(bads), collapse = ", "))
+      })
+
+      df <- df |>
+        add_pep_retsd(group_psm_by) |>
         add_n_pepexpz(group_psm_by)
 
       # e.g. TMT 10-plex but 9 are empties
@@ -3427,10 +3440,8 @@ normPSM <- function(dat_dir = NULL,
     } 
     else {
       warning("The current call is not saved.", call. = TRUE)
-    }, 
-    add = TRUE
-  )
-  
+    }, add = TRUE)
+
   # ---
   dots <- rlang::enexprs(...)
 

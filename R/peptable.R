@@ -244,11 +244,10 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq)
 
   filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
   
-  if (purrr::is_empty(filelist)) {
+  if (!length(filelist)) {
     stop(paste("No MaxQuant LFQ file of `peptides[...].txt` under", 
                file.path(dat_dir), ".\n",
-               "Make sure that the name of file starts with `peptides`."), 
-         call. = FALSE)
+               "Make sure that the name of file starts with `peptides`."))
   }
   
   df <- local({
@@ -280,8 +279,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq)
         df <- dplyr::bind_cols(df, df_int, df_int2)
       } else if (purrr::is_empty(grep("^LFQ intensity ", names(df)))) {
         warning("Columns `LFQ intensity` not found in `", filelist, "`; ", 
-                "columns `Intensity` used instead.",
-                call. = FALSE)
+                "columns `Intensity` used instead.")
         
         df_int <- df %>% 
           dplyr::select(grep("^Intensity ", names(.))) %>% 
@@ -290,8 +288,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq)
         df <- dplyr::bind_cols(df, df_int)
       } else if (purrr::is_empty(grep("^Intensity ", names(df)))) {
         warning("Columns `Intensity` not found in `", filelist, "`; ", 
-                "columns `LFQ intensity` used instead.",
-                call. = FALSE)
+                "columns `LFQ intensity` used instead.")
         
         df_int <- df %>% 
           dplyr::select(grep("^LFQ intensity ", names(.))) %>% 
@@ -1822,9 +1819,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
           save_call("mergePep")
       }
     }, 
-    add = TRUE
-  )
-  
+    add = TRUE)
+
   # ---
   duppeps_repair <- "majority"
   duppeps_repair <- rlang::enexpr(duppeps_repair)
@@ -2250,7 +2246,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", 
-                                        "top_3_mean", "lfq_max", "lfq_top_2_sum", 
+                                        "lfq_max", "top_3_mean", "lfq_top_2_sum", 
                                         "lfq_top_3_sum", "lfq_all"), 
                      use_unique_pep = TRUE, cut_points = Inf, 
                      rm_outliers = FALSE, rm_allna = FALSE, mc = TRUE, ...) 
@@ -2271,17 +2267,15 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
       if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-          c(dots) %>% 
+        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+          c(dots) |>
           save_call("Pep2Prn")
       }
     }, 
-    add = TRUE
-  )
-  
+    add = TRUE)
+
   
   reload_expts()
-  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -2295,18 +2289,16 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
   } 
   else {
     if (length(method_pep_prn) > 1L) 
-      method_pep_prn <- "lfq_top_3_sum"
+      method_pep_prn <- "lfq_max"
     else 
       method_pep_prn <- rlang::as_string(method_pep_prn)
   }
   
   if (method_pep_prn == "top.3") {
-    stop("Method `top.3` depreciated; instead use `top_3_mean`.", 
-         call. = FALSE)
+    stop("Method `top.3` depreciated; instead use `top_3_mean`.")
   } 
   else if (method_pep_prn == "weighted.mean") {
-    stop("Method `weighted.mean` depreciated; instead use `weighted_mean`.", 
-         call. = FALSE)
+    stop("Method `weighted.mean` depreciated; instead use `weighted_mean`.")
   }
   
   stopifnot(method_pep_prn %in% c("median", "mean", 
@@ -2725,12 +2717,10 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
 
   if (! "pep_isunique" %in% names(df)) {
     df$pep_isunique <- TRUE
-    warning("Column \"pep_isunique\" created and TRUE values assumed.", 
-            call. = FALSE)
+    warning("Column \"pep_isunique\" created and TRUE values assumed.")
   } else if (all(is.na(df$pep_isunique))) {
     df$pep_isunique <- TRUE
-    warning("Values of \"pep_isunique\" are all NA and coerced to TRUE.", 
-            call. = FALSE)
+    warning("Values of \"pep_isunique\" are all NA and coerced to TRUE.")
   }
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
