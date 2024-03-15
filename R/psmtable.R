@@ -3073,12 +3073,12 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   filelist <- list.files(
     path = file.path(dat_dir, "PSM/cache"),
     pattern = "^TMT.*LCMS.*_Clean.txt$"
-  ) %>%
+  ) |>
     reorder_files()
   
-  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
-    unique() %>% 
-    as.integer() %>% 
+  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) |>
+    unique() |>
+    as.integer() |>
     sort() 
   
   for (set_idx in set_indexes) {
@@ -3091,14 +3091,27 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # --- LCMS injections under the same TMT experiment ---
     
     for (idx in seq_along(sublist)) {
+      sublist_i <- sublist[idx]
+      
       df <- suppressWarnings(
-        readr::read_tsv(file.path(dat_dir, "PSM/cache", sublist[idx]), 
+        readr::read_tsv(file.path(dat_dir, "PSM/cache", sublist_i), 
                         col_types = get_col_types(), 
-                        show_col_types = FALSE)
-      )
+                        show_col_types = FALSE))
+      nms <- names(df)
+      nrow <- nrow(df)
 
-      df <- df %>% 
-        add_pep_retsd(group_psm_by) %>% 
+      local({
+        df_sub <- df[, grepl("^I[0-9]{3}[NC]{0,1}", nms)]
+        bads <- colSums(is.na(df_sub)) == nrow
+        bads <- bads[bads]
+        
+        if (length(bads))
+          warning(sublist_i, ": all-NA channels detected: ", 
+                  paste(names(bads), collapse = ", "))
+      })
+
+      df <- df |>
+        add_pep_retsd(group_psm_by) |>
         add_n_pepexpz(group_psm_by)
 
       # e.g. TMT 10-plex but 9 are empties
@@ -3427,10 +3440,8 @@ normPSM <- function(dat_dir = NULL,
     } 
     else {
       warning("The current call is not saved.", call. = TRUE)
-    }, 
-    add = TRUE
-  )
-  
+    }, add = TRUE)
+
   # ---
   dots <- rlang::enexprs(...)
 
@@ -4009,15 +4020,15 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
                     lfq_all = Inf, 
                     2)
         
-        # but since I000 are all NA with MaxQuant timsTOF 
-        # -> would have to replace NA with 0
+        # since I000 are all NA with MaxQuant timsTOF 
+        #  -> would have to replace NA with 0
         
         df <- df %>% 
           dplyr::mutate(I000 = ifelse(is.na(I000), 0, I000)) %>% 
           dplyr::group_by_at(group_psm_by)
 
         if (!is.infinite(n)) {
-          df <- df  %>% dplyr::top_n(n = n, wt = I000)
+          df <- df  %>% dplyr::slice_max(I000, n = n)
         }
         
         df <- df %>%
@@ -4046,25 +4057,28 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
         
         dfm <- lapply(df_split, function (x) {
           a <- x$pep_ret_range
-          d <- c(0, abs(a[2:length(a)] - a[1]))
+          m <- median(a, na.rm = TRUE)
+          d <- c(0, abs(a[2:length(a)] - m))
           rows <- ifelse(d <= lfq_ret_tol, TRUE, FALSE)
           x[rows, ]
-        }) %>% 
+        }) |>
           dplyr::bind_rows()
         
-        oks <- dplyr::bind_rows(dfu, dfm) %>% 
-          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = TRUE) %>% 
+        dfx <- dplyr::bind_rows(dfu, dfm) |>
+          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = TRUE) |>
           dplyr::mutate(keep. = TRUE)
         
         df <- df %>% 
-          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
-          dplyr::left_join(oks, by = "uniq_id") %>% 
-          dplyr::filter(keep.) %>% 
+          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) |>
+          dplyr::left_join(dfx, by = "uniq_id") |>
+          dplyr::filter(keep.) |>
           dplyr::select(-c("keep.", "uniq_id"))
       })
       
-      df_num <- aggrLFQs(sum)(df, group_psm_by, na.rm = TRUE) %>% 
-        dplyr::mutate(log2_R000 = NA, N_log2_R000 = NA)
+      # df_num <- aggrLFQs(sum)(df, group_psm_by, na.rm = TRUE) |>
+      #   dplyr::mutate(log2_R000 = NA_real_, N_log2_R000 = NA_real_)
+      df_num <- aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 1, na.rm = TRUE) |>
+        dplyr::mutate(log2_R000 = NA_real_, N_log2_R000 = NA_real_)
     }
   }
   
@@ -4123,10 +4137,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     stopifnot(all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% 
                     names(df)))
     
-    if (group_pep_by == "gene")
-      col_map <- "shared_genes"
-    else
-      col_map <- "shared_prot_accs"
+    col_map <- if (group_pep_by == "gene") "shared_genes" else "shared_prot_accs"
 
     # floating `pep_isunique` can be either `pep_razor_unique` or `pep_literal_unique`
     # so don't use `pep_isunique`
@@ -4165,7 +4176,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     })
   }
 
-  df <- df %>% 
+  df <- df |>
     dplyr::mutate(!!group_pep_by := as.character(!!rlang::sym(group_pep_by)))
   
   df <- local({
@@ -4371,9 +4382,8 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
           c(dots) %>% save_call("PSM2Pep")
       }
     }, 
-    add = TRUE
-  )
-  
+    add = TRUE)
+
   dots <- rlang::enexprs(...)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
@@ -4390,7 +4400,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
   } 
   else {
     if (length(method_psm_pep) > 1L)
-      method_psm_pep <- "lfq_top_2_sum"
+      method_psm_pep <- "lfq_max"
     else 
       method_psm_pep <- rlang::as_string(method_psm_pep)
   }

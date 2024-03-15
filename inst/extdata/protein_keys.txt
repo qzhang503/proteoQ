@@ -11,9 +11,9 @@ prot_empai	Mascot empirical protein abundance index
 prot_icover	Protein sequence coverage by counts of tryptic peptides	
 prot_cover	Protein sequence coverage	
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	
-prot_n_uniqpsm	"Count of unique, significant PSMs in quantitation under a proposed protein"	
+prot_n_uniqpsm	Count of unique, significant PSMs in quantitation under a proposed protein
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	
-prot_n_uniqpep	"Count of unique, significant peptide sequences in quantitation under a proposed protein"	
+prot_n_uniqpep	Count of unique, significant peptide sequences in quantitation under a proposed protein
 prot_tot_int	Total MS1 intenisty of peptides under a proposed protein	Sum statistics from peptide intensities
 prot_unique_int	Unique MS1 intenisty of peptides under a proposed protein	v.s.
 prot_razor_int	Razor MS1 intenisty of peptides under a proposed protein	v.s.
@@ -30,12 +30,12 @@ entrez	Protein Entrez ID
 species	Species of a protein entry	
 acc_type	Type of accession names	
 kin_attr	Is protein with an attribute of kinase or not	
-kin_class	"Class of kinases, e.g., TK, TKL..."	
-kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
+kin_class	Class of kinases, e.g., TK, TKL...
+kin_order	Order of kin_class from the kinase tree diagram	
 mean_lint	Mean log10 intensity (N_I...) across samples	
 count_nna	Count of non-NA log2FC	
-I... (...)	Reporter-ion intensity; I000 in LFQ	According to the descriptive statistics in `Pep2Prn(method_pep_prn = ...)`
-N_I... (...)	Normalized I... (...); N_I000 in LFQ	
-log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 in LFQ	
-N_log2_R... (...)	Aligned log2_R... (...); N_log2_R000 in LFQ	According to 'standPrn(method_align = ...)' without scaling normalization
-Z_log2_R... (...)	N_log2_R... (...) with scaling normalization; Z_log2_R000 in LFQ	
+I... (...)	Reporter-ion intensity; I000 in LFQ	According to the descriptive statistics in Pep2Prn(method_pep_prn = ...)
+N_I... (...)	Normalized I... (...); N_I000 in LFQ	
+log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 in LFQ	
+N_log2_R... (...)	Aligned log2_R... (...); N_log2_R000 in LFQ	According to standPrn(method_align = ...) without scaling normalization
+Z_log2_R... (...)	N_log2_R... (...) with scaling normalization; Z_log2_R000 in LFQ	

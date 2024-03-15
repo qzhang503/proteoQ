@@ -409,9 +409,9 @@ aggrLFQs <- function(f)
       stop("Columns of log2 ratios or intensity not found.")
     
     df %>%
-      dplyr::select(ids, cols) %>%
-      dplyr::group_by_at(ids) %>%
-      dplyr::summarise_all(~ sum(.x, ...))
+      dplyr::select(ids, cols) |>
+      dplyr::group_by_at(ids) |>
+      dplyr::summarise_all(function (x) f(x, ...))
   }
 }
 
