@@ -4,10 +4,10 @@
 \alias{TMT_top_n}
 \title{Average top_n}
 \usage{
-TMT_top_n(x, id, ...)
+TMT_top_n(df, id, ...)
 }
 \arguments{
-\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
+\item{df}{A data frame of \code{log2FC} and \code{intensity}.}
 
 \item{id}{The variable to summarize \code{log2FC}.}
 

@@ -57,10 +57,9 @@ proc_obo <- function(db_path, fn_obo,
 proc_gaf <- function(db_path, fn_gaf) 
 {
   filepath <- file.path(db_path, "cache", fn_gaf)
-  if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
+  if (!file.exists(filepath)) stop("File not found ", filepath, ".")
 
   con <- gzfile(path.expand(filepath))
-  
   suppressWarnings(df <- readLines(con))
   first_row <- grep("UniProtKB", df)[1]
   last_row <- length(df)
@@ -70,27 +69,14 @@ proc_gaf <- function(db_path, fn_gaf)
   writeLines(df, file.path(db_path, out_nm))
   try(close(con))
   
-  df <- readr::read_tsv(file.path(db_path, out_nm), col_names = FALSE, 
-                        col_types = cols(
-                          X1 = col_character(),
-                          X2 = col_character(),
-                          X3 = col_character(),
-                          X4 = col_character(),
-                          X5 = col_character(),
-                          X6 = col_character(),
-                          X7 = col_character(),
-                          X8 = col_character(),
-                          X9 = col_character(),
-                          X10 = col_character(),
-                          X11 = col_character(),
-                          X12 = col_character(),
-                          X13 = col_character(),
-                          X14 = col_character(),
-                          X15 = col_character(),
-                          X16 = col_character(),
-                          X17 = col_character()
-                        )) 
+  df <- readr::read_tsv(file.path(db_path, out_nm), col_names = FALSE)
   
+  for (i in 1:ncol(df)) {
+    if (class(df[[i]]) != "character") {
+      class(df[[i]]) <- "character"
+    }
+  }
+
   unlink(file.path(db_path, out_nm))
   
   df <- df %>% 
@@ -281,17 +267,10 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
     stop("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.", call. = FALSE)
   }
   
-  if (!requireNamespace("downloader", quietly = TRUE)) {
-    stop("\n====================================================================", 
-         "\nNeed package \"downloader\" for this function to work.",
-         "\n====================================================================",
-         call. = FALSE)
-  }
-
   fn_msig <- msig_url %>% gsub("^.*/(.*)$", "\\1", .)
   
   if ((!file.exists(file.path(db_path, "cache", fn_msig))) | overwrite)  {
-    downloader::download(msig_url, file.path(db_path, "cache", fn_msig), mode = "wb")
+    download.file(msig_url, file.path(db_path, "cache", fn_msig), mode = "wb")
   }
   
   return(fn_msig)
@@ -449,13 +428,6 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   options(warn = 1L)
   on.exit(options(old_opts), add = TRUE)
   
-  if (!requireNamespace("downloader", quietly = TRUE)) {
-    stop("\n====================================================================", 
-         "\nNeed package \"downloader\" for this function to work.",
-         "\n====================================================================",
-         call. = FALSE)
-  }
-
   if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
     stop("\n====================================================================", 
          "\nNeed package \"AnnotationDbi\" for this function to work.\n",
@@ -508,13 +480,11 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   }
 
   if ((!file.exists(file.path(db_path, "cache", fn_gaf))) || overwrite)  {
-    downloader::download(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "wb")
-    # download.file(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "w")
+    download.file(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "wb")
   }
   
   if ((!file.exists(file.path(db_path, "cache", fn_obo))) | overwrite) {
-    downloader::download(obo_url, file.path(db_path, "cache", fn_obo), mode = "wb")
-    # download.file(obo_url, file.path(db_path, "cache", fn_obo), mode = "w")
+    download.file(obo_url, file.path(db_path, "cache", fn_obo), mode = "wb")
   }
   
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))

@@ -24,8 +24,8 @@ correct file path(s) and name(s).}
 prepended directory path. At the \code{NULL} default, a convenience lookup
 is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
-for preparing custom entrez files.}
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}} for
+preparing custom entrez files.}
 
 \item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
 the TRUE default, values under columns "Reporter intensity corrected..." in

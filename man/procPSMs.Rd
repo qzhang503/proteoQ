@@ -29,16 +29,16 @@ intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
 \item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
 \code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
 default is 0 without cut-offs. The data nullification will not be applied
-synchronously to the precursor intensity (\code{pep_tot_int}) under the
-same PSM query. To guard against odds such as higher MS2 reporter-ion
-intensities than their contributing MS1 precursor intensity, employs for
-example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
-during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
-single column; thus the corresponding data filtration against it may be
-readily achieved without introducing new arguments. By contrast,
-\code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
-be slightly more involved/laborious when applying suitable statements of
-\code{filter_} varargs.}
+synchronously to the precursor intensity (\code{pep_tot_int}) under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion intensities
+than their contributing MS1 precursor intensity, employs for example
+\code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)} during
+\link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a single
+column; thus the corresponding data filtration against it may be readily
+achieved without introducing new arguments. By contrast, \code{rptr_intco}
+applies to a set of columns, \code{I126} etc.; it might be slightly more
+involved/laborious when applying suitable statements of \code{filter_}
+varargs.}
 
 \item{rptr_intrange}{Numeric vector at length two. The argument specifies the
 range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
@@ -46,12 +46,11 @@ being considered non-trivial. The default is between 0 and 100 percentile
 without cut-offs. While argument \code{rptr_intco} employs a universal
 cut-off across samples by absolute values, \code{range_int} provides an
 alternative means of sample-specific thresholding of intensities by
-percentiles. The data nullification will not be applied synchronously to
-the precursor intensity under the same PSM query.}
+percentiles. The data nullification will not be applied synchronously to the
+precursor intensity under the same PSM query.}
 
-\item{rm_craps}{Logical; if TRUE,
-\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
-The default is FALSE.}
+\item{rm_craps}{Logical; if TRUE, \href{https://www.thegpm.org/crap/}{cRAP}
+proteins will be removed. The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
@@ -60,8 +59,8 @@ is FALSE.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
-\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
-will be annotated with their kinase attributes. The default is FALSE.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins will
+be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE. The argument is also

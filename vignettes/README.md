@@ -2,7 +2,7 @@
 title: "proteoQ"
 author:
 - name: Qiang Zhang
-date: "2024-03-14"
+date: "2024-07-10"
 always_allow_html: true
 output:
   html_document:
@@ -93,7 +93,7 @@ Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label
 
 -   TMT workflows: [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) and [Mzion](https://github.com/qzhang503/mzion)
 
--   LFQ workflows: MaxQuant and Mzion
+-   LFQ workflows: Mzion
 
 ProteoQ interacts with Excel spreadsheets or .csv files for dynamic sample selection, aesthetic control, and statistical modeling. It also integrates operations such as data normalization against selected rows and/or columns into user-friendly functions at the interface. These arrangements allow users to address biological questions openly using metadata and a range of data pre-processing and informatics tools while keeping ad hoc data manipulation behind the scenes. Additionally, the entire workflow is well-documented and can be easily reproduced.
 
@@ -106,7 +106,7 @@ The informatics framework of proteoQ consists of data processing and informatics
 To install this package, start R (latest version) and enter:
 
 
-```r
+``` r
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
@@ -146,7 +146,7 @@ To ensure proper protein entry annotation with proteoQ, it is necessary to have 
 [^3]: See <https://www.uniprot.org/proteomes/>.
 
 
-```r
+``` r
 library(proteoQDA)
 copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
 copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
@@ -179,7 +179,7 @@ Once you have the PSM files, you can proceed with the data processing in proteoQ
 Examples of the corresponding PSMs are available through one of the followings `copy_` utilities (suggest go directly with real PSM outputs from a search engine):
 
 
-```r
+``` r
 # Mascot
 copy_mascot_gtmt()
 
@@ -196,7 +196,7 @@ copy_proteom_gtmt()
 To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
 
 
-```r
+``` r
 dat_dir <- "~/proteoQ/examples"
 copy_mascot_gtmt(dat_dir)
 ```
@@ -224,7 +224,7 @@ By default, throughout the document, we will assume the use of the "expt_smry.xl
 We next copy over a pre-compiled expt_smry.xlsx and a frac_smry.xlsx to the working directory:
 
 
-```r
+``` r
 copy_exptsmry_gtmt(dat_dir)
 copy_fracsmry_gtmt(dat_dir)
 ```
@@ -236,7 +236,7 @@ We now have all the pieces that are required by proteoQ in place. Let's have a q
 As a final step of the setup, we will load the experimental summary into a work space:
 
 
-```r
+``` r
 library(proteoQ)
 load_expts("~/proteoQ/examples")
 ```
@@ -250,7 +250,7 @@ PSMs are MS/MS events that lead to peptide identification at certain confidence 
 We start the section by processing the PSM files from Mascot searches:
 
 
-```r
+``` r
 # columns keys in PSM files suitable for varargs of `filter_`
 #
 # (need utility `join_mgfs` with MSGF+ outputs)
@@ -290,7 +290,7 @@ There is a subtle problem when we choose to remove PSM outliers at `rm_outliers 
 The `normPSM` function provides the flexibility to apply user-defined arguments for row filtration using logical conditions. In the example you provided, the `filter_psms_at`variable argument was used to limit the PSM entries based on conditions such as `pep_expect <= 0.1` and `pep_score >= 15`.
 
 
-```r
+``` r
 normPSM(
   filter_psms_at = rlang::exprs(pep_expect <= .1, pep_score >= 15, pep_rank == 1), 
   ..., 
@@ -330,7 +330,7 @@ This process is carried out column-wise, on a sample level, while preserving the
 Earlier in section 1.2.1, we have set `plot_log2FC_cv = TRUE` by default when calling `normPSM`. This will plot the distributions of the CV of peptide log2FC. In the event of `plot_log2FC_cv = FALSE`, we can have a second chance in visualizing the distributions of peptide CV before any permanent data nullification:
 
 
-```r
+``` r
 purgePSM ()
 ```
 
@@ -346,7 +346,7 @@ Quantitative differences greater than 0.5 at a log2 scale is relatively large in
 [^5]: On top of technical variabilities, the ranges of CV may be further subject to the choice of reference materials. Examples are available in Lab 3.1.
 
 
-```r
+``` r
 purgePSM (
   max_cv = 0.5,
 )
@@ -355,7 +355,7 @@ purgePSM (
 The above method using a flat cut-off would probably fall short if the ranges of CV are considerably different across samples (see [Lab 3.1](###%203.1%20Reference%20choices)). Alternatively, we can remove low-quality data points using a CV percentile, let's say at 95%, for each sample (**Figure 1C**):
 
 
-```r
+``` r
 # copy back `\PSM\TMTset1_LCMSinj1_PSM_N.txt` etc. before proceed
 # otherwise the net effect will be additive to the prior(s)
 purgePSM (
@@ -366,7 +366,7 @@ purgePSM (
 In the event of both `pt_cv` and `max_cv` being applied to nullify data, they follow the precedence of `pt_cv > max_cv`. When needed, we can overrule the default by executing `purgePSM` sequentially at a custom order:
 
 
-```r
+``` r
 # at first no worse than 0.5
 purgePSM (
   max_cv = 0.5,
@@ -381,7 +381,7 @@ purgePSM (
 The data purge is also additive w.r.t. to repetitive analysis. In the following example, we are actually perform data cleanup at a CV threshold of 90%:
 
 
-```r
+``` r
 # at first 95%
 purgePSM (
   pt_cv = 0.95,
@@ -406,14 +406,14 @@ To perform the summary of PSM results to peptides, we will utilize the `PSM2Pep`
 To invoke the `PSM2Pep` utility, you can use the following code:
 
 
-```r
+``` r
 PSM2Pep()
 ```
 
 By default, `PSM2Pep` uses the median as the summarization method for intensity and log2FC data. However, you can specify a different summarization method for intensity and log2FC data by using the "method_psm_pep" argument. `PSM2Pep` also provides the option for data filtration using varargs. For example, you can filter the data based on the MS1 intensities of peptide matches, which are indicated under the "pep_tot_int" column. However, please note that the example codes provided below should not be used with the current Mascot example we are working on:
 
 
-```r
+``` r
 PSM2Pep(
   filter_ms1int = rlang::exprs(pep_tot_int >= 1E4)
 )
@@ -426,7 +426,7 @@ In order to make it functionally valid, we would need to include the Raw peptide
 After summarizing PSMs to peptides, the next step involves using the utility mergePep to merge individual peptide tables (such as Peptide/TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt, etc.) into one larger table called Peptide.txt. Here's an example code for using mergePep:
 
 
-```r
+``` r
 mergePep(
   filter_peps_by = rlang::exprs(pep_len <= 50),
 )
@@ -439,7 +439,7 @@ Similar to `normPSM` and `PSM2Pep`, you can apply data filtration using the colu
 The utility `standPep` is used to standardize peptide results obtained from the `mergePep` step. It provides additional choices for data alignment. Here's an example code for using `standPep`:
 
 
-```r
+``` r
 standPep(
   range_log2r = c(10, 90), 
   range_int = c(5, 95),   
@@ -464,7 +464,7 @@ The `pepHist` utility plots the histograms of peptide log2FC. It further bins th
 [^6]: \`standPep()\` will report log2FC results both before and after the scaling of standard deviations.
 
 
-```r
+``` r
 # without scaling
 pepHist(
   scale_log2r = FALSE, 
@@ -487,7 +487,7 @@ By default, the above calls to`pepHist` will look for none void entries under co
 We now are ready to plot histograms for each subset of the data. In this document, we only display the plots using the `BI_1` subset:
 
 
-```r
+``` r
 # without scaling 
 pepHist(
   scale_log2r = FALSE, 
@@ -521,14 +521,14 @@ As expected, both the widths and the heights of log2FC profiles become more comp
 It should also be noted that the curves of Gaussian density in histograms are calculated during the latest call to `standPep(...)` with the option of `method_align = MGKernel`. There is a useful side effect when comparing leading and lagging profiles of log2FC. In the following bare-bones example, we align differently the peptide log2FC with the default method of median centering:
 
 
-```r
+``` r
 standPep()
 ```
 
 We then visualize the histograms of the ratio profiles (**Figure 2C**):
 
 
-```r
+``` r
 pepHist(
   scale_log2r = TRUE, 
   col_select = BI_1,
@@ -549,7 +549,7 @@ Within this document, the preceding example that involves `standPep(...)` at `me
 The varargs of `filter_` are also available in the `pepHist` utility. With the following examples, we can visualize the peptide log2FC with *human* and *mouse* origins, respectively:
 
 
-```r
+``` r
 pepHist(
   scale_log2r = TRUE, 
   col_select = BI_1,
@@ -578,7 +578,7 @@ Needs in data (re)normalization may be encountered more often than not. One of t
 We may then execute the following codes with argument `col_select` being linked to the newly created column:
 
 
-```r
+``` r
 standPep(
   method_align = MGKernel, 
   range_log2r = c(10, 90), 
@@ -609,7 +609,7 @@ Similarly, we employed the `filter_` varargs in `pepHist` to subset peptides wit
 The `standPep` utility accepts variable arguments of `slice_`. The vararg statement(s) identify a subset of data rows from the Peptide.txt. The partial data will be taken for parameterizing the alignment of log2FC across samples. In the hypothetical example shown below, we normalize peptide data based peptide entries with sequence lengths greater than 10 and smaller than 30. The full data set will be updated accordingly with the newly derived parameters. Different to the `filter_` varargs, there is *no data entry removals* from the complete data set with the `slice_` procedure.
 
 
-```r
+``` r
 ## DO NOT RUN
 standPep(
   ...,
@@ -627,7 +627,7 @@ Just like `col_select` and `filter_` in `pepHist`, the combination in *fixed* ar
 Now it becomes elementary if we were to normalize data against a set of housekeeping protein(s). Let's say we have `GAPDH` in mind as an accurate housekeeping invariant among the proteomes, and of course we are confident about the good accuracy in their log2FC. We simply `slice` the peptide entries under `GAPDH` out for use as a normalizer:
 
 
-```r
+``` r
 standPep(
   method_align = MC, 
   range_log2r = c(10, 90), 
@@ -651,7 +651,7 @@ Note that I chose `method_align = MC` in the above. There are only a few rows av
 Analogously to the PSM processing, we may nullify data points of peptides by specifying a cut-off in their protein CVs:
 
 
-```r
+``` r
 # no purging
 purgePep()
 
@@ -680,7 +680,7 @@ In this section, we summarize peptides to proteins, for example, using a two-com
 The utility for the summary of peptides to proteins is `Pep2Prn`:
 
 
-```r
+``` r
 Pep2Prn()
 ```
 
@@ -693,7 +693,7 @@ The utitily also accept varargs of `filter_` for data row filtration against the
 The utility `standPrn` standardizes protein results from `Pep2Prn` with additional choices in data alignment.
 
 
-```r
+``` r
 standPrn(
   range_log2r = c(10, 90), 
   range_int = c(5, 95),   
@@ -713,7 +713,7 @@ It loads Protein.txt from `Pep2Prn` or a preceding `standPrn` procedure and alig
 Similar to the peptide summary, we can inspect the alignment and the scale of ratio profiles for protein data:
 
 
-```r
+``` r
 # without scaling
 prnHist(
   scale_log2r = FALSE, 
@@ -745,7 +745,7 @@ In section 1.3.4.2, we used `pepHist` to illustrate the side effects in histogra
 We prepare the ratio histograms for proteins with ten or more quantifying peptides:
 
 
-```r
+``` r
 # without scaling
 prnHist(
   scale_log2r = FALSE, 
@@ -774,7 +774,7 @@ The density curves are based on the latest call to `standPrn(...)` with `method_
 Up to this point, we might have reach a consensus on the choice of scaling normalization. If so, it may be plausible to set the value of `scale_log2r` under the Global environment, which is typically the `R` console that we are interacting with.
 
 
-```r
+``` r
 # if agree
 scale_log2r <- TRUE
 
@@ -791,7 +791,7 @@ In this way, we can skip the repetitive setting of `scale_log2r` in our workflow
 Exemplary scripts are summarized in:
 
 
-```r
+``` r
 system.file("extdata", "workflow_tmt_base.R", package = "proteoQ")
 system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ")
 ```
@@ -801,7 +801,7 @@ Another place to get help is via `?load_expts`.
 #### 1.5.2 LFQ
 
 
-```r
+``` r
 system.file("extdata", "workflow_lfq_base.R", package = "proteoQ")
 ```
 
@@ -812,7 +812,7 @@ Additional notes available in <strong>[here](https://proteoq.netlify.app/post/me
 For the purpose of quick demonstrations where steps in data preprocessing were bypassed:
 
 
-```r
+``` r
 unzip(system.file("extdata", "demo.zip", package = "proteoQDA"), 
       exdir = "~/proteoq_bypass", overwrite  = FALSE)
 
@@ -844,7 +844,7 @@ Unless otherwise mentioned, the `in-function filtration` of data by varargs of `
 We first visualize MDS and Euclidean distance against the peptide data. We start with metric MDS for peptide data (`prnMDS` for proteins):
 
 
-```r
+``` r
 # all data
 pepMDS(
   show_ids = FALSE,
@@ -859,7 +859,7 @@ pepMDS(
 It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of log2FC (**Figure 3A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling:
 
 
-```r
+``` r
 # `JHU` subset
 pepMDS(
   col_select = JHU,
@@ -878,7 +878,7 @@ pepMDS(
 We immediately spot that all samples are coded with the same color (**Figure 3B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by the column "Alpha" in expt_smry.xlsx. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in expt_smry.xlsx. In this example, we have had coincidentally prepared the column "Shape" and "Alpha" to code WHIMs and batches, respectively, for the `JHU` subset. Therefore, we can recycle them directly to make a new plot (**Figure 3C**):
 
 
-```r
+``` r
 # new `JHU` subset
 pepMDS(
   col_select = JHU,
@@ -894,7 +894,7 @@ pepMDS(
 While `MDS` approximates Euclidean and other distance measures at a low-dimensional space. Sometimes it may be useful to have an accurate view of the distance matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of Euclidean distance matrix for peptides and proteins, respectively. Supposed that we are interested in visualizing the distance matrix for the `JHU` subset:
 
 
-```r
+``` r
 # `JHU` subset
 pepEucDist(
   col_select = JHU,
@@ -960,7 +960,7 @@ Provided the importance of data centering in PCA and several other analyses, pro
 The mean `log2FC` of proteins or peptides may serve as indicators that how far a given protein or peptide species is away from the data centering format (a.k.a. mean deviation form) that will be enforced by default in PCA. Taking protein data as an example, we will go through couple settings in `prnPCA`. At first, we performed PCA with data centering by default (**Figure 4A**):
 
 
-```r
+``` r
 prnPCA(
   col_select = Select, 
   show_ids = FALSE, 
@@ -971,7 +971,7 @@ prnPCA(
 We next performed another PCA with the removals of proteins that are far from mean deviation form (**Figure 5B**):
 
 
-```r
+``` r
 # observe that the overall deviations from "mean zero" may not be symmetric
 prnPCA(
   col_select = Select, 
@@ -991,7 +991,7 @@ Note that the clusterings are tightened under each sample type of WHIM2 or WHIM1
 We next explore the analogous, but by turning off data centering:
 
 
-```r
+``` r
 prnPCA(
   col_select = Select, 
   center = FALSE,
@@ -1024,7 +1024,7 @@ The above showcases that the choice in data centering can lead to different inte
 The y-labels in **Figure 4C** are not well separated. This can be fixed by providing a custom theme to `prnPCA` (see also the help document via `?prnPCA`). Alternatively, we may export the PCA results for direct `ggplot2`:
 
 
-```r
+``` r
 res <- prnPCA(
   col_select = Select, 
   center = FALSE,
@@ -1076,7 +1076,7 @@ ggsave(file.path(dat_dir, "Protein/PCA/nocent_2.png"), width = 6, height = 4)
 The PCA findings at higher dimensions may be visualized via pairwise plots between principal components.
 
 
-```r
+``` r
 prnPCA(
   show_ids = FALSE,
   rank. = 4, 
@@ -1101,7 +1101,7 @@ See notes [here](https://proteoq.netlify.app/post/lda-in-proteoq/).
 In this section, we visualize the batch effects and biological differences through correlation plots. The proteoQ tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column "Select" in expt_smry.xlsx. We have learned from the earlier MDS analysis that the batch effects are smaller than the differences between WHIM2 and WHIM16. We may wish to put the `TMT1` and `TMT2` groups adjacent to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the expt_smry.xlsx, We have prepared an "Order" column where samples within the JHU subset were arranged in the descending order of W2.TMT1, W2.TMT2, W16.TMT1 and W16.TMT2. Now we tell the program to look for the "Order" column for sample arrangement:
 
 
-```r
+``` r
 # peptide logFC
 pepCorr_logFC(
   col_select = PNNL,
@@ -1131,7 +1131,7 @@ Heat map visualization is commonly applied in informatic analysis. The correspon
 The following shows an example of protein heat map:
 
 
-```r
+``` r
 prnHM(
   xmin = -1, 
   xmax = 1, 
@@ -1158,7 +1158,7 @@ we chose to top annotate the heat map with the metadata that can be found under 
 Row ordering of data is also implemented in the heat map utility.
 
 
-```r
+``` r
 prnHM(
   xmin = -1, 
   xmax = 1, 
@@ -1192,7 +1192,7 @@ See `?standPep` for peptide examples.
 In this section, we perform the significance analysis of peptide and protein data. The approach of contrast fit (Chambers, J. M. Linear models, 1992; Gordon Smyth et al., `limma`) is taken in proteoQ. We will first define the contrast groups for significance tests. For this purpose, I have divided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of W2.BI.TMT1, W2.BI.TMT2 etc. under the column "Term" in expt_smry.xlsx. The interactive environment between the Excel file and the proteoQ tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W16.BI` etc. can be found under a pre-made column, "Term_2". Having have these columns in hand, we next perform significance tests and data visualization for peptide and protein data:
 
 
-```r
+``` r
 # significance tests
 pepSig(
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
@@ -1224,7 +1224,7 @@ The `pepVol` and `prnVol` utility will by default match the formulas of contrast
 In general, the special characters of `+` and `-` in contrast terms need to be avoided in linear modeling. However, it may be sporadically convenient to use `A+B` to denote a combined treatment of both `A` and `B`. In the case, we will put the term(s) containing `+` or `-` into a pair of pointy brackets. The syntax in the following hypothetical example will compare the effects of `A`, `B`, `A+B` and the average of `A` and `B` to control `C`.
 
 
-```r
+``` r
 # note that <A + B> is one condition whereas (A + B) contains two conditions
 prnSig(
   fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"],
@@ -1272,7 +1272,7 @@ At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to 
 We began with the analysis of `GSPA` against enrichment terms defined in [`gene ontology (GO)`](http://current.geneontology.org/products/pages/downloads.html), [`molecular signatures (MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) and [`PhosphoSitePlus (PSP)`](https://www.phosphosite.org/):
 
 
-```r
+``` r
 prnGSPA(
   impute_na = FALSE,
   pval_cutoff = 5E-2, # protein pVal threshold
@@ -1288,7 +1288,7 @@ The formulas of contrasts will by default match to the those used in `pepSig`. T
 We next visualize the distribution of protein log2FC and pVal within gene sets:
 
 
-```r
+``` r
 gspaMap(
   gspval_cutoff = 5E-3, 
   gslogFC_cutoff = log2(1.2), 
@@ -1313,7 +1313,7 @@ In general, any data bases for any species finished at a format similar to the `
 The gene sets of `GO` and `MSig` are available for species human, mouse and rat in proteoQ. For custom gene sets and/or additional species, the utility `prepGO` will download and prepare `GO` data according to custom-supplied URLs. In the follow examples, we prepare the `GO` data of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively, under the file folder `~\\proteoQ\\dbs\\go`:
 
 
-```r
+``` r
 prepGO(
   species = human,
   db_path = "~/proteoQ/dbs/go",
@@ -1337,7 +1337,7 @@ prepGO(
 Similarly, we prepare custom `MSig` data bases for `human` and `mouse`:
 
 
-```r
+``` r
 prepMSig(
   # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
   # db_path = "~/proteoQ/dbs/msig",
@@ -1360,7 +1360,7 @@ prepMSig(
 We need to provide the list name of `ortho_mart` for species other than human, mouse and rat. The value will be used for ortholog lookups via [`biomaRt`](https://bioconductor.org/packages/release/bioc/html/biomaRt.html). More details are available in the help document via `?prepMSig`. Note that the data bases will be stored as `.rds` files:
 
 
-```r
+``` r
 # start over
 unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
@@ -1419,7 +1419,7 @@ We next gauge the redundancy of a gene set in relative to an essential set by co
 In this following, we first perform simple heat map visualization between all significant gene sets in columns and essential groups in rows.
 
 
-```r
+``` r
 prnGSPAHM(
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
@@ -1437,7 +1437,7 @@ The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs be
 As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells overwhelm the heat map and might have impeded us from capturing high-redundancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration. In the example shown below, we chose to keep more redundant terms at distances shorter than or equal to 0.33:
 
 
-```r
+``` r
 prnGSPAHM(
   filter2_by = rlang::exprs(distance <= .33),
   filter2_sp = rlang::exprs(start_with_str("hs", term)), 
@@ -1473,7 +1473,7 @@ In this section, we perform the trend analysis against protein expressions. It w
 The proteoQ utility for the clustering of protein log2FC is `anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.
 
 
-```r
+``` r
 anal_prnTrend(
   n_clust = c(5:6), 
   filter_by_npep = rlang::exprs(prot_n_pep >= 2),
@@ -1487,7 +1487,7 @@ The above codes will generate result files, `Protein_Trend_Z_nclust5.txt` and `P
 We next visualize the results:
 
 
-```r
+``` r
 plot_prnTrend(
   col_order = Order,
 )
@@ -1503,7 +1503,7 @@ The argument `col_order` provides a means to supervise the order of samples duri
 We can subset the secondary input data by `filter2_` varargs. In the example shown below, we choose to visualize only the pattern of trends in cluster 4. Note that `cluster` is a column key in `Protein_Trend_[...].txt`:
 
 
-```r
+``` r
 plot_prnTrend(
   col_order = Order,
   filter2_by = rlang::exprs(cluster == 4),
@@ -1521,7 +1521,7 @@ plot_prnTrend(
 We can also select certain sample groups for visualization, for instance, the samples under the column "BI" in expt_smry.xlsx:
 
 
-```r
+``` r
 plot_prnTrend(
   col_order = Order, 
   col_select = BI,
@@ -1537,7 +1537,7 @@ plot_prnTrend(
 Note the difference between
 
 
-```r
+``` r
 anal_prnTrend(col_select = BI, ...)
 plot_prnTrend(col_select = NULL, ...)
 ```
@@ -1545,7 +1545,7 @@ plot_prnTrend(col_select = NULL, ...)
 and
 
 
-```r
+``` r
 anal_prnTrend(col_select = NULL, ...)
 plot_prnTrend(col_select = BI, ...)
 ```
@@ -1557,7 +1557,7 @@ Apparently, they will both plot the trends of protein log2FC for the `BI` subset
 The trend findings from `anal_prnTrend` can be loaded automatically to the [`ClueGO`](http://apps.cytoscape.org/apps/cluego) utility in [Cytoscape](https://cytoscape.org/). The installation of [yFiles Layout Algorithms](http://apps.cytoscape.org/apps/with_tag/layout) is also required.
 
 
-```r
+``` r
 # Make sure that Cytoscape is open
 cluego(
   df2 = Protein_Trend_Z_nclust5.txt, 
@@ -1573,7 +1573,7 @@ Note that `human` is a value that can be found under the column `species` in `Pr
 In this section, we will performs the analysis of non-negative matrix factorization (NMF) against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper. Since additional arguments can be passed on to NMF, we will test below protein classifications with both the default and the 'lee' method:
 
 
-```r
+``` r
 # load library
 library(NMF)
 
@@ -1604,7 +1604,7 @@ Analogous analysis for peptide data are available via `anal_pepNMF(...)`.
 Following the primary NMF analysis, secondary utilities of `plot_pepNMFCon` and `plot_prnNMFCon` prepare the consensus heat maps of peptide and protein data, respectively. Similarly, `plot_pepNMFCoef` and `plot_prnNMFCoef` prepare coefficient heat maps. Utility `plot_metaNMF` makes the heat maps of protein log2FC. These utilities can pass arguments to `pheatmap` as shown in **Section** 2.3. In the examples shown below, we plot the heat maps for protein data against all available ranks, which are 5 and 6, specified previously in the `anal_prnNMF` step.
 
 
-```r
+``` r
 plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
@@ -1636,7 +1636,7 @@ Argument `impute_na` reminds us which piece(s) of NMF results from the correspon
 Visualization against data subset is also feasible. In the next example, we will prepare heat maps for samples under column "BI" in expt_smry.xlsx. We further limit ourselves to results from `anal_prnNMF` at *r* = 5. In metagene plots, we choose additionally to row order data by genes via the `arrange_` vararg:
 
 
-```r
+``` r
 plot_prnNMFCon(
   impute_na = FALSE,
   col_select = BI,
@@ -1691,7 +1691,7 @@ The silhouette information was obtained via the R package `cluster` and shown as
 While utility `plot_prnTrend` in trend visualization (**Section** 2.7) can take a customized theme for uses in [`ggplot2`](http://https://ggplot2.tidyverse.org/) therein, the `plot_` functions in NMF are wrappers of [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf) and thus can process a user-supplied color palette.
 
 
-```r
+``` r
 plot_prnNMFCon(
   color = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(50), 
   ...
@@ -1711,7 +1711,7 @@ plot_metaNMF(
 The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?anal_prnString` and `?prepString`.
 
 
-```r
+``` r
 anal_prnString(
   db_path = "~/proteoQ/dbs/string",
   db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
@@ -1725,7 +1725,7 @@ anal_prnString(
 The results of protein-protein interaction is summarised in `Protein_String_[...]_ppi.tsv` and the expression data in `Protein_String_[...]_expr.tsv`. The files are formatted for direct applications with [`Cytoscape`](https://cytoscape.org). When calling `anal_prnString`, the corresponding databases will be downloaded automatically if not yet present locally. One can also choose to download separately the databases for a given `species`:
 
 
-```r
+``` r
 prepString(
   species = this_mouse,
   links_url = "https://stringdb-static.org/download/protein.links.full.v11.0/10090.protein.links.full.v11.0.txt.gz",
@@ -1750,7 +1750,7 @@ In this lab, we explore the effects of reference choices on data normalization a
 We first copy data over to the file directory specified by `temp_dir`, followed by PSM, peptide normalization and histogram visualization of peptide log2FC.
 
 
-```r
+``` r
 # exemplary data
 temp_dir <- "~/proteoQ/ref_w2"
 
@@ -1800,7 +1800,7 @@ We may alternatively seek a "center-of-mass" representation for uses as referenc
 We next perform analogously the data summary and histogram visualization.
 
 
-```r
+``` r
 temp_dir_w2w16 <- "~/proteoQ/ref_w2w16"
 
 library(proteoQDA)
@@ -1848,7 +1848,7 @@ With the new reference, we have achieved log2FC profiles that are more comparabl
 In this section, we explore the effects of reference choices on the CV of log2FC. For simplicity, we will visualize the peptide data that link to the `BI` subset at batch number one. We first add a new column, let's say "BI_1", in expt_smry_ref_w2.xlsx with the corresponding samples being indicated. We next display the distributions of proteins CV measured from contributing peptides before data removals (**Figure S1C**):
 
 
-```r
+``` r
 # continue on the `ref_w2` example in section 3.1.1
 library(proteoQ)
 load_expts("~/proteoQ/ref_w2", expt_smry_ref_w2.xlsx, frac_smry.xlsx)
@@ -1868,7 +1868,7 @@ purgePep(
 Notice that the CV distributions of `WHIM2` are much narrower than those of `WHIM16`. This makes intuitive sense given that the log2FC profiles of `WHIM2` are much narrows as well (**Figure S1A**). To discount the genuine difference in sample CV, we next trim relatively the data points by percentiles:
 
 
-```r
+``` r
 purgePep(
   col_select = BI_1, 
   pt_cv = .95, 
@@ -1908,7 +1908,7 @@ These functions are typically coupled to the varargs of `filter_` or `slice_` fo
 The CPTAC publication contains both global and phosphopeptide data from the same samples. This allows us to explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first copy over both the global and the phospho data sets to the file directory specified by `dat_dir`, followed by PSM, peptide normalization and histogram visualization of peptide log2FC of the `BI_1` subset.
 
 
-```r
+``` r
 # exemplary data
 dat_dir <- "~/proteoQ/phospho_stoichiometry"
 # dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
@@ -1978,7 +1978,7 @@ Ideally, the profiles of the log2FC between the phospho subsets and the overall 
 In addition to pseudonyms, convenience columns such as `pep_mod_protntac` and `pep_mod_sty` are made available in `Peptide.txt`, to indicate the property of peptide modifications of protein N-terminal acetylation and phosphorylation, respectively. We can use alternatively the column keys to subset data, for example, extracting peptides from N-terminal acetylated proteins:
 
 
-```r
+``` r
 # (c) N-term acetylation subsets without y-scaling
 pepHist(
   col_select = BI_1, 
@@ -2008,7 +2008,7 @@ pepHist(
 Pseudonyms and convenience columns can be used interexchangeably for simple conditions. In the following example, we assume that peptide sequences are under the column "pep_seq_mod" in Peptide.txt with variably modified residues in lower case. we can exclude oxidized methionine or deamidated asparagine from uses in data normalization:
 
 
-```r
+``` r
 Pep2Prn(
   filter_by_mn = rlang::exprs(not_contain_chars_in("mn", pep_seq_mod)),
 )
@@ -2045,7 +2045,7 @@ prnHist(
 or use alternatively the convenience columns, `pep_mod_m` and `pep_mod_n`, for the same purpose:
 
 
-```r
+``` r
 Pep2Prn(
   filter_by_mn = rlang::exprs(pep_mod_m == FALSE, pep_mod_n == FALSE),
 )
@@ -2066,7 +2066,7 @@ standPrn(
 Customer supplied columns can be further taken by proteoQ for various data processing and informatic analyses. In this section, we will first add a column, `n_not_na`, to protein table `Protein.txt`. The column summarizes the number of log2FCs that are *NOT* missing for each protein. The newly added column will then be applied to data-row filtration during heat map visualization.
 
 
-```r
+``` r
 # add a column to "Protein.txt"
 df <- readr::read_tsv(file.path(dat_dir, "Protein/Protein.txt")) 
 
@@ -2088,7 +2088,7 @@ df %>%
 Note that there is a restriction in column additions in that the custom column(s) need to be anchored before the *intensity* and *ratio* fields for uses in downstream analyses. This is achieved behind the scene when the modified file is loaded, for example, in protein heat map visualization:
 
 
-```r
+``` r
 prnHM(
   df = "Protein/Protein.txt", 
   xmin = -1,
@@ -2119,7 +2119,7 @@ Importantly, we need to supply the file name to argument `df`. This is because a
 Alternatively, we may add the custom column to `Protein_pVals.txt`:
 
 
-```r
+``` r
 df <- readr::read_tsv(file.path(dat_dir, "Protein/Model/Protein_pVals.txt")) 
 
 n_not_na <- df %>% 
@@ -2164,7 +2164,7 @@ In proteomic studies involved multiple multiplex `TMT` experiments, the limited 
 We start off by (re)executing the reduced example shown in `?load_expts`:
 
 
-```r
+``` r
 dat_dir <- "~/proteoQ/randeffs/examples"
 
 library(proteoQDA)
@@ -2196,7 +2196,7 @@ prnHist()
 We next carry out the significance tests with and without random effects:
 
 
-```r
+``` r
 pepSig(
   impute_na = FALSE, 
   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect only
@@ -2222,7 +2222,7 @@ Missing values can frequently fail random-effects modeling with more complex err
 We further note that the laboratory differences are coded under columns `Color` in expt_smry.xlsx. We then test the statistical difference between `WHIM2` and `WHIM16` against the following three models:
 
 
-```r
+``` r
 # impute NA
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)

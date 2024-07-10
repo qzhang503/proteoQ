@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.7.5.3
+Version: 1.7.6
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -74,7 +74,7 @@ Imports:
     RColorBrewer,
     RCurl,
     Rcpp
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Remotes:
     qzhang503/proteoCpp, 
     qzhang503/mzion

@@ -58,8 +58,8 @@ correct file path(s) and name(s).}
 prepended directory path. At the \code{NULL} default, a convenience lookup
 is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
-for preparing custom entrez files.}
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}} for
+preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides. At the \code{group} default, the uniqueness of peptides is by
@@ -83,20 +83,19 @@ LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 \item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
 \code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
 default is 0 without cut-offs. The data nullification will not be applied
-synchronously to the precursor intensity (\code{pep_tot_int}) under the
-same PSM query. To guard against odds such as higher MS2 reporter-ion
-intensities than their contributing MS1 precursor intensity, employs for
-example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
-during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
-single column; thus the corresponding data filtration against it may be
-readily achieved without introducing new arguments. By contrast,
-\code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
-be slightly more involved/laborious when applying suitable statements of
-\code{filter_} varargs.}
+synchronously to the precursor intensity (\code{pep_tot_int}) under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion intensities
+than their contributing MS1 precursor intensity, employs for example
+\code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)} during
+\link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a single
+column; thus the corresponding data filtration against it may be readily
+achieved without introducing new arguments. By contrast, \code{rptr_intco}
+applies to a set of columns, \code{I126} etc.; it might be slightly more
+involved/laborious when applying suitable statements of \code{filter_}
+varargs.}
 
-\item{rm_craps}{Logical; if TRUE,
-\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
-The default is FALSE.}
+\item{rm_craps}{Logical; if TRUE, \href{https://www.thegpm.org/crap/}{cRAP}
+proteins will be removed. The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
@@ -106,8 +105,8 @@ for peptides with more than two identifying PSMs. Dixon's method will be
 used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 25}. The default is FALSE.}
 
-\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
-will be annotated with their kinase attributes. The default is FALSE.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins will
+be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE. The argument is also
@@ -116,9 +115,9 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
 peptide \code{log2FC} will be plotted. The default is TRUE.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
-residues will be abbreviated with lower-case and/or \code{^_~}. See the
-table below for details. The default is TRUE.}
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
+will be abbreviated with lower-case and/or \code{^_~}. See the table below
+for details. The default is TRUE.}
 
 \item{...}{Not currently used.}
 }

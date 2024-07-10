@@ -8,8 +8,8 @@ add_mbr_psms(
   dfq,
   dfc,
   group_psm_by = "pep_seq_mod",
-  cols = c("pep_ret_range"),
-  mbr_ret_tol = 60
+  cols = c("pep_apex_ret"),
+  mbr_ret_tol = 150
 )
 }
 \arguments{

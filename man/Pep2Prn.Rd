@@ -5,8 +5,8 @@
 \title{Interim protein data}
 \usage{
 Pep2Prn(
-  method_pep_prn = c("median", "mean", "weighted_mean", "lfq_max", "top_3_mean",
-    "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all"),
+  method_pep_prn = c("median", "mean", "weighted_mean", "lfq_all", "lfq_top_3_sum",
+    "lfq_top_2_sum", "top_3_mean", "lfq_max"),
   use_unique_pep = TRUE,
   cut_points = Inf,
   rm_outliers = FALSE,

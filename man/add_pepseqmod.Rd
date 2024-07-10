@@ -9,9 +9,9 @@ add_pepseqmod(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
-residues will be abbreviated with lower-case and/or \code{^_~}. See the
-table below for details. The default is TRUE.}
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
+will be abbreviated with lower-case and/or \code{^_~}. See the table below
+for details. The default is TRUE.}
 
 \item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
 variable modification(s), entries without phosphorylation will be removed.

@@ -2,6 +2,7 @@
 % Please edit documentation in R/proteoQ.R
 \docType{package}
 \name{proteoQ}
+\alias{proteoQ-package}
 \alias{proteoQ}
 \title{proteoQ: A package for processing mass spectrometry data.}
 \description{
@@ -33,3 +34,7 @@ The companion package, mzion, performs database searches.
   pepImp, prnImp, prnGSVA, prnGSEA, cluego
 }
 
+\author{
+\strong{Maintainer}: Qiang Zhang \email{qzhang503@gmail.com} (\href{https://orcid.org/0000-0001-7046-4378}{ORCID})
+
+}

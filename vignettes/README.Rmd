@@ -103,7 +103,7 @@ Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label
 
 -   TMT workflows: [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) and [Mzion](https://github.com/qzhang503/mzion)
 
--   LFQ workflows: MaxQuant and Mzion
+-   LFQ workflows: Mzion
 
 ProteoQ interacts with Excel spreadsheets or .csv files for dynamic sample selection, aesthetic control, and statistical modeling. It also integrates operations such as data normalization against selected rows and/or columns into user-friendly functions at the interface. These arrangements allow users to address biological questions openly using metadata and a range of data pre-processing and informatics tools while keeping ad hoc data manipulation behind the scenes. Additionally, the entire workflow is well-documented and can be easily reproduced.
 

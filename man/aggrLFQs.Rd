@@ -10,9 +10,9 @@ aggrLFQs(f)
 \item{f}{A function for data summary.}
 }
 \description{
-Summarizes \code{log2FC} and \code{intensity} by the descriptive statistics
-of \code{c("mean", "median", "sum")}. Note that data are already subset by
-top_n.
+Not currently used. Summarizes \code{log2FC} and \code{intensity} by the
+descriptive statistics of \code{c("mean", "median", "sum")}. Note that data
+are already subset by top_n.
 }
 \details{
 \code{ids} are a list of column keys.

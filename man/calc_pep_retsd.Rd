@@ -19,9 +19,13 @@ the same \code{pep_seq_mod} groups.}
 \item{use_unique}{Logical; if TRUE, filter data by uniqueness.}
 }
 \description{
-Sets \code{use_unique = TRUE} when used with normPSM where the same
+Different charge states can have small differences in \code{pep_apex_ret},
+e.g., due to the spikiness of peaks.
+}
+\details{
+Sets \code{use_unique = TRUE} when used with \link{normPSM} where the same
 \code{group_psm_by} can be redundant by \code{prot_acc}. Sets
-\code{use_unique = FALSE} when used with mergePep where the same
+\code{use_unique = FALSE} when used with \link{mergePep} where the same
 \code{group_psm_by} from different samples and LCMS series are all taken into
 account.
 }

@@ -85,6 +85,31 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
   
+  lobal({
+    grps <- label_scheme_sub[[as.character(col_group)]]
+    ords <- label_scheme_sub[[as.character(col_order)]]
+    grp_nas <- is.na(grps)
+    ord_nas <- is.na(ords)
+    
+    if (!identical(grp_nas, ord_nas)) {
+      nas <- tibble::tibble(
+        !!col_group := grps, !!col_order := ords,
+      )
+      warning("Mismatches in metadata columns: \n", )
+      print(nas)
+    }
+    
+    grps <- grps[!grp_nas]
+    ords <- ords[!ord_nas]
+    
+    oks <- tibble::tibble(
+      !!col_group := grps, !!col_order := ords,
+    )
+    
+    message("Summary of data groups and orders: \n")
+    print(oks)
+  })
+
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
@@ -298,7 +323,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     
     if (choice == "cmeans") {
       # Warning of cmeans: partial argument match of 'length' to 'length.out'
-      suppressWarnings(cl <- do.call(e1071::cmeans, args))
+      cl <- suppressWarnings(do.call(e1071::cmeans, args))
     } 
     else if (choice == "kmeans") {
       cl <- do.call(stats::kmeans, args)
@@ -319,10 +344,11 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
       stop("Unknown `choice` ", choice, ".", call. = FALSE)
     }
     
-    res_cl <- data.frame(cluster = cl$cluster) %>%
-      tibble::rownames_to_column() %>%
+    res_cl <- data.frame(cluster = cl$cluster) |>
+      `rownames<-`(rownames(df_mean)) |>
+      tibble::rownames_to_column() |>
       dplyr::rename(!!id := rowname)
-    
+
     Levels <- names(df_mean)
     
     df_mean %>% 
@@ -334,7 +360,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
       dplyr::rename(group = variable, log2FC = value) %>% 
       dplyr::left_join(df[, c(id, "species")], by = id) %>% 
       dplyr::mutate(col_group = rlang::as_string(col_group), 
-                    col_order = rlang::as_string(col_order)) %>% 
+                    col_order = rlang::as_string(col_order)) %T>% 
       write.table(file.path(filepath, filename), sep = "\t", 
                   col.names = TRUE, row.names = FALSE, quote = FALSE)	
   })

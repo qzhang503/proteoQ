@@ -19,5 +19,4 @@
 #'
 #' @docType package
 #' @name proteoQ
-NULL
-#> NULL
+'_PACKAGE'

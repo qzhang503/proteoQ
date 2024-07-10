@@ -275,6 +275,17 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
   
   fml_ops <- prepFml(formula, label_scheme_sub, ...)
   contr_mat <- fml_ops$contr_mat
+  
+  local({
+    col_nms <- colnames(contr_mat)
+    dups <- which(duplicated(col_nms))
+    
+    if (length(dups)) {
+      stop("Duplicated contrasts found: ", paste(col_nms[dups], collapse = ", "))
+    }
+  })
+  
+  
   design <- fml_ops$design
   key_col <- fml_ops$key_col
   random_vars <- fml_ops$random_vars

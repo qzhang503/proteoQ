@@ -342,7 +342,7 @@ foo_spec_lib <- function () {
 # foo_combine_codes(filepath = file.path("C:/Results/R/proteoQ/inst/extdata/examples"))
 foo_combine_codes <- function (filepath = file.path(file.path("~/Github/proteoQ/R"))) 
 {
-  filepath <- proteoM:::find_dir(filepath)
+  filepath <- mzion:::find_dir(filepath)
   filenames <- dir(filepath, pattern = ".R$")
   
   dir.create(file.path(filepath, "temp"))

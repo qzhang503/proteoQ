@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_pep_retsd}
 \alias{add_pep_retsd}
-\title{Adds the standard deviation in the retention times of peptides.}
+\title{Adds the standard deviation, min and max in the retention times of peptides}
 \usage{
 add_pep_retsd(df, group_psm_by = "pep_seq", use_unique = TRUE)
 }
@@ -19,5 +19,5 @@ the same \code{pep_seq_mod} groups.}
 \item{use_unique}{Logical; if TRUE, filter data by uniqueness.}
 }
 \description{
-Adds the standard deviation in the retention times of peptides.
+Adds the standard deviation, min and max in the retention times of peptides
 }

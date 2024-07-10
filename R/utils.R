@@ -347,12 +347,11 @@ aggrNums <- function(f)
 {
   function (df, id, ...) {
     id <- rlang::as_string(rlang::enexpr(id))
-    dots <- rlang::enexprs(...)
-    
+
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise_all(~ f(.x, !!!dots))
+      dplyr::summarise_all(function (x) f(x, ...))
   }
 }
 
@@ -369,26 +368,25 @@ aggrTopn <- function(f)
 {
   function (df, id, n, ...) {
     id <- rlang::as_string(rlang::enexpr(id))
-    dots <- rlang::enexprs(...)
-    
+
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
                                             na.rm = TRUE)) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::top_n(n = n, wt = sum_Intensity) %>%
+      dplyr::slice_max(sum_Intensity, n = n) %>%
       dplyr::select(-sum_Intensity) %>%
-      dplyr::summarise_all(~ f(.x, !!!dots))
+      dplyr::summarise_all(function (x) f(x, ...))
   }
 }
 
 
 #' Aggregation of LFQ intensity.
 #'
-#' Summarizes \code{log2FC} and \code{intensity} by the descriptive statistics
-#' of \code{c("mean", "median", "sum")}. Note that data are already subset by
-#' top_n.
-#' 
+#' Not currently used. Summarizes \code{log2FC} and \code{intensity} by the
+#' descriptive statistics of \code{c("mean", "median", "sum")}. Note that data
+#' are already subset by top_n.
+#'
 #' \code{ids} are a list of column keys.
 #'
 #' @param f A function for data summary.
@@ -530,25 +528,24 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
 #' \code{intensity}. Note the difference to \link{aggrTopn}, which uses sum
 #' statistics.
 #'
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
+#' @param df A data frame of \code{log2FC} and \code{intensity}.
 #' @param id The variable to summarize \code{log2FC}.
 #' @param ... Additional arguments for \code{mean}.
 #' @examples \donttest{df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)}
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-TMT_top_n <- function (x, id, ...) 
+TMT_top_n <- function (df, id, ...) 
 {
   id <- rlang::as_string(rlang::enexpr(id))
-  dots <- rlang::enexprs(...)
-  
-  x %>%
+
+  df %>%
     dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
     dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
                                           na.rm = TRUE)) %>%
     dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::top_n(n = 3, wt = sum_Intensity) %>%
+    dplyr::slice_max(sum_Intensity, n = 3) %>%
     dplyr::select(-sum_Intensity) %>%
-    dplyr::summarise_all(~ mean(.x, !!!dots))
+    dplyr::summarise_all(function (x) mean(x, ...))
 }
 
 
@@ -561,7 +558,9 @@ TMT_top_n <- function (x, id, ...)
 #' @return A logical vector
 not_all_zero <- function (df) 
 {
-  stopifnot(is.data.frame(df))
+  if (!is.data.frame(df))
+    stop("The input is not a data frame.")
+  
   colSums(df != 0, na.rm = TRUE) > 0
 }
 
@@ -577,7 +576,9 @@ not_all_zero <- function (df)
 #' @return A logical vector
 not_all_NA <- function (df) 
 {
-  stopifnot(is.data.frame(df))
+  if (!is.data.frame(df))
+    stop("The input is not a data frame.")
+  
   colSums(!is.na(df), na.rm = TRUE) > 0
 }
 
@@ -589,7 +590,9 @@ not_all_NA <- function (df)
 #' @examples \donttest{purrr::map_lgl(mtcars, not_all_nan, na.rm = TRUE)}
 not_all_nan <- function(x, ...) 
 {
-  stopifnot(is.vector(x))
+  if (!is.vector(x))
+    stop("The input is not a vector.")
+  
   sum(is.nan(x), ...) != length(x)
 }
 
@@ -601,7 +604,9 @@ not_all_nan <- function(x, ...)
 #' @examples \donttest{purrr::map_lgl(mtcars, is_all_nan, na.rm = TRUE)}
 is_all_nan <- function(x, ...) 
 {
-  stopifnot(is.vector(x))
+  if (!is.vector(x))
+    stop("The input is not a vector.")
+  
   sum(is.nan(x), ...) == length(x)
 }
 
@@ -613,8 +618,9 @@ is_all_nan <- function(x, ...)
 #' @examples \donttest{is_trivial_col(mtcars, 1)}
 is_trivial_col <- function (df, col) 
 {
-  stopifnot(length(col) == 1L)
-  
+  if (length(col) != 1L)
+    stop("The length of argument \"col\" is not one. ")
+
   x <- df[, col]
   
   x[x == 0] <- NA
@@ -629,8 +635,9 @@ is_trivial_col <- function (df, col)
 #' @param x A numeric vector
 is_trivial_dbl <- function (x) 
 {
-  stopifnot(is.vector(x))
-  
+  if (!is.vector(x))
+    stop("The input is not a vector.")
+
   if (!is.numeric(x)) 
     return(FALSE)
   
@@ -2924,7 +2931,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   df <- df %>% 
     dplyr::filter(!duplicated(.[[id]]))
   
-  if (("pep_scan_num" %in% names(df)) && (!all(is.na(df$pep_scan_num)))) {
+  if (("pep_scan_num" %in% names(df)) && (!all(is.na(df$pep_scan_num))) && 
+      is_psm) {
     df <- df %>% 
       tidyr::unite(uniq_by., raw_file, pep_scan_num, sep = "@") %>% 
       dplyr::group_by(uniq_by.) %>% 
@@ -4268,8 +4276,7 @@ find_search_engine <- function(dat_dir = NULL)
   pat_mq <- "^msms.*\\.txt$"
   pat_mf <- "^psm.*\\.tsv$"
   pat_sm <- "^PSMexport.*\\.ssv$"
-  pat_pq <- "^psm[QC]{1}.*\\.txt$"
-  # pat_msgf <- "(^peptide)|(^protein)|(^psm)\\.tsv$"
+  pat_mz <- "^psm[QC]{1}.*\\.txt$"
   pat_msgf <- "^psmMSGF.*\\.txt$$"
   
   mascot <-list.files(path = file.path(dat_dir), pattern = pat_mascot) %>% 
@@ -4280,21 +4287,12 @@ find_search_engine <- function(dat_dir = NULL)
     length() %>% `>`(0L)
   sm <- list.files(path = file.path(dat_dir), pattern = pat_sm) %>% 
     length() %>% `>`(0L)
-  pq <- list.files(path = file.path(dat_dir), pattern = pat_pq) %>% 
+  mz <- list.files(path = file.path(dat_dir), pattern = pat_mz) %>% 
     length() %>% `>`(0L)
-  
   msgf <- list.files(path = file.path(dat_dir), pattern = pat_msgf) %>% 
     length() %>% `>`(0L)
   
-  if (FALSE) {
-    msgf <- local({
-      files <- list.files(path = file.path(dat_dir), pattern = "\\.tsv$")
-      files <- files[!grepl("(^peptide)|(^protein)|(^psm)", files)]
-      length(files) > 0L
-    })
-  }
-
-  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, pq = pq, msgf = msgf)
+  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, mz = mz, msgf = msgf)
   oks <- names(engines[engines])
 
   if (!length(oks)) {
@@ -4303,7 +4301,7 @@ find_search_engine <- function(dat_dir = NULL)
          paste(c(paste("  Mascot", pat_mascot, sep = ": "), 
                  paste("  MaxQuant", pat_mq, sep = ": "), 
                  paste("  MSFragger", pat_mf, sep = ": "), 
-                 paste("  proteoQ", pat_pq, sep = ": "), 
+                 paste("  Mzion", pat_mz, sep = ": "), 
                  paste("  MSGF", pat_msgf, sep = ": "), 
                  paste("  Spectrum Mill", pat_sm, sep = ": ")), 
                collapse = "\n"))
@@ -5074,26 +5072,26 @@ check_aes_length <- function (label_scheme = NULL, x = "Size",
 add_col_rawfile <- function (df)
 {
   if ("raw_file" %in% names(df)) {
-    df <- df %>% 
-      dplyr::rename(RAW_File = raw_file) %>% 
-      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+    df <- df |>
+      dplyr::rename(RAW_File = raw_file) |> 
+      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) |>
       dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File))
     
-    df <- df %>%
+    df <- df |>
       dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title))
   } 
   else {
-    df <- df %>%
-      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title)) %>% 
-      dplyr::mutate(RAW_File = pep_scan_title) %>% 
+    df <- df |>
+      dplyr::mutate(pep_scan_title = gsub("\\\\", "/", pep_scan_title)) |>
+      dplyr::mutate(RAW_File = pep_scan_title) |>
       dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.raw[\\\"]{0,1}; .*", "\\1", 
-                                    RAW_File)) %>% 
+                                    RAW_File)) |>
       dplyr::mutate(RAW_File = gsub("^.*/([^/]*)\\.d[\\\"]{0,1}; .*", "\\1", 
                                     RAW_File))
   }
   
   # (with some refseq_acc)
-  df <- df %>%
+  df <- df |>
     dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) 
 }
 
@@ -5111,10 +5109,6 @@ load_psmC <- function(file = NULL, ...)
                     col_types = cols(
                       prot_acc = col_character(), 
                       prot_issig = col_logical(), 
-                      # prot_isess = col_logical(),
-                      # prot_tier = col_integer(), 
-                      # prot_hit_num = col_integer(), 
-                      # prot_family_member = col_integer(), 
                       prot_es = col_number(), 
                       prot_es_co = col_number(), 
                       pep_seq = col_character(), 
@@ -5127,6 +5121,8 @@ load_psmC <- function(file = NULL, ...)
                       pep_delta = col_number(),
                       pep_tot_int = col_number(), 
                       pep_ret_range = col_number(), 
+                      pep_apex_ret = col_number(),
+                      pep_apex_scan = col_integer(), # probably not used
                       pep_scan_num = col_character(), # timsTOF
                       pep_mod_group = col_integer(), 
                       pep_frame = col_integer(), 
@@ -5148,19 +5144,18 @@ load_psmC <- function(file = NULL, ...)
                     show_col_types = FALSE)
   )
   
-  ans <- dfC %>% 
-    add_col_rawfile() %>% 
-    dplyr::select(c("pep_seq", "pep_tot_int", "pep_ret_range", "pep_scan_num", 
-                    # "pep_scan_title", 
-                    "pep_n_ms2", "pep_exp_mz", "pep_exp_mr", "pep_delta", 
-                    # "pep_calc_mr", "pep_mod_group", "pep_isdecoy", "pep_len", 
-                    "pep_issig", "pep_score", "pep_locprob", "pep_locdiff", 
-                    "pep_rank", "pep_expect", 
-                    "RAW_File", "pep_ivmod", "pep_fmod", "pep_vmod", 
-                    "pep_exp_z", )) %>% 
-    dplyr::mutate(I000 = pep_tot_int) %>% 
+  ans <- dfC |>
+    add_col_rawfile() |>
+    dplyr::select(c("pep_seq", "pep_tot_int", "pep_apex_ret", "pep_apex_scan", 
+                    # "pep_n_ms2", "pep_exp_mz", "pep_exp_mr", "pep_delta", 
+                    # "pep_issig", "pep_score", "pep_locprob", "pep_locdiff", 
+                    # "pep_rank", "pep_expect", 
+                    "pep_scan_num", # for removals of redundant entries
+                    "pep_exp_z", "RAW_File", "pep_ivmod", "pep_fmod", 
+                    "pep_vmod", )) |>
+    dplyr::mutate(I000 = pep_tot_int) |>
     dplyr::mutate(R000 = I000/I000, 
-                  R000 = ifelse(is.infinite(R000), NA_real_, R000)) %>% 
+                  R000 = ifelse(is.infinite(R000), NA_real_, R000)) |>
     dplyr::mutate(dat_file = base_name)
 }
 

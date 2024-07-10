@@ -14,6 +14,7 @@ psm_to_pep(
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
   type_sd = "log2_R",
+  engine = "mz",
   ...
 )
 }

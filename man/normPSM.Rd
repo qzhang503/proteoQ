@@ -22,13 +22,14 @@ normPSM(
   rm_outliers = FALSE,
   rm_allna = FALSE,
   type_sd = c("log2_R", "N_log2_R", "Z_log2_R"),
-  lfq_mbr = FALSE,
+  lfq_mbr = TRUE,
   mbr_ret_tol = 60,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   use_lowercase_aa = FALSE,
+  use_spec_counts = FALSE,
   corrected_int = TRUE,
   rm_reverses = TRUE,
   ...
@@ -53,8 +54,8 @@ correct file path(s) and name(s).}
 prepended directory path. At the \code{NULL} default, a convenience lookup
 is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
-for preparing custom entrez files.}
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}} for
+preparing custom entrez files.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
@@ -100,16 +101,16 @@ intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
 \item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
 \code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
 default is 0 without cut-offs. The data nullification will not be applied
-synchronously to the precursor intensity (\code{pep_tot_int}) under the
-same PSM query. To guard against odds such as higher MS2 reporter-ion
-intensities than their contributing MS1 precursor intensity, employs for
-example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
-during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
-single column; thus the corresponding data filtration against it may be
-readily achieved without introducing new arguments. By contrast,
-\code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
-be slightly more involved/laborious when applying suitable statements of
-\code{filter_} varargs.}
+synchronously to the precursor intensity (\code{pep_tot_int}) under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion intensities
+than their contributing MS1 precursor intensity, employs for example
+\code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)} during
+\link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a single
+column; thus the corresponding data filtration against it may be readily
+achieved without introducing new arguments. By contrast, \code{rptr_intco}
+applies to a set of columns, \code{I126} etc.; it might be slightly more
+involved/laborious when applying suitable statements of \code{filter_}
+varargs.}
 
 \item{rptr_intrange}{Numeric vector at length two. The argument specifies the
 range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
@@ -117,12 +118,11 @@ being considered non-trivial. The default is between 0 and 100 percentile
 without cut-offs. While argument \code{rptr_intco} employs a universal
 cut-off across samples by absolute values, \code{range_int} provides an
 alternative means of sample-specific thresholding of intensities by
-percentiles. The data nullification will not be applied synchronously to
-the precursor intensity under the same PSM query.}
+percentiles. The data nullification will not be applied synchronously to the
+precursor intensity under the same PSM query.}
 
-\item{rm_craps}{Logical; if TRUE,
-\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
-The default is FALSE.}
+\item{rm_craps}{Logical; if TRUE, \href{https://www.thegpm.org/crap/}{cRAP}
+proteins will be removed. The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
@@ -149,8 +149,8 @@ feature.}
 variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
 
-\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
-will be annotated with their kinase attributes. The default is FALSE.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins will
+be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE. The argument is also
@@ -159,9 +159,12 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
 peptide \code{log2FC} will be plotted. The default is TRUE.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
-residues will be abbreviated with lower-case and/or \code{^_~}. See the
-table below for details. The default is TRUE.}
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
+will be abbreviated with lower-case and/or \code{^_~}. See the table below
+for details. The default is TRUE.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 
 \item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
 the TRUE default, values under columns "Reporter intensity corrected..." in

@@ -2,16 +2,18 @@
 # [1] "cluego"
 # 
 # $corrplots.R
-#  [1] "plotCorr"           "my_custom_cor"      "  percent_of_range" "plot_corr_sub"      "  my_fn"           
-#  [6] "  lm_with_cor"      "  panel_cor"        "  panel_hist"       "  panel_lm"         "  my_lower"        
-# [11] "  my_lower_no_sm"   "  my_diag"          "pepCorr_logFC"      "pepCorr_logInt"     "prnCorr_logFC"     
-# [16] "prnCorr_logInt"    
+#  [1] "plotCorr"           "my_custom_cor"      "  percent_of_range" "plot_corr_sub"      "  my_fn"            "  lm_with_cor"     
+#  [7] "  panel_cor"        "  panel_hist"       "  panel_lm"         "  my_lower"         "  my_lower_no_sm"   "  my_diag"         
+# [13] "pepCorr_logFC"      "pepCorr_logInt"     "prnCorr_logFC"      "prnCorr_logInt"    
 # 
 # $datasets.R
 # character(0)
 # 
 # $dbs.R
 # [1] "read_fasta"  "write_fasta" "load_fasta"  "calc_avgpep"
+# 
+# $funs.R
+# [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
 # 
 # $global.R
 # [1] "set_dat_dir"    "get_gl_dat_dir"
@@ -26,10 +28,9 @@
 # [1] "make_gct" "make_cls" "prnGSEA"  "fml_gsea"
 # 
 # $gspa.R
-#  [1] "pepGSPA"            "prnGSPA"            "gspaTest"           "fml_gspa"           "ok_min_size"       
-#  [6] "gspa_summary_mean"  "gspa_summary_limma" "lm_gspa"            "prep_gspa"          "map_essential"     
-# [11] "prnGSPAHM"          "gspaHM"             "byfml_gspahm"       "byfile_gspahm"      "gspa_colAnnot"     
-# [16] "greedysetcover"    
+#  [1] "pepGSPA"            "prnGSPA"            "gspaTest"           "fml_gspa"           "ok_min_size"        "gspa_summary_mean" 
+#  [7] "gspa_summary_limma" "lm_gspa"            "prep_gspa"          "map_essential"      "prnGSPAHM"          "gspaHM"            
+# [13] "byfml_gspahm"       "byfile_gspahm"      "gspa_colAnnot"      "greedysetcover"    
 # 
 # $gsva.R
 # [1] "prnGSVA"  "gsvaTest"
@@ -67,17 +68,17 @@
 # [41] "simple_label_scheme"        "find_mascot_tmtplex"       
 # 
 # $nmf.R
-#  [1] "analNMF"         "plotNMFCon"      "plotNMFCoef"     "plotNMFmeta"     "anal_pepNMF"     "anal_prnNMF"    
-#  [7] "plot_pepNMFCon"  "plot_prnNMFCon"  "plot_pepNMFCoef" "plot_prnNMFCoef" "plot_metaNMF"   
+#  [1] "analNMF"         "plotNMFCon"      "plotNMFCoef"     "plotNMFmeta"     "anal_pepNMF"     "anal_prnNMF"     "plot_pepNMFCon" 
+#  [8] "plot_prnNMFCon"  "plot_pepNMFCoef" "plot_prnNMFCoef" "plot_metaNMF"   
 # 
 # $normalization.R
-#  [1] "find_fit_nms"     "hfind_fit_nms"    "calc_sd_fcts"     "center_df"        "add_mean_dev"     "find_n_comp"     
-#  [7] "my_which_max"     "ok_file_ncomp"    "spline_coefs"     "normMulGau"       "dblTrim"          "sumdnorm"        
-# [13] "  wt_dnorm"       "normSD"           "fitKernelDensity" "nmix_params"     
+#  [1] "find_fit_nms"     "hfind_fit_nms"    "calc_sd_fcts"     "center_df"        "add_mean_dev"     "find_n_comp"      "my_which_max"    
+#  [8] "ok_file_ncomp"    "spline_coefs"     "normMulGau"       "dblTrim"          "sumdnorm"         "  wt_dnorm"       "normSD"          
+# [15] "fitKernelDensity" "nmix_params"     
 # 
 # $outliers.R
-#  [1] "locate_outliers" "dixon_test"      "q_dixon"         "p_dixon"         "q_table"         "Dixon_outliers" 
-#  [7] "Grubbs_outliers" "grubbs_test"     "q_grubbs"        "          f"     "p_grubbs"        "Rosner_outliers"
+#  [1] "locate_outliers" "dixon_test"      "q_dixon"         "p_dixon"         "q_table"         "Dixon_outliers"  "Grubbs_outliers"
+#  [8] "grubbs_test"     "q_grubbs"        "          f"     "p_grubbs"        "Rosner_outliers"
 # 
 # $pca.R
 # [1] "plotPCA"  "scorePCA" "pepPCA"   "prnPCA"  
@@ -98,77 +99,49 @@
 # character(0)
 # 
 # $psmtable.R
-#  [1] "extract_raws"                                                   
-#  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
-#  [3] "find_mq_psmraws"                                                
-#  [4] "find_sm_psmraws"                                                
-#  [5] "find_mf_psmraws"                                                
-#  [6] "find_pq_psmraws"                                                
-#  [7] "extract_psm_raws"                                               
-#  [8] "set_mascot_colnms"                                              
-#  [9] "batchPSMheader"                                                 
-# [10] "rmPSMHeaders"                                                   
-# [11] "add_mod_conf"                                                   
-# [12] "find_mascot_vmods"                                              
-# [13] "add_mascot_pepseqmod"                                           
-# [14] "add_empai"                                                      
-# [15] "add_quality_cols"                                               
-# [16] "psm_msplit"                                                     
-# [17] "find_shared_prots"                                              
-# [18] "hfind_shared_prots"                                             
-# [19] "add_shared_genes"                                               
-# [20] "add_shared_prot_accs_mf"                                        
-# [21] "add_shared_sm_genes"                                            
-# [22] "procPSMs"                                                       
-# [23] "check_raws"                                                     
-# [24] "splitPSM"                                                       
-# [25] "find_mascot_plex"                                               
-# [26] "make_mascot_ratios"                                             
-# [27] "make_mascot_intensities"                                        
-# [28] "add_mascot_raw"                                                 
-# [29] "pad_mascot_channels"                                            
-# [30] "pad_mascot_fields"                                              
-# [31] "psm_mcleanup"                                                   
-# [32] "cleanupPSM"                                                     
-# [33] "mcPSM"                                                          
-# [34] "annotPSM"                                                       
-# [35] "normPSM"                                                        
-# [36] "rm_cols_mqpsm"                                                  
-# [37] "calcPeptide"                                                    
-# [38] "psm_to_pep"                                                     
-# [39] "PSM2Pep"                                                        
-# [40] "my_tolower"                                                     
-# [41] "my_upper"                                                       
-# [42] "add_maxquant_pepseqmod"                                         
-# [43] "add_msfragger_pepseqmod"                                        
-# [44] "add_cols_at"                                                    
-# [45] "replace_cols_at"                                                
-# [46] "reloc_col"                                                      
-# [47] "reloc_col_after"                                                
-# [48] "reloc_col_after_last"                                           
-# [49] "reloc_col_after_first"                                          
-# [50] "reloc_col_before"                                               
-# [51] "reloc_col_before_last"                                          
-# [52] "reloc_col_before_first"                                         
-# [53] "find_preceding_colnm"                                           
-# [54] "order_psm_cols"                                                 
-# [55] "order_mascot_psm_cols"                                          
-# [56] "pad_mq_channels"                                                
-# [57] "splitPSM_mq"                                                    
-# [58] "pad_sm_channels"                                                
-# [59] "add_sm_pepseqmod"                                               
-# [60] "splitPSM_sm"                                                    
-# [61] "pad_mf_channels"                                                
-# [62] "splitPSM_mf"                                                    
-# [63] "find_padding_pos"                                               
-# [64] "pad_tmt_channels"                                               
-# [65] "pad_psm_fields"                                                 
-# [66] "add_pepseqmod"                                                  
-# [67] "check_dup_unimods"                                              
-# [68] "splitPSM_pq"                                                    
-# [69] "add_pep_retsd"                                                  
-# [70] "calc_pep_retsd"                                                 
-# [71] "add_n_pepexpz"                                                  
+#  [1] "extract_raws"                                                    "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+#  [3] "find_mq_psmraws"                                                 "find_sm_psmraws"                                                
+#  [5] "find_mf_psmraws"                                                 "find_pq_psmraws"                                                
+#  [7] "extract_psm_raws"                                                "set_mascot_colnms"                                              
+#  [9] "batchPSMheader"                                                  "rmPSMHeaders"                                                   
+# [11] "add_mod_conf"                                                    "find_mascot_vmods"                                              
+# [13] "add_mascot_pepseqmod"                                            "add_empai"                                                      
+# [15] "add_quality_cols"                                                "psm_msplit"                                                     
+# [17] "find_shared_prots"                                               "hfind_shared_prots"                                             
+# [19] "add_shared_genes"                                                "add_shared_prot_accs_mf"                                        
+# [21] "add_shared_sm_genes"                                             "procPSMs"                                                       
+# [23] "check_raws"                                                      "splitPSM"                                                       
+# [25] "compile_hdr_mods"                                                "find_mascot_plex"                                               
+# [27] "make_mascot_ratios"                                              "make_mascot_intensities"                                        
+# [29] "add_mascot_raw"                                                  "pad_mascot_channels"                                            
+# [31] "pad_mascot_fields"                                               "psm_mcleanup"                                                   
+# [33] "cleanupPSM"                                                      "mcPSM"                                                          
+# [35] "annotPSM"                                                        "normPSM"                                                        
+# [37] "rm_cols_mqpsm"                                                   "groupMZPSM"                                                     
+# [39] "rm_psm_spikes"                                                   "keep_psm_bestint"                                               
+# [41] "calcMZPeptide"                                                   "calcPeptide"                                                    
+# [43] "psm_to_pep"                                                      "PSM2Pep"                                                        
+# [45] "my_tolower"                                                      "my_upper"                                                       
+# [47] "add_maxquant_pepseqmod"                                          "add_msfragger_pepseqmod"                                        
+# [49] "add_cols_at"                                                     "replace_cols_at"                                                
+# [51] "reloc_col"                                                       "reloc_col_after"                                                
+# [53] "reloc_col_after_last"                                            "reloc_col_after_first"                                          
+# [55] "reloc_col_before"                                                "reloc_col_before_last"                                          
+# [57] "reloc_col_before_first"                                          "find_preceding_colnm"                                           
+# [59] "order_psm_cols"                                                  "order_mascot_psm_cols"                                          
+# [61] "pad_mq_channels"                                                 "splitPSM_mq"                                                    
+# [63] "pad_sm_channels"                                                 "add_sm_pepseqmod"                                               
+# [65] "splitPSM_sm"                                                     "pad_mf_channels"                                                
+# [67] "splitPSM_mf"                                                     "round_msfmod_decimals"                                          
+# [69] "splitPSM_msgf"                                                   "procMSGFmods"                                                   
+# [71] "fml2mass"                                                        "join_mgfs"                                                      
+# [73] "find_padding_pos"                                                "pad_tmt_channels"                                               
+# [75] "pad_psm_fields"                                                  "add_pepseqmod"                                                  
+# [77] "add_msgf_pepseqmod"                                              "check_dup_unimods"                                              
+# [79] "splitPSM_mz"                                                     "add_pep_retsd"                                                  
+# [81] "calc_pep_retsd"                                                  "add_n_pepexpz"                                                  
+# [83] "add_mbr_psms"                                                    "mmbr_psms"                                                      
+# [85] "smbr_psms"                                                      
 # 
 # $purge.R
 # [1] "lgl_cleanup" "purge_by_cv" "purge_by_qt" "purge_by_n"  "psm_mpurge"  "purgePSM"    "purgePep"   
@@ -177,8 +150,8 @@
 # character(0)
 # 
 # $sigtests.R
-# [1] "rowVars"          "filterData"       "prepFml"          "my_padj"          "lm_summary"       "model_onechannel"
-# [7] "sigTest"          "pepSig"           "prnSig"          
+# [1] "rowVars"          "filterData"       "prepFml"          "my_padj"          "lm_summary"       "model_onechannel" "sigTest"         
+# [8] "pepSig"           "prnSig"          
 # 
 # $simulData.R
 # [1] "simulUniprotPSM"         "mascot_refseq2uniprot"   "maxquant_refseq2uniprot"
@@ -220,21 +193,22 @@
 #  [97] "find_fn_bases"               "find_fn_exts"                "check_dots"                  "check_depreciated_args"     
 # [101] "to_complete_cases"           "check_gset_nms"              "ok_existing_params"          "env_where"                  
 # [105] "set_cutpoints"               "set_cutpoints2"              "load_craps"                  "find_int_cols"              
-# [109] "find_ratio_cols"             "make_mq_meta"                "make_mq_meta2"               "  update_nodes"             
-# [113] "add_entry_ids"               "check_formalArgs"            "check_formalArgs2"           "set_ggsave_dots"            
-# [117] "find_search_engine"          "check_ggplot_aes"            "prep_range"                  "find_delim"                 
-# [121] "recur_flatten"               "subset_keepattr"             "list_to_dataframe"           "find_psmQ_files"            
-# [125] "get_col_types"               "write_excel_wb"              "load_ls_group"               "parse_col_select"           
-# [129] "parse_filename"              "procBrukerMGF"               "procBrukerMGF_v1"            "mprocBrukerMGF"             
-# [133] "check_aes_length"           
+# [109] "find_ratio_cols"             "make_mq_meta"                "make_mq_meta2"               "update_nodes"               
+# [113] "pre_mq_meta"                 "add_entry_ids"               "check_formalArgs"            "check_formalArgs2"          
+# [117] "set_ggsave_dots"             "find_search_engine"          "check_ggplot_aes"            "prep_range"                 
+# [121] "find_delim"                  "recur_flatten"               "subset_keepattr"             "list_to_dataframe"          
+# [125] "find_psmQ_files"             "get_col_types"               "write_excel_wb"              "load_ls_group"              
+# [129] "parse_col_select"            "parse_filename"              "subsetBrukerMGF"             "msubsetBrukerMGF"           
+# [133] "procBrukerMGF_v1"            "procBrukerMGF"               "mprocBrukerMGF"              "fixBrukerMGF"               
+# [137] "mfixBrukerMGF"               "check_aes_length"            "add_col_rawfile"             "load_psmC"                  
 # 
 # $utils_proteom.R
 # [1] "find_mod_indexesQ"   "deduce_mod_indexes"  "hdeduce_mod_indexes"
 # 
 # $volcanos.R
-#  [1] "plotVolcano"         "pval_complete_cases" "byfml_volcano"       "byfile_plotVolcano"  "subset_volcano_df"  
-#  [6] "fullVolcano"         "summ_venn"           "plot_venn"           "gsVolcano"           "pepVol"             
-# [11] "prnVol"              "gspaMap"             "geom_table"          "to_csv_"            
+#  [1] "plotVolcano"         "pval_complete_cases" "byfml_volcano"       "byfile_plotVolcano"  "subset_volcano_df"   "fullVolcano"        
+#  [7] "summ_venn"           "plot_venn"           "gsVolcano"           "pepVol"              "prnVol"              "gspaMap"            
+# [13] "geom_table"          "to_csv_"            
 # 
 # $wrappers.R
 # [1] "my_dist" "cos_sim"
