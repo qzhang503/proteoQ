@@ -11,6 +11,7 @@ pep_to_prn(
   gn_rollup = TRUE,
   rm_outliers = FALSE,
   rm_allna = FALSE,
+  is_prot_lfq = FALSE,
   ...
 )
 }

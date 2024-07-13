@@ -1208,8 +1208,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     df <- df %>% dplyr::mutate(gene = forcats::fct_na_value_to_level(gene))
   }
   
-  df <- df %>% 
-    assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
+  df <- 
+    assign_duppeps(df, group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
   
   if (!use_mq_pep) {
     # make `I000 (SID_1)`, `I000 (SID_2)`, ...
@@ -1460,6 +1460,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     filepath = file.path(dat_dir, "Peptide/Histogram"),
     col_select = rlang::expr(Sample_ID), 
     cut_points = cut_points, 
+    is_prot_lfq = FALSE,
   ) %>% 
     fmt_num_cols() %T>% 
     write.table(file.path(dat_dir, "Peptide/Peptide.txt"), 
@@ -2116,19 +2117,19 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
          call. = FALSE)
   }
   
-  df %>% 
-    normMulGau(
-      df = .,
-      method_align = method_align,
-      n_comp = n_comp,
-      seed = seed,
-      range_log2r = range_log2r,
-      range_int = range_int,
-      filepath = file.path(dat_dir, "Peptide/Histogram"),
-      col_select = col_select, 
-      cut_points = Inf, 
-      !!!dots, 
-    ) %>% 
+  df <- normMulGau(
+    df = df,
+    method_align = method_align,
+    n_comp = n_comp,
+    seed = seed,
+    range_log2r = range_log2r,
+    range_int = range_int,
+    filepath = file.path(dat_dir, "Peptide/Histogram"),
+    col_select = col_select, 
+    cut_points = Inf, 
+    is_prot_lfq = FALSE, 
+    !!!dots, 
+  ) %>% 
     fmt_num_cols() %T>% 
     write.table(file.path(dat_dir, "Peptide", "Peptide.txt"), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
@@ -2327,12 +2328,15 @@ Pep2Prn <- function (method_pep_prn =
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
+  is_prot_lfq <- grepl("^lfq_", method_pep_prn)
+  
   df <- pep_to_prn(id = prot_acc, 
                    method_pep_prn = method_pep_prn, 
                    use_unique_pep = use_unique_pep, 
                    gn_rollup = gn_rollup, 
                    rm_outliers = rm_outliers, 
                    rm_allna = rm_allna, 
+                   is_prot_lfq = is_prot_lfq, 
                    !!!filter_dots) 
   
   if (mc) {
@@ -2344,6 +2348,7 @@ Pep2Prn <- function (method_pep_prn =
       range_int = c(0, 100),
       filepath = file.path(dat_dir, "Protein/Histogram"),
       col_select = rlang::expr(Sample_ID), 
+      is_prot_lfq = is_prot_lfq, 
       cut_points = cut_points) 
   }
   else {
@@ -2505,29 +2510,65 @@ calc_lfq_prnnums <- function (df, use_unique_pep = TRUE,
   #   to keep them the same as MSFragger calculations
   # instead let `pep_unique_by` decides which one to use
   df <- df %>% 
-    dplyr::left_join(pep_prot_map, by = group_psm_by) 
+    dplyr::left_join(pep_prot_map, by = group_psm_by)
   
-  prot_tot_ints <- df %>% 
-    dplyr::select(prot_map, grep("^pep_tot_int\\s\\(", names(.))) %>% 
-    dplyr::group_by(prot_map) %>% 
-    dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+  nms <- names(df)
+  col_prot <- which(nms == "prot_map")
+  cols_tot <- c(col_prot, grep("pep_tot_int\\s\\(", nms))
+  cols_raz <- c(col_prot, grep("^pep_razor_int\\s\\(", nms))
+  cols_unq <- c(col_prot, grep("^pep_unique_int\\s\\(", nms))
   
-  prot_razor_ints <- df %>% 
-    dplyr::select(prot_map, grep("^pep_razor_int\\s\\(", names(.))) %>% 
-    dplyr::group_by(prot_map) %>% 
-    dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+  prot_tot_ints    <- setNames(data.frame(df[, cols_tot]), nms[cols_tot])
+  prot_razor_ints  <- setNames(data.frame(df[, cols_raz]), nms[cols_raz])
+  prot_unique_ints <- setNames(data.frame(df[, cols_unq]), nms[cols_unq])
+  cols_num  <- 2:ncol(prot_tot_ints)
+  # fcts_prot <- prot_tot_ints$prot_map
+
+  prot_tot_ints <- 
+    lapply(split(prot_tot_ints, prot_tot_ints$prot_map), 
+           impPepNA, cols_num) |>
+    dplyr::bind_rows() |>
+    dplyr::group_by(prot_map) |>
+    dplyr::summarise_all(function (x) my_sum_n(x, n = n, na.rm = TRUE))
+
+  prot_razor_ints <- 
+    lapply(split(prot_razor_ints, prot_razor_ints$prot_map), 
+           impPepNA, cols_num) |>
+    dplyr::bind_rows() |>
+    dplyr::group_by(prot_map) |>
+    dplyr::summarise_all(function (x) my_sum_n(x, n = n, na.rm = TRUE))
+
+  prot_unique_ints <- 
+    lapply(split(prot_unique_ints, prot_unique_ints$prot_map), 
+           impPepNA, cols_num) |>
+    dplyr::bind_rows() |>
+    dplyr::group_by(prot_map) |>
+    dplyr::summarise_all(function (x) my_sum_n(x, n = n, na.rm = TRUE))
   
-  prot_unique_ints <- df %>% 
-    dplyr::select(prot_map, grep("^pep_unique_int\\s\\(", names(.))) %>% 
-    dplyr::group_by(prot_map) %>% 
-    dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+  if (FALSE) {
+    prot_tot_ints <- df %>% 
+      dplyr::select(prot_map, grep("^pep_tot_int\\s\\(", names(.))) %>% 
+      dplyr::group_by(prot_map) %>% 
+      dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+    
+    prot_razor_ints <- df %>% 
+      dplyr::select(prot_map, grep("^pep_razor_int\\s\\(", names(.))) %>% 
+      dplyr::group_by(prot_map) %>% 
+      dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+    
+    prot_unique_ints <- df %>% 
+      dplyr::select(prot_map, grep("^pep_unique_int\\s\\(", names(.))) %>% 
+      dplyr::group_by(prot_map) %>% 
+      dplyr::summarise_all(~ my_sum_n(.x, n = n, na.rm = TRUE))
+  }
   
   three_lfqints <- list(prot_tot_ints, prot_razor_ints, prot_unique_ints) %>% 
     purrr::reduce(dplyr::left_join, by = "prot_map") %>% 
     `names<-`(gsub("^pep_", "prot_", names(.)))
-  
+
   df$prot_map <- NULL
-  rm(list = c("prot_tot_ints", "prot_razor_ints", "prot_unique_ints"))
+  rm(list = c("prot_tot_ints", "prot_razor_ints", "prot_unique_ints", 
+              "nms", "col_prot", "cols_tot", "cols_raz", "cols_unq"))
 
   pep_unique_by <- match_call_arg(normPSM, pep_unique_by)
   col_nms <- names(three_lfqints)
@@ -2551,9 +2592,18 @@ calc_lfq_prnnums <- function (df, use_unique_pep = TRUE,
     `names<-`(gsub("^prot_.*_int", "I000", names(.))) %>% 
     calc_lfq_log2r("I000", refChannels) 
   
+  if (FALSE) {
+    dfx <- dfw[which(three_lfqints$prot_map == "P06800"), ]
+  }
+  
   # --- median centering ---
   cols_log2Ratio <- grepl("^log2_R[0-9]{3}[NC]{0,1}", names(dfw))
-  cfs <- apply(dfw[, cols_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+  
+  # cfs <- apply(dfw[, cols_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+  cfs <- lapply(dfw[, cols_log2Ratio, drop = FALSE], function (x) {
+    median(x[x >= -2 & x <= 2], na.rm = TRUE)
+  }) |>
+    unlist()
   
   dfw <- sweep(dfw[, cols_log2Ratio, drop = FALSE], 2, cfs, "-") %>%
     `colnames<-`(paste("N", names(.), sep="_"))	%>%
@@ -2627,7 +2677,8 @@ calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc",
 #' @inheritParams Pep2Prn
 pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median", 
                        use_unique_pep = TRUE, gn_rollup = TRUE, 
-                       rm_outliers = FALSE, rm_allna = FALSE, ...) 
+                       rm_outliers = FALSE, rm_allna = FALSE, 
+                       is_prot_lfq = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
@@ -2643,9 +2694,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   df <- suppressWarnings(
     readr::read_tsv(file.path(dat_dir, "Peptide/Peptide.txt"), 
                     col_types = get_col_types(), 
-                    show_col_types = FALSE)
-  )
-  
+                    show_col_types = FALSE))
+
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     { if (TMT_plex && rm_allna) 
@@ -2713,7 +2763,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     
     df <- df %>% 
       { if (rm_allna) 
-        .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] else . } %>% 
+        .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+        else . } %>% 
       dplyr::select(-grep("^X[0-9]{3}[NC]{0,1}", names(.)))
   } 
 
@@ -2764,7 +2815,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   })
   
   # first by `id = prot_acc` and later optional roll-up to `gene`
-  if (grepl("^lfq_", method_pep_prn)) {
+  if (is_prot_lfq) {
     if (TMT_plex) {
       stop("\"method_pep_prn = lfq_[...]\" only for LFQ.")
     }
@@ -2952,7 +3003,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
       dplyr::select(nms)
   } 
   
-  dplyr::bind_cols(
+  df <- dplyr::bind_cols(
     df %>% dplyr::select(grep("^prot_", names(.))), 
     df %>% dplyr::select(-grep("^prot_", names(.))), 
   ) 
@@ -3101,4 +3152,30 @@ replace_by_rowone <- function (df, col_nms)
   
   dplyr::bind_rows(df[1, ], df2)
 }
+
+
+#' Imputes NA values in a peptide table
+#'
+#' @param df A intensity data frame (not matrix) of peptides.
+#' @param cols_num The indexes of numeric columns in \code{df}.
+impPepNA <- function (df, cols_num)
+{
+  # if (!is.data.frame(df)) stop("Input `df` needs to be a data frame.")
+  set.seed(1422)
+  
+  dfx <- df[, cols_num, drop = FALSE]
+  
+  nas  <- is.na(dfx)
+  # mv   <- min(dfx[!nas])/5E2
+  mv   <- mean(dfx[!nas])/5E2
+  errs <- 2^rnorm(sum(nas), 0, .5)
+  nvs  <- mv * errs
+
+  dfx[nas] <- nvs
+
+  df[, cols_num] <- dfx
+  
+  df
+}
+
 

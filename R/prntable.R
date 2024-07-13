@@ -174,6 +174,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
   
+  is_prot_lfq <- if (any(grepl("^I000 ", names(df)))) TRUE else FALSE
+
   df <- normMulGau(
     df = df, 
     method_align = method_align, 
@@ -184,6 +186,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     filepath = file.path(dat_dir, "Protein/Histogram"), 
     col_select = col_select, 
     cut_points = cut_points, 
+    is_prot_lfq = is_prot_lfq, 
     !!!dots,
   )
   

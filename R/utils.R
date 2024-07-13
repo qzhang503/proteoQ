@@ -854,7 +854,7 @@ imputeNA <- function (id, overwrite = FALSE, ...)
   }
   
   handleNA <- function (x, ...) {
-    ind <- purrr::map(x, is.numeric) %>% unlist()
+    ind <- unlist(lapply(x, is.numeric))
     
     if (sum(ind) < ncol(x)) cat(names(ind)[!ind], "skipped.")
     
@@ -899,8 +899,7 @@ imputeNA <- function (id, overwrite = FALSE, ...)
     if (!is.null(dim(df))) {
       message(paste("File loaded:", src_path))
     } else {
-      stop("File or directory not found: ", src_path, 
-           call. = FALSE)
+      stop("File or directory not found: ", src_path)
     }
     
     df[, grep("N_log2_R", names(df))] <- 

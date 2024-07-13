@@ -14,6 +14,7 @@ normMulGau(
   filepath = NULL,
   col_select = NULL,
   cut_points = Inf,
+  is_prot_lfq = FALSE,
   ...
 )
 }
@@ -67,6 +68,11 @@ data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
 \code{log2FC} can also be achieved through a different numeric column,
 e.g., \code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
 \code{\link{mergePep}} for data alignment with binning.}
+
+\item{is_prot_lfq}{Logical; is protein LFQ data or not. About half of the
+protein intensity values can be missing with LFQ and imputed with small
+values. The typically causes a bimodality in protein log2FC distributions
+and need to be handled especially at \code{method_align = "MC"}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row
 filtration of data against the column keys in \code{Peptide.txt} for

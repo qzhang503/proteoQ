@@ -218,6 +218,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
       dplyr::filter(!is.na(value), !is.na(col_cut)) %>%
       dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
       dplyr::mutate(value = setHMlims(value, xmin, xmax))
+    
+    df_melt <- df_melt |> dplyr::filter(value > xmin, value < xmax)
   })
   
   p <- ggplot() +

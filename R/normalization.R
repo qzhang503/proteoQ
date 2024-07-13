@@ -353,7 +353,9 @@ ok_file_ncomp <- function(filepath, filename, n_comp)
 #' @param label_scheme The metadata of label scheme.
 #' @param label_scheme_fit the subset of \code{label_scheme} used in fitting.
 #' @param ... Additional parameters, including slice_dots.
-spline_coefs <- function (df, label_scheme, label_scheme_fit, ...) 
+#' @inheritParams normMulGau
+spline_coefs <- function (df, label_scheme, label_scheme_fit, 
+                          is_prot_lfq = FALSE, method_align = "MC", ...) 
 {
   dots <- rlang::enexprs(...)
   
@@ -372,31 +374,33 @@ spline_coefs <- function (df, label_scheme, label_scheme_fit, ...)
     dplyr::mutate(x = ifelse(grepl("^Empty\\.[0-9]+$", Sample_ID), NA_real_, 0), 
                   Sample_ID = factor(Sample_ID, levels = sids)) %>% 
     dplyr::arrange(Sample_ID)
-  
-  if (FALSE) {
-    x_vals <- df %>%
-      dplyr::select(grep(pat_pre, names(.))) %>% 
-      `colnames<-`(gsub(pat_ref, "\\1", names(.))) %>%
-      dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
-      unlist() %>%
-      data.frame(x = .) %>%
-      tibble::rownames_to_column("Sample_ID") %>%
-      dplyr::filter(Sample_ID %in% sids) %>% 
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
-      dplyr::arrange(Sample_ID) %>% 
-      dplyr::mutate(x = ifelse(is.na(x), NA_real_, 0))
-  }
 
   x_vals_fit <- df %>%
     filters_in_call(!!!slice_dots) %>% 
     dplyr::select(grep(pat_pre, names(.))) %>% 
     `colnames<-`(gsub(pat_ref, "\\1", names(.))) %>%
-    dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
-    unlist() %>%
-    data.frame(x = .) %>%
+    dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID))
+  
+  if (is_prot_lfq && method_align == "MC") {
+    x_vals_fit <- lapply(x_vals_fit, function (vals) {
+      qts <- quantile(vals, seq(0, 1, .05), na.rm = TRUE)
+      qt_lwr <- qts[qts >= -2][[1]]
+      qt_upr <- qts[which(qts <= 2.5) %>% .[length(.)]]
+
+      vals[vals < qt_lwr | vals > qt_upr] <- NA_real_
+      median(vals, na.rm = TRUE)
+    }) |>
+      unlist()
+  }
+  else {
+    x_vals_fit <- x_vals_fit %>% 
+      dplyr::summarise_all(function (x) median(x, na.rm = TRUE)) %>%
+      unlist()
+  }
+  
+  x_vals_fit <- data.frame(x = x_vals_fit) |>
     tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) |>
     dplyr::arrange(Sample_ID)
   
   rows <- x_vals$Sample_ID %in% x_vals_fit$Sample_ID
@@ -418,6 +422,10 @@ spline_coefs <- function (df, label_scheme, label_scheme_fit, ...)
 #' in \code{method_align}, \code{col_select} etc.
 #'
 #' @param df An input data frame
+#' @param is_prot_lfq Logical; is protein LFQ data or not. About half of the
+#'   protein intensity values can be missing with LFQ and imputed with small
+#'   values. The typically causes a bimodality in protein log2FC distributions
+#'   and need to be handled especially at \code{method_align = "MC"}.
 #' @inheritParams prnHist
 #' @inheritParams standPep
 #' @return A data frame.
@@ -426,7 +434,8 @@ spline_coefs <- function (df, label_scheme, label_scheme_fit, ...)
 #' @importFrom magrittr %>% %T>% %$% %<>%
 normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL, 
                        range_log2r = c(0, 100), range_int = c(0, 100), 
-                       filepath = NULL, col_select = NULL, cut_points = Inf, ...) 
+                       filepath = NULL, col_select = NULL, cut_points = Inf, 
+                       is_prot_lfq = FALSE, ...) 
 {
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   dat_dir <- get_gl_dat_dir()
@@ -615,8 +624,10 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
     # (a) new x's for selected samples; 
     # (b) 0 for the remaining (no further adjustment)
     x_vals <- df %>% 
-      purrr::map(spline_coefs, label_scheme, label_scheme_fit, !!!slice_dots)
-    
+      purrr::map(spline_coefs, label_scheme, label_scheme_fit, 
+                 is_prot_lfq = is_prot_lfq, method_align = method_align, 
+                 !!!slice_dots)
+
     # (MC.4) data median-centering (selected samples)
     # (label_scheme, not label_scheme_fit as x's are 0's for non-selected)
     ans <- purrr::map2(df, x_vals, ~ center_df(.x, label_scheme, .y, sd_coefs))
