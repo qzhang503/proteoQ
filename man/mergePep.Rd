@@ -50,9 +50,9 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 measured values across all samples. The default is FALSE.}
 
 \item{ret_sd_tol}{Numeric; the tolerance in the variance of retention time
-(w.r.t. measures in seconds). The thresholding applies to both TMT and LFQ
-data. The default is \code{Inf}. Depends on the setting of LCMS gradients, a
-setting of, e.g., 150 might be suitable.}
+(w.r.t. measures in seconds). The thresholding applies to TMT data. The
+default is \code{Inf}. Depends on the setting of LCMS gradients, a setting
+of, e.g., 150 might be suitable.}
 
 \item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with outlying
 retention times across samples and/or LCMS series.}

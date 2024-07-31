@@ -2,7 +2,7 @@
 #' 
 #' @import dplyr ggplot2
 #' @inheritParams load_expts
-#' @inheritParams splitPSM
+#' @inheritParams splitPSM_ma
 #' @inheritParams cleanupPSM
 #' @inheritParams annotPSM
 #' @inheritParams normPSM

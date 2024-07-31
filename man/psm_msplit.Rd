@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{psm_msplit}
 \alias{psm_msplit}
-\title{Parallel splits of PSM tables}
+\title{Splits of PSM tables}
 \usage{
 psm_msplit(
   df = NULL,
@@ -18,7 +18,7 @@ psm_msplit(
 
 \item{nm}{Names of the \code{df}'s.}
 
-\item{fn_lookup}{A lookup of file names.}
+\item{fn_lookup}{A look-up of file names.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
@@ -30,5 +30,5 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 }
 \description{
-Parallel splits of PSM tables
+Splits of PSM tables
 }

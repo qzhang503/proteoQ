@@ -8,7 +8,7 @@ pad_mq_channels(
   file = NULL,
   fasta = NULL,
   entrez = NULL,
-  corrected_int = TRUE,
+  use_corrected_mqint = TRUE,
   ...
 )
 }
@@ -27,10 +27,10 @@ species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}} for
 preparing custom entrez files.}
 
-\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
-the TRUE default, values under columns "Reporter intensity corrected..." in
-\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
-"Reporter intensity" values without corrections will be used.}
+\item{use_corrected_mqint}{A logical argument for uses with \code{MaxQuant}
+TMT. At the TRUE default, values under columns "Reporter intensity
+corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be used.
+Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{...}{filter_dots.}
 }

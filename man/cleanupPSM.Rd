@@ -29,8 +29,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 }
 \description{
-\code{cleanupPSM} removes PSM outliers after \code{splitPSM},
-\code{splitPSM_mq} or \code{splitPSM_sm}. The outlier removals will be
+\code{cleanupPSM} removes PSM outliers after \code{splitPSM_ma} or ,
+\code{splitPSM_mq}. The outlier removals will be
 assessed at the basis of per peptide per TMT channel.
 }
 \details{

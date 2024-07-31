@@ -11,7 +11,8 @@ calcLFQPeptide(
   dat_dir = NULL,
   set_idx = 1L,
   injn_idx = 1L,
-  TMT_plex = 10L,
+  TMT_plex = 1L,
+  lfq_mbr = FALSE,
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
   type_sd = "log2_R"
@@ -43,6 +44,8 @@ files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+
+\item{lfq_mbr}{Logical; performs MBR for LFQ or not.}
 
 \item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
 aggregation of LFQ data.}

@@ -10,8 +10,8 @@ normPSM(
   frac_smry = "frac_smry.xlsx",
   fasta = NULL,
   entrez = NULL,
-  group_psm_by = c("pep_seq", "pep_seq_mod"),
-  group_pep_by = c("prot_acc", "gene"),
+  group_psm_by = c("pep_seq_mod", "pep_seq"),
+  group_pep_by = c("gene", "prot_acc"),
   pep_unique_by = c("group", "protein", "none"),
   mc_psm_by = c("peptide", "protein", "psm"),
   scale_rptr_int = FALSE,
@@ -23,14 +23,14 @@ normPSM(
   rm_allna = FALSE,
   type_sd = c("log2_R", "N_log2_R", "Z_log2_R"),
   lfq_mbr = TRUE,
-  mbr_ret_tol = 60,
+  mbr_ret_tol = 25,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   use_lowercase_aa = FALSE,
   use_spec_counts = FALSE,
-  corrected_int = TRUE,
+  use_corrected_mqint = TRUE,
   rm_reverses = TRUE,
   ...
 )
@@ -139,9 +139,9 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \item{type_sd}{Character string; the type of log2Ratios for SD calculations.
 The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
-\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with LFQ
-data. Both \code{psmQ.txt} and \code{psmC.txt} are required with the
-feature.}
+\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with Mzion
+LFQ data. Also requires \code{ms1full_[rawfile].rds} at the same file-folder
+level of \code{psmQ[...].txt}.}
 
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 
@@ -166,10 +166,10 @@ for details. The default is TRUE.}
 \item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
 quantitation with Mascot or Mzion outputs.}
 
-\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
-the TRUE default, values under columns "Reporter intensity corrected..." in
-\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
-"Reporter intensity" values without corrections will be used.}
+\item{use_corrected_mqint}{A logical argument for uses with \code{MaxQuant}
+TMT. At the TRUE default, values under columns "Reporter intensity
+corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be used.
+Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
 LFQ. At the TRUE default, \code{Reverse} entries will be removed.}

@@ -4,7 +4,7 @@
 \alias{mmbr_psms}
 \title{Helper of \link{smbr_psms}.}
 \usage{
-mmbr_psms(dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 60)
+mmbr_psms(dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 25)
 }
 \arguments{
 \item{dfqm}{psmQ subset with missing intensity values for MBR.}

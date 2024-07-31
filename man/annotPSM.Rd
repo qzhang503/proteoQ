@@ -71,5 +71,5 @@ The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 }
 \description{
 \code{annotPSM} adds fields of annotation to Mascot PSM tables after
-\code{rmPSMHeaders}, \code{splitPSM} and \code{cleanupPSM}.
+\code{rmPSMHeaders}, \code{splitPSM_ma} and \code{cleanupPSM}.
 }

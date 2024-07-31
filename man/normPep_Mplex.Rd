@@ -7,12 +7,17 @@
 normPep_Mplex(
   group_psm_by = "pep_seq_mod",
   group_pep_by = "prot_acc",
+  engine = "mz",
+  lfq_mbr = TRUE,
   use_duppeps = TRUE,
   duppeps_repair = "denovo",
   cut_points = Inf,
   omit_single_lfq = FALSE,
   use_mq_pep = FALSE,
+  use_mf_pep = FALSE,
   rm_allna = FALSE,
+  mbr_ret_tol = 25,
+  max_mbr_fold = 4,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
   ...
@@ -31,6 +36,12 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{engine}{The name of search engine.}
+
+\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with Mzion
+LFQ data. Also requires \code{ms1full_[rawfile].rds} at the same file-folder
+level of \code{psmQ[...].txt}.}
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
@@ -57,17 +68,22 @@ also \code{\link{prnHist}} for data binning in histogram visualization.}
 \item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
 measured values across all samples. The default is FALSE.}
 
-\item{use_mq_pep}{Logical; if TRUE, uses the peptides.txt from MaxQuant. This
-is an interim solution for MaxQuant timsTOF.}
+\item{use_mq_pep}{Logical; if TRUE, uses the peptides.txt from MaxQuant.}
+
+\item{use_mf_pep}{Logical; if TRUE, uses the peptides.txt from MSFragger.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
+\item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
+
+\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
+
 \item{ret_sd_tol}{Numeric; the tolerance in the variance of retention time
-(w.r.t. measures in seconds). The thresholding applies to both TMT and LFQ
-data. The default is \code{Inf}. Depends on the setting of LCMS gradients, a
-setting of, e.g., 150 might be suitable.}
+(w.r.t. measures in seconds). The thresholding applies to TMT data. The
+default is \code{Inf}. Depends on the setting of LCMS gradients, a setting
+of, e.g., 150 might be suitable.}
 
 \item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with outlying
 retention times across samples and/or LCMS series.}

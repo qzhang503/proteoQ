@@ -13,5 +13,5 @@ pep_mq_lfq(label_scheme, omit_single_lfq)
 measured values across all samples. The default is FALSE.}
 }
 \description{
-Fill back temporarily intensity values that are not filled in LFQ msms.txt.
+Fill back intensity values that are not filled in LFQ msms.txt.
 }

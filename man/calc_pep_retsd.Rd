@@ -4,7 +4,7 @@
 \alias{calc_pep_retsd}
 \title{Calculates the standard deviation in the retention times of peptides.}
 \usage{
-calc_pep_retsd(df, group_psm_by = "pep_seq", use_unique = TRUE)
+calc_pep_retsd(df, group_psm_by = "pep_seq_mod", use_unique = TRUE)
 }
 \arguments{
 \item{df}{A data frame.}

@@ -11,7 +11,7 @@ splitPSM_mq(
   entrez = NULL,
   pep_unique_by = "group",
   scale_rptr_int = FALSE,
-  corrected_int = TRUE,
+  use_corrected_mqint = TRUE,
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_allna = FALSE,
@@ -69,10 +69,10 @@ intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
 intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
 \eqn{x}. Note that the scaling will not affect \code{log2FC}.}
 
-\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
-the TRUE default, values under columns "Reporter intensity corrected..." in
-\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
-"Reporter intensity" values without corrections will be used.}
+\item{use_corrected_mqint}{A logical argument for uses with \code{MaxQuant}
+TMT. At the TRUE default, values under columns "Reporter intensity
+corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be used.
+Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{rm_craps}{Logical; if TRUE, \href{https://www.thegpm.org/crap/}{cRAP}
 proteins will be removed. The default is FALSE.}
@@ -132,7 +132,7 @@ for details. The default is TRUE.}
 injection.
 }
 \details{
-Different to \code{splitPSM} used in \code{Mascot} processes,
+Different to \code{splitPSM_ma} used in \code{Mascot} processes,
 \code{pep_seq_mod}, \code{prot_n_psm}, \code{prot_n_pep} and \code{pep_n_psm}
 are calculated later in \code{annotPSM}. This is suitable mainly because there
 is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig} need

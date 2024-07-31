@@ -4,14 +4,19 @@
 \alias{use_mq_peptable}
 \title{Check the single presence of MaxQuant peptides[...].txt.}
 \usage{
-use_mq_peptable(dat_dir, label_scheme_full)
+use_mq_peptable(dat_dir, label_scheme_full, group_psm_by = "pep_seq")
 }
 \arguments{
-\item{dat_dir}{A character string to the working directory. The default is to
-match the value under the global environment.}
+\item{dat_dir}{The working directory.}
 
-\item{label_scheme_full}{The label_scheme with the probable inclusion of
-different LCMS_inj under the same TMT_Set.}
+\item{label_scheme_full}{The metadata}
+
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
 }
 \description{
 Check the single presence of MaxQuant peptides[...].txt.

@@ -4,7 +4,7 @@
 \alias{smbr_psms}
 \title{Single MBR.}
 \usage{
-smbr_psms(dfqi, dfci, cols_mbr, cols_dfq, mbr_ret_tol = 60)
+smbr_psms(dfqi, dfci, cols_mbr, cols_dfq, mbr_ret_tol = 25)
 }
 \arguments{
 \item{dfqi}{An i-th entry of dfq.}

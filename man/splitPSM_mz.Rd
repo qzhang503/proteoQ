@@ -22,7 +22,7 @@ splitPSM_mz(
   use_lowercase_aa = TRUE,
   use_spec_counts = FALSE,
   lfq_mbr = FALSE,
-  mbr_ret_tol = 60L,
+  mbr_ret_tol = 25L,
   parallel = TRUE,
   ...
 )
@@ -121,9 +121,9 @@ for details. The default is TRUE.}
 \item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
 quantitation with Mascot or Mzion outputs.}
 
-\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with LFQ
-data. Both \code{psmQ.txt} and \code{psmC.txt} are required with the
-feature.}
+\item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with Mzion
+LFQ data. Also requires \code{ms1full_[rawfile].rds} at the same file-folder
+level of \code{psmQ[...].txt}.}
 
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 

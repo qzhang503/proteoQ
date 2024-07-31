@@ -35,8 +35,7 @@ get_gl_dat_dir <- function()
   
   if (is.na(dat_dir)) {
     stop("Unknown working directory; ", 
-         "run `load_expts(\"my/fabulous/working/directory\")` first.", 
-         call. = FALSE)
+         "run `load_expts(\"my/fabulous/working/directory\")` first.")
   }
   
   invisible(dat_dir)

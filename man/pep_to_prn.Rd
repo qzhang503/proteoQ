@@ -12,6 +12,10 @@ pep_to_prn(
   rm_outliers = FALSE,
   rm_allna = FALSE,
   is_prot_lfq = FALSE,
+  engine = "mz",
+  impute_prot_na = TRUE,
+  use_mq_prot = FALSE,
+  use_mf_prot = FALSE,
   ...
 )
 }
@@ -47,6 +51,14 @@ used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{engine}{The name of search engine.}
+
+\item{impute_prot_na}{Logical; impute NA values of protein log2FC or not.}
+
+\item{use_mq_prot}{Logical; use MQ protein table or not.}
+
+\item{use_mf_prot}{Logical; use MSFragger protein table or not.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains a list of logical expression(s). The

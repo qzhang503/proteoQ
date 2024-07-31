@@ -4,12 +4,14 @@
 \alias{aggrNumLCMS}
 \title{Aggregates data from the same TMT_Set at different LCMS_Injection.}
 \usage{
-aggrNumLCMS(df, group_psm_by = "pep_seq_mod", label_scheme_full)
+aggrNumLCMS(df, group_psm_by = "pep_seq_mod", label_scheme_full, cols = NULL)
 }
 \arguments{
 \item{df}{A data frame.}
 
 \item{label_scheme_full}{Metadata.}
+
+\item{cols}{Columns for data aggregation.}
 }
 \description{
 Aggregates data from the same TMT_Set at different LCMS_Injection.

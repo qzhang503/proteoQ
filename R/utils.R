@@ -2761,7 +2761,7 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE)
 #' @inheritParams info_anal
 #' @inheritParams standPep
 #' @inheritParams channelInfo
-#' @inheritParams calcPeptide
+#' @inheritParams calcTMTPeptide
 calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), 
                               set_idx, injn_idx) 
 {

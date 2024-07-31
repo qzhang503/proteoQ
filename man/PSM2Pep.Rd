@@ -16,13 +16,10 @@ PSM2Pep(
 \arguments{
 \item{method_psm_pep}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The descriptive statistics includes \code{c("mean", "median",
-"weighted_mean", "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum",
-"lfq_all")} with \code{median} being the default for TMT and
-\code{lfq_top_2_sum} for LFQ. The \code{log10-intensity} of reporter (or
-LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
-\code{log2FC} with various \code{"top_n"} statistics or
-\code{"weighted_mean"}.}
+The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will 
+be the weight when summarizing \code{log2FC} with various \code{"top_n"} 
+statistics or \code{"weighted_mean"}. The choices of summary statistics for
+ LFQ are depreciated at the users' levels.}
 
 \item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
 aggregation of LFQ data.}

@@ -89,7 +89,7 @@ write_fasta <- function (fasta_db, file)
 
 #' Loads fasta
 #' 
-#' @inheritParams splitPSM
+#' @inheritParams splitPSM_ma
 #' @examples
 #' \donttest{
 #' fasta_db <- load_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
