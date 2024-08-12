@@ -21,7 +21,7 @@ splitPSM_mz(
   rptr_intrange = c(0, 100),
   use_lowercase_aa = TRUE,
   use_spec_counts = FALSE,
-  lfq_mbr = FALSE,
+  lfq_mbr = TRUE,
   mbr_ret_tol = 25L,
   parallel = TRUE,
   ...

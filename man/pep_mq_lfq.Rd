@@ -4,13 +4,15 @@
 \alias{pep_mq_lfq}
 \title{Handling of MaxQuant peptide.txt}
 \usage{
-pep_mq_lfq(label_scheme, omit_single_lfq)
+pep_mq_lfq(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE)
 }
 \arguments{
 \item{label_scheme}{Experiment summary}
 
-\item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
-measured values across all samples. The default is FALSE.}
+\item{omit_single_lfq}{Depreciated. Logical; if TRUE, omits LFQ entries with
+single measured values across all samples. The default is FALSE.}
+
+\item{use_maxlfq}{Logical; use MaxLFQ values or not.}
 }
 \description{
 Fill back intensity values that are not filled in LFQ msms.txt.

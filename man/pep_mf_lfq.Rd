@@ -6,13 +6,16 @@
 \usage{
 pep_mf_lfq(
   label_scheme,
-  omit_single_lfq,
-  group_psm_by,
+  omit_single_lfq = FALSE,
+  use_maxlfq = TRUE,
+  group_psm_by = "pep_seq_mod",
   use_lowercase_aa = FALSE
 )
 }
 \arguments{
 \item{label_scheme}{Experiment summary}
+
+\item{use_maxlfq}{Logical; use MaxLFQ values or not.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated

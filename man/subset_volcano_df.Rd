@@ -2,7 +2,7 @@
 % Please edit documentation in R/volcanos.R
 \name{subset_volcano_df}
 \alias{subset_volcano_df}
-\title{Sets data for volcan plots.}
+\title{Sets data for volcano plots.}
 \usage{
 subset_volcano_df(x, df, keys = c("pVal", "adjP", "log2Ratio"))
 }
@@ -14,5 +14,5 @@ subset_volcano_df(x, df, keys = c("pVal", "adjP", "log2Ratio"))
 \item{keys}{Column keys.}
 }
 \description{
-Sets data for volcan plots.
+Sets data for volcano plots.
 }

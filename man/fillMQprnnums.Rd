@@ -4,10 +4,12 @@
 \alias{fillMQprnnums}
 \title{Adds MSFragger intensity and ratio columns}
 \usage{
-fillMQprnnums(dat_dir)
+fillMQprnnums(dat_dir, use_maxlfq = TRUE)
 }
 \arguments{
 \item{dat_dir}{The working directory.}
+
+\item{use_maxlfq}{Logical; use MaxLFQ values or not.}
 }
 \description{
 Adds MSFragger intensity and ratio columns

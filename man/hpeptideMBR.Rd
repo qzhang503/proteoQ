@@ -8,8 +8,9 @@ hpeptideMBR(
   ms1files,
   filelist,
   dat_dir,
+  path_ms1,
   mbr_ret_tol = 25,
-  max_mbr_fold = 4,
+  max_mbr_fold = 20,
   step = 1e-05
 )
 }
@@ -19,6 +20,8 @@ hpeptideMBR(
 \item{filelist}{The name of peptide files.}
 
 \item{dat_dir}{The working directory.}
+
+\item{path_ms1}{The path to MS1 data files.}
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 

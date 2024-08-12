@@ -7,6 +7,7 @@ proteins.}
 \usage{
 calcLFQprnnums(
   df,
+  label_scheme,
   use_unique_pep = TRUE,
   group_psm_by = "pep_seq",
   group_pep_by = "gene",
@@ -16,6 +17,8 @@ calcLFQprnnums(
 }
 \arguments{
 \item{df}{A data frame.}
+
+\item{label_scheme}{Meta data.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
 equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}

@@ -490,14 +490,13 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
   filename <- set_db_outname(!!rlang::enexpr(filename), species, "go")
 
-  df <- local({
-    df_gaf <- proc_gaf(db_path, fn_gaf)
-    df_obo <- proc_obo(db_path, fn_obo, type)
-    
-    dplyr::left_join(df_gaf, df_obo, by = "go_id") %>% 
-      dplyr::mutate(go_name = paste(go_id, go_name)) %>% 
-      dplyr::select(go_name, gene)
-  })
+  df_gaf <- proc_gaf(db_path, fn_gaf)
+  df_obo <- proc_obo(db_path, fn_obo, type)
+  
+  df <- dplyr::left_join(df_gaf, df_obo, by = "go_id") |>
+    dplyr::mutate(go_name = paste(go_id, go_name)) |>
+    dplyr::select(go_name, gene)
+  readr::write_tsv(df, file.path(db_path, paste0("tbl_go_", species, ".tsv")))
   
   accessions <- annot_from_to(abbr_species = abbr_species, 
                               keys = unique(df$gene), from = "SYMBOL", to = "ENTREZID") %>% 

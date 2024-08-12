@@ -13,7 +13,7 @@ peptideMBR(
   base_name,
   dat_dir,
   mbr_ret_tol = 25,
-  max_mbr_fold = 4,
+  max_mbr_fold = 20,
   step = 1e-05
 )
 }

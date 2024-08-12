@@ -11,8 +11,8 @@ find_mbr_int(
   mbr_ret,
   mbr_y,
   mbr_ret_tol = 25,
-  max_mbr_fold = 4,
-  n_dia_scans = 4
+  max_mbr_fold = 20L,
+  n_dia_scans = 4L
 )
 }
 \arguments{

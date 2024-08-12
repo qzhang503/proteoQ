@@ -10,6 +10,7 @@ splitPSM_mf(
   fasta = NULL,
   entrez = NULL,
   pep_unique_by = "group",
+  prob_co = 0.99,
   scale_rptr_int = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
@@ -60,6 +61,9 @@ protein entries without grouping. On the other extreme of choice
 to the PSM reports. Note that the choice of \code{none} is only for
 convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
+
+\item{prob_co}{The cut-off in MSFragger PSM probabilities. Use a value
+\eqn{\ge 1} to bypass.}
 
 \item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
 intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.

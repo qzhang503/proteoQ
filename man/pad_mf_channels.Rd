@@ -4,10 +4,13 @@
 \alias{pad_mf_channels}
 \title{Pads MSFragger TMT channels to the highest plex.}
 \usage{
-pad_mf_channels(file = NULL, ...)
+pad_mf_channels(file = NULL, prob_co = 0.99, ...)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}
+
+\item{prob_co}{The cut-off in MSFragger PSM probabilities. Use a value
+\eqn{\ge 1} to bypass.}
 
 \item{...}{filter_dots.}
 }

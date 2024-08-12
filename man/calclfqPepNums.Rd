@@ -4,10 +4,12 @@
 \alias{calcLFQPepNums}
 \title{Calculates log2FC of peptides based on LFQ intensity.}
 \usage{
-calcLFQPepNums(df, min_int = 1000, imp_vals = FALSE)
+calcLFQPepNums(df, label_scheme, min_int = 1000, imp_vals = FALSE)
 }
 \arguments{
 \item{df}{A data frame.}
+
+\item{label_scheme}{Meta data.}
 
 \item{min_int}{Minimal Y intensity to replace 0 values.}
 }

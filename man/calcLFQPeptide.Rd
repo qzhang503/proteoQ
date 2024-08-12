@@ -12,7 +12,7 @@ calcLFQPeptide(
   set_idx = 1L,
   injn_idx = 1L,
   TMT_plex = 1L,
-  lfq_mbr = FALSE,
+  lfq_mbr = TRUE,
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
   type_sd = "log2_R"

@@ -10,6 +10,7 @@ splitPSM_mq(
   fasta = NULL,
   entrez = NULL,
   pep_unique_by = "group",
+  pep_co = 0.01,
   scale_rptr_int = FALSE,
   use_corrected_mqint = TRUE,
   rm_craps = FALSE,
@@ -63,6 +64,9 @@ to the PSM reports. Note that the choice of \code{none} is only for
 convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
+\item{pep_co}{The cut-off in MaxQuant \code{PEP} probabilities. Use a value
+\eqn{\le 0} to bypass.}
+
 \item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
 intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
 \eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
@@ -71,8 +75,9 @@ intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
 
 \item{use_corrected_mqint}{A logical argument for uses with \code{MaxQuant}
 TMT. At the TRUE default, values under columns "Reporter intensity
-corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be used.
-Otherwise, "Reporter intensity" values without corrections will be used.}
+corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be
+used. Otherwise, "Reporter intensity" values without corrections will be
+used.}
 
 \item{rm_craps}{Logical; if TRUE, \href{https://www.thegpm.org/crap/}{cRAP}
 proteins will be removed. The default is FALSE.}
@@ -134,7 +139,8 @@ injection.
 \details{
 Different to \code{splitPSM_ma} used in \code{Mascot} processes,
 \code{pep_seq_mod}, \code{prot_n_psm}, \code{prot_n_pep} and \code{pep_n_psm}
-are calculated later in \code{annotPSM}. This is suitable mainly because there
-is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig} need
-to be updated after data merging in \code{splitPSM_mq}.
+are calculated later in \code{annotPSM}. This is suitable mainly because
+there is no columns like \code{prot_matches_sig} and
+\code{prot_sequences_sig} need to be updated after data merging in
+\code{splitPSM_mq}.
 }

@@ -79,9 +79,10 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
   fmls <- fmls %>% .[names(.) %in% fml_nms]
   fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
   
-  if (!length(fml_nms)) 
+  if (!length(fml_nms)) {
     stop("No formula (names) matched to those in \"pepSig(...)\" or \"prnSig(...)\".")
-  
+  }
+
   purrr::walk(file.path(filepath, fml_nms), 
               ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
   
@@ -97,9 +98,10 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
     .[!is.na(.)] %>% 
     as.character()
   
-  if (length(species) && !is.null(gset_nms))
+  if (length(species) && !is.null(gset_nms)) {
     load_dbs(gset_nms = gset_nms, species = species)
-  
+  }
+
   proteoq_volcano_theme <- theme_bw() +
     theme(
       axis.text.x = element_text(angle = 0, vjust = 0.5, size = 24),
@@ -127,8 +129,9 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
       legend.box = NULL
     )
   
-  if (is.null(theme)) 
+  if (is.null(theme)) {
     theme <- proteoq_volcano_theme
+  }
 
   if (length(fml_nms)) {
     purrr::pwalk(list(fml_nms, 
@@ -195,8 +198,9 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
     `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) 
   
-  if (complete_cases) 
+  if (complete_cases) {
     df <- pval_complete_cases(df)
+  }
 
   byfile_plotVolcano(df = df, df2 = df2, id = !!id, fml_nm = fml_nm, 
                      filepath = filepath, filename = filename, 
@@ -275,33 +279,40 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
           .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
           {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]}
         
-        in_names <- if (is.na(scale_log2r)) 
-          in_names[grepl("_GSPA_O", in_names)] 
-        else if (scale_log2r) 
-          in_names[grepl("_GSPA_Z", in_names)] 
-        else 
-          in_names[grepl("_GSPA_N", in_names)]
-        
-        if (!length(in_names))
+        if (is.na(scale_log2r)) {
+          in_names <- in_names[grepl("_GSPA_O", in_names)]
+        }
+        else if (scale_log2r) {
+          in_names <- in_names[grepl("_GSPA_Z", in_names)]
+        }
+        else {
+          in_names <- in_names[grepl("_GSPA_N", in_names)]
+        }
+
+        if (!length(in_names)) {
           stop("No inputs correspond to impute_na = ", impute_na, 
                ", scale_log2r = ", scale_log2r, 
                " at fml_nms = ", fml_nm)
-        
+        }
+
         df2 <- in_names
       } 
       else {
         local({
-          if (grepl("_essmap|_essmeta|_resgreedy", df2)) 
+          if (grepl("_essmap|_essmeta|_resgreedy", df2)) {
             stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`.")
-          
+          }
+
           non_exists <- df2 %>% .[! . %in% in_names]
           
-          if (length(non_exists)) 
+          if (length(non_exists)) {
             stop("Missing file(s): ", paste(non_exists, collapse = ", "))
+          }
         })
         
-        if (!length(df2)) 
+        if (!length(df2)) {
           stop("File(s) not found under \"", filepath_fml, "\".")
+        }
       }
       
       # plot data ---------------------------
@@ -325,7 +336,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 }
 
 
-#' Sets data for volcan plots.
+#' Sets data for volcano plots.
 #' 
 #' @param x A contrast
 #' @param df A data frame
@@ -726,27 +737,33 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
                       topn_gsets = Inf, ...) 
 {
   dat_dir <- get_gl_dat_dir()
-  par_filepath <- file.path(dat_dir, "Calls", 
-                            gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
+  par_filepath <- 
+    file.path(dat_dir, "Calls", gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
   
-  if (file.exists(par_filepath)) load(par_filepath) else call_pars <- NULL
-  
+  if (file.exists(par_filepath)) {
+    load(par_filepath)
+  }
+  else {
+    call_pars <- NULL
+  }
+
   df <- local({
     par_filter_dots <- call_pars %>% 
       .[purrr::map_lgl(., is.language)] %>% 
       .[grepl("^filter_", names(.))]
     
-    if (!purrr::is_empty(par_filter_dots)) {
+    if (length(par_filter_dots)) {
       message(
         "\nApply the following vararg(s) from matching `prnGSPA` to: ", fml_nm, ".", 
         paste(par_filter_dots, "\n"))
       
-      df %>% filters_in_call(!!!par_filter_dots)
+      df <- filters_in_call(df, !!!par_filter_dots)
     } 
     else {
-      message("\nNo `filter_` varargs with formula `", fml_nm, "`.")
-      invisible(df)
+      # message("\nNo `filter_` varargs with formula `", fml_nm, "`.")
     }
+    
+    df
   })
   
   local({
@@ -786,20 +803,35 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   
   dots <- rlang::enexprs(...)
   
-  xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
-  yco <- ifelse(is.null(dots$yco), .05, dots$yco)
+  xco <- if (is.null(dots$xco)) {
+    1.2
+  }
+  else {
+    dots$xco
+  }
   
-  x_label <- if (is.null(dots$x_label))
+  yco <- if (is.null(dots$yco)) {
+    .05
+  }
+  else {
+    dots$yco
+  }
+  
+  x_label <- if (is.null(dots$x_label)) {
     expression("Ratio ("*log[2]*")")
-  else
+  }
+  else {
     dots$x_label
-  
+  }
+
   y_label <- if (is.null(dots$y_label)) {
-    if (adjP) 
+    if (adjP) {
       expression("adjP ("*-log[10]*")")
-    else
+    }
+    else {
       expression("pVal ("*-log[10]*")")
-  } 
+    }
+  }
   else {
     dots$y_label
   }
@@ -841,9 +873,10 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   
   rm(list = c("filter2_dots", "arrange2_dots", "select2_dots"))
   
-  if (!nrow(gsea_res))
+  if (!nrow(gsea_res)) {
     stop("No GSPA terms available after data filtration.")
-  
+  }
+
   topn_gsets <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), topn_gsets)
   
   terms <- gsea_res %>%
@@ -878,21 +911,27 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       # some results may be based on gene sets from an older database, 
       # which become missing terms in the current
       
-      gsets_sub <- gsets %>% .[names(.) == gt]
+      gsets_sub <- gsets[names(gsets) == gt]
       
-      if (!length(gsets_sub)) 
+      ###
+      print(names(gsets_sub))
+      ###
+
+      if (!length(gsets_sub)) {
         return(NULL)
-      
+      }
+
       fn <- gsub(":", "~", gsub("/", "or", names(gsets_sub)[[1]]), fixed = TRUE)
       
-      res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] %>% 
+      res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] |>
         data.frame(check.names = FALSE)
       
       dfw_sub <- dfw[as.character(dfw$entrez) %in% gsets_sub[[1]], ]
       
-      if (!nrow(dfw_sub)) 
+      if (!nrow(dfw_sub)) {
         return(NULL) 
-      
+      }
+
       if (is.null(dots$xmax)) {
         xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
                              max(dfw_sub$log2Ratio, na.rm = TRUE)))
@@ -946,6 +985,12 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
         # dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
         dplyr::mutate(newContrast = Contrast)
       
+      # some contrasts may have no data in dfw_sub
+      u_contrs <- unique(dfw_sub$newContrast)
+      if (length(u_contrs) < length(Levels)) {
+        Levels <- Levels[Levels %in% u_contrs]
+      }
+      
       if (show_sig != "none") {
         if (grepl("^p", show_sig)) {
           dfw_sub <- dfw_sub %>%
@@ -967,6 +1012,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
         dplyr::group_by(newContrast) %>%
         dplyr::top_n(n = -topn_labels, wt = pVal)
       
+      ###
       dt <- purrr::map(newLevels, ~ {
         dfw_sub_top20 %>%
           dplyr::filter(newContrast == .x) %>%
@@ -991,8 +1037,13 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       
       nrow <- if(is.null(dots$nrow))
         if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
-      else
+      else {
         dots$nrow
+      }
+
+      ###
+      # print(names(gsets_sub))
+      ###
       
       p <- ggplot() +
         geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
@@ -1025,14 +1076,17 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
           geom_table(data = dt, aes(table = Gene), x = dt_pos, y = ymax/2)
       }
       
-      if (nchar(fn) > 50) 
+      if (nchar(fn) > 50) {
         fn <- paste0(str_sub(fn, 1, 50), "...") 
-      
+      }
+
       width <- if (is.null(dots$width)) {
-        if (nrow > 1L)
-          6*length(unique(dfw_sub$newContrast))/nrow + 1
-        else
-          6*length(unique(dfw$Contrast))/nrow
+        if (nrow > 1L) {
+          6 * length(unique(dfw_sub$newContrast))/nrow + 1
+        }
+        else {
+          6*length(unique(dfw$Contrast)) / nrow
+        }
       } 
       else {
         dots$width

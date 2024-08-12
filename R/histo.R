@@ -6,11 +6,11 @@
 #' @import dplyr purrr ggplot2 RColorBrewer
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, 
-                       complete_cases, 
-                       cut_points, show_curves, show_vline, scale_y, 
-                       filepath = NULL, filename, 
-                       theme, ...) 
+plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE, 
+                       complete_cases = FALSE, 
+                       cut_points, show_curves = FALSE, show_vline = FALSE, 
+                       scale_y = TRUE, filepath = NULL, filename = NULL, 
+                       theme = NULL, ...) 
 {
   stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
                    rlang::is_logical, logical(1L)))

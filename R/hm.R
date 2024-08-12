@@ -138,16 +138,19 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   cluster_rows <- if (is.null(dots$cluster_rows)) TRUE else dots$cluster_rows
   cluster_cols <- if (is.null(dots$cluster_cols)) TRUE else dots$cluster_cols
 
-  clustering_distance_rows <- if (is.null(dots$clustering_distance_rows))
+  clustering_distance_rows <- if (is.null(dots$clustering_distance_rows)) {
     "euclidean"
-  else
+  }
+  else {
     dots$clustering_distance_rows
+  }
 
-  
-  clustering_distance_cols <- if (is.null(dots$clustering_distance_cols))
+  clustering_distance_cols <- if (is.null(dots$clustering_distance_cols)) {
     "euclidean"
-  else
+  }
+  else {
     dots$clustering_distance_cols
+  }
 
   if (!is.null(dots$clustering_method)) {
     dots$clustering_method <- NULL
@@ -172,12 +175,15 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
-  mypalette <- if (is.null(dots$color))
+  mypalette <- if (is.null(dots$color)) {
     grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
-  else if (is.na(dots$color))
+  }
+  else if (is.na(dots$color)) {
     grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
-  else
+  }
+  else {
     eval(dots$color, envir = rlang::caller_env())
+  }
 
   x_label <- expression("Ratio ("*log[2]*")")
   NorZ_ratios <- find_NorZ(scale_log2r)
@@ -206,8 +212,9 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  if (!nrow(df)) 
+  if (!nrow(df)) {
     stop("Zero data rows available after data filtration.")
+  }
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -233,25 +240,33 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     warning("Argument `annotation_col` disabled; use `annot_cols` instead.")
   }
 
-  annotation_col <- if (is.null(annot_cols))
+  annotation_col <- if (is.null(annot_cols)) {
     NA
-  else
+  }
+  else {
     colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+  }
 
-  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols)))
+  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols))) {
     colnames(annotation_col) <- annot_colnames
+  }
 
-  annotation_row <- if (is.null(annot_rows)) 
+  annotation_row <- if (is.null(annot_rows)) {
     NA
-  else
+  }
+  else {
     dplyr::select(df, annot_rows)
+  }
 
-  annotation_colors <- if (is.null(dots$annotation_colors)) 
+  annotation_colors <- if (is.null(dots$annotation_colors)) {
     setHMColor(annotation_col)
-  else if (suppressWarnings(is.na(dots$annotation_colors))) 
+  }
+  else if (suppressWarnings(is.na(dots$annotation_colors))) {
     NA
-  else
+  }
+  else {
     eval(dots$annotation_colors, envir = rlang::caller_env())
+  }
 
   if (complete_cases) {
     df_hm <- dplyr::filter(df, complete.cases(.[, names(.) %in% sample_ids]))
@@ -265,12 +280,14 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     dplyr::select(which(names(.) %in% sample_ids)) %>% 
     { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
   
-  if (!nrow(df_hm))
+  if (!nrow(df_hm)) {
     stop("Zero data rows after removing all-NA rows.")
+  }
 
   # sample orders
-  if (cluster_cols && (!is.null(col_order)))
+  if (cluster_cols && (!is.null(col_order))) {
     message("No column-ordering of samples at `cluster_cols = TRUE`.")
+  }
 
   if ((!cluster_cols) && (!is.null(col_order)) && 
       length(unique(label_scheme_sub[[col_order]])) > 1L) {

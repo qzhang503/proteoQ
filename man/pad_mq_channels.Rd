@@ -9,11 +9,12 @@ pad_mq_channels(
   fasta = NULL,
   entrez = NULL,
   use_corrected_mqint = TRUE,
+  pep_co = 0.01,
   ...
 )
 }
 \arguments{
-\item{file}{An intermediate PSM table.}
+\item{file}{A PSM file name.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
@@ -29,8 +30,12 @@ preparing custom entrez files.}
 
 \item{use_corrected_mqint}{A logical argument for uses with \code{MaxQuant}
 TMT. At the TRUE default, values under columns "Reporter intensity
-corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be used.
-Otherwise, "Reporter intensity" values without corrections will be used.}
+corrected..." in \code{MaxQuant} PSM results (\code{msms.txt}) will be
+used. Otherwise, "Reporter intensity" values without corrections will be
+used.}
+
+\item{pep_co}{The cut-off in MaxQuant \code{PEP} probabilities. Use a value
+\eqn{\le 0} to bypass.}
 
 \item{...}{filter_dots.}
 }

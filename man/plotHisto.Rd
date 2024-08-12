@@ -8,15 +8,15 @@ plotHisto(
   df = NULL,
   id,
   label_scheme_sub,
-  scale_log2r,
-  complete_cases,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
   cut_points,
-  show_curves,
-  show_vline,
-  scale_y,
+  show_curves = FALSE,
+  show_vline = FALSE,
+  scale_y = TRUE,
   filepath = NULL,
-  filename,
-  theme,
+  filename = NULL,
+  theme = NULL,
   ...
 )
 }
