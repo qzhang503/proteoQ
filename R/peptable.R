@@ -1516,7 +1516,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   ok_mbr <- if (ok_mbr && lfq_mbr) TRUE else FALSE
   
   if (ok_mbr) {
-    # already checked in normPSMb but need to know the folder location and file names
+    # already checked in normPSM but need to know the folder location and file names
     path_ms1   <- dat_dir
     ms1files   <- list.files(path_ms1, pattern = "^ms1full_.*\\.rds$")
     n_ms1files <- length(ms1files)
@@ -1543,14 +1543,12 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     }
   }
   
-  # temporary
   if (ok_mbr) {
     hpeptideMBR(ms1files = ms1files, filelist = filelist, dat_dir = dat_dir, 
                 path_ms1 = path_ms1, mbr_ret_tol = mbr_ret_tol, 
                 max_mbr_fold = max_mbr_fold, step = 1e-5)
   }
   
-  # temporary
   if (ok_mbr) {
     df <- lapply(filelist, addMBRpeps, dat_dir = dat_dir, 
                  group_psm_by = group_psm_by)
@@ -2055,16 +2053,39 @@ peptideMBR <- function (ms1files, mbr_peps, mbr_rets, mbr_mzs, mbr_ys,
 find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25, 
                           max_mbr_fold = 20L, n_dia_scans = 4L)
 {
-  gates <- mzion:::find_lc_gates(ys = ys, ts = ts, n_dia_scans = n_dia_scans)
-  apexs <- gates$apex
-  lenp  <- length(apexs)
+  gates  <- mzion:::find_lc_gates(ys = ys, ts = ts, n_dia_scans = n_dia_scans)
+  apexs  <- gates$apex
+  ranges <- gates$ranges
+  yints  <- gates$yints
+  ns     <- gates$ns
+  xstas  <- gates$xstas
+  lenp   <- length(apexs)
   
   if (lenp == 0L) {
     return(list(y = 0, t = 0, s = 0))
   }
   
-  yints <- gates$yints
+  # (3) remove one-hit-wonders and spikes
+  oks1 <- .Internal(which(ns > 10L))
+  oks2 <- .Internal(which(ns > 5L))
   
+  if (length(oks1)) {
+    apexs  <- apexs[oks1]
+    ranges <- ranges[oks1]
+    yints  <- yints[oks1]
+    ns     <- ns[oks1]
+    xstas  <- xstas[oks1]
+    lenp <- length(apexs)
+  }
+  else if (length(oks2)) {
+    apexs  <- apexs[oks2]
+    ranges <- ranges[oks2]
+    yints  <- yints[oks2]
+    ns     <- ns[oks2]
+    xstas  <- xstas[oks2]
+    lenp <- length(apexs)
+  }
+
   upr <- mbr_y * max_mbr_fold
   lwr <- mbr_y / max_mbr_fold
   
@@ -2088,11 +2109,10 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
   tvals <- ts[apexs]
   scans <- ss[apexs]
   tdiff <- abs(tvals - mbr_ret)
-  ydiff <- abs(yints - mbr_y)
+  ydiff <- log2(yints / mbr_y)
   idxt  <- .Internal(which.min(tdiff))
-  # idxy  <- which.max(yints)
-  idxy  <- .Internal(which.min(ydiff))
-  
+  idxy  <- .Internal(which.min(abs(ydiff)))
+
   if (tdiff[idxy] <= mbr_ret_tol) {
     yi <- yints[idxy]
     
