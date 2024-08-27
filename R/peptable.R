@@ -3792,13 +3792,13 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
                                      drop = FALSE], na.rm = TRUE)), 
                   mean_lint = round(mean_lint, digits = 2L))
   
-  nms <- names(df_num)
-  count_nna <- df_num |>
-    dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", nms)) |>
+  # nms <- names(df_num)
+  count_nna <- df_num %>%
+    dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
     dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", 
-                        nms)) |>
+                        names(.))) %>%
     dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
-                        nms)) |>
+                        names(.))) %>%
     is.na() |>
     magrittr::not() |>
     rowSums()
