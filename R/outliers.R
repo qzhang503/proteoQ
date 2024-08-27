@@ -601,14 +601,14 @@ Dixon_outliers <- function(x)
     
     while(out$p.value < 0.05) {
       if (out$alternative == "high") {
-        x[which.max(x)] <- NA
+        x[which.max(x)] <- NA_real_
       } else {
-        x[which.min(x)] <- NA
+        x[which.min(x)] <- NA_real_
       }
       
       x2 <- x[!is.na(x)]
       
-      if (length(x2) > 2 && length(unique(x2)) > 1) {
+      if (length(x2) > 2L && length(unique(x2)) > 1L) {
         out <- dixon_test(as.numeric(x), type = 0)
       } else {
         out$p.value <- 1

@@ -3725,22 +3725,22 @@ normPSM <- function(dat_dir = NULL,
   }
 
   if (lfq_mbr) {
-    ms1files   <- list.files(dat_dir, pattern = "^ms1full_.*\\.rds$")
-    n_ms1files <- length(ms1files)
+    ms1files <- list.files(dat_dir, pattern = "^ms1full_.*\\.rds$")
+    n_ms1fis <- length(ms1files)
     
-    if (!n_ms1files) {
-      ms1files   <- list.files(file.path(dat_dir, "ms1data"), 
+    if (!n_ms1fis) {
+      ms1files <- list.files(file.path(dat_dir, "ms1data"), 
                                pattern = "^ms1full_.*\\.rds$")
-      n_ms1files <- length(ms1files)
+      n_ms1fis <- length(ms1files)
     }
     
-    if (lfq_mbr && !n_ms1files) {
+    if (lfq_mbr && !n_ms1fis) {
       warning("MS1 peak lists of `^ms1full_[...].rds` not found for MBR.\n", 
               "Please copy them from the Mzion folder ", 
               "to your working directory.")
       lfq_mbr <- FALSE
     }
-    rm(list = c("ms1files", "n_ms1files"))
+    rm(list = c("ms1files", "n_ms1fis"))
   }
 
   # ---
@@ -8032,7 +8032,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       list.files(path = file.path(dat_dir), pattern = "^psmC.*\\.txt$")
     
     if (!length(filelistC)) {
-      warning("\"psmC[...].txt\" not found for MBR.")
+      # warning("\"psmC[...].txt\" not found for MBR.")
       dfC <- NULL
     }
     else {
