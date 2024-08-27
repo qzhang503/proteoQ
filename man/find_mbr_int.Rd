@@ -12,7 +12,8 @@ find_mbr_int(
   mbr_y,
   mbr_ret_tol = 25,
   max_mbr_fold = 20L,
-  n_dia_scans = 6L
+  n_dia_scans = 6L,
+  min_y = 2e+06
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ find_mbr_int(
 
 \item{n_dia_scans}{The maximum number of zero-intensity scans for gap filling
 in peak tracing. Not adjustable by users but synchronized with mzion.}
+
+\item{min_y}{The cut-off of intensity values in MBR. Change to a smaller
+value with PASEF.}
 }
 \description{
 Find the MBR intensity

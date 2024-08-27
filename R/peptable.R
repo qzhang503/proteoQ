@@ -1542,9 +1542,9 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   # also try reversed MBR to update the original intensities...
   
   if (ok_mbr) {
-    hpeptideMBR2(ms1files = ms1files, filelist = filelist, dat_dir = dat_dir, 
-                 path_ms1 = path_ms1, mbr_ret_tol = mbr_ret_tol, 
-                 max_mbr_fold = max_mbr_fold, step = 1e-5)
+    hpeptideMBR(ms1files = ms1files, filelist = filelist, dat_dir = dat_dir, 
+                path_ms1 = path_ms1, mbr_ret_tol = mbr_ret_tol, 
+                max_mbr_fold = max_mbr_fold, step = 1e-5)
   }
   
   if (ok_mbr) {
@@ -1839,9 +1839,12 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
 #' @param step The mass error in \code{ppm / 1e6}.
+#' @param min_y The cut-off of intensity values in MBR. See also
+#'   \link[mzion]{htraceXY}. Need to change to a smaller value with PASEF.
 #' @param dat_dir The working directory.
-hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1, 
-                          mbr_ret_tol = 25, max_mbr_fold = 20, step = 1e-5)
+hpeptideMBR <- function (ms1files, filelist, dat_dir, path_ms1, 
+                         mbr_ret_tol = 25, max_mbr_fold = 20, step = 1e-5, 
+                         min_y = 2e6)
 {
   # (1) grouped split of ms1files in correspondence to b_nms (peptide tables)
   b_nms   <- basename(filelist)
@@ -1874,7 +1877,7 @@ hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1,
   smat <- mats$s
   rm(list = "mats")
   
-  tmat <- calib_ms1rt(tmat)
+  tmat <- calibMS1RT(tmat)
   
   # rownames(xmat) <- rownames(ymat) <- rownames(tmat) <- b_nms
   mbr_peps <- colnames(tmat)
@@ -1888,7 +1891,7 @@ hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1,
     parallel::clusterExport(cl, c("find_best_mbry"), 
                             envir = environment(proteoQ::normPSM))
     out <- parallel::clusterMap(
-      cl, peptideMBR2, 
+      cl, peptideMBR, 
       ms1files = file.path(path_ms1, ms1grps), 
       base_name = b_nms, 
       xvs = split(xmat, row(xmat)), 
@@ -1898,13 +1901,13 @@ hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1,
       MoreArgs = list(mbr_mzs = mbr_mzs, mbr_ys = mbr_ys, mbr_rets = mbr_rets, 
                       mbr_peps = mbr_peps, 
                       dat_dir = dat_dir, step = step, mbr_ret_tol = mbr_ret_tol, 
-                      max_mbr_fold = max_mbr_fold))
+                      max_mbr_fold = max_mbr_fold, min_y = min_y))
     
     parallel::stopCluster(cl)
   }
   else {
     out <- mapply(
-      peptideMBR2, 
+      peptideMBR, 
       ms1files = file.path(path_ms1, ms1grps), 
       base_name = b_nms, 
       xvs = split(xmat, row(xmat)), 
@@ -1914,7 +1917,7 @@ hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1,
       MoreArgs = list(mbr_mzs = mbr_mzs, mbr_ys = mbr_ys, mbr_rets = mbr_rets, 
                       mbr_peps = mbr_peps, 
                       dat_dir = dat_dir, step = step, mbr_ret_tol = mbr_ret_tol, 
-                      max_mbr_fold = max_mbr_fold), 
+                      max_mbr_fold = max_mbr_fold, min_y = min_y), 
       SIMPLIFY = FALSE, USE.NAMES = FALSE)
   }
   
@@ -1940,11 +1943,13 @@ hpeptideMBR2 <- function (ms1files, filelist, dat_dir, path_ms1,
 #' @param step The mass error in \code{ppm / 1e6}.
 #' @param gap A gap in retention-time window in seconds for finding gates in the
 #'   Y values of LC. The gap value need to be broad enough.
+#' @param min_y The cut-off of intensity values in MBR. Change to a smaller
+#'   value with PASEF.
 #' @param dat_dir The working data directory.
-peptideMBR2 <- function (ms1files, base_name, xvs, yvs, tvs, svs, 
-                         mbr_mzs, mbr_ys, mbr_rets, mbr_peps, 
-                         dat_dir, mbr_ret_tol = 25, 
-                         max_mbr_fold = 20, step = 1e-5, gap = mbr_ret_tol + 45)
+peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs, 
+                        mbr_mzs, mbr_ys, mbr_rets, mbr_peps, 
+                        dat_dir, mbr_ret_tol = 25, min_y = 2e6, 
+                        max_mbr_fold = 20, step = 1e-5, gap = mbr_ret_tol + 45)
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
@@ -1979,7 +1984,7 @@ peptideMBR2 <- function (ms1files, base_name, xvs, yvs, tvs, svs,
     ans <- find_mbr_int(
       ys = yhats, 
       ts = tss[rng], ss = sss[rng], mbr_ret = mbr_ret, mbr_y = mbr_y, 
-      mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold)
+      mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold, min_y = min_y)
     
     # better obtain MBR X values...
     
@@ -2047,10 +2052,10 @@ rm_nRToutliers <- function (mx, my, mt, ms, err)
   zero <- NA_real_
   
   for (i in seq_len(ncol(mt))) {
-    xs <- mx[, i]
-    ys <- my[, i]
+    # xs <- mx[, i]
+    # ys <- my[, i]
     ts <- mt[, i]
-    ms <- ms[, i]
+    # ss <- ms[, i]
     
     up <- median(ts, na.rm = TRUE) + err
     ps <- .Internal(which(ts > up))
@@ -2141,10 +2146,10 @@ rm_RToutliers <- function (pep_seq_modzs, pep_exp_mzs, pep_exp_ints,
   # rm(list = c("err", "oks", "bads", "mt1", "my1"))
   
   if (len == 2L) {
-    ans_rt <- rm_2RToutliers(mx1b, my1b, mt1b, ms1b)
+    ans_rt <- rm_2RToutliers(mx = mx1b, my = my1b, mt = mt1b, ms = ms1b)
   }
   else {
-    ans_rt <- rm_nRToutliers(mx1b, my1b, mt1b, ms1b, err)
+    ans_rt <- rm_nRToutliers(mx = mx1b, my = my1b, mt = mt1b, ms = ms1b, err = err)
   }
   
   mx1b <- ans_rt$x
@@ -2288,8 +2293,10 @@ find_best_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
 #' @param n_dia_scans The maximum number of zero-intensity scans for gap filling
 #'   in peak tracing. Not adjustable by users but synchronized with mzion.
+#' @param min_y The cut-off of intensity values in MBR. Change to a smaller
+#'   value with PASEF.
 find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25, 
-                          max_mbr_fold = 20L, n_dia_scans = 6L)
+                          max_mbr_fold = 20L, n_dia_scans = 6L, min_y = 2e6)
 {
   gates  <- mzion:::find_lc_gates(ys = ys, ts = ts, n_dia_scans = n_dia_scans)
   apexs  <- gates$apex
@@ -2310,26 +2317,31 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
   # (3) remove one-hit-wonders and spikes
   oks1 <- .Internal(which(ns > 10L))
   oks2 <- .Internal(which(ns > 5L))
-  
-  if (length(oks1)) {
-    apexs  <- apexs[oks1]
-    ranges <- ranges[oks1]
-    yints  <- yints[oks1]
-    ns     <- ns[oks1]
-    xstas  <- xstas[oks1]
-    lenp   <- length(apexs)
+
+  if (noks1 <- length(oks1)) {
+    if (noks1 < lenp) {
+      apexs  <- apexs[oks1]
+      ranges <- ranges[oks1]
+      yints  <- yints[oks1]
+      ns     <- ns[oks1]
+      xstas  <- xstas[oks1]
+      lenp   <- length(apexs)
+    }
   }
-  else if (length(oks2)) {
-    apexs  <- apexs[oks2]
-    ranges <- ranges[oks2]
-    yints  <- yints[oks2]
-    ns     <- ns[oks2]
-    xstas  <- xstas[oks2]
-    lenp   <- length(apexs)
+  else if (noks2 <- length(oks2)) {
+    if (noks2 < lenp) {
+      apexs  <- apexs[oks2]
+      ranges <- ranges[oks2]
+      yints  <- yints[oks2]
+      ns     <- ns[oks2]
+      xstas  <- xstas[oks2]
+      lenp   <- length(apexs)
+    }
   }
 
   upr <- mbr_y * max_mbr_fold
   lwr <- mbr_y / max_mbr_fold
+  # lwr <- max(mbr_y / max_mbr_fold, min_y)
   
   if (lenp == 1L) {
     tval <- ts[[apexs]]
@@ -2351,9 +2363,9 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
   tvals <- ts[apexs]
   scans <- ss[apexs]
   tdiff <- abs(tvals - mbr_ret)
-  ydiff <- log2(yints / mbr_y)
+  ydiff <- abs(log2(yints / mbr_y))
   idxt  <- .Internal(which.min(tdiff))
-  idxy  <- .Internal(which.min(abs(ydiff)))
+  idxy  <- .Internal(which.min(ydiff))
 
   if (tdiff[idxy] <= mbr_ret_tol) {
     yi <- yints[idxy]
@@ -4178,9 +4190,9 @@ find_mbr_ms1files <- function(dat_dir, n_files, abort = FALSE)
 
 #' Calibrate MS1 retention times
 #'
-#' @param tmat A matrix of retention times. Column correspondance: pep_seq_modz;
-#'   row correspondance: individual peptide tables.
-calib_ms1rt <- function (tmat)
+#' @param tmat A matrix of retention times. Column correspondence: pep_seq_modz;
+#'   row correspondence: individual peptide tables.
+calibMS1RT <- function (tmat)
 {
   n_row <- nrow(tmat)
   
@@ -4201,17 +4213,10 @@ calib_ms1rt <- function (tmat)
   
   rt1 <- mat[1, ]
   for (i in 2:n_row) {
-    rts <- mat[i, ]
-    mat[i, ] <- rts - median(rts - rt1, na.rm = TRUE)
+    adj <- median(mat[i, ] - rt1, na.rm = TRUE)
+    tmat[i, ] <- tmat[i, ] - adj
   }
-  
-  if (FALSE) {
-    data.frame(x = 1:ncol(mat), y = mat[2, ] - mat[1, ]) |>
-      ggplot() + geom_point(aes(x = x, y = y), size = .1)
-  }
-  
-  tmat[, cols] <- mat
-  
+
   tmat
 }
 
