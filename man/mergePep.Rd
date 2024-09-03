@@ -5,10 +5,11 @@
 \title{Merge peptide table(s) into one}
 \usage{
 mergePep(
-  max_mbr_fold = 20L,
-  plot_log2FC_cv = TRUE,
   use_duppeps = TRUE,
+  mbr_ret_tol = NULL,
+  max_mbr_fold = 20L,
   duppeps_repair = c("majority", "denovo"),
+  plot_log2FC_cv = TRUE,
   cut_points = Inf,
   rm_allna = FALSE,
   omit_single_lfq = FALSE,
@@ -18,13 +19,13 @@ mergePep(
 )
 }
 \arguments{
-\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
-
-\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
-peptide \code{log2FC} will be plotted. The default is TRUE.}
-
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
+
+\item{mbr_ret_tol}{The tolerance in MBR retention time in seconds. The
+default is to match the setting in \link{norPSM}.}
+
+\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
 
 \item{duppeps_repair}{Not currently used (or only with \code{majority}).
   Character string; the method of reparing double-dipping peptide sequences
@@ -35,6 +36,9 @@ peptide sequences to the most likely proteins by majority votes.}
   \code{denovo} default, the peptide to protein association will be
   re-established freshly. At the \code{majority} alternative, a majority rule
   will be applied for the re-assignments.}
+
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of
+peptide \code{log2FC} will be plotted. The default is TRUE.}
 
 \item{cut_points}{A named, numeric vector defines the cut points (knots) for
 the median-centering of \code{log2FC} by sections. For example, at

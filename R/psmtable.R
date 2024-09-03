@@ -4038,7 +4038,7 @@ groupMZPSM0 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7,
     y_tots <- lapply(dfs, function (x) sum(x$pep_tot_int))
     dfs <- lapply(dfs, function (x) x[1, ])
     df  <- dplyr::bind_rows(dfs)
-    df$pep_tot_int <- y_tots
+    df$pep_tot_int <- unlist(y_tots, recursive = FALSE, use.names = FALSE)
   }
 
   df

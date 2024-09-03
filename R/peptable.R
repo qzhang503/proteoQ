@@ -21,7 +21,6 @@ newColnames <- function(TMT_Set = 1L, df, label_scheme,
     df <- hsubColnames(group_ids, df, pattern, TMT_Set, label_scheme_sub)
   }
   else {
-    # no lapply, need side effects
     for (id in group_ids) {
       df <- hsubColnames(id, df, pattern, TMT_Set, label_scheme_sub)
     }
@@ -1540,7 +1539,6 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   }
   
   # also try reversed MBR to update the original intensities...
-  
   if (ok_mbr) {
     hpeptideMBR(ms1files = ms1files, filelist = filelist, dat_dir = dat_dir, 
                 path_ms1 = path_ms1, mbr_ret_tol = mbr_ret_tol, 
@@ -1548,7 +1546,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   }
   
   if (ok_mbr) {
-    df <- lapply(filelist, addMBRpeps2, dat_dir = dat_dir, 
+    df <- lapply(filelist, addMBRpeps, dat_dir = dat_dir, 
                  group_psm_by = group_psm_by)
   }
   else {
@@ -1871,14 +1869,17 @@ hpeptideMBR <- function (ms1files, filelist, dat_dir, path_ms1,
     pep_exp_ints   = lapply(dfs, `[[`, "pep_tot_int"), 
     pep_apex_rets  = lapply(dfs, `[[`, "pep_apex_ret"), 
     pep_apex_scans = lapply(dfs, `[[`, "pep_apex_scan"))
-  xmat <- mats$x
+  xmat <- mats$x # rows: file names; columns: pep_seq_modz
   ymat <- mats$y
   tmat <- mats$t
   smat <- mats$s
-  rm(list = "mats")
-  
   tmat <- calibMS1RT(tmat)
+  rm(list = c("dfs", "mats"))
   
+  ###
+  # each column -> any > 2-fold (e.g. partial peak due to mass error) -> rematch
+  ###
+
   # rownames(xmat) <- rownames(ymat) <- rownames(tmat) <- b_nms
   mbr_peps <- colnames(tmat)
   mbr_mzs  <- colMeans(xmat, na.rm = TRUE)
@@ -1953,7 +1954,7 @@ peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs,
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
-  ms1full  <- dplyr::bind_rows(lapply(ms1files, qs::qread))
+  ms1full <- dplyr::bind_rows(lapply(ms1files, qs::qread))
   tss <- ms1full$ret_time
   xss <- ms1full$msx_moverzs
   yss <- ms1full$msx_ints
@@ -1965,6 +1966,7 @@ peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs,
   
   for (i in seq_along(cols)) {
     col <- cols[[i]]
+    # col <- 20285
     mbr_pep <- mbr_peps[[col]]
     mbr_ret <- mbr_rets[[col]]
     mbr_mz  <- mbr_mzs[[col]]
@@ -2088,8 +2090,8 @@ rm_RToutliers <- function (pep_seq_modzs, pep_exp_mzs, pep_exp_ints,
     sort()
   nps <- length(unv)
   ups <- lapply(pep_seq_modzs, function (xs) fastmatch::fmatch(xs, unv))
-  ms <- mx <- my  <- mt <- rep_len(list(rep_len(NA_real_, nps)), len)
   
+  ms <- mx <- my  <- mt <- rep_len(list(rep_len(NA_real_, nps)), len)
   for (i in 1:len) {
     cols <- ups[[i]]
     mx[[i]][cols] <- pep_exp_mzs[[i]]
@@ -2097,8 +2099,7 @@ rm_RToutliers <- function (pep_seq_modzs, pep_exp_mzs, pep_exp_ints,
     mt[[i]][cols] <- pep_apex_rets[[i]]
     ms[[i]][cols] <- pep_apex_scans[[i]]
   }
-  # rm(list = c("cols", "ups"))
-  
+
   mx <- do.call(rbind, mx)
   my <- do.call(rbind, my)
   mt <- do.call(rbind, mt)
@@ -2126,8 +2127,7 @@ rm_RToutliers <- function (pep_seq_modzs, pep_exp_mzs, pep_exp_ints,
   mt1  <- mt[, oks]
   ms1  <- ms[, oks]
   sds1 <- sds[oks]
-  # rm(list = c("my", "mt", "sds", "oks", "nas"))
-  
+
   err  <- quantile(sds1, qt)
   oks  <- sds1 <= err
   bads <- !oks
@@ -2143,21 +2143,20 @@ rm_RToutliers <- function (pep_seq_modzs, pep_exp_mzs, pep_exp_ints,
   my1b <- my1[, bads]
   mt1b <- mt1[, bads]
   ms1b <- ms1[, bads]
-  # rm(list = c("err", "oks", "bads", "mt1", "my1"))
-  
+
   if (len == 2L) {
     ans_rt <- rm_2RToutliers(mx = mx1b, my = my1b, mt = mt1b, ms = ms1b)
   }
   else {
-    ans_rt <- rm_nRToutliers(mx = mx1b, my = my1b, mt = mt1b, ms = ms1b, err = err)
+    ans_rt <- rm_nRToutliers(mx = mx1b, my = my1b, mt = mt1b, ms = ms1b, 
+                             err = err)
   }
   
   mx1b <- ans_rt$x
   my1b <- ans_rt$y
   mt1b <- ans_rt$t
   ms1b <- ans_rt$s
-  # rm(list = c("ans_rt"))
-  
+
   mx <- cbind(mx0, mx1a, mx1b)
   my <- cbind(my0, my1a, my1b)
   mt <- cbind(mt0, mt1a, mt1b)
@@ -2398,7 +2397,7 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
 #' @param file A file name with prepending path to a peptide table.
 #' @param dat_dir A working directory.
 #' @inheritParams normPSM
-addMBRpeps2 <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
+addMBRpeps <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
 {
   base_name <- basename(file)
   mbr_file  <- file.path(dat_dir, "Peptide/cache", paste0("MBR_", base_name))
@@ -2411,6 +2410,7 @@ addMBRpeps2 <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
   
   # is.na(pep_apex_ret): no MBR
   # is.na(pep_score): both MBR and no MBR
+  
   df <- readr::read_tsv(mbr_file) |> 
     dplyr::left_join(pep_tbl[, c("pep_seq_modz", "pep_score")], 
                      by = "pep_seq_modz") |>
@@ -2423,7 +2423,6 @@ addMBRpeps2 <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
   
   # for SD calculations
   rows <- is.na(df$pep_apex_ret)
-  # drt0 <- df[rows, ]
   df   <- df[!rows, ]
 
   if (!all(cols %in% names(df))) {
@@ -2436,17 +2435,27 @@ addMBRpeps2 <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
     dplyr::mutate(N = dplyr::n())
   
   rows <- df$N == 1L
-  df0 <- df[rows, ]
-  df <- df[!rows, ]
+  df0  <- df[rows, ]
+  df   <- df[!rows, ]
   df0$N <- df$N <- NULL
   
   df0$pep_ret_sd <- 0
-  df <- calc_pep_retsd(df, group_psm_by = "pep_seq_mod") |>
+  sds <- calc_pep_retsd(df, group_psm_by = "pep_seq_mod")
+  df  <- sds |>
     dplyr::left_join(df, by = "pep_seq_mod")
   df <- df[, names(df0)]
   
+  # ASSEGTIPQVQR; 636.8285; partial peak caused by 6 ppm in ms1 tracing; need 10 ppm
+  # re-exam large differences in MBR, increase tracing tolerance to 10 ppm
+  
+  if (FALSE) {
+    out_cols <- c("pep_seq_mod", "pep_seq", "pep_tot_int", "pep_apex_ret", "pep_apex_scan")
+    list(pep_tbl = pep_tbl, mbr0 = df0[, out_cols], mbr1 = df)
+  }
+
   # (3) pep_seq_modz -> pep_seq_mod
-  mbr <- groupMZPSM0(df, group_psm_by = group_psm_by)
+  mbr <- groupMZPepZ(df, group_psm_by = group_psm_by)
+
   # some pep_seq_mod in drt0[, names(mbr)] can be in mbr
   mbr <- dplyr::bind_rows(df0[, names(mbr)], mbr)
   out_name <- file.path(dat_dir, "Peptide/cache", paste0("MBRpeps_", base_name))
@@ -2454,6 +2463,47 @@ addMBRpeps2 <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
 
   # (4) side effect to return the Peptide.txt
   pep_tbl
+}
+
+
+#' Group Mzion peptides by charge states
+#' 
+#' @param df A Mzion peptide table.
+#' @param sdco A standard deviaiton cut-off.
+#' @inheritParams normPSM
+groupMZPepZ <- function (df, group_psm_by = "pep_seq_mod", sdco = sqrt(9))
+{
+  df <- df[, c("pep_seq_mod", "pep_seq", "pep_tot_int", 
+               "pep_apex_ret", "pep_apex_scan")] |>
+    # use the first scan and hopefully the same z along LC across samples
+    dplyr::arrange(pep_apex_scan)
+  
+  dfs <- split(df, df$pep_seq_mod)
+  
+  for (i in seq_along(dfs)) {
+    dx <- dfs[[i]]
+    
+    if (nrow(dx) > 1L) {
+      ys <- sum(dx$pep_tot_int, na.rm = TRUE)
+      dx <- dx[1, ]
+      dx$pep_tot_int <- ys
+    }
+    
+    dfs[[i]] <- dx
+  }
+  
+  df <- dplyr::bind_rows(dfs)
+  
+  if (group_psm_by == "pep_seq") {
+    df  <- df |> dplyr::arrange(pep_apex_scan)
+    dfs <- split(df, df$pep_seq)
+    ys  <- lapply(dfs, function (dx) sum(dx$pep_tot_int))
+    dfs <- lapply(dfs, function (dx) dx[1, ])
+    df  <- dplyr::bind_rows(dfs)
+    df$pep_tot_int <- unlist(ys, recursive = FALSE, use.names = FALSE)
+  }
+  
+  df
 }
 
 
@@ -2684,7 +2734,9 @@ fmt_num_cols <- function (df)
 #' \code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
 #' indicated under the \code{prot_n_pep} column after the peptide
 #' removals/cleanups using \code{purgePSM}.
-#' 
+#'
+#' @param mbr_ret_tol The tolerance in MBR retention time in seconds. The
+#'   default is to match the setting in \link{norPSM}.
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
 #' @param duppeps_repair Not currently used (or only with \code{majority}).
 #'   Character string; the method of reparing double-dipping peptide sequences
@@ -2797,8 +2849,8 @@ fmt_num_cols <- function (df)
 #' @importFrom magrittr %>% %T>% %$% %<>%
 #' @export
 mergePep <- function (
-    max_mbr_fold = 20L, plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
-    duppeps_repair = c("majority", "denovo"), 
+    use_duppeps = TRUE, mbr_ret_tol = NULL, max_mbr_fold = 20L, 
+    duppeps_repair = c("majority", "denovo"), plot_log2FC_cv = TRUE, 
     cut_points = Inf, rm_allna = FALSE, 
     omit_single_lfq = FALSE, ret_sd_tol = Inf, 
     rm_ret_outliers = FALSE, ...) 
@@ -2857,7 +2909,19 @@ mergePep <- function (
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  mbr_ret_tol  <- match_call_arg(normPSM, mbr_ret_tol)
+  
+  if (is.null(mbr_ret_tol)) {
+    mbr_ret_tol  <- match_call_arg(normPSM, mbr_ret_tol)
+  }
+  else {
+    if (!is.numeric(mbr_ret_tol)) {
+      stop("Argument `mbr_ret_tol` needs to be numeric.")
+    }
+    
+    if (mbr_ret_tol <= 0) {
+      stop("Argument `mbr_ret_tol` needs to be greater than 0.")
+    }
+  }
 
   dots <- rlang::enexprs(...)
   
@@ -4202,21 +4266,21 @@ calibMS1RT <- function (tmat)
   
   cols <- colSums(is.na(tmat)) == 0
   mat  <- tmat[, cols]
+  peps <- colnames(mat)
+  ref  <- mat[1, ]
   
-  if (FALSE) {
-    for (i in 1:n_row) {
-      rts <- mat[i, ]
-      fit <- lm(ds ~ splines::bs(rts, 4))
-      mat[i, ] <- rts - predict.lm(fit, newdata = data.frame(rts = rts))
-    }
-  }
-  
-  rt1 <- mat[1, ]
   for (i in 2:n_row) {
-    adj <- median(mat[i, ] - rt1, na.rm = TRUE)
-    tmat[i, ] <- tmat[i, ] - adj
-  }
+    rts <- mat[i, ]
+    ord <- order(rts)
+    rts <- rts[ord]
+    ds  <- rts - ref[ord]
+    # Kalman filter?
+    fit <- lm(ds ~ splines::ns(rts, 10))
 
+    tmat[i, ] <- 
+      tmat[i, ] - predict.lm(fit, newdata = data.frame(rts = tmat[i, ]))
+  }
+  
   tmat
 }
 

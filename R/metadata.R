@@ -27,6 +27,11 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     check_tmt126_row() %>% 
     check_tmt_nc()
   
+  if (all(label_scheme_full$Reference)) {
+    stop("All samples were set to `Reference`. ", 
+         "Change some or all of the values to FALSE.")
+  }
+  
   # BAD: only with MQ timsTOF missing PSM intensities
   label_scheme_full <- local({
     file <- file.path(dat_dir, "peptides.txt")
