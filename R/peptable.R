@@ -1580,7 +1580,10 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   df <- 
     assign_duppeps(df, group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
   
-  if (engine %in% c("mz", "mascot", "msgf")) {
+  is_msf_tmt <- tmt_plex && engine == "mf"
+  is_mq_tmt  <- tmt_plex && engine == "mq"
+  
+  if (engine %in% c("mz", "mascot", "msgf") || is_msf_tmt || is_mq_tmt) {
     # both TMT and LFQ
     #   make `Ixxx (SID_1)`, `Ixxx (SID_2)`, ...
     df_num <- spreadPepNums(df, basenames = basenames, 

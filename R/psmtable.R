@@ -5239,9 +5239,10 @@ add_maxquant_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE) 
 {
-  if (!use_lowercase_aa) 
+  if (!use_lowercase_aa) {
     return(df)
-  
+  }
+
   # is.na(pep_start) if peptides not in FASTA (e.g. the "contam_" entries)
   # or not belong to proteins (incorrectly assigned by search engine)
   #   (e.g. DAQIFIQK not in P24270)
@@ -5256,7 +5257,7 @@ add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
 
   # (1) all non-terminal modifications
   df <- df %>% 
-    dplyr::mutate(pep_seq_mod = gsub("([A-Z]){1}\\[[^\\(\\)]*\\]", 
+    dplyr::mutate(pep_seq_mod = gsub("([A-Z]){1}\\[\\d+\\]", # "([A-Z]){1}\\[[^\\(\\)]*\\]"
                                      paste0("@", "\\1"), pep_seq_mod)) %>% 
     dplyr::mutate_at(vars("pep_seq_mod"), 
                      function (x) purrr::map_chr(x, my_tolower, "@")) %>% 
@@ -5298,6 +5299,7 @@ add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
     df_sub <- df %>% dplyr::filter(pep_start <= 2)
     df_rest <- df %>% dplyr::filter(! .n %in% df_sub$.n)
     
+    # e.g. n[230] for TMT at occured at protein N-term
     df_sub <- df_sub %>% 
       dplyr::mutate(pep_seq_mod = gsub("^n\\[.*\\]", "~", pep_seq_mod))
     
@@ -5321,7 +5323,7 @@ add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
     dplyr::bind_rows(df_sub, df_rest) 
   })
   
-  # (4-1) "^" for peptide "(N-term)" modification
+  # (4-1) "^" for peptide "(N-term)" modification, e.g., n[230] for TMT
   df <- df %>% 
     dplyr::mutate(pep_seq_mod = gsub("n\\[.*\\].*?", "^", pep_seq_mod))
   
