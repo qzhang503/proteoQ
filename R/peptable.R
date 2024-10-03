@@ -1580,11 +1580,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   df <- 
     assign_duppeps(df, group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
   
-  is_msf_tmt <- tmt_plex && engine == "mf"
-  is_mq_tmt  <- tmt_plex && engine == "mq"
-  
-  if (engine %in% c("mz", "mascot", "msgf") || is_msf_tmt || is_mq_tmt) {
-    # both TMT and LFQ
+  if (tmt_plex || engine == "mz") {
     #   make `Ixxx (SID_1)`, `Ixxx (SID_2)`, ...
     df_num <- spreadPepNums(df, basenames = basenames, 
                             group_psm_by = group_psm_by, ok_mbr = ok_mbr)
@@ -1594,7 +1590,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     }
   } 
   else if (engine %in% c("mq", "mf")) {
-    # back-fill from a MaxQuant/MSFragger peptide table
+    # back-fill from a MaxQuant/MSFragger LFQ peptide table
     use_lowercase_aa <- match_call_arg("normPSM", "use_lowercase_aa")
     
     if (use_mq_pep) {
@@ -1610,7 +1606,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     }
   }
   else {
-    stop("Unknown search engine.")
+    stop("Unknown search engine or unsupported LFQ.")
   }
   
   df_num <- df_num %>% 

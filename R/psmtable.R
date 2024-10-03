@@ -18,7 +18,7 @@
 extract_raws <- function(raw_dir = NULL, dat_dir = NULL) 
 {
   if (is.null(raw_dir)) 
-    stop("\"raw_dir\" cannot be NULL.", call. = FALSE)
+    stop("\"raw_dir\" cannot be NULL.")
 
   if (is.null(dat_dir)) 
     dat_dir <- get_gl_dat_dir()
@@ -5299,7 +5299,7 @@ add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
     df_sub <- df %>% dplyr::filter(pep_start <= 2)
     df_rest <- df %>% dplyr::filter(! .n %in% df_sub$.n)
     
-    # e.g. n[230] for TMT at occured at protein N-term
+    # e.g. n[230] for TMT6 at occurred at protein N-term
     df_sub <- df_sub %>% 
       dplyr::mutate(pep_seq_mod = gsub("^n\\[.*\\]", "~", pep_seq_mod))
     
@@ -5323,7 +5323,7 @@ add_msfragger_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
     dplyr::bind_rows(df_sub, df_rest) 
   })
   
-  # (4-1) "^" for peptide "(N-term)" modification, e.g., n[230] for TMT
+  # (4-1) "^" for peptide "(N-term)" modification, e.g., n[230] for TMT6
   df <- df %>% 
     dplyr::mutate(pep_seq_mod = gsub("n\\[.*\\].*?", "^", pep_seq_mod))
   
@@ -6071,15 +6071,17 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       phos_max <- suppressWarnings(phos %>% purrr::map(`[`, 1)) %>% unlist()
       sec_max <- suppressWarnings(phos %>% purrr::map(`[`, 2)) %>% unlist()
       
-      df <- dplyr::bind_cols(df, 
-                             pep_phospho_locprob = phos_max, 
-                             pep_phospho_locdiff = phos_max - sec_max) %>% 
-        dplyr::mutate(is_locprob_one = magrittr::equals(1, pep_phospho_locprob)) %>% 
-        dplyr::mutate_at(vars("pep_phospho_locdiff"), 
-                         function (x) replace(x, is_locprob_one, 1)) %>% 
-        dplyr::mutate_at(vars("pep_phospho_locprob"), 
-                         function (x) replace(x, is.infinite(x), NA_real_)) %>% 
-        dplyr::select(-is_locprob_one)
+      df <- dplyr::bind_cols(
+        df, 
+        pep_phospho_locprob = phos_max, 
+        pep_phospho_locdiff = phos_max - sec_max) %>% 
+        dplyr::mutate(is_locprob_one = magrittr::equals(1, pep_phospho_locprob))
+      
+      df$pep_phospho_locdiff <- 
+        ifelse(df$is_locprob_one, 1, df$pep_phospho_locdiff)
+      df$pep_phospho_locprob <- 
+        ifelse(is.infinite(df$pep_phospho_locprob), NA_real_, df$pep_phospho_locprob)
+      df$is_locprob_one <- NULL
     }
     
     df
