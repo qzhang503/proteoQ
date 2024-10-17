@@ -85,7 +85,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
   
-  lobal({
+  local({
     grps <- label_scheme_sub[[as.character(col_group)]]
     ords <- label_scheme_sub[[as.character(col_order)]]
     grp_nas <- is.na(grps)

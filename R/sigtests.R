@@ -539,6 +539,10 @@ sigTest <- function(df, id, label_scheme_sub,
       }
     }
     
+    # in case of all-NA sample columns being removed
+    label_scheme_sub <- label_scheme_sub |> 
+      dplyr::filter(Sample_ID %in% colnames(dfw))
+    
     # `complete_cases` depends on lm contrasts
     purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
                                         complete_cases, method, 

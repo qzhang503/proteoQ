@@ -2221,9 +2221,9 @@ sep_mbrfiles <- function (b_nms, dat_dir, ms1files)
   # groups of ms1raws in accordance to peptide tables
   ms1file1 <- ms1files[[1]]
   
-  suffix <- if (grepl("\\.raw\\.rds", ".raw.rds", ms1file1)) 
+  suffix <- if (grepl("\\.raw\\.rds", ms1file1)) 
     ".raw.rds"
-  else if (grepl("\\.d\\.rds", ".raw.rds", ms1file1))
+  else if (grepl("\\.d\\.rds", ms1file1))
     ".d.rds"
   else
     ".raw.rds"
