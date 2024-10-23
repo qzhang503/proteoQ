@@ -15,12 +15,14 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
   stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
                    rlang::is_logical, logical(1L)))
   
-  if (!nrow(label_scheme_sub))
+  if (!nrow(label_scheme_sub)) {
     stop("Empty metadata (at a data subset).")
-  
-  if (complete_cases)
+  }
+
+  if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-  
+  }
+
   fn_par <- if (is.na(scale_log2r))
     file.path(filepath, "MGKernel_params_O.txt")
   else if (scale_log2r)

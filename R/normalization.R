@@ -517,7 +517,16 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
     rm(list = "params_sub")
     
     # (1.2) SDs and scaling factors
-    sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+    sd_coefs  <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+    bad_coefs <- is.na(sd_coefs$fct)
+    
+    if (any(bad_coefs)) {
+      warning("Scaling of standard deviations failed for ", 
+              paste(sd_coefs$Sample_ID[bad_coefs], collapse = ", "), ".\n", 
+              "Choose `scale_log2r = FALSE` with your workflow.")
+      
+      message("May set `range_log2r = c(0, 100)` and `range_int = c(0, 100)`.")
+    }
     
     # (1.3) centers
     cf_x <- my_which_max(params, label_scheme) %>%
