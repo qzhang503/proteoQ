@@ -26,13 +26,15 @@ will be kept.}
 \item{id}{Always "prot_acc".}
 
 \item{method_pep_prn}{Character string; the method to summarize the
-\code{log2FC} and the \code{intensity} of peptides by protein entries. The
+the \code{intensity} of peptides by protein entries. The
 descriptive statistics includes \code{c("mean", "median", "weighted_mean",
 "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
 \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
 The representative \code{log10-intensity} of reporter (or LFQ) ions at the
 peptide levels will be the weight when summarizing \code{log2FC} with
-various \code{"top_n"} statistics or \code{"weighted_mean"}.}
+various \code{"top_n"} statistics or \code{"weighted_mean"}.
+
+The method to summarize \code{log2FC} is \code{median}.}
 }
 \description{
 Helper: calculates the TMT log2FC and reporter-ion intensity of proteins

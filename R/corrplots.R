@@ -12,9 +12,10 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
                       filepath = NULL, filename = NULL, 
                       cor_method = "pearson", digits = 2L, ...) 
 {
-  if (complete_cases) 
+  if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-  
+  }
+
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
@@ -86,17 +87,21 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
   label_scheme_sub <- label_scheme_sub %>% 
     dplyr::filter(Sample_ID %in% colnames(df))
   
-  if (is.null(width)) 
+  if (is.null(width)) {
     width <- 1.4 * length(label_scheme_sub$Sample_ID)
-  
-  if (is.null(height)) 
+  }
+
+  if (is.null(height)) {
     height <- width
-  
-  if (ncol(df) > 44L) 
+  }
+
+  if (ncol(df) > 44L) {
     stop("Maximum number of samples for correlation plots is 44.")
-  
-  if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L)
+  }
+
+  if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L) {
     df <- df[, order(names(df))]
+  }
   else {
     corrplot_orders <- label_scheme_sub %>%
       dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
@@ -107,9 +112,10 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
     df <- df[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
   }
   
-  if (save_data)
+  if (save_data) {
     readr::write_tsv(df, file.path(filepath, paste0(fn_prefix, "_data.txt")))
-  
+  }
+
   plot_corr_sub(df = df, 
                 cor_method = cor_method, 
                 xlab = x_label, ylab = y_label,
@@ -323,8 +329,9 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   ncol <- ncol(df)
   
   df <- df %>% dplyr::mutate_all(~ replace(.x, is.infinite(.), NA_real_))
+  sids <- as.character(names(df))
   
-  p1 <- ggpairs(df, columnLabels = as.character(names(df)), 
+  p1 <- ggpairs(df, columnLabels = sids, 
                 labeller = label_wrap_gen(10),
                 title = "", xlab = xlab, ylab = ylab, 
                 lower = list(continuous = my_lower_no_sm),
@@ -349,13 +356,39 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   g2 <- ggplotGrob(p2)
   colors <- g2$grobs[[6]]$children[[3]]$gp$fill
   
+  ###
+  c(
+    "#F73F1E","#BFD5DC","#BED4DC","#BDD4DC","#BED4DC","#F63C1C","#B5D0D8","#ACCBD5","#FFAF98","#FFB7A3","#AFCCD6","#AACAD4",
+    "#FFAD96","#FFB39D","#FA5835","#DBE4E7","#E4E9EA","#A4C7D2","#ADCCD6","#C1D6DD","#C8DAE0","#D5E0E4","#D9E2E6","#ADCBD5",
+    "#B7D1D9","#CFDDE2","#D0DEE3","#F73F1E"
+  )
+  
+  ###
+  colors2 <- vector("character", length(colors))
+  
+  # deduce col and row positions from the index of colors
+  ncol2 <- ncol - 1L
+  cols  <- rep.int(1:ncol2, times = 1:ncol2)
+  rows  <- unlist(lapply(seq_len(ncol2), seq_len))
+  
+  for (i in seq_along(colors)) {
+    col <- cols[[i]]
+    row <- rows[[i]]
+    gap <- if (row == 1L) 0L else (row - 1) * ncol2 - sum(seq_len(row - 2))
+    ps2 <- gap + col - row + 1L
+    colors2[[ps2]] <- colors[[i]]
+  }
+  
+  colors <- colors2
+  ###
+  
   idx <- 1
   for (k1 in 1:(ncol-1)) { # row
     for (k2 in (k1+1):ncol) { # column
       plt <- getPlot(p1, k1, k2) +
         theme(panel.background = element_rect(fill = colors[idx], color = "white"),
               panel.grid.major = element_line(color = colors[idx]))
-      
+
       p1 <- putPlot(p1, plt, k1, k2)
       idx <- idx + 1
     }
@@ -401,9 +434,10 @@ plot_corr_sub <- function (df, cor_method = "pearson",
     }
   }
 
-  for (x in 1:ncol)
+  for (x in 1:ncol) {
     p1[x, x] <- p1[x, x] +
       scale_x_continuous(limits = c(xmin-.2, xmax+.2), breaks = c(xmin, 0, xmax))
+  }
 
   p1 <- p1 +
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,

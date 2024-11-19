@@ -7,7 +7,7 @@
 Pep2Prn(
   method_pep_prn = c("median", "mean", "weighted_mean", "lfq_top_3_sum", "lfq_all",
     "lfq_top_2_sum", "top_3_mean", "lfq_max"),
-  impute_prot_na = TRUE,
+  impute_prot_na = FALSE,
   use_unique_pep = TRUE,
   cut_points = Inf,
   rm_outliers = FALSE,
@@ -18,13 +18,15 @@ Pep2Prn(
 }
 \arguments{
 \item{method_pep_prn}{Character string; the method to summarize the
-\code{log2FC} and the \code{intensity} of peptides by protein entries. The
+the \code{intensity} of peptides by protein entries. The
 descriptive statistics includes \code{c("mean", "median", "weighted_mean",
 "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
 \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
 The representative \code{log10-intensity} of reporter (or LFQ) ions at the
 peptide levels will be the weight when summarizing \code{log2FC} with
-various \code{"top_n"} statistics or \code{"weighted_mean"}.}
+various \code{"top_n"} statistics or \code{"weighted_mean"}.
+
+The method to summarize \code{log2FC} is \code{median}.}
 
 \item{impute_prot_na}{Logical; impute NA values of protein log2FC or not.}
 

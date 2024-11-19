@@ -1606,7 +1606,10 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     }
   }
   else {
-    stop("Unknown search engine or unsupported LFQ.")
+    warning("Unknown search engine or unsupported LFQ; ", 
+            "proceed with spectrum countings without LFQ.")
+    df_num <- spreadPepNums(df, basenames = basenames, 
+                            group_psm_by = group_psm_by, ok_mbr = FALSE)
   }
   
   df_num <- df_num %>% 
@@ -3229,13 +3232,15 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'median statistics.
 #'
 #'@param method_pep_prn Character string; the method to summarize the
-#'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
+#'  the \code{intensity} of peptides by protein entries. The
 #'  descriptive statistics includes \code{c("mean", "median", "weighted_mean",
 #'  "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
 #'  \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
 #'  The representative \code{log10-intensity} of reporter (or LFQ) ions at the
 #'  peptide levels will be the weight when summarizing \code{log2FC} with
 #'  various \code{"top_n"} statistics or \code{"weighted_mean"}.
+#'  
+#'  The method to summarize \code{log2FC} is \code{median}. 
 #'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
 #'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
 #'  will be used, for summarizing the \code{log2FC} and the \code{intensity} of
@@ -3326,7 +3331,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 Pep2Prn <- function (method_pep_prn = 
                        c("median", "mean", "weighted_mean", "lfq_top_3_sum", 
                          "lfq_all", "lfq_top_2_sum", "top_3_mean", "lfq_max"), 
-                     impute_prot_na = TRUE, use_unique_pep = TRUE, 
+                     impute_prot_na = FALSE, use_unique_pep = TRUE, 
                      cut_points = Inf, rm_outliers = FALSE, rm_allna = FALSE, 
                      mc = TRUE, ...) 
 {
@@ -3368,8 +3373,7 @@ Pep2Prn <- function (method_pep_prn =
   } 
   else {
     if (length(method_pep_prn) > 1L) {
-      # method_pep_prn <- "lfq_all"
-      method_pep_prn <- "lfq_top_3_sum"
+      method_pep_prn <- "median"
     }
     else {
       method_pep_prn <- rlang::as_string(method_pep_prn)
@@ -3413,8 +3417,8 @@ Pep2Prn <- function (method_pep_prn =
          "Use either, not both.")
   }
   
-  is_prot_lfq <- grepl("^lfq_", method_pep_prn)
-  
+  # is_prot_lfq <- grepl("^lfq_", method_pep_prn)
+  is_prot_lfq <- tmt_plex == 0L
   df <- pep_to_prn(id = prot_acc, 
                    method_pep_prn = method_pep_prn, 
                    use_unique_pep = use_unique_pep, 
@@ -3573,8 +3577,8 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     dplyr::select(group_pep_by, grep("^I[0-9]{3}[NC]{0,1}", names(df)))
   prot_ints <- switch(
     method_pep_prn, 
-    mean = aggrNums(mean)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
     median = aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
+    mean = aggrNums(mean)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
     lfq_all = aggrNums(sum)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
     lfq_max = aggrTopn(sum)(prot_ints, 1, na.rm = TRUE), 
     lfq_top_2_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 2, na.rm = TRUE), 
@@ -3675,12 +3679,13 @@ calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc",
     dplyr::select(-grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
     dplyr::group_by(!!rlang::sym(id))
   
-  df_num <- switch(method_pep_prn, 
-                   mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE),
-                   top_3_mean = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   weighted_mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+  df_num <- switch(
+    method_pep_prn, 
+    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE),
+    mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+    top_3_mean = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
+    weighted_mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
   
   invisible(df_num)
 }
@@ -3715,7 +3720,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
                         col_types = get_col_types(), 
                         show_col_types = FALSE) |> 
     suppressWarnings()
-
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     { if (tmt_plex && rm_allna) 
@@ -3799,6 +3804,39 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  
+  ###
+  if (FALSE) {
+    # group_psm_by <- match_call_arg(normPSM, group_psm_by)
+    use_lowercase_aa <- match_call_arg(normPSM, "use_lowercase_aa")
+    
+    if (group_psm_by == "pep_seq_mod") {
+      mod_indexes <- find_mod_indexesQ(dat_dir)
+      # may not be called psmQ.txt
+      # mod_indexes <- deduce_mod_indexes("psmQ.txt", dat_dir = dat_dir) # only anywhere varmods
+      mod_nms <- names(mod_indexes)
+      
+      if (use_lowercase_aa) {
+        ums <- lapply(mod_nms, mzion::parse_unimod)
+        sites <- unlist(lapply(ums, `[[`, "site"))
+        sites <- sites[sites != "M" & !grepl("term", sites)]
+        sites <- tolower(sites)
+        pat_rmvl <- paste0("[", paste0(sites, collapse = ""), "]")
+        
+        df <- df[!grepl(pat_rmvl, df$pep_seq_mod), ]
+      }
+      else {
+        bads <- !(mod_nms == "Oxidation (M)" | 
+                    grepl("Acetyl \\(Protein", mod_nms) | 
+                    grepl("Carbamidomethyl \\(C", mod_nms))
+        mods_rmvl <- unname(mod_indexes[bads])
+        pat_rmvl <- paste0("[", paste0(mods_rmvl, collapse = ""), "]")
+        
+        df <- df[!grepl(pat_rmvl, df$pep_seq_mod), ]
+      }
+    }
+  }
+  ###
   
   # add `prot_n_uniqpep` and `prot_n_uniqpsm`
   df <- local({
@@ -4182,6 +4220,10 @@ impPepNA <- function (df, fold = 50, is_intensity = TRUE)
 {
   # if (!is.data.frame(df)) stop("Input `df` needs to be a data frame.")
   set.seed(1422)
+  
+  vmax <- max(df, na.rm = TRUE)
+  vmin <- min(df, na.rm = TRUE)
+  fold <- ceiling(max(abs(vmax), abs(vmin)) * 10)
   
   nas <- is.na(df)
   
