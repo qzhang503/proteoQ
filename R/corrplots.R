@@ -356,14 +356,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   g2 <- ggplotGrob(p2)
   colors <- g2$grobs[[6]]$children[[3]]$gp$fill
   
-  ###
-  c(
-    "#F73F1E","#BFD5DC","#BED4DC","#BDD4DC","#BED4DC","#F63C1C","#B5D0D8","#ACCBD5","#FFAF98","#FFB7A3","#AFCCD6","#AACAD4",
-    "#FFAD96","#FFB39D","#FA5835","#DBE4E7","#E4E9EA","#A4C7D2","#ADCCD6","#C1D6DD","#C8DAE0","#D5E0E4","#D9E2E6","#ADCBD5",
-    "#B7D1D9","#CFDDE2","#D0DEE3","#F73F1E"
-  )
-  
-  ###
+  ## re-order colors from column-major to row-major
   colors2 <- vector("character", length(colors))
   
   # deduce col and row positions from the index of colors
@@ -380,13 +373,14 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   }
   
   colors <- colors2
-  ###
   
+  ## update plots
   idx <- 1
   for (k1 in 1:(ncol-1)) { # row
     for (k2 in (k1+1):ncol) { # column
       plt <- getPlot(p1, k1, k2) +
-        theme(panel.background = element_rect(fill = colors[idx], color = "white"),
+        theme(panel.background = 
+                element_rect(fill = colors[idx], color = "white"),
               panel.grid.major = element_line(color = colors[idx]))
 
       p1 <- putPlot(p1, plt, k1, k2)
@@ -399,7 +393,8 @@ plot_corr_sub <- function (df, cor_method = "pearson",
     for (k2 in (k1+1):ncol) { # row
       plt <- getPlot(p1, k2, k1) +
         theme_bw() +
-          theme(panel.background = element_rect(colour = NA,  fill = "transparent"),
+          theme(panel.background   = 
+                  element_rect(colour = NA,  fill = "transparent"),
                 panel.grid.major.x = element_blank(),
                 panel.grid.minor.x = element_blank(),
                 panel.grid.major.y = element_blank(),
@@ -429,14 +424,17 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   for (x in 2:ncol) {
     for (y in 1:(x-1)) {
       p1[x, y] <- p1[x, y] +
-        scale_x_continuous(limits = c(xmin-.2, xmax+.2), breaks = c(xmin, 0, xmax)) +
-        scale_y_continuous(limits = c(xmin-.2, xmax+.2), breaks = c(xmin, 0, xmax))
+        scale_x_continuous(limits = c(xmin-.2, xmax+.2), 
+                           breaks = c(xmin, 0, xmax)) +
+        scale_y_continuous(limits = c(xmin-.2, xmax+.2), 
+                           breaks = c(xmin, 0, xmax))
     }
   }
 
   for (x in 1:ncol) {
     p1[x, x] <- p1[x, x] +
-      scale_x_continuous(limits = c(xmin-.2, xmax+.2), breaks = c(xmin, 0, xmax))
+      scale_x_continuous(limits = c(xmin-.2, xmax+.2), 
+                         breaks = c(xmin, 0, xmax))
   }
 
   p1 <- p1 +

@@ -4,10 +4,12 @@
 \alias{Dixon_outliers}
 \title{Outlier removals with Dixon's method}
 \usage{
-Dixon_outliers(x)
+Dixon_outliers(x, p = 0.05)
 }
 \arguments{
 \item{x}{A numeric vector.}
+
+\item{p}{P-value cut-off.}
 }
 \description{
 Outlier removals with Dixon's method

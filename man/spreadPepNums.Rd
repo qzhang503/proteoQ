@@ -4,7 +4,13 @@
 \alias{spreadPepNums}
 \title{Spreads peptide numbers.}
 \usage{
-spreadPepNums(df, basenames, group_psm_by, ok_mbr = FALSE)
+spreadPepNums(
+  df,
+  basenames,
+  group_psm_by,
+  ok_mbr = FALSE,
+  use_spec_counts = FALSE
+)
 }
 \arguments{
 \item{df}{A data frame of peptide table.}
@@ -19,6 +25,9 @@ as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
 
 \item{ok_mbr}{Logical Capable of MBR or not.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 }
 \description{
 Spreads fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I by TMT

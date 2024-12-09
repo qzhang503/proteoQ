@@ -18,5 +18,5 @@ smbr_psms(dfqi, dfci, cols_mbr, cols_dfq, mbr_ret_tol = 25)
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 }
 \description{
-At the same \code{group_psm_by}.
+Not yet used. At the same \code{group_psm_by}.
 }

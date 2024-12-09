@@ -23,6 +23,7 @@ splitPSM_mq(
   rptr_intco = 0,
   rptr_intrange = c(0, 100),
   use_lowercase_aa = TRUE,
+  use_spec_counts = FALSE,
   parallel = TRUE,
   ...
 )
@@ -129,6 +130,9 @@ precursor intensity under the same PSM query.}
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
 will be abbreviated with lower-case and/or \code{^_~}. See the table below
 for details. The default is TRUE.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 
 \item{...}{Not currently used.}
 }

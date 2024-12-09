@@ -8,7 +8,8 @@ calc_tmt_prnnums(
   df,
   use_unique_pep = TRUE,
   id = "prot_acc",
-  method_pep_prn = "median"
+  method_pep_prn = "median",
+  use_spec_counts = FALSE
 )
 }
 \arguments{
@@ -35,6 +36,9 @@ peptide levels will be the weight when summarizing \code{log2FC} with
 various \code{"top_n"} statistics or \code{"weighted_mean"}.
 
 The method to summarize \code{log2FC} is \code{median}.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 }
 \description{
 Helper: calculates the TMT log2FC and reporter-ion intensity of proteins

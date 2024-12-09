@@ -587,7 +587,8 @@ q_table <- function (p, probs, quants)
 #' Outlier removals with Dixon's method
 #' 
 #' @param x A numeric vector.
-Dixon_outliers <- function(x) 
+#' @param p P-value cut-off.
+Dixon_outliers <- function(x, p = .05) 
 {
   # x = c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
   # x = c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
@@ -599,7 +600,7 @@ Dixon_outliers <- function(x)
   if (length(x2) > 2L && length(unique(x2)) > 1L) {
     out <- dixon_test(as.numeric(x), type = 0)
     
-    while(out$p.value < 0.05) {
+    while(out$p.value < p) {
       if (out$alternative == "high") {
         x[which.max(x)] <- NA_real_
       } else {

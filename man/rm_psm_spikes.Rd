@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{rm_psm_spikes}
 \alias{rm_psm_spikes}
-\title{Remove PSM spikes}
+\title{Remove PSM spikes by a group of \code{pep_seq_modz}}
 \usage{
 rm_psm_spikes(df, yfrac = 0.2, sdco = 3)
 }
@@ -13,5 +13,5 @@ rm_psm_spikes(df, yfrac = 0.2, sdco = 3)
 the fraction of the base peak will be ignored.}
 }
 \description{
-By \code{pep_seq_modz}.
+Remove PSM spikes by a group of \code{pep_seq_modz}
 }

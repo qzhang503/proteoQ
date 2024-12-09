@@ -1639,17 +1639,20 @@ add_shared_sm_genes <- function (df = NULL, key = "Proteins", sep = ";",
 #'
 #' @param df PSM data.
 #' @inheritParams normPSM
-procPSMs <- function (df = NULL, scale_rptr_int = FALSE, 
+procPSMs <- function (dat_dir = NULL, df = NULL, scale_rptr_int = FALSE, 
                       rptr_intco = 0, rptr_intrange = c(0, 100), 
                       rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
                       annot_kinases = FALSE, 
                       plot_rptr_int = TRUE, parallel = TRUE) 
 {
-  dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
-  TMT_plex <- TMT_plex(label_scheme_full)
   
+  TMT_plex <- TMT_plex(label_scheme_full)
   if (TMT_plex && scale_rptr_int) {
     df <- local({
       pattern <- "^I[0-9]{3}[NC]{0,1}"
@@ -1699,15 +1702,19 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   # (2) `> 1L` to bypass non-quantitative or LFQ workflows;
   # (3) MaxQuant Bruker no `Precursor Intensity` being filled;
   
+  rptr_int_rgn <- rptr_intrange / 100
+  
   df <- df %>%
-    dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
-                     as.numeric) %>%
-    dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
-                     ~ ifelse(.x <= rptr_intco, NA_real_, .x)) %>% 
-    dplyr::mutate_at(vars(grep("^I[0-9]{3}[NC]{0,1}", names(.))), ~ {
-      x <- .x
-      qts <- quantile(x, probs = rptr_intrange/100, na.rm = TRUE)
-      x <- ifelse((x < qts[1]) | (x > qts[2]), NA_real_, .x)
+    dplyr::mutate_at(
+      .vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
+    dplyr::mutate_at(
+      .vars = grep("^I[0-9]{3}", names(.)), 
+      function (x) ifelse(x <= rptr_intco, NA_real_, x)) %>% 
+    dplyr::mutate_at(
+      vars(grep("^I[0-9]{3}[NC]{0,1}", names(.))), 
+      function (x) {
+      qts <- quantile(x, probs = rptr_int_rgn, na.rm = TRUE)
+      x   <- ifelse((x < qts[1]) | (x > qts[2]), NA_real_, x)
     }) %>% 
     dplyr::arrange(RAW_File, pep_seq, prot_acc) 
   
@@ -1737,7 +1744,8 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
       tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
     
     df_split <- df %>% 
-      tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
+      tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", 
+                   remove = FALSE) %>% 
       dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
       dplyr::select(-RAW_File2) %>% 
       dplyr::group_by(TMT_inj) %>%
@@ -2958,11 +2966,14 @@ psm_mcleanup <- function(file = NULL, rm_outliers = FALSE,
 #'
 #' @import dplyr tidyr
 #' @importFrom stringr str_split
-cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", 
-                       rm_allna = FALSE, parallel = TRUE) 
+cleanupPSM <- function(dat_dir = NULL, rm_outliers = FALSE, 
+                       group_psm_by = "pep_seq", rm_allna = FALSE, 
+                       parallel = TRUE) 
 {
-  dat_dir <- get_gl_dat_dir()
-  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -3166,17 +3177,21 @@ mcPSM <- function(df = NULL, set_idx = 1L, injn_idx = 1L, mc_psm_by = "peptide",
 #' @importFrom stringr str_split
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>% %T>% %$% %<>%
-annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
-                     mc_psm_by = "peptide", 
+annotPSM <- function(dat_dir = NULL, group_psm_by = "pep_seq", 
+                     group_pep_by = "prot_acc", mc_psm_by = "peptide", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                      rm_allna = FALSE, type_sd = "log2_R", engine = "mz", ...) 
 {
-  dat_dir <- get_gl_dat_dir()
-  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
+  
   n_TMT_sets <- n_TMT_sets(label_scheme_full)
-  TMT_plex <- TMT_plex(label_scheme_full)
+  TMT_plex   <- TMT_plex(label_scheme_full)
   
   filelist <- list.files(
     path = file.path(dat_dir, "PSM/cache"),
@@ -3196,9 +3211,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   for (set_idx in set_indexes) {
     sublist <- filelist[grep(paste0("^TMTset", set_idx, "_"), 
                              filelist, ignore.case = TRUE)]
-
-    out_fn <- sublist %>% 
-      purrr::map_chr(~ gsub("_Clean\\.txt$", "_PSM_N.txt", .x))
+    out_fn  <- sublist %>% 
+      purrr::map_chr(function (x) gsub("_Clean\\.txt$", "_PSM_N.txt", x))
     
     # --- LCMS injections under the same TMT experiment ---
     for (idx in seq_along(sublist)) {
@@ -3207,20 +3221,27 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       df <- suppressWarnings(
         readr::read_tsv(file.path(dat_dir, "PSM/cache", sublist_i), 
                         col_types = get_col_types(), 
-                        show_col_types = FALSE))
+                        show_col_types = FALSE)) # |>
+        # add_scan_id(fraction_scheme = fraction_scheme)
+
       nms <- names(df)
       nrow <- nrow(df)
-
+      
       local({
         df_sub <- df[, grepl("^I[0-9]{3}[NC]{0,1}", nms)]
         bads <- colSums(is.na(df_sub)) == nrow
         bads <- bads[bads]
         
-        if (length(bads))
+        if (length(bads)) {
           warning(sublist_i, ": all-NA channels detected: ", 
                   paste(names(bads), collapse = ", "))
+        }
       })
 
+      if (engine == "mz") {
+        
+      }
+      
       df <- df |>
         add_pep_retsd(group_psm_by) |>
         add_n_pepexpz(group_psm_by)
@@ -3273,16 +3294,19 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         df %>% dplyr::select(-grep("^prot_|^pep_", names(.))), 
       )
       
-      cols_rm <- c("prot_score", "prot_matches", "prot_matches_sig", 
-                   "prot_sequences", "prot_sequences_sig", "prot_pi", 
-                   "prot_tax_str", "prot_tax_id", "prot_icover")
+      cols_rm <- 
+        c("prot_score", "prot_matches", "prot_matches_sig", "prot_sequences", 
+          "prot_sequences_sig", "prot_pi", "prot_tax_str", "prot_tax_id", 
+          "prot_icover")
       df <- df[, -which(names(df) %in% cols_rm)]
       
-      cols_mascot <- c("prot_seq", "prot_empai", "pep_query", "pep_isbold", 
-                       "pep_homol", "pep_ident", "pep_frame", "pep_var_mod", 
-                       "pep_var_mod_pos", "pep_summed_mod_pos", "pep_n_ions",
-                       "pep_local_mod_pos", "pep_num_match", "pep_ions_first", 
-                       "pep_ions_second", "pep_ions_third")
+      cols_mascot <- 
+        c("prot_seq", "prot_empai", "pep_query", "pep_isbold", "pep_homol", 
+          "pep_ident", "pep_frame", "pep_var_mod", "pep_var_mod_pos", 
+          "pep_summed_mod_pos", "pep_n_ions","pep_local_mod_pos", 
+          "pep_num_match", "pep_ions_first", "pep_ions_second", 
+          "pep_ions_third")
+      
       if (engine != "mascot") {
         df <- df[, -which(names(df) %in% cols_mascot)]
       }
@@ -3563,8 +3587,8 @@ normPSM <- function(dat_dir = NULL,
   on.exit(
     if (exists(".savecall", envir = environment())) {
       if (.savecall) {
-        mget(names(fmls), envir = environment(), inherits = FALSE) %>% 
-          c(dots) %>% 
+        mget(names(fmls), envir = environment(), inherits = FALSE)|>
+          c(dots) |>
           save_call("normPSM")
       }
     } 
@@ -3807,6 +3831,7 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intco = rptr_intco, 
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
+                      use_spec_counts = use_spec_counts, 
                       ...)
   } 
   else if (engine == "mf") {
@@ -3826,35 +3851,41 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intco = rptr_intco, 
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
+                      use_spec_counts = use_spec_counts, 
                       ...)
   }
 
-  procPSMs(df = df, 
-           scale_rptr_int = scale_rptr_int, 
-           rptr_intco = rptr_intco, 
-           rptr_intrange = rptr_intrange, 
-           rm_craps = rm_craps, 
-           rm_krts = rm_krts, 
-           rm_allna = rm_allna, 
-           annot_kinases = annot_kinases, 
-           plot_rptr_int = plot_rptr_int)
+  procPSMs(
+    dat_dir = dat_dir, 
+    df = df, 
+    scale_rptr_int = scale_rptr_int, 
+    rptr_intco = rptr_intco, 
+    rptr_intrange = rptr_intrange, 
+    rm_craps = rm_craps, 
+    rm_krts = rm_krts, 
+    rm_allna = rm_allna, 
+    annot_kinases = annot_kinases, 
+    plot_rptr_int = plot_rptr_int)
   
-  cleanupPSM(rm_outliers = rm_outliers, 
-             group_psm_by = group_psm_by, 
-             rm_allna = rm_allna)
+  cleanupPSM(
+    dat_dir = dat_dir, 
+    rm_outliers = rm_outliers, 
+    group_psm_by = group_psm_by, 
+    rm_allna = rm_allna)
   
-  annotPSM(group_psm_by = group_psm_by, 
-           group_pep_by = group_pep_by, 
-           mc_psm_by = mc_psm_by, 
-           fasta = fasta, 
-           expt_smry = expt_smry, 
-           plot_rptr_int = plot_rptr_int, 
-           plot_log2FC_cv = plot_log2FC_cv, 
-           rm_allna = rm_allna, 
-           type_sd = type_sd, 
-           engine = engine, 
-           ...)
-  
+  annotPSM(
+    dat_dir = dat_dir, 
+    group_psm_by = group_psm_by, 
+    group_pep_by = group_pep_by, 
+    mc_psm_by = mc_psm_by, 
+    fasta = fasta, 
+    expt_smry = expt_smry, 
+    plot_rptr_int = plot_rptr_int, 
+    plot_log2FC_cv = plot_log2FC_cv, 
+    rm_allna = rm_allna, 
+    type_sd = type_sd, 
+    engine = engine, ...)
+
   .savecall <- TRUE
 }
 
@@ -3968,7 +3999,7 @@ rm_cols_mqpsm <- function(df = NULL, group_psm_by = "pep_seq", set_idx = 1L)
 #'
 #' @param df A Mzion PSM table.
 #' @param yco An intensity cut-off.
-#' @param sdco A standard deviaiton cut-off.
+#' @param sdco A standard deviation cut-off.
 #' @inheritParams normPSM
 groupMZPSM1 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7, 
                          sdco = sqrt(9))
@@ -3984,13 +4015,18 @@ groupMZPSM1 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7,
   
   df0 <- df[oks, ] |>
     dplyr::group_by(pep_seq_modz) |>
+    # does this across samples: use the same best charge state
     dplyr::filter(row_number() == 1L)
   
-  df <- df[!oks, ] %>% 
-    split(.[["pep_seq_modz"]]) %>% 
+  # may nullify values in df...
+  df <- df[!oks, ]
+  
+  df <- split(df, df[["pep_seq_modz"]]) |>
     lapply(rm_psm_spikes, sdco = sdco) |>
     lapply(function (x) x[which.max(x$pep_tot_int), ]) |>
-    dplyr::bind_rows() |>
+    dplyr::bind_rows()
+  
+  df <- df |>
     dplyr::bind_rows(df0) |>
     dplyr::select(c("pep_seq_modz", "pep_tot_int", "pep_apex_ret", 
                     "pep_apex_scan", "pep_ret_sd"))
@@ -4045,30 +4081,93 @@ groupMZPSM0 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7,
 }
 
 
-#' Remove PSM spikes
+#' Remove PSM spikes by a group of \code{pep_seq_modz}
 #' 
-#' By \code{pep_seq_modz}.
-#'
 #' @param df A data frame for a \code{pep_seq_modz} at a given charge state.
 #' @param yfrac A factor of intensity fraction. Peaks with intensities \eqn{le}
 #'   the fraction of the base peak will be ignored.
 rm_psm_spikes <- function (df, yfrac = .2, sdco = 3)
 {
-  ys  <- df$pep_tot_int
-  df  <- df[ys >= max(ys, na.rm = TRUE) * yfrac, ]
+  ys <- df$pep_tot_int
+  df <- df[ys >= max(ys, na.rm = TRUE) * yfrac, ]
   
-  # assume no NA in df$pep_apex_ret
-  df <- split(df, df$pep_apex_ret) |>
+  # no longer valid: assume no NA in df$pep_apex_ret; apex can be undetermined
+  if (all(is.na(rts <- df$pep_apex_ret))) {
+    return(df)
+  }
+  
+  df <- split(df, rts) |>
     # the same pep_apex_ret -> the same pep_tot_int, so use pep_score
     lapply(function (dx) dx[which.max(dx$pep_score), ]) |>
     dplyr::bind_rows()
   
   rts <- df$pep_apex_ret
-  sd  <- if (length(rts) == 1L) 0 else sd(rts, na.rm = TRUE)
-  df$pep_ret_sd <- sd
-  
+  rts <- rts[!is.na(rts)]
+  sd  <- df$pep_ret_sd <- if (length(rts) == 1L) 0 else sd(rts, na.rm = TRUE)
+
   attr(df, "ok") <- sd <= sdco
   df
+}
+
+
+#' Remove PSM retention outliers
+#'
+#' By the distance between \code{pep_ret_range} and \code{pep_apex_ret}. Also
+#' remove very low intensity entries.
+#'
+#' @param df A PSM table at a TMTset[i]LCMSinj[j].
+#' @param rt_tol Tolerance in retention times between \code{pep_ret_range}  and
+#'   \code{pep_apex_ret} in seconds.
+#' @param y_tol Tolerance in intensity in relative to the based apex intensity.
+rm_apexrt_outliers <- function (df = NULL, rt_tol = 120, y_tol = .01)
+{
+  # not yet possible: the same `raw_file` + `pep_seq_mod` + `pep_apex_scan` 
+  #  but different `pep_exp_z` (different pep_exp_mz, thus different pep_apex_scan)
+  # df <- df[!duplicated(df[, c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")]), ]
+  df <- df[!duplicated(df[, c("raw_file", "pep_seq_mod", "pep_apex_scan")]), ]
+
+  ## (1) remove or nullify entries of outlying retention apexes
+  apts <- df$pep_apex_ret
+  bads <- is.na(apts) | abs(df$pep_ret_range - apts) > rt_tol
+  df1  <- df[bads, ]
+  df   <- df[!bads, ]
+  rm(list = "apts")
+  
+  peps1 <- unique(df1$pep_seq_mod)
+  keeps <- peps1[!peps1 %in% unique(df$pep_seq_mod)]
+  
+  if (length(keeps)) {
+    df1 <- df1[with(df1, pep_seq_mod %in% keeps), ]
+    df1$pep_tot_int <- df1$I000 <- df1$N_I000 <- 
+      df1$pep_apex_ret <- df1$pep_apex_scan <- NA_real_
+  }
+
+  ## (2) remove entries of small intensities
+  res  <- df |>
+    dplyr::group_by(pep_seq_mod) |>
+    dplyr::summarise(
+      max = max(pep_tot_int, na.rm = TRUE), 
+      min = min(pep_tot_int, na.rm = TRUE), 
+      yco = max * y_tol)
+  bads <- res$min < res$yco
+  
+  if (any(bads)) {
+    res  <- res[bads, c("pep_seq_mod", "yco")]
+    rows <- df$pep_seq_mod %in% res$pep_seq_mod
+    df2s <- df[ rows, ]
+    df   <- df[!rows, ]
+    df2s <- split(df2s, df2s$pep_seq_mod)
+    
+    if (length(df2s) != nrow(res)) { stop("Developer: entries mismatched.") }
+    
+    df2 <- mapply(function (dat, yco) {
+      dat[dat$pep_tot_int >= yco, ] # must be: nrow(dat) >= 2L
+    }, df2s, res$yco, SIMPLIFY = FALSE, USE.NAMES = FALSE) |> 
+      dplyr::bind_rows()
+  }
+  
+  df <- dplyr::bind_rows(df, df1, df2) |>
+    dplyr::arrange(pep_seq_mod)
 }
 
 
@@ -4122,7 +4221,7 @@ keep_psm_bestint <- function (dfs)
 }
 
 
-#' Calculates peptide data for individual TMT experiments
+#' Calculates Mzion peptide data for individual TMT experiments
 #'
 #' Argument \code{injn_idx} does not currently used.
 #'
@@ -4143,9 +4242,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
 {
   # N_I000 the same as I000;
   # "R000", "log2_R000", "N_log2_R000" are all NAs
-  nms <- names(df)
-  
-  if (!"prot_acc" %in% nms) {
+  if (!"prot_acc" %in% (nms <- names(df))) {
     stop("Column \"prot_acc\" not found.")
   }
 
@@ -4168,10 +4265,8 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
     save(group_ids, file = file.path(dat_dir, "group_ids.rds"))
   }
   
-  channelInfo <- channelInfo(dat_dir  = dat_dir, 
-                             set_idx  = set_idx, 
-                             injn_idx = injn_idx)
-  
+  # channelInfo <- channelInfo(dat_dir  = dat_dir, set_idx  = set_idx, injn_idx = injn_idx)
+
   # TMT_plex should be 0 for LFQ
   if (TMT_plex && rm_allna) {
     df <- df %>% 
@@ -4217,10 +4312,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
   # summarizes log2FC and intensity from the same `set_idx` 
   #   at one or multiple LCMS series
   if (!TMT_plex) {
-    nms <- names(df)
-    cols <- grep("^I[0-9]{3}[NC]{0,1}", nms)
-    
-    if (length(cols)) {
+    if (length(cols <- grep("^I[0-9]{3}[NC]{0,1}", nms <- names(df)))) {
       ok_intensity <- TRUE
     }
     else {
@@ -4228,9 +4320,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
       ok_intensity <- FALSE
     }
     
-    col_rt <- "pep_apex_ret"
-    
-    if (col_rt %in% nms) {
+    if ((col_rt <- "pep_apex_ret") %in% nms) {
       ok_ret <- TRUE
     }
     else {
@@ -4246,9 +4336,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
       ok_ret2 <- TRUE
     }
     
-    ok_lfq_ret <- ok_intensity && ok_ret && ok_ret2
-    
-    if (ok_lfq_ret) {
+    if (ok_lfq_ret <- ok_intensity && ok_ret && ok_ret2) {
       df <- df |>
         tidyr::unite(pep_seq_modz, pep_seq_mod, pep_exp_z, sep = "@", 
                      remove = FALSE)
@@ -4295,20 +4383,22 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
   #   from the newly derived `pep_tot_int`. 
   # `pep_tot_int` can be later different to the summary of I000, I126 etc. 
 
-  stopifnot(all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% 
-                  names(df)))
+  stopifnot(
+    all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% names(df)))
   
   # floating `pep_isunique` can be either `pep_razor_unique` or `pep_literal_unique`
   # so don't use `pep_isunique`
 
-  df <- cbind.data.frame(df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), 
-                            drop = FALSE],
-                         df[, grepl("I[0-9]{3}", names(df)), 
-                            drop = FALSE], 
-                         df[, grepl("log2_R[0-9]{3}", names(df)), 
-                            drop = FALSE]) %>%
-    dplyr::mutate_at(.vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
-                     list(function (x) replace(x, is.infinite(x), NA_real_)))
+  df <- cbind.data.frame(
+    df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), 
+       drop = FALSE],
+    df[, grepl("I[0-9]{3}", names(df)), 
+       drop = FALSE], 
+    df[, grepl("log2_R[0-9]{3}", names(df)), 
+       drop = FALSE]) %>%
+    dplyr::mutate_at(
+      .vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
+      list(function (x) replace(x, is.infinite(x), NA_real_)))
   
   if (TMT_plex) {
     df <- local({
@@ -4366,21 +4456,24 @@ calcTMTPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 {
   nms <- names(df)
   
-  if (!"prot_acc" %in% nms)
+  if (!"prot_acc" %in% nms) {
     stop("Column \"prot_acc\" not found.")
-  
-  if (length(group_psm_by) != 1L)
+  }
+
+  if (length(group_psm_by) != 1L) {
     stop("Length of \"group_psm_by\" is not one.")
-  
-  if (!group_psm_by %in% nms)
+  }
+
+  if (!group_psm_by %in% nms) {
     stop("Column \"", group_psm_by, "\" not found.")
-  
-  if (!any(grepl("log2_R[0-9]{3}|I[0-9]{3}", nms)))
+  }
+
+  if (!any(grepl("log2_R[0-9]{3}|I[0-9]{3}", nms))) {
     stop("Columns of log2 ratios or intensity not found.")
-  
+  }
+
   group_psm_by0 <- group_psm_by
-  
-  group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
+  group_ids     <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
 
   if (length(group_ids) >= 2L) {
     group_psm_by <- c(group_psm_by, "pep_group")
@@ -4703,6 +4796,7 @@ calcTMTPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' Helper of PSM2Pep
 #' 
 #' @param file The name of a PSM file.
+#' @param df A PSM table.
 #' @param lfq_mbr Logical; performs MBR for LFQ or not.
 #' @param ... filter_dots.
 #' @inheritParams PSM2Pep
@@ -4710,11 +4804,12 @@ calcTMTPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' @inheritParams n_TMT_sets
 #' @inheritParams normPSM
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL, 
+psm_to_pep <- function (file = NULL, df = NULL, dat_dir = NULL, 
+                        label_scheme_full = NULL, 
                         group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                         method_psm_pep = "median", lfq_ret_tol = 60L, 
                         rm_allna = FALSE, type_sd = "log2_R", engine = "mz", 
-                        lfq_mbr = FALSE, ...) 
+                        lfq_mbr = FALSE, trace_files = NULL, ...) 
 {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
@@ -4722,16 +4817,30 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
     .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  fn_prx <- gsub("_PSM_N.txt", "", file, fixed = TRUE)
-  set_idx <- as.integer(gsub(".*TMTset(\\d+)_.*", "\\1", fn_prx))
-  injn_idx <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
-  TMT_plex <- TMT_plex(label_scheme_full)
+  fn_prx     <- gsub("_PSM_N.txt", "", file, fixed = TRUE)
+  set_idx    <- as.integer(gsub(".*TMTset(\\d+)_.*", "\\1", fn_prx))
+  injn_idx   <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
+  TMT_plex   <- TMT_plex(label_scheme_full)
   TMT_levels <- TMT_levels(TMT_plex)
   
-  df <- suppressWarnings(
-    readr::read_tsv(file.path(dat_dir, "PSM", file), 
-                    col_types = get_col_types(), 
-                    show_col_types = FALSE))
+  if (is.null(df)) {
+    df <- suppressWarnings(
+      readr::read_tsv(file.path(dat_dir, "PSM", file), 
+                      col_types = get_col_types(), 
+                      show_col_types = FALSE))
+  }
+
+  ###
+  # add apexes...
+  if (lfq_mbr) { #  must !is.null(trace_files)
+
+    # MBR at PSM levels to determine the "best" apex for each pep_seq_mod or pep_seq_mod_z
+    #  outer(...) to align intensities
+    #  if one is about the same, use it as an reference anchor and 
+    #    choose the apex with the most different intensity
+    
+  }
+  ###
 
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -4749,22 +4858,19 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
     if (engine == "mz" && TMT_plex == 0L) {
       # separate charge states: pep_seq_mod + z -> pep_seq_modz
       # I000 <- N_I000 <- pep_tot_int
-      df <- calcLFQPeptide(df = df, group_psm_by = group_psm_by, 
-                           group_pep_by = group_pep_by, dat_dir = dat_dir, 
-                           set_idx = set_idx, injn_idx = injn_idx, 
-                           TMT_plex = TMT_plex, lfq_mbr = lfq_mbr, 
-                           lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna, 
-                           type_sd = type_sd)
+      df <- calcLFQPeptide(
+        df = df, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+        dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx, 
+        TMT_plex = TMT_plex, lfq_mbr = lfq_mbr, lfq_ret_tol = lfq_ret_tol, 
+        rm_allna = rm_allna, type_sd = type_sd)
     }
     else {
       # charge states collapsed; required backfilling for LFQ from other engines
-      df <- calcTMTPeptide(df = df, group_psm_by = group_psm_by, 
-                           method_psm_pep = method_psm_pep, 
-                           group_pep_by = group_pep_by, dat_dir = dat_dir, 
-                           set_idx = set_idx, injn_idx = injn_idx, 
-                           TMT_plex = TMT_plex, 
-                           lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna, 
-                           type_sd = type_sd, engine = engine)
+      df <- calcTMTPeptide(
+        df = df, group_psm_by = group_psm_by, method_psm_pep = method_psm_pep, 
+        group_pep_by = group_pep_by, dat_dir = dat_dir, set_idx = set_idx, 
+        injn_idx = injn_idx, TMT_plex = TMT_plex, lfq_ret_tol = lfq_ret_tol, 
+        rm_allna = rm_allna, type_sd = type_sd, engine = engine)
     }
   }
   
@@ -4881,43 +4987,49 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
                     lfq_ret_tol = 60L, rm_allna = FALSE, 
                     type_sd = c("log2_R", "N_log2_R", "Z_log2_R"), ...) 
 {
-  dat_dir <- get_gl_dat_dir()
-  engine <- find_search_engine(dat_dir)
-  load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  TMT_plex <- TMT_plex(label_scheme_full)
-  
   old_opts <- options()
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
+  fmls <- formals()
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
-      if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-          c(dots) %>% save_call("PSM2Pep")
+    if (exists(".saveCall", envir = rlang::current_env())) {
+      if (.saveCall) {
+        mget(names(fmls), envir = rlang::current_env(), 
+             inherits = FALSE) |> c(lfq_mbr = lfq_mbr, dots) |> 
+          save_call("PSM2Pep")
       }
     }, add = TRUE)
-
+  
   dots <- rlang::enexprs(...)
   
+  dat_dir <- get_gl_dat_dir()
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
+  
+  engine   <- find_search_engine(dat_dir)
+  tmt_plex <- TMT_plex(label_scheme_full)
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  lfq_mbr <- match_call_arg(normPSM, lfq_mbr)
-  
+
   # ---
   method_psm_pep <- rlang::enexpr(method_psm_pep)
   
-  if (TMT_plex) {
-    if (length(method_psm_pep) > 1L) 
+  if (tmt_plex) {
+    if (length(method_psm_pep) > 1L) {
       method_psm_pep <- "median"
-    else
+    }
+    else {
       method_psm_pep <- rlang::as_string(method_psm_pep)
+    }
   } 
   else {
-    if (length(method_psm_pep) > 1L)
+    if (length(method_psm_pep) > 1L) {
       method_psm_pep <- "lfq_max"
-    else 
+    }
+    else {
       method_psm_pep <- rlang::as_string(method_psm_pep)
+    }
   }
   
   if (method_psm_pep == "top.3") {
@@ -4936,36 +5048,95 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
   # ---
   type_sd <- rlang::enexpr(type_sd)
   
-  if (length(type_sd) > 1L) 
+  if (length(type_sd) > 1L) {
     type_sd <- "log2_R"
-  else
+  }
+  else {
     type_sd <- rlang::as_string(type_sd)
+  }
   
   stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
             length(type_sd) == 1L)
-  
-  # ---
   stopifnot(vapply(c(lfq_ret_tol), is.numeric, logical(1)))
   stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1)))
   
   dir.create(file.path(dat_dir, "Peptide/cache"), 
              recursive = TRUE, showWarnings = FALSE)
-  
-  filelist <- list.files(path = file.path(dat_dir, "PSM"), 
-                         pattern = "_PSM_N\\.txt$") |>
+  filepath <- file.path(dat_dir, "PSM")
+  filelist <- list.files(path = filepath, pattern = "_PSM_N\\.txt$") |>
     reorder_files()
+  n_files  <- length(filelist)
   
-  if (!length(filelist)) {
+  if (!n_files) {
     stop("Files of \"_PSM_N.txt\" not found.")
   }
-
+  
   message("Primary column keys in \"PSM/TMTset1_LCMSinj1_PSM_N.txt\" etc. ", 
           "for \"filter_\" varargs.")
+
+  lfq_mbr  <- match_call_arg(normPSM, lfq_mbr)
+  n_raws   <- length(unique(fraction_scheme$RAW_File))
+  path_ms1 <- find_path_ms1(dat_dir = dat_dir, n_files = n_raws)
+  lfq_mbr  <- if (engine == "mz" && n_files > 1L && lfq_mbr && !tmt_plex && 
+                  !is.null(path_ms1)) { TRUE } else { FALSE }
   
-  n_files <- length(filelist)
-  n_cores <- min(parallel::detectCores(), n_files)
+  ###
+  # `dfs` unique at c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")
+  # some ambiguity in `pep_apex_scan` yet to be handled
+  ###
   
-  if (n_cores > 1L) {
+  if (lfq_mbr && n_files > 1L) {
+    trace_files <- sep_mbrfiles(
+      b_nms = filelist, dat_dir = dat_dir, 
+      ms1files = list.files(path_ms1, pattern = "^ms1apexes_"), 
+      type = "ms1apexes", by = "set")
+    
+    dfs <- cleanPSMRT_by_sets(filelist) # raws nested under TMTSet[i]LCMSInj[j]
+    # raw_grps <- lapply(dfs, names) # raws under each TMTSet[i]LCMSInj[j]
+    dfs <- mapply(hadd_psm_apexes, file = filelist, dfs = dfs, 
+                  trace_files = trace_files, 
+                  MoreArgs = list(path_ms1 = path_ms1, dat_dir = dat_dir), 
+                  SIMPLIFY = FALSE, USE.NAMES = TRUE)
+    dfs <- lapply(dfs, dplyr::bind_rows) # flatten raws under a set
+
+    # (1) go back later: to handle fractions (no MBR across fractions) 
+    #     sum intensity of the same pep_seq_mod (or pep_seq_modz)
+    # (2) align apex (across TMTSet[i]LCMSInj[j])
+    
+    # align RT across samples; also remove RT outliers, e.g., the same 
+    # `pep_seq_mod` at different `pep_exp_z` and quite different RTs 
+    #   -> some must be outliers
+    # the output is largely (~96%): the same pep_seq_mod and the same pep_exp_z, 
+    #  ~4% are close in RT (at different pep_exp_z by the allowance in RT sd) 
+    dfs <- alignPSMApexs(dfs = dfs)
+    # dfs <- hsub_by_bestz(dfs = dfs)
+  }
+  else {
+    trace_files <- NULL
+    
+    dfs <- lapply(filelist, function (x) {
+      readr::read_tsv(file.path(dat_dir, "PSM", x), col_types = get_col_types(), 
+                      show_col_types = FALSE) |>
+        suppressWarnings()
+    })
+    names(dfs) <- filelist
+  }
+  
+  if (is.null(trace_files)) {
+    lfq_mbr <- FALSE
+  }
+  
+  ###
+  # treat different LCMS_Injections as different samples in LFQ-MBR
+  # add Sample_ID (LFQ: one Sample_ID per TMT_set)
+
+  # MBR at PSM levels to determine the "best" apex for each pep_seq_mod or pep_seq_mod_z
+  #  outer(...) to align intensities
+  #  if one is about the same, use it as an reference anchor and 
+  #    choose the apex with the most different intensity
+  ###
+
+  if ((n_cores <- min(parallel::detectCores(), n_files)) > 1L) {
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
     parallel::clusterExport(cl, list("add_cols_at", "reloc_col_before"), 
@@ -4973,31 +5144,655 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
     
     parallel::clusterExport(cl, list("exprs"), 
                             envir = environment(rlang::exprs))
-    
-    suppressWarnings(
-      silent_out <- parallel::clusterApply(
-        cl, filelist, psm_to_pep, 
+    parallel::clusterMap(
+      cl, psm_to_pep, file = filelist, df = dfs, 
+      MoreArgs = list(
         dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
         rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-        lfq_mbr = lfq_mbr, ...)
-    )
-    
+        lfq_mbr = lfq_mbr, trace_files = trace_files, ...))
     parallel::stopCluster(cl)
   } 
   else {
-    lapply(filelist, psm_to_pep, 
-           dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
-           group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-           method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-           rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-           lfq_mbr = lfq_mbr, ...)
+    mapply(
+      psm_to_pep, file = filelist, df = dfs,
+      MoreArgs = list(
+        dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
+        group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+        method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
+        rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
+        lfq_mbr = lfq_mbr, trace_files = trace_files, ...))
   }
   
   .saveCall <- TRUE
   
   invisible(NULL)
+}
+
+
+#' Clean up PSM retention times for a set of TMTset[i]LCMSinj[j]
+#'
+#' No clean-ups across TMTset[i]LCMSinj[j].
+#'
+#' @param filelist A file names of PSM tables TMTSet1_LCMSinj1_PSM_N.txt etc.
+#' @param lfq_mbr Logical; perform LFQ MBR nor not.
+#' @param max_n_apexes The maximum number of apexes for consideration.
+cleanPSMRT_by_sets <- function (filelist, lfq_mbr = TRUE, max_n_apexes = 3L)
+{
+  cols  <- c("pep_seq_mod", "pep_exp_mz", "pep_tot_int", "pep_apex_ret", 
+             "pep_apex_scan")
+  colx  <- c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan")
+  
+  dfs <- lapply(filelist, function (x) {
+    readr::read_tsv(file.path(dat_dir, "PSM", x), col_types = get_col_types(), 
+                    show_col_types = FALSE) |>
+      suppressWarnings()
+  })
+  names(dfs) <- filelist
+  
+  ## (1) remove RT outliers (single TMTset[i]LCMSinj[j]): 
+  #  (1.a) by the distance between `pep_ret_range` and `pep_apex_ret`;
+  #  (1.b) at low intensity w.r.t. the base under the same `pep_seq_mod`
+  
+  # unique at c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")
+  dfs <- lapply(dfs, rm_apexrt_outliers)
+  
+  ## (2) nullify multi-apex (n > max_n_apexes) entries
+  dfs <- lapply(dfs, function (df) {
+    lapply(split(df, df$raw_file), add_pep_n_apexes, max_n_apexes = max_n_apexes)
+  })
+}
+
+
+#' Add column \code{pep_n_apexes}
+#' 
+#' @param df A PSM sub-table with only one \code{RAW_File}.
+#' @param max_n_apexes The maximum number of apexes for consideration.
+add_pep_n_apexes <- function (df, max_n_apexes = 3L)
+{
+  cts <- df |>
+    dplyr::group_by(pep_seq_mod) |> 
+    dplyr::summarise(
+      pep_n_apexes = dplyr::n_distinct(pep_apex_ret, na.rm = TRUE))
+  
+  df <- df |>
+    dplyr::left_join(cts, by = "pep_seq_mod") |>
+    reloc_col_after("pep_n_apexes", "pep_apex_scan")
+  
+  rowx <- which(df$pep_n_apexes > max_n_apexes)
+  df$pep_tot_int[rowx] <- df$N_I000[rowx] <- df$I000[rowx] <- 
+    df$pep_apex_ret[rowx] <- df$pep_apex_scan[rowx] <- NA_real_
+  
+  df
+}
+
+
+#' Helper of adding PSM apexes
+#'
+#' By each PSM file of \code{TMTSet1_LCMSinj1.txt}, \code{TMTSet2_LCMSinj1.txt}
+#' etc.
+#'
+#' @param file A PSM file name, e.g., \code{TMTSet1_LCMSinj1_PSM_N.txt}.
+#' @param dfs A list split of PSM data under the \code{file} at different
+#'   \code{RAW_File}.
+#' @param trace_files The file names of \code{ms1apexes_} corresponding to
+#'   \code{dfs}.
+#' @param fits The models of retention-time fittings corresponding to
+#'   \code{dfs}.
+#' @param dat_dir A working directory.
+#' @param path_ms1 The file path to MS1 data from Mzion.
+#' @param lfq_ret_tol Retention time tolerance for LFQ.
+#' @param ok_mbr Logical; OK to perform MBR or not.
+hadd_psm_apexes <- function (file = NULL, dfs = NULL, trace_files = NULL, 
+                             fits = NULL, dat_dir = NULL, path_ms1 = NULL, 
+                             lfq_ret_tol = 60L, ok_mbr = TRUE)
+{
+  out <- mapply(add_psm_apexes, df = dfs, trace_file = trace_files, 
+                MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1), 
+                SIMPLIFY = FALSE, USE.NAMES = TRUE)
+}
+
+
+#' Add PSM apexes by each \code{RAW_File}.
+#'
+#' @param df A fraction of PSM table, e.g. \code{TMTSet1_LCMSinj1_PSM_N.txt},
+#'   under a single \code{RAW_File}.
+#' @param trace_file A file name of MS1 traces (\code{ms1apexes_[...].rds}).
+#' @param dat_dir A working directory.
+#' @param path_ms1 The path to the data of MS1 traces.
+#' @param cols Column keys
+add_psm_apexes <- 
+  function (df = NULL, trace_file = NULL, dat_dir = NULL, path_ms1 = NULL, 
+            # no need of pep_exp_z since the same pep_seq_mod at 
+            # different pep_exp_mz must have different pep_exp_z?
+            # later to simply the keys in `cols`
+            cols = c("raw_file", "pep_tot_int", "pep_exp_mz", "pep_seq_mod", 
+                     "pep_ret_range", "pep_apex_ret", "pep_scan_num", 
+                     "pep_orig_scan", "pep_apex_scan", "pep_n_apexes"))
+{
+  ## MS1 traces
+  #  level-1: (chimeric) precursors
+  #    level-2: apexes for each precursor
+  
+  trs <- qs::qread(file.path(path_ms1, trace_file))
+  mts <- fastmatch::fmatch(df$pep_orig_scan, trs$orig_scan)
+  # mts <- mts[!is.na(mts)] # shouldn't be any
+  
+  ans <- df[, cols] |>
+    dplyr::bind_cols(trs[mts, !names(trs) %in% c("orig_scan", "ms_level")])
+  
+  lens1 <- lengths(ans[["apex_ts1"]])
+  rowx1 <- lens1 > 1L # with chimeric precursors
+  rows1 <- !rowx1     # with single precursor
+  ans1  <- ans[rows1, ]
+  ans1[["apex_ts1"]]  <- lapply(ans1[["apex_ts1"]],  `[[`, 1L) # unlist
+  ans1[["apex_xs1"]]  <- lapply(ans1[["apex_xs1"]],  `[[`, 1L)
+  ans1[["apex_ys1"]]  <- lapply(ans1[["apex_ys1"]],  `[[`, 1L)
+  ans1[["apex_ps1"]]  <- lapply(ans1[["apex_ps1"]],  `[[`, 1L)
+  ans1[["apex_bin1"]] <- lapply(ans1[["apex_bin1"]], `[[`, 1L)
+  
+  ans1[["apex_ts2"]]  <- lapply(ans1[["apex_ts2"]],  `[[`, 1L)
+  ans1[["apex_xs2"]]  <- lapply(ans1[["apex_xs2"]],  `[[`, 1L)
+  ans1[["apex_ys2"]]  <- lapply(ans1[["apex_ys2"]],  `[[`, 1L)
+  ans1[["apex_ps2"]]  <- lapply(ans1[["apex_ps2"]],  `[[`, 1L)
+  ans1[["apex_bin2"]] <- lapply(ans1[["apex_bin2"]], `[[`, 1L)
+  
+  ansn <- cleanRTChim(df = ans[rowx1, ]) # by the "correctness" of `pep_exp_mz`
+  ans[rows1, ] <- ans1
+  ans[rowx1, ] <- ansn
+  
+  nms  <- names(ans)
+  colx <- nms[!nms %in% cols]
+  df[, cols] <- ans[, cols]
+  
+  df <- dplyr::bind_cols(df, ans[, colx])
+}
+
+
+#' Clean PSM data with multiple precursors
+#' 
+#' Matched by mass (among chimeric entries).
+#' 
+#' @param df A PSM table with \code{pep_n_apexes > 1L}.
+cleanRTChim <- function (df = NULL)
+{
+  ys1 <- xs1 <- ts1 <- ps1 <- ys2 <- xs2 <- ts2 <- ps2 <- 
+    vector("list", nr <- nrow(df))
+  exs <- df[["pep_exp_mz"]]
+  
+  # PSM redundancy ???
+  
+  apex_ps1 <- df[["apex_ps1"]]
+  apex_xs1 <- df[["apex_xs1"]]
+  apex_ys1 <- df[["apex_ys1"]]
+  apex_ts1 <- df[["apex_ts1"]]
+  lens1    <- lengths(apex_xs1)
+  
+  apex_ps2 <- df[["apex_ps2"]]
+  apex_xs2 <- df[["apex_xs2"]]
+  apex_ys2 <- df[["apex_ys2"]]
+  apex_ts2 <- df[["apex_ts2"]]
+  
+  for (i in 1:nr) {
+    api1  <- apex_ps1[[i]]
+    xsi1  <- apex_xs1[[i]]
+    ysi1  <- apex_ys1[[i]]
+    rti1  <- apex_ts1[[i]]
+    len1  <- lens1[[i]]
+    
+    api2  <- apex_ps2[[i]]
+    xsi2  <- apex_xs2[[i]]
+    ysi2  <- apex_ys2[[i]]
+    rti2  <- apex_ts2[[i]]
+    
+    bads  <- lengths(xsi1) == 0L
+    ibads <- which(bads)
+    nbads <- length(ibads)
+    
+    if (nbads) {
+      if (nbads == len1) {
+        next
+      }
+      
+      oks  <- which(!bads)
+      api1 <- api1[oks]
+      xsi1 <- xsi1[oks]
+      ysi1 <- ysi1[oks]
+      rti1 <- rti1[oks]
+      
+      api2 <- api2[oks]
+      xsi2 <- xsi2[oks]
+      ysi2 <- ysi2[oks]
+      rti2 <- rti2[oks]
+    }
+    
+    vsi <- .Internal(unlist(lapply(xsi1, `[[`, 1L), recursive = FALSE, 
+                            use.names = FALSE))
+    idx <- .Internal(which.min(abs(vsi / exs[[i]] - 1.0)))
+    
+    ps1[[i]] <- api1[[idx]]
+    xs1[[i]] <- xsi1[[idx]]
+    ys1[[i]] <- ysi1[[idx]]
+    ts1[[i]] <- rti1[[idx]]
+    
+    if (!is.null(api2i <- api2[[idx]])) {
+      ps2[[i]] <- api2i
+      xs2[[i]] <- xsi2[[idx]]
+      ys2[[i]] <- ysi2[[idx]]
+      ts2[[i]] <- rti2[[idx]]
+    }
+  }
+  
+  df[["apex_ps1"]] <- ps1
+  df[["apex_xs1"]] <- xs1
+  df[["apex_ys1"]] <- ys1
+  df[["apex_ts1"]] <- ts1
+  
+  df[["apex_ps2"]] <- ps2
+  df[["apex_xs2"]] <- xs2
+  df[["apex_ys2"]] <- ys2
+  df[["apex_ts2"]] <- ts2
+  
+  df
+}
+
+
+#' Align PSM apex retention times
+#' 
+#' Also nullify retention-time outliers.
+#' 
+#' @param dfs A list of PSM tables by TMTSet[i]LCMSinj[j].
+#' @inheritParams normPSM
+alignPSMApexs <- function (dfs = NULL, group_psm_by = "pep_seq_mod")
+{
+  n_smpls  <- length(dfs)
+  min_n    <- ceiling(n_smpls / 2)
+  filelist <- names(dfs) # TMTSet[i]LCMSinj[j]...
+  # raw_grps <- attr(dfs, "raw_grps", exact = TRUE) # RAW_Files in a TMTSet[i]LCMSinj[j]
+  
+  # later: need Sample_ID, other than raw_file for fractionated samples...
+  
+  # no need of `pep_exp_z`: the same `pep_seq_mod` at near the same `pep_exp_mz`
+  #  -> the same `pep_exp_z`
+  
+  cols <- c("pep_seq_mod", "raw_file", "pep_exp_mz", "pep_tot_int", 
+            "pep_scan_num", "pep_orig_scan", "pep_apex_ret", "pep_apex_scan")
+  colx <- c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan")
+  
+  ## (1) separate into single- and multi-apex subsets
+  #  also subset by non-modified peptides? Intensities?
+  #  (pep_seq_mod is unique in the single-apex subset)
+  dfs1 <- dfsn <- dfRTs <- vector("list", n_smpls)
+  
+  for (i in 1:n_smpls) {
+    df   <- dfs[[i]]
+    rows <- df$pep_n_apexes == 1L & lengths(df$apex_ps1) == 1L
+    
+    dfs1[[i]]  <- df[ rows, ]
+    dfsn[[i]]  <- df[!rows, ]
+    dfRTs[[i]] <- dfs1[[i]][, cols] |> # single-apex subsets for RT calibrations
+      dplyr::mutate(set. = filelist[[i]])
+  }
+  rm(list = c("df", "rows"))
+  
+  dfRTs <- dplyr::bind_rows(dfRTs)
+  
+  cts <- dfRTs |>
+    dplyr::group_by(pep_seq_mod) |> 
+    dplyr::summarise(N. = dplyr::n())
+  
+  dfRTs <- dfRTs |> 
+    dplyr::left_join(cts, by = "pep_seq_mod") |> 
+    dplyr::filter(N. >= min_n) |>
+    dplyr::select(-"N.")
+  rm(list = "cts")
+  
+  ## (2) remove retention-time outliers (prior to alignments)
+  dfRTs <- split(dfRTs, dfRTs$set.)
+  
+  # also clean-up by outlying `pep_exp_z` at single apex
+  # for the same `pep_seq_mod` at different `pep_exp_z`: 
+  #   largely different RT -> outliers -> removed / nullified
+  mats <- rm_RToutliers(
+    pep_seq_modzs  = lapply(dfRTs, `[[`, "pep_seq_mod"), 
+    pep_exp_mzs    = lapply(dfRTs, `[[`, "pep_exp_mz"), 
+    pep_exp_ints   = lapply(dfRTs, `[[`, "pep_tot_int"), 
+    pep_apex_rets  = lapply(dfRTs, `[[`, "pep_apex_ret"), 
+    pep_apex_scans = lapply(dfRTs, `[[`, "pep_apex_scan"), 
+    qt = .99)
+  xmat <- mats$x # rows: file names; columns: pep_seq_modz
+  ymat <- mats$y
+  tmat <- mats$t
+  smat <- mats$s
+  err  <- mats$err
+  
+  # bimodal: which modal to use?
+  # use the large modal at >= 50% occurence...
+  if (FALSE) {
+    sds <- vector("numeric", nps <- ncol(tmat))
+    for (i in seq_len(nps)) { sds[[i]] <- sd(tmat[, i], na.rm = TRUE) }
+    # bimodal; small modal: data more sparse; large modal: data more dense
+    ggplot() + geom_histogram(data = data.frame(SD = sds[sds <= 100]), aes(x = SD, y = ..count..), binwidth = 1)
+    
+    # subset the primary modal
+    oks <- local({
+      sds <- vector("numeric", nps <- ncol(tmat))
+      for (i in seq_len(nps)) { sds[[i]] <- sd(tmat[, i], na.rm = TRUE) }
+      den <- density(sds)
+      dx  <- data.frame(x = den$x, y = den$y * length(sds))
+      dx[with(dx, y <= 10), ] <- 0
+      # plot(y ~ x, dx)
+      ans <- mzion:::find_lc_gates(ys = dx$y, ts = dx$x, n_dia_scans = 0L)
+      idx <- which.max(ans$ns)
+      rng <- ans$ranges[[idx]]
+      sd1 <- dx$x[[rng[[1]]]]
+      sdn <- dx$x[[rng[[length(rng)]]]]
+      oks <- sds >= sd1 & sds <= sdn
+    })
+  }
+
+  ## (3.1) align retention times (based on the single-apex data)
+  tmat <- fitMS1RT(tmat)
+  fits <- attr(tmat, "fits", exact = TRUE)
+  names(fits) <- names(dfs)
+  
+  ## (3.2) remove single-apex retention-time outliers (after alignments)
+  mats <- rm_RToutliers(
+    mx = xmat, my = ymat, mt = tmat, ms = smat, qt = .97, ok_unv = TRUE)
+  xmat <- mats$x
+  ymat <- mats$y
+  tmat <- mats$t
+  smat <- mats$s
+  err  <- mats$err
+  
+  ## (4) update single-apex data
+  # start from i = 1 (not 2), since:
+  #  `rm_2RToutliers` nullify the lower intensity entry at which.min(ys) 
+  #   -> reference sample at i = 1 can be RT outliers and thus NA_real_
+  peps <- colnames(tmat) # not to be changed
+  
+  for (i in 1:n_smpls) {
+    dfi  <- dfs1[[i]] # stopifnot(length(unique(dfi$pep_seq_mod)) == nrow(dfi))
+    tmi  <- tmat[i, ]
+    oks  <- !is.na(tmi)
+    tmi  <- tmi[oks]
+    mts  <- match(dfi$pep_seq_mod, peps[oks])
+    nas  <- is.na(mts)
+    rowx <- which(nas)
+    rows <- which(!nas)
+    
+    dfi$pep_tot_int[rowx] <- dfi$N_I000[rowx] <- dfi$I000[rowx] <- 
+      dfi$pep_apex_ret[rowx] <- dfi$pep_apex_scan[rowx] <- NA_real_
+
+    dfi$pep_apex_ret[rows] <- tmi[mts[rows]]
+
+    dfs1[[i]][, colx] <- dfi[, colx]
+  }
+  
+  ## (5) update multi-apex data
+  for (i in 1:n_smpls) {
+    if (is.null(fit <- fits[[i]])) {
+      next
+    }
+    
+    dfi <- dfsn[[i]]
+    rts <- dfi$pep_apex_ret
+    ds  <- predict.lm(fit, newdata = data.frame(rts = rts))
+    dfsn[[i]]$pep_apex_ret <- rts - ds
+  }
+  
+  ## (6) remove RT outliers for multi-apex data
+  dfsn <- mapply(function (x, y) {
+    x$set_id <- y
+    x
+  }, dfsn, filelist, 
+  SIMPLIFY = FALSE, USE.NAMES = TRUE)
+  
+  dfsn <- dplyr::bind_rows(dfsn)
+  sdsn <- calc_pep_retsd(dfsn, group_psm_by = "pep_seq_mod")
+  sdco <- quantile(sdsn$pep_ret_sd, .95)
+  sdsn <- sdsn[match(dfsn$pep_seq_mod, sdsn$pep_seq_mod), ]
+  cols_sd <- c("pep_ret_sd", "pep_ret_min", "pep_ret_max")
+  dfsn[, cols_sd] <- sdsn[, cols_sd]
+
+  rowx <- dfsn$pep_ret_sd > sdco
+  dfsn$pep_tot_int[rowx] <- dfsn$N_I000[rowx] <- dfsn$I000[rowx] <- 
+    dfsn$pep_apex_ret[rowx] <- dfsn$pep_apex_scan[rowx] <- NA_real_
+  dfsn <- split(dfsn, dfsn$set_id)
+  dfsn <- lapply(dfsn, function (x) { x$set_id <- NULL; x })
+  dfsn <- dfsn[filelist]
+
+  ## (7) update apex_ts1 and apex_ts2 
+  for (i in 1:n_smpls) {
+    dfs[[i]] <- dplyr::bind_rows(dfs1[[i]], dfsn[[i]])
+    fit <- fits[[i]]
+    dfs[[i]] <- calibPSMApexs2(df = dfs[[i]], fit = fit, key = "apex_ts1")
+    dfs[[i]] <- calibPSMApexs2(df = dfs[[i]], fit = fit, key = "apex_ts2")
+  }
+  
+  dfs
+}
+
+
+#' Calibrate MS1 retention times
+#'
+#' @param tmat A matrix of retention times. Column correspondence: pep_seq_modz
+#'   or pep_seq_mod; row correspondence: individual peptide tables or Sample_ID.
+fitMS1RT <- function (tmat)
+{
+  n_samples <- nrow(tmat)
+  
+  if (n_samples <= 1L) {
+    return(tmat)
+  }
+  
+  # colMeans not as good...
+  if (FALSE) {
+    cms <- colMeans(tmat, na.rm = TRUE)
+    fits <- vector("list", n_samples)
+    
+    for (i in 1:n_samples) {
+      rts <- tmat[i, ]
+      ds  <- rts - cms
+      oks <- !is.na(ds)
+      ds  <- ds[oks]
+      rts <- rts[oks]
+      rts0 <- cms[oks]
+      # plot(rts ~ rts0)
+      
+      set.seed(1099L)
+      len <- length(rts)
+      ps  <- sample(seq_len(len), len %/% 2L)
+      rts <- rts[ps]
+      ds  <- ds[ps]
+      rts0 <- rts0[ps]
+      
+      ord <- order(rts)
+      rts <- rts[ord]
+      ds  <- ds[ord]
+      rts0 <- rts0[ord]
+      # plot(ds ~ rts)
+      
+      fits[[i]] <- fit <- lm(ds ~ splines::ns(rts, 4)) # was 10
+      tmi <- tmat[i, ]
+      pr  <- predict.lm(fit, newdata = data.frame(rts = tmi))
+      # ggplot() + geom_histogram(data = data.frame(D = pr), aes(x = D, y = ..count..), binwidth = 1)
+      tmat[i, ] <- tmi - pr
+      # ggplot() + geom_histogram(data = data.frame(D = tmat[i, ] - cms), aes(x = D, y = ..count..), binwidth = 1)
+    }
+  }
+  
+  tlgl <- !is.na(tmat)
+  idx0 <- which.max(rowSums(tlgl))
+  cols <- tlgl[idx0, ]
+  mat0 <- tmat[, cols]
+  rts0 <- mat0[idx0, ]
+  fits <- vector("list", n_samples)
+  
+  for (i in 1:n_samples) {
+    if (i == idx0) {
+      next
+    }
+    
+    rts <- mat0[i, ]
+    ds  <- rts - rts0
+    oks <- !is.na(ds)
+    rts <- rts[oks]
+    ds  <- ds[oks]
+
+    set.seed(1099L)
+    len <- length(rts)
+    ps  <- sample(seq_len(len), len %/% 2L)
+    rts <- rts[ps]
+    ds  <- ds[ps]
+    
+    ord <- order(rts)
+    rts <- rts[ord]
+    ds  <- ds[ord]
+    
+    fits[[i]] <- fit <- lm(ds ~ splines::ns(rts, 4))
+    tmi <- tmat[i, ]
+    pr  <- predict.lm(fit, newdata = data.frame(rts = tmi))
+    # ggplot() + geom_histogram(data = data.frame(D = pr), aes(x = D, y = ..count..), binwidth = 1)
+    tmat[i, ] <- tmi - pr
+    # ggplot() + geom_histogram(data = data.frame(D = tmat[i, ] - tmat[idx0, ]), aes(x = D, y = ..count..), binwidth = 1)
+  }
+  # rm(list = c("fit", "mat0", "tlgl", "cols", "ds", "idx0", "oks", "ord", "pr", "ps", "rts", "rts0", "tmi", "len"))
+  
+  attr(tmat, "fits") <- fits
+  
+  tmat
+}
+
+
+#' Helper for subsetting PSMs by the best charge state under a
+#' \code{pep_seq_mod}
+#'
+#' @param dfs A set of PSM tables.
+#' @param cols The column keys needed for determining the best charge states.
+hsub_by_bestz <- function (dfs, cols = c("pep_seq_mod", "pep_exp_z", 
+                                         "pep_apex_ret", "I000"))
+{
+  filelist <- names(dfs)
+  
+  dfs <- mapply(function (x, y) {
+    x$set_id <- y
+    x
+  }, dfs, filelist, 
+  SIMPLIFY = FALSE, USE.NAMES = TRUE)
+  
+  df <- dplyr::bind_rows(dfs)
+  df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
+  df$pep_exp_z <- as.integer(df$pep_exp_z)
+  
+  dfx <- df[, cols]
+  dat <- split(dfx, dfx$pep_seq_mod)
+  uzs <- lapply(dat, function (x) unique(x$pep_exp_z))
+  nzs <- lengths(uzs)
+  oks <- nzs > 1L
+  
+  ans <- mapply(sub_by_bestz, dat[oks], uzs[oks], SIMPLIFY = FALSE, 
+                USE.NAMES = TRUE)
+  chs <- c(lapply(dat[!oks], function (x) x$pep_exp_z[[1]]), 
+           lapply(ans, function (x) x$pep_exp_z[[1]]))
+  ids <- paste0(names(chs), "@", chs)
+  
+  df <- df[df$pep_seq_modz %in% ids, ]
+  df$pep_seq_modz <- NULL
+  
+  dfs <- split(df, df$set_id)
+  dfs <- lapply(dfs, function (x) { x$set_id <- NULL; x })
+  dfs <- dfs[filelist]
+}
+
+
+#' Subset PSMs by the best charge state under a \code{pep_seq_mod}
+#' 
+#' @param df A subset of PSM table at the same \code{pep_seq_mod}.
+#' @param chs A vector of unique charge states under the \code{pep_seq_mod}.
+sub_by_bestz <- function (df, chs)
+{
+  # df$pep_apex_rt should be close among chs under the same RAW
+  # remove outliers...
+  
+  if (FALSE) {
+    df2 <- df |> dplyr::filter(pep_exp_z == 2L)
+    df3 <- df |> dplyr::filter(pep_exp_z == 3L)
+    y2 <- df2$I000
+    y3 <- df3$I000
+    y2 <- y2[!is.na(y2)]
+    y3 <- y3[!is.na(y3)]
+    d2 <- sd(y2 / mean(y2))
+    d3 <- sd(y3 / mean(y3))
+  }
+  
+  ezs <- df$pep_exp_z
+  oks <- !is.na(df$pep_apex_ret)
+  ezx <- ezs[oks]
+  
+  if (length(ezx)) {
+    cts <- lapply(chs, function (x) sum(ezx == x, na.rm = TRUE))
+  }
+  else { # all apexes undetermined
+    cts <- lapply(chs, function (x) sum(ezs == x, na.rm = TRUE))
+  }
+  
+  cts <- unlist(cts, recursive = FALSE, use.names = FALSE)
+  idx <- which(cts == max(cts, na.rm = TRUE))
+  
+  if (length(idx) == 1L) {
+    ch <- chs[[idx]]
+  }
+  else {
+    ys <- df$I000
+    rows <- ezs %in% chs[idx] & !is.na(ys)
+    
+    if (any(rows)) {
+      ybar <- lapply(split(ys[rows], ezs[rows]), mean, na.rm = TRUE)
+      ch <- as.integer(names(which.max(ybar)))
+    }
+    else {
+      ch <- chs[[1]]
+    }
+  }
+  
+  df[with(df, pep_exp_z == ch), ]
+}
+
+
+#' Calibrate PSM apex retention times under \code{apex_ts1} or \code{apex_ts2}
+#'
+#' @param df A subset of PSM table, e.g. \code{TMTSet1_LCMSinj1_PSM_N.txt},
+#'   under a single \code{RAW_File}.
+#' @param fit A model for RT calibration.
+#' @param key A column key for RT calibration.
+calibPSMApexs2 <- function (df = NULL, fit = NULL, key = "apex_ts1")
+{
+  if (is.null(fit)) {
+    return(df)
+  }
+  
+  rts  <- df[[key]]
+  lens <- lengths(rts) # number of apexes according to `ms1apexes_`
+  bads <- lens == 0L   # no determined apexes in `ms1apexes_`
+  oks  <- which(!bads)
+  
+  if (any(bads)) {
+    rts  <- rts[oks]
+    lens <- lens[oks]
+  }
+  
+  rts  <- unlist(rts, recursive = FALSE, use.names = FALSE) # NULLs removed
+  grps <- rep(seq_along(lens), lens)
+  ds   <- predict.lm(fit, newdata = data.frame(rts = rts))
+  rts  <- rts - ds
+  rts  <- unname(rts)
+  rts <- split(rts, grps)
+  
+  df[[key]][oks] <- rts
+  
+  df
 }
 
 
@@ -5899,7 +6694,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         rm_reverses = TRUE, purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
-                        use_lowercase_aa = TRUE, 
+                        use_lowercase_aa = TRUE, use_spec_counts = FALSE, 
                         parallel = TRUE, ...) 
 {
   on.exit(
@@ -6005,7 +6800,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # (2) `Precursor intensity` not available in `msms.txt`
     
     local({
-      if (all(is.nan(df[["I000"]]))) {
+      if (all(is.nan(df[["I000"]])) && !use_spec_counts) {
         if (group_psm_by == "pep_seq_mod") {
           stop("Currently with MaxQuant timsTOF, only \"group_psm_by = pep_seq\" ", 
                "to match queries in `peptides.txt`.")
@@ -6359,6 +7154,13 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
   df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
+  
+  if (use_spec_counts && !TMT_plex) {
+    df <- df |> 
+      dplyr::mutate(I000 = df$pep_n_psm) |> 
+      dplyr::mutate(R000 = I000/I000, 
+                    R000 = ifelse(is.infinite(R000), NA_real_, R000))
+  }
   
   .saveCall <- TRUE
   
@@ -6833,7 +7635,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
-                        use_lowercase_aa = TRUE, 
+                        use_lowercase_aa = TRUE, use_spec_counts = FALSE, 
                         parallel = TRUE, ...) 
 {
   on.exit(
@@ -7096,6 +7898,13 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
   df <- add_quality_cols(df, !!group_psm_by, !!group_pep_by)
+  
+  if (use_spec_counts && !TMT_plex) {
+    df <- df |> 
+      dplyr::mutate(I000 = df$pep_n_psm) |> 
+      dplyr::mutate(R000 = I000/I000, 
+                    R000 = ifelse(is.infinite(R000), NA_real_, R000))
+  }
   
   .saveCall <- TRUE
   
@@ -7531,7 +8340,6 @@ pad_tmt_channels <- function(file = NULL, ...)
   }
   
   df <- df |> filters_in_call(!!!filter_dots)
-  
   df <- add_col_rawfile(df)
   
   this_plex <- sum(grepl("^I[0-9]{3}[NC]{0,1}$", names(df)))
@@ -7594,10 +8402,8 @@ pad_psm_fields <- function(dfs = NULL)
   })
   
   nms_union <- purrr::reduce(nms, union)
-  
   nms_union <- c(nms_union[nms_union != "pep_scan_title"], 
                  nms_union[nms_union == "pep_scan_title"])
-  
   snms_union <- sort(nms_union)
   
   ok_nms <- purrr::map_lgl(nms, function (x) {
@@ -7606,8 +8412,7 @@ pad_psm_fields <- function(dfs = NULL)
   
   if (!all(ok_nms)) {
     warning("Inequal numbers or names of columns deteted: \n", 
-            paste(ncols, collapse = "\n"), 
-            call. = FALSE)
+            paste(ncols, collapse = "\n"))
     
     for (i in seq_along(dfs)) {
       nms_i <- nms[[i]]
@@ -8070,8 +8875,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # check essential columns
   col_nms <- names(df)
   
-  lapply(c("RAW_File", "dat_file", 
-           "pep_tot_int", "pep_vmod", "pep_ivmod", 
+  lapply(c("RAW_File", "dat_file", "pep_tot_int", "pep_vmod", "pep_ivmod", 
            "prot_hit_num", "prot_family_member"), 
          function (x) {
            if (!x %in% col_nms) stop("Column \"", x, "\" not found.")
@@ -8121,9 +8925,9 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
     df <- df |>
       reloc_col_after_last("I000") |>
-      dplyr::mutate(R000 = I000/I000, 
-                    R000 = 
-                      ifelse(is.infinite(R000) | is.nan(R000), NA_real_, R000))
+      dplyr::mutate(
+        R000 = I000/I000, 
+        R000 = ifelse(is.infinite(R000) | is.nan(R000), NA_real_, R000))
   }
   
   col_nms2 <- names(df)
@@ -8163,14 +8967,12 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (1.4.2) phospho (may be deleted later)
   if (all(c("pep_vmod", "pep_locprob", "pep_locdiff") %in% col_nms2)) {
     df <- df |>
-      dplyr::mutate(pep_phospho_locprob = 
-                      ifelse(grepl("Phospho", pep_vmod), 
-                             pep_locprob, 
-                             NA_real_)) |>
-      dplyr::mutate(pep_phospho_locdiff = 
-                      ifelse(grepl("Phospho", pep_vmod), 
-                             pep_locdiff, 
-                             NA_real_))
+      dplyr::mutate(
+        pep_phospho_locprob = 
+          ifelse(grepl("Phospho", pep_vmod), pep_locprob, NA_real_)) |>
+      dplyr::mutate(
+        pep_phospho_locdiff = 
+          ifelse(grepl("Phospho", pep_vmod), pep_locdiff, NA_real_))
   }
   
   # (2.1) annotate proteins
@@ -8192,15 +8994,19 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- df |> dplyr::filter(!is.na(prot_family_member))
 
   # (2.5) find the uniqueness of peptides
-  df <- if (pep_unique_by == "group") 
+  df <- if (pep_unique_by == "group") {
     dplyr::mutate(df, pep_isunique = pep_razor_unique)
-  else if (pep_unique_by == "protein") 
+  }
+  else if (pep_unique_by == "protein") {
     dplyr::mutate(df, pep_isunique = pep_literal_unique)
-  else if (pep_unique_by == "none") 
+  }
+  else if (pep_unique_by == "none") {
     dplyr::mutate(df, pep_isunique = TRUE)
-  else
+  }
+  else {
     df
-  
+  }
+
   local({
     cols <- c("pep_isunique", "pep_literal_unique", "pep_razor_unique", 
               "pep_tot_int")
@@ -8277,19 +9083,25 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' Helper of \link{calc_pep_retsd}
 #' 
 #' @param df A data frame.
+#' @param col_rt The column key of retention time.
 #' @param use_unique Logical; if TRUE, filter data by uniqueness.
 #' @inheritParams normPSM
-add_pep_retsd <- function (df, group_psm_by = "pep_seq_mod", use_unique = TRUE) 
+add_pep_retsd <- function (df, group_psm_by = "pep_seq_mod", use_unique = TRUE, 
+                           col_rt = "pep_apex_ret") 
 {
   cols <- names(df)
   
-  for (col in c(group_psm_by, "pep_ret_range")) {
-    if (!col %in% cols) {
-      return(df)
-    }
+  if (!all(c(group_psm_by, col_rt) %in% cols)) {
+    return(df)
   }
   
-  if (all(is.na(df$pep_ret_range))) {
+  # for (col in c(group_psm_by, "pep_ret_range")) {
+  #   if (!col %in% cols) {
+  #     return(df)
+  #   }
+  # }
+  
+  if (all(is.na(df[[col_rt]]))) {
     df <- df |> 
       dplyr::mutate(pep_ret_sd = NA_real_, pep_ret_min = NA_real_, 
                     pep_ret_max = NA_real_)
@@ -8388,8 +9200,8 @@ add_n_pepexpz <- function (df, group_psm_by = "pep_seq", use_unique = TRUE)
 
 #' Adds MBR PSMs from psmC
 #'
-#' The field of \code{pep_scan_title} from MBR does not contain new information
-#' and purposely left as NA.
+#' Not yet used. The field of \code{pep_scan_title} from MBR does not contain
+#' new information and purposely left as NA.
 #'
 #' @param dfq psmQ data.
 #' @param dfc psmC data.
@@ -8498,7 +9310,7 @@ add_mbr_psms <- function (dfq, dfc, group_psm_by = "pep_seq_mod",
 
 #' Helper of \link{smbr_psms}.
 #' 
-#' Batch processing of \link{smbr_psms}.
+#' Not yet used. Batch processing of \link{smbr_psms}.
 #' 
 #' @param dfqm psmQ subset with missing intensity values for MBR.
 #' @param dfc Data from psmC.
@@ -8520,7 +9332,7 @@ mmbr_psms <- function (dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 25)
 
 #' Single MBR.
 #' 
-#' At the same \code{group_psm_by}.
+#' Not yet used. At the same \code{group_psm_by}.
 #' 
 #' @param dfqi An i-th entry of dfq.
 #' @param dfci An i-th entry of dfc.

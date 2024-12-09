@@ -12,7 +12,8 @@ calcLFQprnnums(
   group_psm_by = "pep_seq",
   group_pep_by = "gene",
   method_pep_prn = "lfq_top_3_sum",
-  impute_prot_na = TRUE
+  impute_prot_na = TRUE,
+  use_spec_counts = FALSE
 )
 }
 \arguments{
@@ -54,6 +55,9 @@ various \code{"top_n"} statistics or \code{"weighted_mean"}.
 The method to summarize \code{log2FC} is \code{median}.}
 
 \item{impute_prot_na}{Logical; impute NA values of protein log2FC or not.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 }
 \description{
 Adds the \code{total}, \code{razor} and \code{unique} intensities of

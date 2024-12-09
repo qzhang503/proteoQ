@@ -18,5 +18,5 @@ mmbr_psms(dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 25)
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 }
 \description{
-Batch processing of \link{smbr_psms}.
+Not yet used. Batch processing of \link{smbr_psms}.
 }

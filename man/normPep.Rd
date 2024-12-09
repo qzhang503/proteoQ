@@ -21,6 +21,7 @@ normPep(
   max_mbr_fold = 20,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
+  use_spec_counts = FALSE,
   ...
 )
 }
@@ -91,6 +92,9 @@ gradients, a setting of, e.g., 150 might be suitable.}
 
 \item{rm_ret_outliers}{Depreciated. Logical; if TRUE, removes peptide entries
 with outlying retention times across samples and/or LCMS series.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The

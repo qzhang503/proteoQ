@@ -29,6 +29,6 @@ the same \code{pep_seq_mod} groups.}
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 }
 \description{
-The field of \code{pep_scan_title} from MBR does not contain new information
-and purposely left as NA.
+Not yet used. The field of \code{pep_scan_title} from MBR does not contain
+new information and purposely left as NA.
 }

@@ -16,6 +16,7 @@ pep_to_prn(
   impute_prot_na = TRUE,
   use_mq_prot = FALSE,
   use_mf_prot = FALSE,
+  use_spec_counts = FALSE,
   ...
 )
 }
@@ -61,6 +62,9 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \item{use_mq_prot}{Logical; use MQ protein table or not.}
 
 \item{use_mf_prot}{Logical; use MSFragger protein table or not.}
+
+\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
+quantitation with Mascot or Mzion outputs.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains a list of logical expression(s). The

@@ -47,7 +47,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub, 
+plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_sub, 
                    filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_rows = annot_rows, 
@@ -114,6 +114,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- rlang::as_string(rlang::enexpr(id))
+  col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
   
@@ -192,6 +193,10 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   sample_ids <- label_scheme_sub$Sample_ID
+  
+  ###
+  # may check "NA" and replace with NA
+  ###
   
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("

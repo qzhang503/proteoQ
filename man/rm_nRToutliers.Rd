@@ -7,7 +7,7 @@
 rm_nRToutliers(mx, my, mt, ms, err)
 }
 \arguments{
-\item{mx}{A multi-row matrix of moverz values.}
+\item{mx}{A multi-row matrix of m-over-z values.}
 
 \item{my}{A multi-row matrix of apex intensity values.}
 

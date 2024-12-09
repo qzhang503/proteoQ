@@ -2,22 +2,28 @@
 % Please edit documentation in R/peptable.R
 \name{rm_RToutliers}
 \alias{rm_RToutliers}
-\title{Remove retention outliers}
+\title{Cross-file removals of retention outliers}
 \usage{
 rm_RToutliers(
-  pep_seq_modzs,
-  pep_exp_mzs,
-  pep_exp_ints,
-  pep_apex_rets,
-  pep_apex_scans,
-  qt = 0.95
+  pep_seq_modzs = NULL,
+  pep_exp_mzs = NULL,
+  pep_exp_ints = NULL,
+  pep_apex_rets = NULL,
+  pep_apex_scans = NULL,
+  mx = NULL,
+  my = NULL,
+  mt = NULL,
+  ms = NULL,
+  qt = 0.95,
+  ok_unv = FALSE
 )
 }
 \arguments{
 \item{pep_seq_modzs}{List of peptide sequences with modifications and charge
 states.}
 
-\item{pep_exp_mzs}{List of moverz values.}
+\item{pep_exp_mzs}{List of m-over-z values. Each list element corresponds to
+entries in a \code{df}.}
 
 \item{pep_exp_ints}{List of intensity values.}
 
@@ -26,7 +32,10 @@ states.}
 \item{pep_apex_scans}{List of apex scan numbers.}
 
 \item{qt}{The quantile for considering retention-time outliers.}
+
+\item{ok_unv}{Logical; is the universe ready or need to be compiled.}
 }
 \description{
-Remove retention outliers
+Nullify X, Y, T(ime) and S(can) values if found as RT outliers (> 95%
+quantile of SD).
 }

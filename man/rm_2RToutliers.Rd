@@ -7,7 +7,8 @@
 rm_2RToutliers(mx, my, mt, ms)
 }
 \arguments{
-\item{mx}{A two-row matrix of moverz values.}
+\item{mx}{A two-row matrix of m-over-z values with large standard deviations
+in retention times.}
 
 \item{my}{A two-row matrix of apex intensity values.}
 

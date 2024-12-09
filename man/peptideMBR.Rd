@@ -29,7 +29,7 @@ e.g., \code{TMTset1_LCMSinj1_Peptide_N.txt}.}
 
 \item{base_name}{The basename of a peptide table.}
 
-\item{xvs}{A vector of moverzs.}
+\item{xvs}{A vector of m-over-z's.}
 
 \item{yvs}{A vector of apex intensities.}
 

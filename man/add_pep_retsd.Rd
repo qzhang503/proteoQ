@@ -4,7 +4,12 @@
 \alias{add_pep_retsd}
 \title{Helper of \link{calc_pep_retsd}}
 \usage{
-add_pep_retsd(df, group_psm_by = "pep_seq_mod", use_unique = TRUE)
+add_pep_retsd(
+  df,
+  group_psm_by = "pep_seq_mod",
+  use_unique = TRUE,
+  col_rt = "pep_apex_ret"
+)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -17,6 +22,8 @@ as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
 
 \item{use_unique}{Logical; if TRUE, filter data by uniqueness.}
+
+\item{col_rt}{The column key of retention time.}
 }
 \description{
 Helper of \link{calc_pep_retsd}

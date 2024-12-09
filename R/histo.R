@@ -40,28 +40,28 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     show_curves <- FALSE
   }
   
-  id <- rlang::as_string(rlang::enexpr(id))
+  id   <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
-  xmax <- eval(dots$xmax, envir = rlang::caller_env()) 
-  xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
+  xmin     <- eval(dots$xmin, envir = rlang::caller_env()) 
+  xmax     <- eval(dots$xmax, envir = rlang::caller_env()) 
+  xbreaks  <- eval(dots$xbreaks, envir = rlang::caller_env())
   binwidth <- eval(dots$binwidth, envir = rlang::caller_env())
-  alpha <- eval(dots$alpha, envir = rlang::caller_env())
-  ncol <- eval(dots$ncol, envir = rlang::caller_env())
-  width <- eval(dots$width, envir = rlang::caller_env())
-  height <- eval(dots$height, envir = rlang::caller_env())
-  scales <- eval(dots$scales, envir = rlang::caller_env())
+  alpha    <- eval(dots$alpha, envir = rlang::caller_env())
+  ncol     <- eval(dots$ncol, envir = rlang::caller_env())
+  width    <- eval(dots$width, envir = rlang::caller_env())
+  height   <- eval(dots$height, envir = rlang::caller_env())
+  scales   <- eval(dots$scales, envir = rlang::caller_env())
   
-  if (is.null(xmin)) xmin <- -2
-  if (is.null(xmax)) xmax <- 2
-  if (is.null(xbreaks)) xbreaks <- 1
-  if (is.null(binwidth)) binwidth <- (xmax - xmin)/80
-  if (is.null(alpha)) alpha <- .8
-  if (is.null(ncol)) ncol <- 5
-  if (is.null(width)) width <- 4 * ncol + 2
-  if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
-  if (is.null(scales)) scales <- "fixed"
+  if (is.null(xmin))     xmin <- -2
+  if (is.null(xmax))     xmax <- 2
+  if (is.null(xbreaks))  xbreaks <- 1
+  if (is.null(binwidth)) binwidth <- (xmax - xmin) / 80
+  if (is.null(alpha))    alpha <- .8
+  if (is.null(ncol))     ncol <- 5
+  if (is.null(width))    width <- 4 * ncol + 2
+  if (is.null(height))   height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
+  if (is.null(scales))   scales <- "fixed"
   
   ylimits <- eval(dots$ylimits, envir = rlang::caller_env()) 
   
@@ -91,15 +91,15 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
       stop("Zero row of data.")
   }
   
-  by = (xmax - xmin)/200
+  by <- (xmax - xmin) / 200
   nrow <- nrow(df)
   x_label <- expression("Ratio ("*log[2]*")")
   NorZ_ratios <- find_NorZ(scale_log2r)
   
   if (!is.null(params)) {
-    n_comp <- max(params$Component)
+    n_comp   <- max(params$Component)
     nm_comps <- paste0("G", 1:n_comp)
-    nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
+    nm_full  <- c(nm_comps, paste(nm_comps, collapse = " + "))
     
     # offset by the percentage of non-NA values
     perc_nna <- df %>%

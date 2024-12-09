@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{calcLFQPeptide}
 \alias{calcLFQPeptide}
-\title{Calculates peptide data for individual TMT experiments}
+\title{Calculates Mzion peptide data for individual TMT experiments}
 \usage{
 calcLFQPeptide(
   df = NULL,

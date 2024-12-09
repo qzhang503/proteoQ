@@ -4485,60 +4485,63 @@ find_psmQ_files <- function (dat_dir)
 get_col_types <- function () 
 {
   # just a remainder of mzion columns
-  col_types_pq <- cols(
-    prot_acc = col_character(), 
-    prot_issig = col_logical(), 
-    prot_isess = col_logical(),
-    prot_tier = col_integer(), 
-    prot_hit_num = col_integer(), 
-    prot_family_member = col_integer(), 
-    prot_es = col_number(), 
-    prot_es_co = col_number(), 
-    pep_seq = col_character(), 
-    pep_n_ms2 = col_integer(), 
-    pep_scan_title = col_character(), 
-    pep_exp_mz = col_number(),
-    pep_exp_mr = col_number(), 
-    pep_exp_z = col_character(), 
-    pep_calc_mr = col_number(), 
-    pep_delta = col_number(),
-    pep_tot_int = col_number(), 
-    pep_ret_range = col_number(), 
-    pep_scan_num = col_character(), # timsTOF
-    pep_mod_group = col_integer(), 
-    pep_frame = col_integer(), 
-    pep_fmod = col_character(),
-    pep_vmod = col_character(),
-    pep_isdecoy = col_logical(),
-    pep_ivmod = col_character(),
-    pep_len = col_integer(), 
-    
-    pep_ms2_moverzs = col_character(),
-    pep_ms2_ints = col_character(), 
-    pep_ms2_theos = col_character(),
-    pep_ms2_theos2 = col_character(),
-    pep_ms2_exptints = col_character(),
-    pep_ms2_exptints2 = col_character(),
-    
-    pep_n_matches = col_integer(), 
-    pep_n_matches2 = col_integer(),
-    pep_ms2_deltas = col_character(),
-    pep_ms2_ideltas = col_character(),
-    pep_ms2_deltas2 = col_character(), 
-    pep_ms2_ideltas2 = col_character(),
-    pep_ms2_deltas_mean = col_double(),
-    pep_ms2_deltas_sd = col_double(),
-    
-    pep_issig = col_logical(),
-    pep_score = col_double(),
-    pep_expect = col_double(),
-    pep_rank = col_integer(), 
-    pep_locprob = col_double(),
-    pep_locdiff = col_double(),
-    pep_rank_nl = col_integer(), 
-    pep_literal_unique = col_logical(),
-    pep_razor_unique = col_logical(),
-    raw_file = col_character(), )
+  if (FALSE) {
+    col_types_pq <- cols(
+      prot_acc = col_character(), 
+      prot_issig = col_logical(), 
+      prot_isess = col_logical(),
+      prot_tier = col_integer(), 
+      prot_hit_num = col_integer(), 
+      prot_family_member = col_integer(), 
+      prot_es = col_number(), 
+      prot_es_co = col_number(), 
+      pep_seq = col_character(), 
+      pep_n_ms2 = col_integer(), 
+      pep_scan_title = col_character(), 
+      pep_exp_mz = col_number(),
+      pep_exp_mr = col_number(), 
+      pep_exp_z = col_character(), 
+      pep_calc_mr = col_number(), 
+      pep_delta = col_number(),
+      pep_tot_int = col_number(), 
+      pep_ret_range = col_number(), 
+      # pep_scan_num = col_character(), # timsTOF
+      pep_scan_num = col_number(), 
+      pep_mod_group = col_integer(), 
+      pep_frame = col_integer(), 
+      pep_fmod = col_character(),
+      pep_vmod = col_character(),
+      pep_isdecoy = col_logical(),
+      pep_ivmod = col_character(),
+      pep_len = col_integer(), 
+      
+      pep_ms2_moverzs = col_character(),
+      pep_ms2_ints = col_character(), 
+      pep_ms2_theos = col_character(),
+      pep_ms2_theos2 = col_character(),
+      pep_ms2_exptints = col_character(),
+      pep_ms2_exptints2 = col_character(),
+      
+      pep_n_matches = col_integer(), 
+      pep_n_matches2 = col_integer(),
+      pep_ms2_deltas = col_character(),
+      pep_ms2_ideltas = col_character(),
+      pep_ms2_deltas2 = col_character(), 
+      pep_ms2_ideltas2 = col_character(),
+      pep_ms2_deltas_mean = col_double(),
+      pep_ms2_deltas_sd = col_double(),
+      
+      pep_issig = col_logical(),
+      pep_score = col_double(),
+      pep_expect = col_double(),
+      pep_rank = col_integer(), 
+      pep_locprob = col_double(),
+      pep_locdiff = col_double(),
+      pep_rank_nl = col_integer(), 
+      pep_literal_unique = col_logical(),
+      pep_razor_unique = col_logical(),
+      raw_file = col_character(), )
+  }
   
   col_types <- cols(
     prot_hit_num = col_integer(),
@@ -4604,13 +4607,13 @@ get_col_types <- function ()
     pep_num_match = col_integer(), # Mascot
     pep_scan_title = col_character(),
     pep_index = col_integer(),
-    pep_scan_range = col_character(), # timsTOF
-    
+    # pep_scan_range = col_character(), # timsTOF
+    pep_scan_range = col_number(), 
+
     pep_n_exp_z = col_integer(), 
     pep_ret_sd = col_double(),
     pep_n_nl = col_integer(),
     
-    pep_ret_range = col_double(),
     pep_ms2_sumint = col_double(),
     pep_n_ions = col_integer(),
     pep_locprob = col_double(),
@@ -4621,7 +4624,13 @@ get_col_types <- function ()
     pep_ions_second = col_character(),
     pep_ions_third = col_character(),
     pep_n_ms2 = col_integer(),
-    pep_scan_num = col_character(),
+    pep_ret_range = col_double(),
+    pep_apex_ret = col_double(),
+    # pep_scan_num = col_character(),
+    pep_scan_num = col_number(), 
+    pep_orig_scan = col_character(), 
+    pep_apex_scan = col_integer(), 
+    
     pep_mod_group = col_integer(),
     pep_fmod = col_character(),
     pep_vmod = col_character(),
@@ -4656,7 +4665,9 @@ get_col_types <- function ()
   
   nms <- names(col_types$cols)
   
-  stopifnot(length(nms) == length(unique(nms)))
+  if (length(nms) != length(unique(nms))) {
+    stop("Mismatched column names and types.")
+  }
   
   col_types
 }
@@ -5156,6 +5167,35 @@ load_psmC <- function(file = NULL, ...)
     dplyr::mutate(R000 = I000/I000, 
                   R000 = ifelse(is.infinite(R000), NA_real_, R000)) |>
     dplyr::mutate(dat_file = base_name)
+}
+
+
+#' Add \code{pep_scan_id}
+#'
+#' For LFQ and MBR. For example, no MBR for fractions under the same
+#' TMT_Set/Sample_ID and LCMS_Injection. Note the one-to-one correspondence
+#' between TMT_Set and Sample_ID in LFQ.
+#'
+#' @param df A data frame.
+#' @param fraction_scheme The metadata of fraction scheme.
+add_scan_id <- function (df = NULL, fraction_scheme)
+{
+  raws_fr <- fraction_scheme |> 
+    dplyr::filter(RAW_File %in% unique(df$raw_file))
+  raw_ids <- fastmatch::fmatch(df$raw_file, raws_fr$RAW_File)
+
+  if (TRUE) {
+    frac <- fraction_scheme[raw_ids, ] |>
+      tidyr::unite(set_inj_fr, TMT_Set, LCMS_Injection, Fraction)
+    
+    df$pep_scan_id <- paste0(frac$set_inj_fr, "@", df$pep_scan_num)
+  }
+  else {
+    df$pep_scan_id <- paste0(raw_ids, "@", df$pep_scan_num)
+  }
+
+  df <- df |> 
+    reloc_col_after("pep_scan_id", "pep_scan_num")
 }
 
 

@@ -5,6 +5,7 @@
 \title{Cleans Up PSM results}
 \usage{
 cleanupPSM(
+  dat_dir = NULL,
   rm_outliers = FALSE,
   group_psm_by = "pep_seq",
   rm_allna = FALSE,

@@ -4,7 +4,13 @@
 \alias{sep_mbrfiles}
 \title{Separate MBR file names by samples}
 \usage{
-sep_mbrfiles(b_nms, dat_dir, ms1files)
+sep_mbrfiles(
+  b_nms,
+  dat_dir,
+  ms1files = NULL,
+  type = "ms1full",
+  by = c("raw", "set")
+)
 }
 \arguments{
 \item{b_nms}{The basename of peptide files.}
@@ -12,6 +18,11 @@ sep_mbrfiles(b_nms, dat_dir, ms1files)
 \item{dat_dir}{The working directory.}
 
 \item{ms1files}{The file names of MS1 data.}
+
+\item{type}{MS1 data type. Either full MS1 or processed, sectional traces.}
+
+\item{by}{Separate the output by. Only have an effect at \code{type =
+ms1apexes}.}
 }
 \description{
 Separate MBR file names by samples

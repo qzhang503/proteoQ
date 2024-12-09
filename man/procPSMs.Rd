@@ -5,6 +5,7 @@
 \title{Processes PSMs.}
 \usage{
 procPSMs(
+  dat_dir = NULL,
   df = NULL,
   scale_rptr_int = FALSE,
   rptr_intco = 0,
@@ -18,6 +19,9 @@ procPSMs(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{df}{PSM data.}
 
 \item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion

@@ -5,6 +5,7 @@
 \title{Annotates PSM results}
 \usage{
 annotPSM(
+  dat_dir = NULL,
   group_psm_by = "pep_seq",
   group_pep_by = "prot_acc",
   mc_psm_by = "peptide",
@@ -19,6 +20,9 @@ annotPSM(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
 based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}

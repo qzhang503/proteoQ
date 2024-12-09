@@ -6,6 +6,7 @@
 \usage{
 psm_to_pep(
   file = NULL,
+  df = NULL,
   dat_dir = NULL,
   label_scheme_full = NULL,
   group_psm_by = "pep_seq",
@@ -16,11 +17,14 @@ psm_to_pep(
   type_sd = "log2_R",
   engine = "mz",
   lfq_mbr = FALSE,
+  trace_files = NULL,
   ...
 )
 }
 \arguments{
 \item{file}{The name of a PSM file.}
+
+\item{df}{A PSM table.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}

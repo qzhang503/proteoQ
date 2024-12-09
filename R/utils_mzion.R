@@ -88,4 +88,45 @@ hdeduce_mod_indexes <- function (df)
 }
 
 
+#' Find the path of MS1 data
+#' 
+#' @param dat_dir A working directory.
+#' @param n_files The number of RAW files.
+find_path_ms1 <- function (dat_dir = NULL, n_files = 0L)
+{
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  ms1files <- list.files(dat_dir, pattern = "^ms1full_.*\\.rds$")
+  n_ms1fis <- length(ms1files)
+  
+  if (n_ms1fis) {
+    path_ms1 <- dat_dir
+  }
+  else {
+    path_ms1 <- file.path(dat_dir, "ms1data")
+    ms1files <- list.files(path_ms1, pattern = "^ms1full_.*\\.rds$")
+    n_ms1fis <- length(ms1files)
+    
+    if (!n_ms1fis) {
+      # stop: otherwise df is unique by pep_seq_modz and need to be collapsed
+      # to pep_seq_mod
+      warning("MS1 peak lists of `^ms1full_[...].rds` not found for LFQ.\n", 
+              "Please copy the entire Mzion folder of `ms1data` ", 
+              "to your working directory.")
+      return(NULL)
+    }
+  }
+  
+  if (n_ms1fis != n_files) {
+    warning("The number of `^ms1full_[...].rds` files is different ", 
+            "to the number of sample IDs. ", "LFQ disabled.")
+    path_ms1 <- NULL
+  }
+  
+  path_ms1
+}
+
+
 
