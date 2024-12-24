@@ -20,7 +20,7 @@ peptideMBR(
   min_y = 2e+06,
   max_mbr_fold = 20,
   step = 1e-05,
-  gap = mbr_ret_tol + 45
+  gap = mbr_ret_tol + 35
 )
 }
 \arguments{
@@ -57,7 +57,8 @@ value with PASEF.}
 \item{step}{The mass error in \code{ppm / 1e6}.}
 
 \item{gap}{A gap in retention-time window in seconds for finding gates in the
-Y values of LC. The gap value need to be broad enough.}
+Y values of LC. The gap value serves as a margin to trace out a whole peak
+with its apex within the \code{mbr_ret_tol}.}
 }
 \description{
 MBR of peptides

@@ -4,17 +4,10 @@
 \alias{groupMZPSM1}
 \title{Group PSMs}
 \usage{
-groupMZPSM1(df, group_psm_by = "pep_seq_mod", yco = 1e+07, sdco = sqrt(9))
+groupMZPSM1(df, yco = 1e+07, sdco = 3)
 }
 \arguments{
 \item{df}{A Mzion PSM table.}
-
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
 
 \item{yco}{An intensity cut-off.}
 

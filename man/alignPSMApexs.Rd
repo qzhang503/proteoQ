@@ -4,17 +4,24 @@
 \alias{alignPSMApexs}
 \title{Align PSM apex retention times}
 \usage{
-alignPSMApexs(dfs = NULL, group_psm_by = "pep_seq_mod")
+alignPSMApexs(
+  dfs,
+  ms1full_files = NULL,
+  path_ms1 = NULL,
+  key = "pep_seq_mod",
+  temp_dir = NULL
+)
 }
 \arguments{
 \item{dfs}{A list of PSM tables by TMTSet[i]LCMSinj[j].}
 
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
+\item{ms1full_files}{A list of \code{ms1full_} files.}
+
+\item{path_ms1}{The file path to \code{ms1full_} files.}
+
+\item{key}{The key for data grouping.}
+
+\item{temp_dir}{A path for temporary files.}
 }
 \description{
 Also nullify retention-time outliers.

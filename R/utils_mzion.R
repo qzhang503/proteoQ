@@ -90,9 +90,12 @@ hdeduce_mod_indexes <- function (df)
 
 #' Find the path of MS1 data
 #' 
+#' Depreciated.
+#' 
 #' @param dat_dir A working directory.
+#' @param pat A pattern for recognizing full MS1 files.
 #' @param n_files The number of RAW files.
-find_path_ms1 <- function (dat_dir = NULL, n_files = 0L)
+find_path_ms1 <- function (dat_dir = NULL, pat = "ms1full", n_files = 0L)
 {
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()

@@ -4,13 +4,15 @@
 \alias{find_path_ms1}
 \title{Find the path of MS1 data}
 \usage{
-find_path_ms1(dat_dir = NULL, n_files = 0L)
+find_path_ms1(dat_dir = NULL, pat = "ms1full", n_files = 0L)
 }
 \arguments{
 \item{dat_dir}{A working directory.}
 
+\item{pat}{A pattern for recognizing full MS1 files.}
+
 \item{n_files}{The number of RAW files.}
 }
 \description{
-Find the path of MS1 data
+Depreciated.
 }

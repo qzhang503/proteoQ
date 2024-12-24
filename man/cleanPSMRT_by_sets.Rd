@@ -4,7 +4,7 @@
 \alias{cleanPSMRT_by_sets}
 \title{Clean up PSM retention times for a set of TMTset[i]LCMSinj[j]}
 \usage{
-cleanPSMRT_by_sets(filelist, lfq_mbr = TRUE, max_n_apexes = 3L)
+cleanPSMRT_by_sets(filelist, lfq_mbr = TRUE, max_n_apexes = 2L)
 }
 \arguments{
 \item{filelist}{A file names of PSM tables TMTSet1_LCMSinj1_PSM_N.txt etc.}

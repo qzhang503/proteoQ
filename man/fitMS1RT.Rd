@@ -4,11 +4,13 @@
 \alias{fitMS1RT}
 \title{Calibrate MS1 retention times}
 \usage{
-fitMS1RT(tmat)
+fitMS1RT(tmat, sta = NULL)
 }
 \arguments{
 \item{tmat}{A matrix of retention times. Column correspondence: pep_seq_modz
 or pep_seq_mod; row correspondence: individual peptide tables or Sample_ID.}
+
+\item{sta}{The starting position of \code{good} data (small SDs).}
 }
 \description{
 Calibrate MS1 retention times
