@@ -5,8 +5,8 @@
 \title{MBR of peptides}
 \usage{
 peptideMBR(
-  ms1files,
   base_name,
+  ms1files,
   xvs,
   yvs,
   tvs,
@@ -18,18 +18,24 @@ peptideMBR(
   dat_dir,
   mbr_ret_tol = 25,
   min_y = 2e+06,
-  max_mbr_fold = 20,
+  yco = 100,
   step = 1e-05,
+  max_mbr_fold = 20,
   gap = mbr_ret_tol + 35
 )
 }
 \arguments{
-\item{ms1files}{The names of MS1 data files corresponding to a peptide table,
-e.g., \code{TMTset1_LCMSinj1_Peptide_N.txt}.}
+\item{base_name}{The base name of a peptide table file
+(\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).}
 
-\item{base_name}{The basename of a peptide table.}
+\item{ms1files}{A list of file names of retention-time calibrated RAW MS1
+data corresponding to the peptide table at \code{base_name} (More than one
+file if with analyte pre-fractionation for a sample).}
 
-\item{xvs}{A vector of m-over-z's.}
+\item{xvs}{A vector of X (m-over-z) values under the peptide table at the
+\code{base_name}. The length is the number of peptides in the universe. NA
+values correspond to peptides (\code{pep_seq_modz}) that are not present in
+the current peptide table but found in others.}
 
 \item{yvs}{A vector of apex intensities.}
 
@@ -37,24 +43,23 @@ e.g., \code{TMTset1_LCMSinj1_Peptide_N.txt}.}
 
 \item{svs}{A vector of apex scan numbers.}
 
-\item{mbr_mzs}{Values of m-over-zs for MBR.}
+\item{mbr_mzs}{A vector of m-over-z values in the universe.}
 
-\item{mbr_ys}{Intensity values for MBR.}
+\item{mbr_ys}{A vector of intensity values in the universe (sample average).}
 
-\item{mbr_rets}{Values of retention times for MBR.}
+\item{mbr_rets}{A vector of retention times in the universe.}
 
-\item{mbr_peps}{Sequences of peptides for MBR.}
+\item{mbr_peps}{A vector of \code{pep_seq_modz} sequences in the universe.}
 
 \item{dat_dir}{The working data directory.}
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
-\item{min_y}{The cut-off of intensity values in MBR. Change to a smaller
-value with PASEF.}
-
-\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
+\item{min_y}{The cut-off of intensity values in MBR.}
 
 \item{step}{The mass error in \code{ppm / 1e6}.}
+
+\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
 
 \item{gap}{A gap in retention-time window in seconds for finding gates in the
 Y values of LC. The gap value serves as a margin to trace out a whole peak

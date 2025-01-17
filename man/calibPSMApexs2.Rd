@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{calibPSMApexs2}
 \alias{calibPSMApexs2}
-\title{Calibrate PSM apex retention times under \code{apex_ts1} or \code{apex_ts2}}
+\title{Calibrate PSM apex retention times under \code{apex_ts}}
 \usage{
-calibPSMApexs2(df = NULL, fit = NULL, key = "apex_ts1")
+calibPSMApexs2(df = NULL, fit = NULL, key = "apex_ts")
 }
 \arguments{
 \item{df}{A subset of PSM table, e.g. \code{TMTSet1_LCMSinj1_PSM_N.txt},
@@ -15,5 +15,5 @@ under a single \code{RAW_File}.}
 \item{key}{A column key for RT calibration.}
 }
 \description{
-Calibrate PSM apex retention times under \code{apex_ts1} or \code{apex_ts2}
+Calibrate PSM apex retention times under \code{apex_ts}
 }

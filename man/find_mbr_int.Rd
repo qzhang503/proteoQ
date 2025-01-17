@@ -13,7 +13,8 @@ find_mbr_int(
   mbr_ret_tol = 25,
   max_mbr_fold = 20L,
   n_dia_scans = 6L,
-  min_y = 2e+06
+  min_y = 2e+06,
+  yco = 100
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ in peak tracing. Not adjustable by users but synchronized with mzion.}
 
 \item{min_y}{The cut-off of intensity values in MBR. Change to a smaller
 value with PASEF.}
+
+\item{yco}{The cut-off of intensity values.}
 }
 \description{
 Find the MBR intensity

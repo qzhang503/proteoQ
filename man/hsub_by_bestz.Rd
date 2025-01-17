@@ -16,6 +16,5 @@ hsub_by_bestz(
 \item{cols}{The column keys needed for determining the best charge states.}
 }
 \description{
-Helper for subsetting PSMs by the best charge state under a
-\code{pep_seq_mod}
+Not used.
 }

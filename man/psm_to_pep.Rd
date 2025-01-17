@@ -17,7 +17,6 @@ psm_to_pep(
   type_sd = "log2_R",
   engine = "mz",
   lfq_mbr = FALSE,
-  trace_files = NULL,
   ...
 )
 }

@@ -4,12 +4,10 @@
 \alias{groupMZPSM1}
 \title{Group PSMs}
 \usage{
-groupMZPSM1(df, yco = 1e+07, sdco = 3)
+groupMZPSM1(df, sdco = 3)
 }
 \arguments{
 \item{df}{A Mzion PSM table.}
-
-\item{yco}{An intensity cut-off.}
 
 \item{sdco}{A standard deviation cut-off.}
 }

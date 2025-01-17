@@ -852,8 +852,11 @@ na_single_lfq <- function (df, pattern = "^I000 ")
 #'
 #' @param df A data frame.
 #' @param label_scheme Meta data.
+#' @param tmt_plex The multiplexicty of TMT.
 #' @param min_int Minimal Y intensity to replace 0 values.
-calcLFQPepNums <- function (df, label_scheme, min_int = 1E3, imp_vals = FALSE) 
+#' @param imp_refs Logical; impute missing references or not.
+calcLFQPepNums <- function (df, label_scheme, tmt_plex = 0L, min_int = 1E3, 
+                            imp_refs = FALSE, imp_vals = FALSE) 
 {
   # label_scheme <- load_ls_group(dat_dir, label_scheme)
   refChannels  <- label_scheme$Sample_ID[label_scheme[["Reference"]]]
@@ -880,25 +883,10 @@ calcLFQPepNums <- function (df, label_scheme, min_int = 1E3, imp_vals = FALSE)
   }
   
   # (1) handle missing reference
-  df <- local({
-    rrs <- rowSums(is.na(df[, cols_ref, drop = FALSE]))
-    empties <- rrs == length(cols_ref)
-    df0 <- df[empties, ] # works at no empties
-    df1 <- df[!empties, ] # some references are NA
-    ys  <- rowMeans(df0[, cols_smpl, drop = FALSE], na.rm = TRUE)
-    
-    ###
-    set.seed(20240802)
-    ys <- ys * 2^rnorm(length(ys), 0, .25)
-    ###
-
-    df0[, cols_ref] <- lapply(cols_ref, function (col) {
-      df0[, col] <- ys
-    })
-    
-    df0[, paste0("N_", cols_ref)] <- df0[, cols_ref, drop = FALSE]
-    df <- dplyr::bind_rows(df0, df1)
-  })
+  if (imp_refs) {
+    df <- impRefNA(df = df, cols_ref = cols_ref, cols_smpl = cols_smpl, 
+                   refChannels = refChannels, group_psm_by = "pep_seq_mod")
+  }
 
   # 2. With references
   if (imp_vals && length(cols_smpl) > 1L) {
@@ -944,6 +932,82 @@ calcLFQPepNums <- function (df, label_scheme, min_int = 1E3, imp_vals = FALSE)
     df |> dplyr::select(grep("^sd_log2_R000 \\(", nms)),
     df |> dplyr::select(grep("^log2_R000 \\(", nms)),
     df |> dplyr::select(grep("^N_log2_R000 \\(", nms)))
+}
+
+
+#' Impute NA for references
+#' 
+#' @param df A data frame.
+#' @param cols_ref The colume keys of reference IDs.
+#' @param cols_smpl The column keys of sample IDs.
+#' @param refChannels The reference channels.
+#' @inheritParams normPSM
+impRefNA <- function (df, cols_ref, cols_smpl, refChannels, 
+                      group_psm_by = "pep_seq_mod")
+{
+  nas <- is.na(df$species)
+  dfna <- df[nas, ]
+  df <- df[!nas, ]
+  empties <- rowSums(is.na(df[, cols_ref, drop = FALSE])) == length(cols_ref)
+  
+  if (!length(empties)) {
+    return(df)
+  }
+  
+  df0 <- df[empties, ]
+  df1 <- df[!empties, ]
+  
+  # finds species centers for each sample
+  nms_smpl <- gsub("^I([0-9]{3})", paste0("log2_R", "\\1"), cols_smpl)
+  log2rs   <- calc_lfq_log2r(df = df1, type = "I000", refChannels = refChannels)
+  log2rs   <- split(log2rs[, nms_smpl, drop = FALSE], log2rs$species)
+  
+  mvs <- lapply(log2rs, function (x) {
+    lapply(x, median, na.rm = TRUE) |> 
+      unlist(use.names = TRUE, recursive = FALSE) |>
+      mean(na.rm = TRUE)
+  }) |>
+    unlist(recursive = FALSE)
+  
+  for (i in seq_along(sps <- names(mvs))) {
+    if (is.na(sp <- sps[[i]])) { next }
+    
+    rows <- df0$species == sp
+    dfi <- df0[rows, ]
+    ysi <- # (2^rnorm(length(ys[[i]]), mvs[[i]], .01))
+      rowMeans(dfi[, cols_smpl, drop = FALSE], na.rm = TRUE) / (2^mvs[[i]])
+    
+    for (col in cols_ref) {
+      dfi[[col]] <- ysi
+    }
+    
+    df0[rows, ] <- dfi
+  }
+
+  df0[, paste0("N_", cols_ref)] <- df0[, cols_ref, drop = FALSE]
+  
+  df <- dplyr::bind_rows(df0, df1, dfna)
+}
+
+
+#' Finds the data center of log2FC by species and samples
+#' 
+#' Not yet used.
+#' 
+#' @param df A data frame contains intensity values, peptides and species.
+#' @param refChannels Reference channels.
+#' @param cols The columns of samples for finding the data centers.
+#' @return Lists of log2FC centers by species. Each list entry contains values
+#'   corresponding to each sample.
+find_species_centers <- function (df, refChannels, cols)
+{
+  logrs <- calc_lfq_log2r(df, "I000", refChannels)
+  nms   <- gsub("^I([0-9]{3})", paste0("log2_R", "\\1"), cols)
+  logrs <- split(logrs[, nms, drop = FALSE], logrs$species)
+  
+  out <- lapply(logrs, function (x) {
+    unlist(lapply(x, median, na.rm = TRUE))
+  })
 }
 
 
@@ -1474,6 +1538,7 @@ rep_ls_groups <- function (group_ids)
 #' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant.
 #' @param use_mf_pep Logical; if TRUE, uses the peptides.txt from MSFragger.
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
+#' @param imp_refs Logical; impute missing references or not. 
 #' @inheritParams info_anal
 #' @inheritParams normPSM
 #' @inheritParams splitPSM_ma
@@ -1486,7 +1551,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      use_mq_pep = FALSE, use_mf_pep = FALSE, 
                      rm_allna = FALSE, mbr_ret_tol = 25, max_mbr_fold = 20, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
-                     use_spec_counts = FALSE, ...) 
+                     imp_refs = FALSE, use_spec_counts = FALSE, ...) 
 {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1503,7 +1568,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   basenames <- basename(filelist)
   n_files   <- length(filelist)
   
-  if (!length(filelist)) {
+  if (!n_files) {
     stop("No individual peptide tables available; run `PSM2Pep()` first.")
   }
   
@@ -1517,15 +1582,11 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     ok_mbr   <- ans_trs$ok_mbr
   }
   
-  # also try reversed MBR to update the original intensities...
   if (ok_mbr) {
     hpeptideMBR(ms1files = ms1files, filelist = filelist, dat_dir = dat_dir, 
                 path_ms1 = path_ms1, temp_dir = temp_dir, 
-                mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold, 
-                step = 1e-5)
-  }
-  
-  if (ok_mbr) {
+                mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold)
+    
     df <- lapply(filelist, addMBRpeps, dat_dir = dat_dir, 
                  group_psm_by = group_psm_by)
   }
@@ -1567,7 +1628,11 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                             use_spec_counts = use_spec_counts)
     
     if ((engine == "mz" && !tmt_plex) || use_spec_counts) {
-      df_num <- calcLFQPepNums(df_num, label_scheme)
+      df_num <- df_num |>
+        dplyr::left_join(unique(df[, c(group_psm_by, "species")]), 
+                         by = group_psm_by)
+      df_num <- calcLFQPepNums(df_num, label_scheme, imp_refs = imp_refs)
+      df_num[["species"]] <- NULL
     }
   } 
   else if (engine %in% c("mq", "mf")) {
@@ -1821,18 +1886,19 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
 #' @param ms1files The names of MS1 data files.
 #' @param path_ms1 The path to MS1 data files.
 #' @param temp_dir The path to temporary files.
-#' @param filelist The name of peptide files.
+#' @param filelist The name of peptide files (TMTset1_LCMSinj1_Peptide_N.txt).
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
-#' @param step The mass error in \code{ppm / 1e6}.
-#' @param min_y The cut-off of intensity values in MBR. See also
-#'   \link[mzion]{htraceXY}. Need to change to a smaller value with PASEF.
 #' @param dat_dir The working directory.
 hpeptideMBR <- function (ms1files, filelist, dat_dir = NULL, path_ms1 = NULL, 
-                         temp_dir = NULL, mbr_ret_tol = 25, max_mbr_fold = 20, 
-                         step = 1e-5, min_y = 2e6)
+                         temp_dir = NULL, mbr_ret_tol = 25, max_mbr_fold = 20)
 {
-  len <- length(filelist)
+  # to include fwhm later...
+  
+  if ((len <- length(filelist)) < 2L) {
+    warning("Requires at least two files for MBR.")
+    return(NULL)
+  }
   
   if (FALSE) {
     rt_fit_files <- file.path(temp_dir, "fits_rt.rds")
@@ -1846,27 +1912,52 @@ hpeptideMBR <- function (ms1files, filelist, dat_dir = NULL, path_ms1 = NULL,
       rt_fits <- rep_len(list(NULL), len)
     }
   }
+  
+  if (file.exists(fi_datatype <- file.path(path_ms1, "data_type.rds"))) {
+    data_type <- qs::qread(fi_datatype)
+  }
+  else {
+    warning("File not found: ", fi_datatype, ". Assume Thermo's data.")
+    data_type <- "raw"
+  }
+  
+  if (data_type == "raw") {
+    yco   <- 100
+    min_y <- 2E6
+    step  <- 1E-5
+  }
+  else if (data_type == "pasef") {
+    yco   <- 10
+    min_y <- 500
+    step  <- 1.5E-5
+  }
+  else {
+    yco   <- 100
+    min_y <- 2E6
+    step  <- 1E-5
+  }
 
   # (1) grouped split of ms1files in correspondence to b_nms (peptide tables)
   b_nms   <- basename(filelist)
-  ms1grps <- sep_mbrfiles(b_nms = b_nms, dat_dir = dat_dir, ms1files = ms1files, 
-                          type = "calibms1full")
+  ms1grps <- sep_mbrfiles(
+    b_nms = b_nms, dat_dir = dat_dir, ms1files = ms1files, type = "calibms1full")
 
   # (2) MBR candidates
   dfs <- suppressWarnings(
     lapply(filelist, function (file) {
       df <- file |> 
-        readr::read_tsv(col_types = get_col_types(), show_col_types = FALSE) |>
+        readr::read_tsv(col_types = get_col_types(), show_col_types = FALSE) 
+      
+      # df$pep_apex_ys <- stringr::str_split(df$pep_apex_ys, ";")
+      
+      df <- df |>
         dplyr::select(c("pep_seq_modz", "pep_apex_ret", "pep_apex_scan", 
                         "pep_exp_mz", "pep_tot_int")) |> 
         dplyr::filter(!is.na(pep_tot_int))
       # df <- df[!duplicated(df$pep_seq_modz), ] # just in case
     }))
-  
-  if (len < 2L) {
-    warning("Requires at least two files for MBR.")
-    return(NULL)
-  }
+
+  # len == 2L: outer; len > 2L: matrix
   
   mats <- makeLFQXYTS(
     pep_seq_modzs  = lapply(dfs, `[[`, "pep_seq_modz"), 
@@ -1897,8 +1988,8 @@ hpeptideMBR <- function (ms1files, filelist, dat_dir = NULL, path_ms1 = NULL,
                             envir = environment(proteoQ::normPSM))
     out <- parallel::clusterMap(
       cl, peptideMBR, 
-      ms1files = file.path(path_ms1, ms1grps), 
       base_name = b_nms, 
+      ms1files = file.path(path_ms1, ms1grps), 
       # rt_fits = rt_fits, 
       xvs = split(xmat, row(xmat)), 
       yvs = split(ymat, row(ymat)), 
@@ -1907,24 +1998,24 @@ hpeptideMBR <- function (ms1files, filelist, dat_dir = NULL, path_ms1 = NULL,
       MoreArgs = list(mbr_mzs = mbr_mzs, mbr_ys = mbr_ys, mbr_rets = mbr_rets, 
                       mbr_peps = mbr_peps, 
                       dat_dir = dat_dir, step = step, mbr_ret_tol = mbr_ret_tol, 
-                      max_mbr_fold = max_mbr_fold, min_y = min_y))
-    
+                      max_mbr_fold = max_mbr_fold, min_y = min_y, yco = yco))
     parallel::stopCluster(cl)
   }
   else {
     out <- mapply(
       peptideMBR, 
-      ms1files = file.path(path_ms1, ms1grps), 
       base_name = b_nms, 
+      ms1files = file.path(path_ms1, ms1grps), 
       # rt_fits = rt_fits, 
       xvs = split(xmat, row(xmat)), 
       yvs = split(ymat, row(ymat)), 
       tvs = split(tmat, row(tmat)),
       svs = split(smat, row(smat)),
-      MoreArgs = list(mbr_mzs = mbr_mzs, mbr_ys = mbr_ys, mbr_rets = mbr_rets, 
-                      mbr_peps = mbr_peps, 
-                      dat_dir = dat_dir, step = step, mbr_ret_tol = mbr_ret_tol, 
-                      max_mbr_fold = max_mbr_fold, min_y = min_y), 
+      MoreArgs = list(
+        mbr_mzs = mbr_mzs, mbr_ys = mbr_ys, mbr_rets = mbr_rets, 
+        mbr_peps = mbr_peps, 
+        dat_dir = dat_dir, step = step, mbr_ret_tol = mbr_ret_tol, 
+        max_mbr_fold = max_mbr_fold, min_y = min_y, yco = yco), 
       SIMPLIFY = FALSE, USE.NAMES = FALSE)
   }
   
@@ -1934,30 +2025,34 @@ hpeptideMBR <- function (ms1files, filelist, dat_dir = NULL, path_ms1 = NULL,
 
 #' MBR of peptides
 #'
-#' @param ms1files The names of MS1 data files corresponding to a peptide table,
-#'   e.g., \code{TMTset1_LCMSinj1_Peptide_N.txt}.
-#' @param xvs A vector of m-over-z's.
+#' @param base_name The base name of a peptide table file
+#'   (\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).
+#' @param ms1files A list of file names of retention-time calibrated RAW MS1
+#'   data corresponding to the peptide table at \code{base_name} (More than one
+#'   file if with analyte pre-fractionation for a sample).
+#' @param xvs A vector of X (m-over-z) values under the peptide table at the
+#'   \code{base_name}. The length is the number of peptides in the universe. NA
+#'   values correspond to peptides (\code{pep_seq_modz}) that are not present in
+#'   the current peptide table but found in others.
 #' @param yvs A vector of apex intensities.
 #' @param tvs A vector of apex retention times.
 #' @param svs A vector of apex scan numbers.
-#' @param mbr_peps Sequences of peptides for MBR.
-#' @param mbr_rets Values of retention times for MBR.
-#' @param mbr_mzs Values of m-over-zs for MBR.
-#' @param mbr_ys Intensity values for MBR.
-#' @param base_name The basename of a peptide table.
+#' @param mbr_peps A vector of \code{pep_seq_modz} sequences in the universe.
+#' @param mbr_ys A vector of intensity values in the universe (sample average).
+#' @param mbr_rets A vector of retention times in the universe.
+#' @param mbr_mzs A vector of m-over-z values in the universe.
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
 #' @param max_mbr_fold The maximum absolute fold change in MBR.
 #' @param step The mass error in \code{ppm / 1e6}.
 #' @param gap A gap in retention-time window in seconds for finding gates in the
 #'   Y values of LC. The gap value serves as a margin to trace out a whole peak
 #'   with its apex within the \code{mbr_ret_tol}.
-#' @param min_y The cut-off of intensity values in MBR. Change to a smaller
-#'   value with PASEF.
+#' @param min_y The cut-off of intensity values in MBR.
 #' @param dat_dir The working data directory.
-peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs, # rt_fits, 
+peptideMBR <- function (base_name, ms1files, xvs, yvs, tvs, svs, # rt_fits, 
                         mbr_mzs, mbr_ys, mbr_rets, mbr_peps, 
-                        dat_dir, mbr_ret_tol = 25, min_y = 2e6, 
-                        max_mbr_fold = 20, step = 1e-5, gap = mbr_ret_tol + 35) #  + 45
+                        dat_dir, mbr_ret_tol = 25.0, min_y = 2e6, yco = 100, 
+                        step = 1e-5, max_mbr_fold = 20, gap = mbr_ret_tol + 35.0)
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
@@ -1970,24 +2065,28 @@ peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs, # rt_fits,
   # oss <- ms1full$orig_scan
   # rm(list = c("ms1full"))
 
-  cols <- which(is.na(tvs))
-  yints <- rets <- scans <- rep_len(list(NA_real_), length(cols))
+  cols  <- which(is.na(tvs))
+  yints <- rets <- scans <- vector("numeric", length(cols))
+
+  ###
+  # mbr_ret_tol is tentatively large since the reference pep could be wrong
+  # try reduce gap to 30...
+  ###
   
   for (i in seq_along(cols)) {
-    col <- cols[[i]]
-    # col <- 1925 # i = 460 # AGHQTSAESWGTGR@3
+    # i <- which(cols == which(mbr_peps == "FLPVASPFHSHLLVPASDLINK@4"))
+    col     <- cols[[i]]
     mbr_pep <- mbr_peps[[col]]
     mbr_ret <- mbr_rets[[col]]
     mbr_mz  <- mbr_mzs[[col]]
     mbr_y   <- mbr_ys[[col]]
 
-    # gap changed: 70 -> 70
-    rng   <- 
-      .Internal(which(tss >= (mbr_ret - gap) & tss <= (mbr_ret + gap)))
-    # in case of multiple matched Ys in a scan
-    yhats <- 
+    rng   <- .Internal(which(tss >= (mbr_ret - gap) & tss <= (mbr_ret + gap)))
+    xys   <- 
       extract_mbry(xs = xss[rng], ys = yss[rng], mbr_mz = mbr_mz, step = step)
-    
+    xhats <- xys[["x"]]
+    yhats <- xys[["y"]]
+
     if (FALSE) {
       data.frame(x = tss[rng]/60, y = yhats) |>
         ggplot2::ggplot() + 
@@ -1999,30 +2098,24 @@ peptideMBR <- function (ms1files, base_name, xvs, yvs, tvs, svs, # rt_fits,
       next
     }
 
-    # find out the cause of NaN...
+    ans <- find_mbr_int(
+      ys = yhats, ts = tss[rng], ss = sss[rng], mbr_ret = mbr_ret, 
+      mbr_y = mbr_y, mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold, 
+      min_y = min_y, yco = yco)
     
-    if (!is.nan(mbr_y)) {
-      ans <- find_mbr_int(
-        ys = yhats, 
-        ts = tss[rng], ss = sss[rng], mbr_ret = mbr_ret, mbr_y = mbr_y, 
-        mbr_ret_tol = mbr_ret_tol, max_mbr_fold = max_mbr_fold, min_y = min_y)
-      
-      # better obtain MBR X values...
-      
-      ###
-      # ti <- ans$t
-      # if (abs(ti - mbr_ret) <= mbr_ret_tol) {}
-      ###
-      
-      yints[[i]] <- ans$y
-      rets[[i]]  <- ans$t
-      scans[[i]] <- ans$s
-    }
+    ###
+    # ti <- ans$t
+    # if (abs(ti - mbr_ret) <= mbr_ret_tol) {}
+    ###
+    
+    yints[[i]] <- ans$y
+    rets[[i]]  <- ans$t
+    scans[[i]] <- ans$s
   }
 
-  yvs[cols] <- unlist(yints, recursive = FALSE, use.names = FALSE)
-  tvs[cols] <- unlist(rets,  recursive = FALSE, use.names = FALSE)
-  svs[cols] <- unlist(scans, recursive = FALSE, use.names = FALSE)
+  yvs[cols] <- yints
+  tvs[cols] <- rets
+  svs[cols] <- scans
   
   out <- data.frame(
     pep_seq_modz = mbr_peps, 
@@ -2257,8 +2350,8 @@ sep_mbrfiles <- function (b_nms, dat_dir, ms1files = NULL,
 #' 
 #' To handle the case of multiple matched Y values in a scan.
 #' 
-#' @param xs Vectors of X values over a range of retention times.
-#' @param ys Vectors of Y values over a range of retention times.
+#' @param xs Vectors of X-value vectors over a range of retention times.
+#' @param ys Vectors of Y-value vectors over a range of retention times.
 #' @param mbr_mz The Value of an m-over-z for MBR.
 #' @param step The mass error in \code{ppm / 1e6}.
 extract_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
@@ -2267,7 +2360,7 @@ extract_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
     return(NA_real_)
   }
 
-  ysub <- rep_len(NA_real_, len)
+  ysub <- xsub <- rep_len(NA_real_, len)
 
   for (i in 1:len) {
     xi  <- xs[[i]]
@@ -2276,18 +2369,19 @@ extract_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
     ni  <- length(oks)
     
     if (ni == 1L) {
-      ysub[[i]] <- yi[oks]
+      xsub[[i]] <- xi[[oks]]
+      ysub[[i]] <- yi[[oks]]
     }
     else if (ni > 1L) {
       xvs <- xi[oks]
       yvs <- yi[oks]
       p   <- which.min(abs(xvs - mbr_mz))
+      xsub[[i]] <- xvs[[p]]
       ysub[[i]] <- yvs[[p]]
     }
-    # no need of else with default y = 0
   }
   
-  ysub
+  list(x = xsub, y = ysub)
 }
 
 
@@ -2304,27 +2398,37 @@ extract_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
 #'   in peak tracing. Not adjustable by users but synchronized with mzion.
 #' @param min_y The cut-off of intensity values in MBR. Change to a smaller
 #'   value with PASEF.
+#' @param yco The cut-off of intensity values.
 find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25, 
-                          max_mbr_fold = 20L, n_dia_scans = 6L, min_y = 2e6)
+                          max_mbr_fold = 20L, n_dia_scans = 6L, min_y = 2e6, 
+                          yco = 100)
 {
-  gates  <- mzion:::find_lc_gates(ys = ys, ts = ts, n_dia_scans = n_dia_scans)
-  apexs  <- gates$apex
-  ranges <- gates$ranges
-  yints  <- gates$yints
-  ns     <- gates$ns
-  xstas  <- gates$xstas
+  zero  <- NA_real_
+  nout  <- list(y = zero, t = zero, s = zero)
+  gates <- mzion:::find_lc_gates(
+    ys = ys, ts = ts, yco = yco, n_dia_scans = n_dia_scans)
+
+  if (is.null(gates)) {
+    return(nout)
+  }
+  
+  apexs  <- gates[["apex"]]
+  ranges <- gates[["ranges"]]
+  yints  <- gates[["yints"]]
+  ns     <- gates[["ns"]]
+  xstas  <- gates[["xstas"]]
+  # fwhm   <- gates[["fwhm"]]
   lenp   <- length(apexs)
   
-  zero <- NA_real_
-  null_out <- list(y = zero, t = zero, s = zero)
-  
+  # compare ns...
+
   if (lenp == 0L) {
-    return(null_out)
+    return(nout)
   }
   
   # (3) remove one-hit-wonders and spikes
-  oks1 <- .Internal(which(ns > 10L))
-  oks2 <- .Internal(which(ns > 5L))
+  oks1 <- .Internal(which(ns > 20L))
+  oks2 <- .Internal(which(ns > 15L))
 
   if (noks1 <- length(oks1)) {
     if (noks1 < lenp) {
@@ -2360,11 +2464,11 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
       }
       else {
         # return(list(y = mbr_y, t = tval, s = ss[[apexs]]))
-        return(null_out)
+        return(nout)
       }
     }
     else {
-      return(null_out)
+      return(nout)
     }
   }
   
@@ -2382,7 +2486,7 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
       return(list(y = yi, t = tvals[idxy], s = scans[idxy]))
     }
     else {
-      return(null_out)
+      return(nout)
     }
   }
   
@@ -2393,11 +2497,11 @@ find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25,
       return(list(y = yi, t = tvals[idxt], s = scans[idxt]))
     }
     else {
-      return(null_out)
+      return(nout)
     }
   }
   
-  return(null_out)
+  return(nout)
 }
 
 
@@ -2427,8 +2531,8 @@ addMBRpeps <- function (file, dat_dir, group_psm_by = "pep_seq_mod")
                     sep = "@", remove = FALSE) |>
     dplyr::mutate(pep_seq = gsub("^[\\^_~]", "", pep_seq_mod), 
                   pep_seq = gsub("[\\^_~]$", "", pep_seq), 
-                  pep_seq = toupper(pep_seq)) |>
-    dplyr::mutate(pep_exp_z = as.integer(pep_exp_z))
+                  pep_seq = toupper(pep_seq), 
+                  pep_exp_z = as.integer(pep_exp_z))
   
   # for SD calculations
   rows <- is.na(df$pep_apex_ret)
@@ -2766,6 +2870,7 @@ fmt_num_cols <- function (df)
 #'   also \code{\link{prnHist}} for data binning in histogram visualization.
 #' @param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
 #'   peptide sequences to the most likely proteins by majority votes.
+#' @param imp_refs Logical; impute missing references or not. 
 #' @param ret_sd_tol Depreciated. Numeric; the tolerance in the variance of
 #'   retention time (w.r.t. measures in seconds). The thresholding applies to
 #'   TMT data. The default is \code{Inf}. Depends on the setting of LCMS
@@ -2860,7 +2965,7 @@ fmt_num_cols <- function (df)
 mergePep <- function (
     use_duppeps = TRUE, mbr_ret_tol = NULL, max_mbr_fold = 20L, 
     duppeps_repair = c("majority", "denovo"), plot_log2FC_cv = TRUE, 
-    cut_points = Inf, rm_allna = FALSE, 
+    cut_points = Inf, rm_allna = FALSE, imp_refs = FALSE,  
     omit_single_lfq = FALSE, ret_sd_tol = Inf, 
     rm_ret_outliers = FALSE, ...) 
 {
@@ -2874,8 +2979,8 @@ mergePep <- function (
   on.exit(
     if (exists(".savecall", envir = environment())) {
       if (.savecall) {
-        mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
-          c(dots) %>% 
+        mget(names(formals()), envir = environment(), inherits = FALSE) |>
+          c(dots) |>
           save_call("mergePep")
       }
     }, add = TRUE)
@@ -2968,6 +3073,7 @@ mergePep <- function (
                 ret_sd_tol = ret_sd_tol, 
                 rm_ret_outliers = rm_ret_outliers, 
                 use_spec_counts = use_spec_counts, 
+                imp_refs = imp_refs, 
                 !!!filter_dots)
   
   if (plot_log2FC_cv) {

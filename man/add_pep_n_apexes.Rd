@@ -11,7 +11,9 @@ add_pep_n_apexes(df, key = "pep_seq_mod", max_n_apexes = 2L)
 
 \item{key}{The column where unique \code{pep_apex_ret}s were counted.}
 
-\item{max_n_apexes}{The maximum number of apexes for consideration.}
+\item{max_n_apexes}{The maximum number of apexes under the same \code{key}
+for consideration. Note that the clean-up does not apply to the lengths of
+apexes indicated under column \code{apx_ps}.}
 }
 \description{
 Add column \code{pep_n_apexes}

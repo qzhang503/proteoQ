@@ -7,9 +7,9 @@
 extract_mbry(xs, ys, mbr_mz, step = 1e-05)
 }
 \arguments{
-\item{xs}{Vectors of X values over a range of retention times.}
+\item{xs}{Vectors of X-value vectors over a range of retention times.}
 
-\item{ys}{Vectors of Y values over a range of retention times.}
+\item{ys}{Vectors of Y-value vectors over a range of retention times.}
 
 \item{mbr_mz}{The Value of an m-over-z for MBR.}
 

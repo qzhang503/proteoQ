@@ -11,15 +11,13 @@ hpeptideMBR(
   path_ms1 = NULL,
   temp_dir = NULL,
   mbr_ret_tol = 25,
-  max_mbr_fold = 20,
-  step = 1e-05,
-  min_y = 2e+06
+  max_mbr_fold = 20
 )
 }
 \arguments{
 \item{ms1files}{The names of MS1 data files.}
 
-\item{filelist}{The name of peptide files.}
+\item{filelist}{The name of peptide files (TMTset1_LCMSinj1_Peptide_N.txt).}
 
 \item{dat_dir}{The working directory.}
 
@@ -30,11 +28,6 @@ hpeptideMBR(
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
 \item{max_mbr_fold}{The maximum absolute fold change in MBR.}
-
-\item{step}{The mass error in \code{ppm / 1e6}.}
-
-\item{min_y}{The cut-off of intensity values in MBR. See also
-\link[mzion]{htraceXY}. Need to change to a smaller value with PASEF.}
 }
 \description{
 Helper of \link{peptideMBR}

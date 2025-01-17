@@ -17,6 +17,7 @@ rm_RToutliers(
   qt = 0.95,
   ok_unv = FALSE,
   ignore_n2_outliers = FALSE,
+  rt_tol = 0,
   method = 0L
 )
 }
@@ -40,6 +41,9 @@ entries in a \code{df}.}
 \item{ignore_n2_outliers}{Logical; ignore discrepant retention times at a
 two-sample scenario, for example, to retain a high-quality subset for RT
 calibrations.}
+
+\item{rt_tol}{Not yet used. The tolerance in retention times between two
+samples.}
 
 \item{method}{A method for outlier removals.}
 }

@@ -12,6 +12,7 @@ mergePep(
   plot_log2FC_cv = TRUE,
   cut_points = Inf,
   rm_allna = FALSE,
+  imp_refs = FALSE,
   omit_single_lfq = FALSE,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
@@ -52,6 +53,8 @@ also \code{\link{prnHist}} for data binning in histogram visualization.}
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{imp_refs}{Logical; impute missing references or not.}
 
 \item{omit_single_lfq}{Depreciated. Logical; if TRUE, omits LFQ entries with
 single measured values across all samples. The default is FALSE.}

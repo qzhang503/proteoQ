@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{cleanPSMYTS}
 \alias{cleanPSMYTS}
-\title{Clean up PSM Y intensity, retention time and scan values}
+\title{Clean up PSM intensity (Y), retention time (T) and scan values (S)}
 \usage{
 cleanPSMYTS(
   dfs,
@@ -26,5 +26,5 @@ to tmat.}
 \item{cols}{The column keys for value updates.}
 }
 \description{
-Clean up PSM Y intensity, retention time and scan values
+Clean up PSM intensity (Y), retention time (T) and scan values (S)
 }

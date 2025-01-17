@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{hrm_lowIntPSMs}
 \alias{hrm_lowIntPSMs}
-\title{Helper of \link{rm_lowIntPSMs}}
+\title{Helper for removals of low-intensity PSMs}
 \usage{
 hrm_lowIntPSMs(dfs, key = "pep_seq_modz", yfrac = 0.05, max_n_apexes = 1L)
 }
@@ -15,5 +15,6 @@ for considerations.}
 \item{max_n_apexes}{The maximum number of apexes for consideration.}
 }
 \description{
-Helper of \link{rm_lowIntPSMs}
+Single primary apex under the same \code{pep_seq_modz} since
+\code{max_n_apexes = 1L}.
 }

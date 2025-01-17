@@ -15,6 +15,7 @@ rm_apexrt_outliers(df = NULL, rt_tol = 120, y_tol = 0.01)
 \item{y_tol}{Tolerance in intensity in relative to the based apex intensity.}
 }
 \description{
-By the distance between \code{pep_ret_range} and \code{pep_apex_ret}. Also
-remove very low intensity entries.
+Nullify the apexes with large distance between \code{pep_ret_range} and
+\code{pep_apex_ret}. Also remove the entries of very low intensity entries
+(in multi-PSM groups of \code{pep_seq_mod}).
 }
