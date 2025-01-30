@@ -148,43 +148,29 @@ replace_NorZ_names <- function (NorZ_ratios, nms)
 
 #' Re-order file names
 #'
-#' \code{reorder_files} re-orders file names by TMT set numbers then by LCMS
-#' injection numbers.
+#' By TMT set numbers then by LCMS injection numbers.
 #'
-#' @param filelist A list of file names.
-#' @import dplyr
-#' @importFrom stringr str_split
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-reorder_files <- function(filelist) 
+#' @param filelist A list of file names (with probable prepending paths).
+reorder_files2 <- function(filelist) 
 {
-  newlist <- NULL
+  basenames  <- basename(filelist)
+  set_idxes  <- 
+    as.integer(gsub("TMTset(\\d+)_.*", "\\1", basenames))
+  injn_idxes <- 
+    # no second underscore: TMTset1_LCMSinj1.csv
+    as.integer(gsub("^TMTset\\d+_LCMSinj(\\d+)[_]{0,1}.*", "\\1", basenames))
+  ord <- order(set_idxes, injn_idxes)
+  filelist   <- filelist[ord]
+  basenames  <- basenames[ord]
+  set_idxes  <- set_idxes[ord]
+  injn_idxes <- injn_idxes[ord]
   
-  tmt_sets <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
-    unique() %>% 
-    as.integer() %>% 
-    sort() 
+  ans <- filelist
+  attr(ans, "basenames")  <- basenames
+  attr(ans, "set_idxes")  <- set_idxes
+  attr(ans, "injn_idxes") <- injn_idxes
   
-  lcms_injs <- gsub("^.*_LCMSinj(\\d+).*", "\\1", filelist) %>% 
-    unique() %>% 
-    as.integer() %>% 
-    sort()
-  
-  if (anyNA(tmt_sets)) {
-    stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", 
-         call. = FALSE)
-  }
-
-  if (anyNA(lcms_injs)) {
-    stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", 
-         call. = FALSE)
-  }
-
-  for (i in tmt_sets) {
-    newlist <- c(newlist, filelist[grep(paste0("TMTset", i, "_"), filelist, 
-                                        ignore.case = TRUE)])
-  }
-
-  return(newlist)
+  ans
 }
 
 
@@ -1902,8 +1888,7 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r")
   load(file = file)
   
   if (!arg %in% names(call_pars)) 
-    stop(arg, " not found in the latest call to ", call_rda, 
-         call. = FALSE)
+    stop(arg, " not found in the latest call to ", call_rda)
   
   call_pars[[arg]]
 }

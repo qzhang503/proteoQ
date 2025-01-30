@@ -4,7 +4,16 @@
 \alias{impRefNA}
 \title{Impute NA for references}
 \usage{
-impRefNA(df, cols_ref, cols_smpl, refChannels, group_psm_by = "pep_seq_mod")
+impRefNA(
+  df,
+  cols_ref,
+  cols_smpl,
+  refChannels,
+  group_psm_by = "pep_seq_mod",
+  sp_centers = NULL,
+  imp_refs = FALSE,
+  add_errs = FALSE
+)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -15,12 +24,13 @@ impRefNA(df, cols_ref, cols_smpl, refChannels, group_psm_by = "pep_seq_mod")
 
 \item{refChannels}{The reference channels.}
 
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
+\item{group_psm_by}{A key for PSM grouping.}
+
+\item{sp_centers}{A vector of log2FC centers for each species.}
+
+\item{imp_refs}{Logical; impute missing references or not.}
+
+\item{add_errs}{Logical; add normal errors or not.}
 }
 \description{
 Impute NA for references

@@ -6,28 +6,33 @@
 \usage{
 spreadPepNums(
   df,
+  dat_dir = NULL,
   basenames,
-  group_psm_by,
+  tmt_plex = 0L,
   ok_mbr = FALSE,
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "gene",
+  engine = "mz",
   use_spec_counts = FALSE
 )
 }
 \arguments{
-\item{df}{A data frame of peptide table.}
+\item{df}{A data frame of peptide table, ordered by ascending \code{TMT_Set}
+and \code{LCMS_Injection}.}
 
 \item{basenames}{Names of peptide table files.}
 
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
+\item{tmt_plex}{The multiplicity of TMT; zero for LFQ.}
 
 \item{ok_mbr}{Logical Capable of MBR or not.}
 
-\item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
-quantitation with Mascot or Mzion outputs.}
+\item{group_psm_by}{Group PSMs by.}
+
+\item{group_pep_by}{Groups peptides by.}
+
+\item{engine}{The search engine.}
+
+\item{use_spec_counts}{Logical; use spectrum counts instead or not.}
 }
 \description{
 Spreads fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I by TMT

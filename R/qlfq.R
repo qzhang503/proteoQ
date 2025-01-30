@@ -122,17 +122,35 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
   out$apex_p[rows] <- out$apex_n[rows] <- NA_integer_
   out$apex_t[rows] <- out$apex_y[rows] <- NA_real_
   
-  out$pep_tot_int <- out$apex_y
-  out$pep_apex_ret <- out$apex_t
+  out$pep_tot_int   <- out$apex_y
+  out$pep_apex_ret  <- out$apex_t
   out$pep_apex_scan <- out$apex_p
+  out$pep_apex_n    <- out$apex_n
+  out$pep_apex_fwhm <- out$apex_fwhm
   out$N_I000 <- out$I000 <- out$pep_tot_int
-  out$apex_y <- out$apex_t <- out$apex_p <- NULL
+  out$apex_y <- out$apex_t <- out$apex_p <- out$apex_n <- out$apex_fwhm <- NULL
   
+  out <- out |>
+    reloc_col_after("pep_apex_n", "pep_apex_scan") |>
+    reloc_col("pep_apex_fwhm", "pep_apex_n")
+  
+  nms <- names(out)
+  out <- dplyr::bind_cols(
+    out[grepl("^prot_", nms), drop = FALSE],
+    out[grepl("^pep_",  nms), drop = FALSE],
+    out[grepl("^psm_",  nms), drop = FALSE],
+    out[!grepl("^prot_|^pep_|^psm_", nms), drop = FALSE])
+  
+  cols <- grepl("[IR]{1}[0-9]{3}[NC]{0,1}", names(out))
+  out  <- dplyr::bind_cols(
+    out[, !cols, drop = FALSE], 
+    out[,  cols, drop = FALSE])
+
   out
 }
 
 
-#' Add apex retention times for one RAW
+#' Helper of adding apex retention times for one RAW
 #'
 #' Inputs are at the levels of one RAW file.
 #'
@@ -166,19 +184,17 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
   
   rts <- df$pep_ret_range
   mzs <- df$pep_exp_mz
-  unv <- unique(mzion:::index_mz(unique(mzs), from = 115, d = step))
+  unv <- unique(mzion:::index_mz(unique(mzs), from = from, d = step))
   
   xys <- mapply(function (xs, ys) {
-    ixs <- mzion:::index_mz(xs, from = 115, d = step)
+    ixs <- mzion:::index_mz(xs, from = from, d = step)
     # allow duplicated(ixs)
     oks <- ixs %fin% unv | (ixs + 1L) %fin% unv | (ixs - 1L) %fin% unv
     list(xs = xs[oks], ys = ys[oks])
   }, xss, yss, SIMPLIFY = FALSE, USE.NAMES = FALSE)
   
-  xss  <- lapply(xys, `[[`, "xs")
-  yss  <- lapply(xys, `[[`, "ys")
-  trs$msx_moverzs <- xss
-  trs$msx_ints <- yss
+  xss  <- trs$msx_moverzs <- lapply(xys, `[[`, "xs")
+  yss  <- trs$msx_ints    <- lapply(xys, `[[`, "ys")
   rm(list = c("unv", "xys"))
   
   ## (2) split xss and yss into chunks with bracketed scans
@@ -245,8 +261,8 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
 #' @param step A step size in mass for mass error tolerance.
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
-addApexes <- function(rts, mzs, trs, gap_bf, gap_af, step = 1E-5, yco = 100, 
-                      min_y = 2E6)
+addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L, 
+                      step = 1E-5, yco = 100, min_y = 2E6)
 {
   if (!(nr <- length(rts))) {
     return(NULL)
@@ -261,12 +277,12 @@ addApexes <- function(rts, mzs, trs, gap_bf, gap_af, step = 1E-5, yco = 100,
   
   # a second chance for small percents of intensity interpreted (partial peaks)
   step2 <- 1.5 * step
-  y1s   <- t1s <- vector("numeric", nr)
+  fw1s  <- y1s <- t1s <- vector("numeric", nr)
   ap1s  <- n1s <- vector("integer", nr)
   scans <- tvals <- xvals <- yvals <- ns <- ranges <- fwhms <- vector("list", nr)
   
   for (i in seq_len(nr)) {
-    # i <- which(abs(mzs - 459.2624) < .0001)[[1]]
+    # i <- which(abs(mzs - 688.8229) < .0001)[[1]]
     xref <- mzs[[i]] # pep_exp_mz
     tref <- rts[[i]] # pep_ret_range
     rgi  <- .Internal(which(tss >= (tref - gap_bf) & tss <= (tref + gap_af)))
@@ -291,11 +307,11 @@ addApexes <- function(rts, mzs, trs, gap_bf, gap_af, step = 1E-5, yco = 100,
     fwhmi <- gates[["fwhm"]]
     # ns[[i]] <- gates[["ns"]]
 
+    ## for finding percent of MS1 area interpreted
     # oks <- !is.na(ysi)
     # csum <- cumsum(ysi[oks] * c(diff(tsi[oks]), .5))
     # ysum1[[i]] <- sum(yints)
     # csum[[length(csum)]] # area
-    # 
     # ysum0[[i]] <- sum(ysi, na.rm = TRUE)
     # ysum1[[i]] <- sum(ysi[unlist(rngs, recursive = FALSE, use.names = FALSE)], na.rm = TRUE)
     
@@ -328,10 +344,11 @@ addApexes <- function(rts, mzs, trs, gap_bf, gap_af, step = 1E-5, yco = 100,
       next
     }
     
-    ap1s[[i]] <- anx[["ap"]]   # apex_scan
-    y1s[[i]]  <- anx[["y"]]    # apex_int
-    t1s[[i]]  <- anx[["rt"]]   # apex_rt
-    n1s[[i]]  <- anx[["n"]]    # number of MS1 scans
+    ap1s[[i]]  <- anx[["ap"]]   # apex_scan
+    y1s[[i]]   <- anx[["y"]]    # apex_int
+    t1s[[i]]   <- anx[["rt"]]   # apex_rt
+    n1s[[i]]   <- anx[["n"]]    # number of MS1 scans
+    fw1s[[i]]  <- anx[["fwhm"]]
     scans[[i]] <- anx[["aps"]] # all apex scans
     tvals[[i]] <- anx[["rts"]] # all apex retention times
     ns[[i]]    <- anx[["ns"]]  # numbers of MS1 scans
@@ -347,6 +364,7 @@ addApexes <- function(rts, mzs, trs, gap_bf, gap_af, step = 1E-5, yco = 100,
     apex_t     = t1s,
     apex_y     = y1s,
     apex_n     = n1s, 
+    apex_fwhm  = fw1s, 
     apex_ps    = scans,
     apex_ts    = tvals,
     apex_xs    = xvals, 

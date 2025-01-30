@@ -8,8 +8,8 @@ addApexes(
   rts,
   mzs,
   trs,
-  gap_bf,
-  gap_af,
+  gap_bf = 250L,
+  gap_af = 250L,
   step = 1e-05,
   yco = 100,
   min_y = 2e+06

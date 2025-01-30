@@ -31,5 +31,5 @@ numbers will be treated as one group.}
 uniqueness in PSM entries.}
 }
 \description{
-Adds columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.
+Values are based on the complete data, not indivisual samples.
 }

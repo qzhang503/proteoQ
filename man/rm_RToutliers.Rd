@@ -10,14 +10,21 @@ rm_RToutliers(
   pep_exp_ints = NULL,
   pep_apex_rets = NULL,
   pep_apex_scans = NULL,
+  pep_apex_fwhm = NULL,
+  pep_apex_n = NULL,
   mx = NULL,
   my = NULL,
   mt = NULL,
   ms = NULL,
-  qt = 0.95,
+  mf = NULL,
+  mn = NULL,
+  qt_rt = 0.95,
   ok_unv = FALSE,
   ignore_n2_outliers = FALSE,
   rt_tol = 0,
+  by_fwhm = FALSE,
+  fwhm_co = 0.5,
+  qt_fwhm = 0.02,
   method = 0L
 )
 }
@@ -34,7 +41,11 @@ entries in a \code{df}.}
 
 \item{pep_apex_scans}{List of apex scan numbers.}
 
-\item{qt}{The quantile for considering retention-time outliers.}
+\item{pep_apex_fwhm}{List of apex FWHM values.}
+
+\item{pep_apex_n}{List of apex lengths (number of MS2 scans).}
+
+\item{qt_rt}{The quantile for considering retention-time outliers.}
 
 \item{ok_unv}{Logical; is the universe ready or need to be compiled.}
 
@@ -44,6 +55,12 @@ calibrations.}
 
 \item{rt_tol}{Not yet used. The tolerance in retention times between two
 samples.}
+
+\item{by_fwhm}{Additional outlier removals by FWHM values.}
+
+\item{fwhm_co}{The cut-off in FWHM values.}
+
+\item{qt_fwhm}{The quantile for considering FWHM outliers.}
 
 \item{method}{A method for outlier removals.}
 }

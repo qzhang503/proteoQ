@@ -4,10 +4,12 @@
 \alias{addMBRpeps}
 \title{Add MBR peptide intensities}
 \usage{
-addMBRpeps(file, dat_dir, group_psm_by = "pep_seq_mod")
+addMBRpeps(file, pep_tbl = NULL, dat_dir, group_psm_by = "pep_seq_mod")
 }
 \arguments{
 \item{file}{A file name with prepending path to a peptide table.}
+
+\item{pep_tbl}{A data frame corresponding to \code{file}.}
 
 \item{dat_dir}{A working directory.}
 

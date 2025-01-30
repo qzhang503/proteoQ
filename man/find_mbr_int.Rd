@@ -11,10 +11,13 @@ find_mbr_int(
   mbr_ret,
   mbr_y,
   mbr_ret_tol = 25,
+  sp_cent = 0,
   max_mbr_fold = 20L,
   n_dia_scans = 6L,
   min_y = 2e+06,
-  yco = 100
+  yco = 100,
+  fwhm_co = 0.5,
+  zero = NA_real_
 )
 }
 \arguments{
@@ -30,6 +33,8 @@ find_mbr_int(
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
+\item{sp_cent}{A species center (at log2 scale).}
+
 \item{max_mbr_fold}{The maximum absolute fold change in MBR.}
 
 \item{n_dia_scans}{The maximum number of zero-intensity scans for gap filling
@@ -39,6 +44,10 @@ in peak tracing. Not adjustable by users but synchronized with mzion.}
 value with PASEF.}
 
 \item{yco}{The cut-off of intensity values.}
+
+\item{fwhm_co}{The cut-off in FWHM values.}
+
+\item{zero}{A zero value for replacements.}
 }
 \description{
 Find the MBR intensity

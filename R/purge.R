@@ -405,33 +405,32 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   on.exit(
     mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
-      save_call(fun), 
-    add = TRUE
-  )
+      save_call(fun), add = TRUE)
   
   this_call <- match.call()
   fun <- as.character(this_call[[1]])
   
   check_dots(c("id", "anal_type", "filename", "filepath"), ...)
-
+  
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  dots <- dots %>% 
-    .[! . %in% filter_dots]
+  dots <- dots[! dots %in% filter_dots]
   
   if (length(filter_dots)) {
-    warning("`filter_` not applicable with `", fun, "`", call. = FALSE)
+    warning("`filter_` not applicable with `", fun, "`")
   }
-
-  if (is.null(dat_dir)) 
+  
+  if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
-  else 
+  }
+  else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
-
+  }
+  
   dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), 
              recursive = TRUE, showWarnings = FALSE)
   
@@ -446,23 +445,24 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   )
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  TMT_plex <- TMT_plex(label_scheme_full)
-  
-  if (!TMT_plex) {
+
+  if (!(tmt_plex <- TMT_plex(label_scheme_full))) {
     stop("No PSM purging for LFQ using MS1 peak area.", call. = FALSE)
   }
-
+  
   filelist <- list.files(path = file.path(dat_dir, "PSM"), 
-                         pattern = "_PSM_N\\.txt$") %>%
-    reorder_files()
-  
-  if (!length(filelist)) 
+                         pattern = "_PSM_N\\.txt$", full.names = TRUE) |>
+    reorder_files2()
+  basenames  <- attr(filelist, "basenames")
+  set_idxes  <- attr(filelist, "set_idxes")
+  injn_idxes <- attr(filelist, "injn_idxes")
+
+  if (!(n_files <- length(filelist))) {
     stop("Files of \"_PSM_N.txt\" not found.")
+  }
   
-  dir.create(file.path(dat_dir, "PSM/Copy"), 
-             recursive = TRUE, showWarnings = FALSE)
-  
-  n_files <- length(filelist)
+  dir.create(
+    file.path(dat_dir, "PSM/Copy"), recursive = TRUE, showWarnings = FALSE)
   
   if (n_files > 3L) {
     n_cores <- min(parallel::detectCores(), n_files)
@@ -484,14 +484,14 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     
     suppressMessages(
       parallel::clusterMap(
-        cl, psm_mpurge, filelist,  
+        cl, psm_mpurge, basenames,  
         MoreArgs = args)
     )
-
+    
     parallel::stopCluster(cl)
   } 
   else {
-    purrr::walk(filelist, psm_mpurge, 
+    purrr::walk(basenames, psm_mpurge, 
                 dat_dir = dat_dir, 
                 group_psm_by = group_psm_by, 
                 group_pep_by = group_pep_by, 

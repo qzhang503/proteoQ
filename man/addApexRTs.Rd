@@ -2,7 +2,7 @@
 % Please edit documentation in R/qlfq.R
 \name{addApexRTs}
 \alias{addApexRTs}
-\title{Add apex retention times for one RAW}
+\title{Helper of adding apex retention times for one RAW}
 \usage{
 addApexRTs(
   df,

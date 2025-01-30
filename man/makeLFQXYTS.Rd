@@ -9,7 +9,9 @@ makeLFQXYTS(
   pep_exp_mzs = NULL,
   pep_exp_ints = NULL,
   pep_apex_rets = NULL,
-  pep_apex_scans = NULL
+  pep_apex_scans = NULL,
+  pep_apex_fwhm = NULL,
+  pep_apex_n = NULL
 )
 }
 \arguments{
@@ -23,6 +25,10 @@ states.}
 \item{pep_apex_rets}{List of retention time (T) values.}
 
 \item{pep_apex_scans}{List of apex scan numbers (S).}
+
+\item{pep_apex_fwhm}{List of apex FWHM values.}
+
+\item{pep_apex_n}{List of apex lengths (number of MS2 scans).}
 }
 \description{
 Prepare the XYTS matrices for LFQ

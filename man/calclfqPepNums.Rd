@@ -10,7 +10,8 @@ calcLFQPepNums(
   tmt_plex = 0L,
   min_int = 1000,
   imp_refs = FALSE,
-  imp_vals = FALSE
+  imp_vals = FALSE,
+  sp_centers = NULL
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ calcLFQPepNums(
 \item{min_int}{Minimal Y intensity to replace 0 values.}
 
 \item{imp_refs}{Logical; impute missing references or not.}
+
+\item{sp_centers}{A vector of log2FC centers for each species.}
 }
 \description{
 With LFQ, values of \code{log2_R000 (...)} and \code{N_log2_R000 (...)} in

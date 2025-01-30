@@ -9,7 +9,8 @@ cleanPSMYTS(
   tmat,
   key = "pep_seq_mod",
   update = TRUE,
-  cols = c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan")
+  cols = c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan",
+    "pep_apex_fwhm", "pep_apex_n")
 )
 }
 \arguments{

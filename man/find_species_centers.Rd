@@ -4,19 +4,19 @@
 \alias{find_species_centers}
 \title{Finds the data center of log2FC by species and samples}
 \usage{
-find_species_centers(df, refChannels, cols)
+find_species_centers(df, refChannels, cols_smpl)
 }
 \arguments{
 \item{df}{A data frame contains intensity values, peptides and species.}
 
 \item{refChannels}{Reference channels.}
 
-\item{cols}{The columns of samples for finding the data centers.}
+\item{cols_smpl}{The columns of samples for finding the data centers.}
 }
 \value{
 Lists of log2FC centers by species. Each list entry contains values
   corresponding to each sample.
 }
 \description{
-Not yet used.
+Finds the data center of log2FC by species and samples
 }
