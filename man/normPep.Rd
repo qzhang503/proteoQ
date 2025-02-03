@@ -94,7 +94,8 @@ gradients, a setting of, e.g., 150 might be suitable.}
 \item{rm_ret_outliers}{Depreciated. Logical; if TRUE, removes peptide entries
 with outlying retention times across samples and/or LCMS series.}
 
-\item{imp_refs}{Logical; impute missing references or not.}
+\item{imp_refs}{Logical; impute missing references or not (yet to be tested
+more).}
 
 \item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
 quantitation with Mascot or Mzion outputs.}

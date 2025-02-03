@@ -11,7 +11,8 @@ makeLFQXYTS(
   pep_apex_rets = NULL,
   pep_apex_scans = NULL,
   pep_apex_fwhm = NULL,
-  pep_apex_n = NULL
+  pep_apex_n = NULL,
+  add_colnames = TRUE
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ states.}
 \item{pep_apex_fwhm}{List of apex FWHM values.}
 
 \item{pep_apex_n}{List of apex lengths (number of MS2 scans).}
+
+\item{add_colnames}{Logical; add column names or not.}
 }
 \description{
 Prepare the XYTS matrices for LFQ

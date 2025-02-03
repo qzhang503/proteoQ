@@ -5735,7 +5735,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
       dx  <- data.frame(x = den$x, y = den$y * length(sds))
       dx[with(dx, y <= 10), ] <- 0
       # plot(y ~ x, dx)
-      ans <- mzion:::find_lc_gates(ys = dx$y, ts = dx$x, n_dia_scans = 0L)
+      ans <- mzion::find_lc_gates(ys = dx$y, ts = dx$x, n_dia_scans = 0L)
       idx <- which.max(ans$ns)
       rng <- ans$ranges[[idx]]
       sd1 <- dx$x[[rng[[1]]]]
@@ -6063,10 +6063,11 @@ rm_RToutliers <- function (pep_seq_modzs = NULL, pep_exp_mzs = NULL,
 #' @param pep_apex_scans List of apex scan numbers (S).
 #' @param pep_apex_fwhm List of apex FWHM values.
 #' @param pep_apex_n List of apex lengths (number of MS2 scans).
+#' @param add_colnames Logical; add column names or not.
 makeLFQXYTS <- function (pep_seq_modzs = NULL, pep_exp_mzs = NULL, 
                          pep_exp_ints = NULL, pep_apex_rets = NULL, 
                          pep_apex_scans = NULL, pep_apex_fwhm = NULL, 
-                         pep_apex_n = NULL)
+                         pep_apex_n = NULL, add_colnames = TRUE)
 {
   len <- length(pep_seq_modzs)
   unv <- unlist(pep_seq_modzs, recursive = FALSE, use.names = FALSE) |>
@@ -6092,10 +6093,13 @@ makeLFQXYTS <- function (pep_seq_modzs = NULL, pep_exp_mzs = NULL,
   ms <- do.call(rbind, ms)
   mf <- do.call(rbind, mf)
   mn <- do.call(rbind, mn)
-  colnames(mx) <- colnames(my) <- colnames(mt) <- colnames(ms) <- 
-    colnames(mf) <- colnames(mn) <- unv
   
-  list(x = mx, y = my, t = mt, s = ms, f = mf, n = mn)
+  if (add_colnames) {
+    colnames(mx) <- colnames(my) <- colnames(mt) <- colnames(ms) <- 
+      colnames(mf) <- colnames(mn) <- unv
+  }
+
+  list(x = mx, y = my, t = mt, s = ms, f = mf, n = mn, unv = unv)
 }
 
 
@@ -8825,7 +8829,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
     df[["Peptide"]] <- df[["SpecID"]] <- df[["FragMethod"]] <- 
     df[["frame"]] <- NULL
   
-  prps <- mzion:::groupProts(unique(df[, c("prot_acc", "pep_seq")]), 
+  prps <- mzion::groupProts(unique(df[, c("prot_acc", "pep_seq")]), 
                              out_path = dat_dir) %>% 
     dplyr::mutate(prot_tier = 1L) %>% # place holder
     tidyr::unite(uniq_id, prot_acc, pep_seq, sep = ".", remove = TRUE)
@@ -9937,8 +9941,8 @@ add_mbr_psms <- function (dfq, dfc, group_psm_by = "pep_seq_mod",
   
   ans <- parallel::clusterMap(
     cl, mmbr_psms, 
-    mzion:::chunksplit(dfqm, n_cores, "list"), 
-    mzion:::chunksplit(dfc,  n_cores, "list"), 
+    mzion::chunksplit(dfqm, n_cores, "list"), 
+    mzion::chunksplit(dfc,  n_cores, "list"), 
     MoreArgs = list(cols_mbr = cols_mbr, 
                     cols_dfq = cols_dfq, 
                     mbr_ret_tol = mbr_ret_tol), 
