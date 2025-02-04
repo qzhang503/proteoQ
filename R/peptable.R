@@ -1652,9 +1652,10 @@ add_spec_counts <- function (dat_dir, df_num, group_psm_by = "pep_seq_mod",
     }
   }
   
-  df_sc$uid <- paste0(df_sc[[key_sc]], df_sc[["TMT_Set"]])
+  # need "@"; otherwise: ADK1 at set 1 -> ADK11
+  df_sc$uid <- paste0(df_sc[[key_sc]], "@", df_sc[["TMT_Set"]])
   df_sc[[key_sc]] <- df_sc[["TMT_Set"]] <- NULL
-  df_num$uid <- paste0(df_num[[key_sc]], df_num[["TMT_Set"]])
+  df_num$uid <- paste0(df_num[[key_sc]], "@", df_num[["TMT_Set"]])
   df_num <- df_num |> dplyr::left_join(df_sc, by = "uid")
 
   nms <- names(df_num)

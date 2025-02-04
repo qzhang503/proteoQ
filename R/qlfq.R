@@ -689,7 +689,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   # need to exclude: the same peak to different peptides???
   ###
   
-  attr(df, "sp_centers") <- sp_centers
+  attr(dfs, "sp_centers") <- sp_centers
   
   dfs
 }
