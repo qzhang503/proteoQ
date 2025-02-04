@@ -69,6 +69,8 @@ be annotated with their kinase attributes. The default is FALSE.}
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
+
+\item{parallel}{Not used.}
 }
 \description{
 Common routines in PSM processing across search engines.

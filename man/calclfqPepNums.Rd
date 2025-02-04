@@ -25,6 +25,8 @@ calcLFQPepNums(
 
 \item{imp_refs}{Logical; impute missing references or not.}
 
+\item{imp_vals}{Logical; impute missing values or not.}
+
 \item{sp_centers}{A vector of log2FC centers for each species.}
 }
 \description{

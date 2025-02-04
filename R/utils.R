@@ -1501,8 +1501,12 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
 #' NA genes are replaced with prot_acc.
 #' 
 #' @param df_sub An input data frame with a single type of protein accession.
-#' @param fasta A fasta database.
-#' @inheritParams parse_fasta
+#' @param fasta Names of FASTA database.
+#' @param fasta_db FASTA databases
+#' @param pat_uni_acc Patterns of Uniprot accessions.
+#' @param pat_uni_id Pattern of Uniprot IDs.
+#' @param pat_ref_acc Patterns of RefSeq accessions.
+#' @param warns The type of warning.
 hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc, 
                           fasta, warns) 
 {
@@ -1592,7 +1596,7 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
 #' 
 #' Coerces NA values in genes by the value of accessions.
 #' 
-#' @param acc_type The type of protein accession.
+#' @param acc_lookup The lookup of protein accession.
 na_genes_by_acc <- function(acc_lookup) 
 {
   if (nrow(acc_lookup) && 
@@ -1612,7 +1616,7 @@ na_genes_by_acc <- function(acc_lookup)
 #' 
 #' Coerces NA values in species by the value of organism.
 #' 
-#' @param acc_type The type of protein accession.
+#' @param acc_lookup The lookup of protein accession.
 na_species_by_org <- function(acc_lookup) 
 {
   if (nrow(acc_lookup) && 
@@ -5094,6 +5098,7 @@ add_col_rawfile <- function (df)
 #' Loads psmC.txt
 #' 
 #' @param file The file name of \code{psmC[...].txt}.
+#' @param ... Not used.
 load_psmC <- function(file = NULL, ...) 
 {
   dat_dir <- get_gl_dat_dir()

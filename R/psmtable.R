@@ -1640,6 +1640,7 @@ add_shared_sm_genes <- function (df = NULL, key = "Proteins", sep = ";",
 #' Common routines in PSM processing across search engines. 
 #'
 #' @param df PSM data.
+#' @param parallel Not used.
 #' @inheritParams normPSM
 procPSMs <- function (dat_dir = NULL, df = NULL, scale_rptr_int = FALSE, 
                       rptr_intco = 0, rptr_intrange = c(0, 100), 
@@ -2957,10 +2958,12 @@ psm_mcleanup <- function(file = NULL, rm_outliers = FALSE,
 #' Dixon's method will be used when \eqn{2 < n \le 25}; Rosner's method will be
 #' used when \eqn{n > 25}.
 #'
+#' @param dat_dir The working directory.
 #' @param rm_outliers Logical; if TRUE, PSM outlier removals will be performed
 #'   for peptides with more than two identifying PSMs. Dixon's method will be
 #'   used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 #'   25}. The default is FALSE.
+#' @param parallel Not used.
 #' @inheritParams splitPSM_ma
 #'
 #' @import dplyr tidyr
@@ -4077,6 +4080,7 @@ groupMZPSM0 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7,
 #' \code{max_n_apexes = 1L}.
 #'
 #' @param dfs A list of PSM tables.
+#' @param key The name of a column key.
 #' @param yfrac The minimum percentage of intensity in relative to the base peak
 #'   for considerations.
 #' @param max_n_apexes The maximum number of apexes for consideration.
@@ -4153,6 +4157,7 @@ rm_lowIntPSMs <- function (df, yfrac = .02, keep_best_score = TRUE)
 #' @param df A data frame for a \code{pep_seq_modz} at a given charge state.
 #' @param yfrac A factor of intensity fraction. Peaks with intensities \eqn{le}
 #'   the fraction of the base peak will be ignored.
+#' @param sdco The cut-off in standard deviations.
 #' @param add_sd Logical; if TRUE, add the attribute of \code{sd}.
 rm_psm_spikes <- function (df, yfrac = .02, sdco = 3, add_sd = TRUE)
 {
@@ -4969,6 +4974,7 @@ calcTMTPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' @param file The name of a PSM file.
 #' @param df A PSM table.
 #' @param lfq_mbr Logical; performs MBR for LFQ or not.
+#' @param engine The search engine name.
 #' @param ... filter_dots.
 #' @inheritParams PSM2Pep
 #' @inheritParams load_expts
@@ -5275,16 +5281,11 @@ PSM2Pep <- function(method_psm_pep =
       ms1files = list.files(path_ms1, pattern = "^ms1full_"), 
       type = "ms1full")
     
-    if (TRUE) {
-      dfs <- haddApexRTs_allsets(
-        filelist = basenames, ms1full_files = ms1full_files, 
-        dat_dir = dat_dir, path_ms1 = path_ms1, max_n_apexes = max_n_apexes, 
-        data_type = data_type)
-      # qs::qsave(dfs, file.path(dat_dir, "df_haddApexRTs_allsets.rds"), preset = "fast")
-    }
-    else {
-      dfs <- qs::qread(file.path(dat_dir, "df_haddApexRTs_allsets.rds"))
-    }
+    dfs <- haddApexRTs_allsets(
+      filelist = basenames, ms1full_files = ms1full_files, 
+      dat_dir = dat_dir, path_ms1 = path_ms1, max_n_apexes = max_n_apexes, 
+      data_type = data_type)
+    # qs::qsave(dfs, file.path(dat_dir, "df_haddApexRTs_allsets.rds"), preset = "fast")
     
     # (a) raws nested under TMTSet[i]LCMSInj[j]; 
     # (b) pep_n_apexes: 
@@ -5883,6 +5884,12 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
 #' @param pep_apex_scans List of apex scan numbers.
 #' @param pep_apex_fwhm List of apex FWHM values.
 #' @param pep_apex_n List of apex lengths (number of MS2 scans).
+#' @param mx The matrix of X values.
+#' @param my The matrix of Y values.
+#' @param mt The matrix of T values.
+#' @param ms The matrix of Scan values.
+#' @param mf The matrix of FWHM values.
+#' @param mn The matrix of N (numbers of scans) values.
 #' @param qt_rt The quantile for considering retention-time outliers.
 #' @param qt_fwhm The quantile for considering FWHM outliers.
 #' @param by_fwhm Additional outlier removals by FWHM values.
@@ -8694,7 +8701,7 @@ fml2mass <- function (mods)
 #' @param mod_file The name of the file specifying the MSGF+ modifications. The
 #'   \code{mod_file} needs be under the \code{dat_dir}.
 #' @param fdr_type The type of FDR control. The default is \code{psm}.
-#' @param target_fder A targeted false-discovery rate (FDR).
+#' @param target_fdr A targeted false-discovery rate (FDR).
 #' @param ... varargs; not currently used.
 #' @inheritParams normPSM
 #' @export
@@ -8871,8 +8878,8 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
 #'
 #' @param this_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc. before
 #'   padding.
-#' @param Numeric; the maximum multiplexity of TMT indicated in metadata of
-#'   \code{label_scheme.xlsx}.
+#' @param TMT_plex Numeric; the maximum multiplexity of TMT indicated in
+#'   metadata of \code{label_scheme.xlsx}.
 find_padding_pos <- function (this_plex = 10L, TMT_plex = 10L) 
 {
   if (!((this_plex > 0L) && (this_plex < TMT_plex)))

@@ -3,6 +3,7 @@
 #'
 #' @inheritParams info_anal
 #' @param type Type of logical matrix.
+#' @param rm_allna Remove entries of all NA values or not.
 lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) 
 {
   pat <- "[0-9]{3}[NC]{0,1}"
@@ -121,6 +122,8 @@ purge_by_cv <- function (df, id, max_cv = NULL, min_n = 1L, rm_allna = FALSE)
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile. The precedence in data purging is
 #'   \code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.
+#' @param min_n Not used. The minimum value of n.
+#' @param rm_allna Logical; remove all NA values or not.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
 purge_by_qt <- function(df, id, pt_cv = NULL, min_n = 1L, rm_allna = FALSE) 
@@ -185,6 +188,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, min_n = 1L, rm_allna = FALSE)
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 #'   protein entries in peptide tables with the number of identifying peptides
 #'   smaller than \code{min_n} will be replaced with NA. 
+#' @param rm_allna Logical; remove all NA values or not.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
 purge_by_n <- function (df, id, min_n = 1L, rm_allna = FALSE) 

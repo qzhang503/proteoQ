@@ -55,6 +55,8 @@ used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
+\item{is_prot_lfq}{Logical; is protein LFQ or not.}
+
 \item{engine}{The name of search engine.}
 
 \item{impute_prot_na}{Logical; impute NA values of protein log2FC or not.}

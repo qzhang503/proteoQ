@@ -20,6 +20,8 @@ spreadPepNums(
 \item{df}{A data frame of peptide table, ordered by ascending \code{TMT_Set}
 and \code{LCMS_Injection}.}
 
+\item{dat_dir}{The working directory.}
+
 \item{basenames}{Names of peptide table files.}
 
 \item{tmt_plex}{The multiplicity of TMT; zero for LFQ.}

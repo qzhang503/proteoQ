@@ -16,13 +16,30 @@ pepLFQ(
   mbr_peps,
   mbr_sps,
   sp_centers,
+  rt_tol = 25,
   mbr_ret_tol = 25,
   step = 0.002,
-  err_log2r = 0.25,
-  rt_tol = 15
+  err_log2r = 0.25
 )
 }
 \arguments{
+\item{basenames}{The base names of a peptide table files
+(\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).}
+
+\item{are_refs}{Logical; are references or not.}
+
+\item{are_smpls}{Logical; are samples or not.}
+
+\item{xsmat}{A matrix of m-over-z values.}
+
+\item{ysmat}{A matrix of apex intensities.}
+
+\item{tsmat}{A matrix of apex retention times.}
+
+\item{ssmat}{A matrix of apex scan numbers.}
+
+\item{cmat}{A matrix of spectrum counts.}
+
 \item{mbr_peps}{A vector of \code{pep_seq_modz} sequences in the universe.}
 
 \item{mbr_sps}{A vector of peptide species in the universe.}
@@ -30,53 +47,13 @@ pepLFQ(
 \item{sp_centers}{The centers of log2FC for each species; names: species,
 values: log2FC.}
 
+\item{rt_tol}{Error tolerance in retention times.}
+
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
 \item{step}{The retention-time error in \code{ppm / 1e6}.}
 
-\item{base_name}{The base name of a peptide table file
-(\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).}
-
-\item{ms1files}{A list of file names of retention-time calibrated RAW MS1
-data corresponding to the peptide table at \code{base_name} (More than one
-file if with analyte pre-fractionation for a sample).}
-
-\item{xvs}{A vector of X (m-over-z) values under the peptide table at the
-\code{base_name}. The length is the number of peptides in the universe. NA
-values correspond to peptides (\code{pep_seq_modz}) that are not present in
-the current peptide table but found in others.}
-
-\item{yvs}{A vector of apex intensities.}
-
-\item{tvs}{A vector of apex retention times.}
-
-\item{svs}{A vector of apex scan numbers.}
-
-\item{cvs}{A vector of spectrum counts.}
-
-\item{is_ref}{Logical; is reference or not.}
-
-\item{is_smpl}{Logical; is sample or not.}
-
-\item{mbr_ys}{A vector of intensity values in the universe (sample average).}
-
-\item{mbr_rets}{A vector of retention times in the universe (sample average).}
-
-\item{mbr_mzs}{A vector of m-over-z values in the universe (sample average).}
-
-\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
-
-\item{gap}{A gap in retention-time window in seconds for finding gates in the
-Y values of LC. The gap value serves as a margin to trace out a whole peak
-with its apex within the \code{mbr_ret_tol}.}
-
-\item{min_y}{The cut-off of intensity values in MBR.}
-
-\item{yco}{The cut-off in Y-values.}
-
-\item{fwhm_co}{The cut-off in FWHM values.}
-
-\item{dat_dir}{The working data directory.}
+\item{err_log2r}{Not yet used. Error tolerance in log2FC.}
 }
 \description{
 LFQ of peptides

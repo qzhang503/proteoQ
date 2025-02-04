@@ -24,6 +24,10 @@ require the fields of significance p-values, the \code{df} will be one of
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile. The precedence in data purging is
 \code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.}
+
+\item{min_n}{Not used. The minimum value of n.}
+
+\item{rm_allna}{Logical; remove all NA values or not.}
 }
 \description{
 \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.

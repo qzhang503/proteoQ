@@ -7,7 +7,7 @@
 na_species_by_org(acc_lookup)
 }
 \arguments{
-\item{acc_type}{The type of protein accession.}
+\item{acc_lookup}{The lookup of protein accession.}
 }
 \description{
 Coerces NA values in species by the value of organism.

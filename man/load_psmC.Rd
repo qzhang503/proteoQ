@@ -8,6 +8,8 @@ load_psmC(file = NULL, ...)
 }
 \arguments{
 \item{file}{The file name of \code{psmC[...].txt}.}
+
+\item{...}{Not used.}
 }
 \description{
 Loads psmC.txt

@@ -650,6 +650,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE)
 #' 
 #' @param label_scheme Experiment summary
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
+#' @param omit_single_lfq Logical; omit entries of single LFQ measures or not.
 #' @inheritParams n_TMT_sets
 #' @inheritParams normPSM
 pep_mf_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE, 
@@ -855,6 +856,7 @@ na_single_lfq <- function (df, pattern = "^I000 ")
 #' @param tmt_plex The multiplexicty of TMT.
 #' @param min_int Minimal Y intensity to replace 0 values.
 #' @param imp_refs Logical; impute missing references or not.
+#' @param imp_vals Logical; impute missing values or not.
 #' @param sp_centers A vector of log2FC centers for each species.
 calcLFQPepNums <- function (df, label_scheme, tmt_plex = 0L, min_int = 1E3, 
                             imp_refs = FALSE, imp_vals = FALSE, 
@@ -1281,6 +1283,7 @@ calcLFQPepInts <- function (df, filelist, group_psm_by)
 #'
 #' @param df A data frame of peptide table, ordered by ascending \code{TMT_Set}
 #'   and \code{LCMS_Injection}.
+#' @param dat_dir The working directory.
 #' @param basenames Names of peptide table files.
 #' @param ok_mbr Logical Capable of MBR or not.
 #' @param tmt_plex The multiplicity of TMT; zero for LFQ.
@@ -1362,7 +1365,21 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::arrange(TMT_Set)
   }
   else {
-    df_mbr <- df
+    if (ok_mbr) {
+      df_mbr <- lapply(basenames, function (file) {
+        fi <- paste0("MBRpeps_", file)
+        df <- readr::read_tsv(file.path(dat_dir, "Peptide/cache", fi))
+        df$TMT_Set <- as.integer(gsub("^.*TMTset(\\d+).*", "\\1", file))
+        # should first merge LCMS_Inj... 
+        # df$LCMS_Inj <- as.integer(gsub("^.*TMTset\\d+_LCMSinj(\\d+)_.*$", "\\1", file))
+        df
+      }) |>
+        dplyr::bind_rows() |>
+        dplyr::rename(I000 = pep_tot_int)
+    }
+    else {
+      df_mbr <- df
+    }
     
     ## LFQ: MaxQuant, MSFragger, Mzion
     df_num <- df_mbr |> # already ordered by TMT_Set and LCMS_Injection
@@ -1907,7 +1924,8 @@ rep_ls_groups <- function (group_ids)
 #' @param engine The name of search engine.
 #' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant.
 #' @param use_mf_pep Logical; if TRUE, uses the peptides.txt from MSFragger.
-#' @param max_mbr_fold The maximum absolute fold change in MBR.
+#' @param rt_tol Error tolerance in retention times.
+#' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param imp_refs Logical; impute missing references or not (yet to be tested
 #'   more).
 #' @inheritParams info_anal
@@ -1920,7 +1938,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      use_duppeps = TRUE, duppeps_repair = "denovo", 
                      cut_points = Inf, omit_single_lfq = FALSE, 
                      use_mq_pep = FALSE, use_mf_pep = FALSE, 
-                     rm_allna = FALSE, mbr_ret_tol = 25, max_mbr_fold = 20, 
+                     rm_allna = FALSE, rt_tol = 25, mbr_ret_tol = 25, 
+                     max_mbr_fold = 20, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
                      imp_refs = FALSE, use_spec_counts = FALSE, ...) 
 {
@@ -1989,7 +2008,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       set_idxes = set_idxes, injn_idxes = injn_idxes, 
       group_psm_by = if (engine != "mq") "pep_seq_mod" else "pep_seq", 
       group_pep_by = group_pep_by)
-    
+
     if (engine == "mascot") {
       message("Use spectrum counts for Mascot LFQ.")
       use_spec_counts <- TRUE
@@ -2020,35 +2039,37 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   }
 
   df <- dplyr::bind_rows(dfs)
-
-  if (ok_lfq) {
-    dfs <- hpepLFQ(
-      filelist = filelist, basenames = basenames, set_idxes = set_idxes, 
-      injn_idxes = injn_idxes, are_refs = are_refs, are_smpls = are_smpls, 
-      dfs = dfs, 
-      df_sps = unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
-      prot_spec_counts = prot_spec_counts, 
-      dat_dir = dat_dir, path_ms1 = path_ms1, ms1files = ms1files, 
-      temp_dir = temp_dir, mbr_ret_tol = mbr_ret_tol, 
-      max_mbr_fold = max_mbr_fold, imp_refs = imp_refs, 
-      group_psm_by = "pep_seq_modz", group_pep_by = group_pep_by, 
-      lfq_mbr = lfq_mbr)
-    sp_centers <- attr(dfs, "sp_centers", exact = TRUE)
-    
-    # also to update individual dfs...
-    df <- dplyr::bind_rows(dfs)
-  }
-  else {
-    sp_centers <- NULL
-  }
-
   df$pep_tot_int <- df$dat_file <- NULL
   
   # already by TMT_Set and LCMS_Injection
   df <- df |>
     filters_in_call(!!!filter_dots) |>
     assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
-  
+
+  if (ok_lfq) {
+    ans_lfq <- hpepLFQ(
+      filelist = filelist, basenames = basenames, set_idxes = set_idxes, 
+      injn_idxes = injn_idxes, are_refs = are_refs, are_smpls = are_smpls, 
+      dfs = dfs, 
+      df_sps = unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
+      prot_spec_counts = prot_spec_counts, 
+      dat_dir = dat_dir, path_ms1 = path_ms1, ms1files = ms1files, 
+      temp_dir = temp_dir, rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
+      group_psm_by = "pep_seq_modz", group_pep_by = group_pep_by, 
+      imp_refs = imp_refs, lfq_mbr = lfq_mbr)
+    sp_centers <- attr(ans_lfq, "sp_centers", exact = TRUE)
+    
+    for (i in seq_along(filelist)) {
+      addMBRpeps(file = filelist[[i]], pep_tbl = dfs[[i]], dat_dir = dat_dir, 
+                 group_psm_by = group_psm_by)
+    }
+
+    rm(list = "ans_lfq")
+  }
+  else {
+    sp_centers <- NULL
+  }
+
   ###
   # check spectrum count workflows later...
   ###
@@ -2134,8 +2155,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   
   df$pep_seq_modz <- NULL
   
-  # Not for Mzion...
-  if ("pep_ret_range" %in% names(df) && !all(is.na(df$pep_ret_range))) {
+  if ("pep_ret_range" %in% names(df) && engine != "mz" && 
+      !all(is.na(df$pep_ret_range))) {
     if (rm_ret_outliers) {
       df <- df |> dplyr::mutate(id. = row_number())
       
@@ -2962,8 +2983,8 @@ fmt_num_cols <- function (df)
 #' removals/cleanups using \code{purgePSM}.
 #'
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds. The
-#'   default is to match the setting in \link{norPSM}.
-#' @param max_mbr_fold The maximum absolute fold change in MBR.
+#'   default is to match the setting in \link{normPSM}.
+#' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param duppeps_repair Not currently used (or only with \code{majority}).
 #'   Character string; the method of reparing double-dipping peptide sequences
 #'   upon data pooling.
@@ -3182,6 +3203,7 @@ mergePep <- function (
                 use_mf_pep = use_mf_pep, 
                 rm_allna = rm_allna, 
                 mbr_ret_tol = mbr_ret_tol, 
+                rt_tol = 25, # user accessible later
                 max_mbr_fold = max_mbr_fold, 
                 ret_sd_tol = ret_sd_tol, 
                 rm_ret_outliers = rm_ret_outliers, 
@@ -3772,6 +3794,7 @@ find_prot_family_rows <- function (df, group_psm_by, group_pep_by)
 #' 
 #' @param x A numeric vector.
 #' @param n An positive integer.
+#' @param ... Additional arguments for \code{sum}.
 my_sum_n <- function (x, n = 3, ...) 
 {
   if (n < 1L) 
@@ -3952,6 +3975,7 @@ calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc",
 #' @param engine The name of search engine.
 #' @param use_mq_prot Logical; use MQ protein table or not.
 #' @param use_mf_prot Logical; use MSFragger protein table or not.
+#' @param is_prot_lfq Logical; is protein LFQ or not.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
 #' @inheritParams normPSM
@@ -4528,6 +4552,7 @@ impPepNA <- function (df, fold = 50, is_intensity = TRUE)
 #' Find MBR MS1 files
 #'
 #' @param dat_dir The working directory
+#' @param n_files The number of files.
 #' @param abort Logical; to abort the run or not. TRUE at \link{mergePep};
 #'   otherwise, \code{df} is unique by pep_seq_modz and need to be collapsed to
 #'   pep_seq_mod.

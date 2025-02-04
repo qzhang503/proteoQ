@@ -1112,6 +1112,7 @@ check_tmt_chans_vs_levs <- function (df, TMT_levels, filename = "expt_smry.xlsx"
 #'
 #' @param df A data frame of metadata (e.g., label_scheme_full).
 #' @param TMT_levels The levels of TMT channels.
+#' @param TMT_plex The multiplexicity of TMT.
 check_tmt_mixplexes <- function (df, TMT_levels, TMT_plex) 
 {
   ls_channels <- unique(df$TMT_Channel)

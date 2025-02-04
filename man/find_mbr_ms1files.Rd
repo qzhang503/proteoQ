@@ -9,6 +9,8 @@ find_mbr_ms1files(dat_dir, n_files, abort = FALSE)
 \arguments{
 \item{dat_dir}{The working directory}
 
+\item{n_files}{The number of files.}
+
 \item{abort}{Logical; to abort the run or not. TRUE at \link{mergePep};
 otherwise, \code{df} is unique by pep_seq_modz and need to be collapsed to
 pep_seq_mod.}

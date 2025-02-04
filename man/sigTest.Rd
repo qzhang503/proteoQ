@@ -57,13 +57,7 @@ will be used. The default is FALSE.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
-\item{method_replace_na}{The method to replace NA values by rows. The default
-is \code{none} by doing nothing. At \code{method_replace_na = min}, the row
-minimums will be used. The argument is only a device to assess \code{pVals},
-e.g., by handling the circumstance of all NA values under one group and
-non-trivial values under another. The setting of \code{min} might be useful
-at the experimenters' discretion of ascribing \code{NA} values to the lack
-of signals. The argument has no effects with \code{impute_na = TRUE}.}
+\item{method_replace_na}{A method of NA value replacements.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

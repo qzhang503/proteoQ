@@ -24,6 +24,10 @@ my_custom_cor(
 \item{sizeRange}{A range of sizes.}
 
 \item{cor_method}{A correlation method.}
+
+\item{digits}{The number of decimal places for displaying.}
+
+\item{...}{Additional arguments for \code{cor}.}
 }
 \description{
 Custom correlation plots

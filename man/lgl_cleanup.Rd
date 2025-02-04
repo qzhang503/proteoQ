@@ -19,6 +19,8 @@ require the fields of significance p-values, the \code{df} will be one of
 "protein_impNA_pVal.txt")}.}
 
 \item{type}{Type of logical matrix.}
+
+\item{rm_allna}{Remove entries of all NA values or not.}
 }
 \description{
 Updates data groups of `log2_R_` and `I_` etc. by logical matrix

@@ -12,6 +12,8 @@ rm_psm_spikes(df, yfrac = 0.02, sdco = 3, add_sd = TRUE)
 \item{yfrac}{A factor of intensity fraction. Peaks with intensities \eqn{le}
 the fraction of the base peak will be ignored.}
 
+\item{sdco}{The cut-off in standard deviations.}
+
 \item{add_sd}{Logical; if TRUE, add the attribute of \code{sd}.}
 }
 \description{

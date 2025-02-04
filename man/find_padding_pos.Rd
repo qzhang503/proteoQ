@@ -10,8 +10,8 @@ find_padding_pos(this_plex = 10L, TMT_plex = 10L)
 \item{this_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc. before
 padding.}
 
-\item{Numeric;}{the maximum multiplexity of TMT indicated in metadata of
-\code{label_scheme.xlsx}.}
+\item{TMT_plex}{Numeric; the maximum multiplexity of TMT indicated in
+metadata of \code{label_scheme.xlsx}.}
 }
 \description{
 Finds the padding positions of TMT channels.

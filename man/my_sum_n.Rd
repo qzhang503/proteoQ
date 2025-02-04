@@ -10,6 +10,8 @@ my_sum_n(x, n = 3, ...)
 \item{x}{A numeric vector.}
 
 \item{n}{An positive integer.}
+
+\item{...}{Additional arguments for \code{sum}.}
 }
 \description{
 Sums top-n.

@@ -132,7 +132,8 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
 #' @param color A color.
 #' @param sizeRange A range of sizes.
 #' @param cor_method A correlation method.
-#' 
+#' @param digits The number of decimal places for displaying.
+#' @param ... Additional arguments for \code{cor}.
 #' @examples 
 #' \donttest{
 #' my_custom_cor(data, aes(x = col_nm_1, y = col_nm_1))
@@ -198,13 +199,15 @@ my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4
 
 #' Make correlation plots
 #' 
+#' @param cor_method The correlation method.
 #' @param xlab x-axis label.
 #' @param ylab y-axis label.
 #' @param xmin minimal x.
 #' @param xmax maximal x.
 #' @param xbreaks breaks on x-axis.
-#' @param width plot width
-#' @param height plot height
+#' @param width plot width.
+#' @param height plot height.
+#' @param digits The number of decimal places for displaying.
 #' @param ... additional arguments for ggsave.
 #' @inheritParams info_anal
 #' 

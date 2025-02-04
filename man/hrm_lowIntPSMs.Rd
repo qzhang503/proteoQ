@@ -9,6 +9,8 @@ hrm_lowIntPSMs(dfs, key = "pep_seq_modz", yfrac = 0.05, max_n_apexes = 1L)
 \arguments{
 \item{dfs}{A list of PSM tables.}
 
+\item{key}{The name of a column key.}
+
 \item{yfrac}{The minimum percentage of intensity in relative to the base peak
 for considerations.}
 

@@ -18,13 +18,14 @@ hpepLFQ(
   path_ms1 = NULL,
   ms1files = NULL,
   temp_dir = NULL,
+  rt_tol = 25,
   mbr_ret_tol = 25,
-  max_mbr_fold = 20,
   sp_centers_only = FALSE,
   imp_refs = FALSE,
   group_psm_by = "pep_seq_modz",
   group_pep_by = "gene",
-  lfq_mbr = FALSE
+  lfq_mbr = FALSE,
+  max_mbr_fold = 20
 )
 }
 \arguments{
@@ -58,9 +59,9 @@ indicating the sample status.}
 
 \item{temp_dir}{The path to temporary files.}
 
-\item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
+\item{rt_tol}{Error tolerance in retention times.}
 
-\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
+\item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
 \item{sp_centers_only}{Logical; for a side-effect to return only the values
 of species centers.}
@@ -75,8 +76,7 @@ of species centers.}
 LFQ data. Also requires \code{ms1full_[rawfile].rds} at the same file-folder
 level of \code{psmQ[...].txt}.}
 
-\item{df}{A data frame of peptide table, ordered by ascending \code{TMT_Set}.
-Helper of \link{peptideMBR}}
+\item{max_mbr_fold}{Not used. The maximum absolute fold change in MBR.}
 }
 \description{
 No aggregation of data at the same TMT_Set but different LCMS_Injs.

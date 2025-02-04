@@ -28,9 +28,9 @@ LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 
 \item{fdr_type}{The type of FDR control. The default is \code{psm}.}
 
-\item{...}{varargs; not currently used.}
+\item{target_fdr}{A targeted false-discovery rate (FDR).}
 
-\item{target_fder}{A targeted false-discovery rate (FDR).}
+\item{...}{varargs; not currently used.}
 }
 \description{
 Joins MGF data to MSGF outputs.

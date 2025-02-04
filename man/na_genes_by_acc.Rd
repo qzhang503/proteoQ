@@ -11,7 +11,7 @@ na_genes_by_acc(df)
 \arguments{
 \item{df}{A data frame.}
 
-\item{acc_type}{The type of protein accession.}
+\item{acc_lookup}{The lookup of protein accession.}
 }
 \description{
 Coerces NA values in genes by the value of accessions.

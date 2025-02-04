@@ -13,6 +13,8 @@ cleanupPSM(
 )
 }
 \arguments{
+\item{dat_dir}{The working directory.}
+
 \item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed
 for peptides with more than two identifying PSMs. Dixon's method will be
 used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
@@ -28,6 +30,8 @@ the same \code{pep_seq_mod} groups.}
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{parallel}{Not used.}
 }
 \description{
 \code{cleanupPSM} removes PSM outliers after \code{splitPSM_ma} or ,

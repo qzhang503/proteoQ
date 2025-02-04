@@ -11,6 +11,8 @@ check_tmt_mixplexes(df, TMT_levels, TMT_plex)
 \item{df}{A data frame of metadata (e.g., label_scheme_full).}
 
 \item{TMT_levels}{The levels of TMT channels.}
+
+\item{TMT_plex}{The multiplexicity of TMT.}
 }
 \description{
 For example, 16-plex TMT may become 10-plex after Sample_ID removals. whereas

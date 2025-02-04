@@ -24,9 +24,9 @@ mergePep(
 peptide sequences to the most likely proteins by majority votes.}
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds. The
-default is to match the setting in \link{norPSM}.}
+default is to match the setting in \link{normPSM}.}
 
-\item{max_mbr_fold}{The maximum absolute fold change in MBR.}
+\item{max_mbr_fold}{Not used. The maximum absolute fold change in MBR.}
 
 \item{duppeps_repair}{Not currently used (or only with \code{majority}).
   Character string; the method of reparing double-dipping peptide sequences

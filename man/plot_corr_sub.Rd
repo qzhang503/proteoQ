@@ -31,6 +31,8 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
+\item{cor_method}{The correlation method.}
+
 \item{xlab}{x-axis label.}
 
 \item{ylab}{y-axis label.}
@@ -51,9 +53,11 @@ of \code{id} in the \code{call}.}
 
 \item{xbreaks}{breaks on x-axis.}
 
-\item{width}{plot width}
+\item{width}{plot width.}
 
-\item{height}{plot height}
+\item{height}{plot height.}
+
+\item{digits}{The number of decimal places for displaying.}
 
 \item{...}{additional arguments for ggsave.}
 }

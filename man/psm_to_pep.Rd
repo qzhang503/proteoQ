@@ -61,6 +61,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \item{type_sd}{Character string; the type of log2Ratios for SD calculations.
 The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
+\item{engine}{The search engine name.}
+
 \item{lfq_mbr}{Logical; performs MBR for LFQ or not.}
 
 \item{...}{filter_dots.}

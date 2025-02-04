@@ -9,9 +9,9 @@ add_mean_dev(df, label_scheme_fit, filepath)
 \arguments{
 \item{df}{A data frame.}
 
-\item{filepath}{A file path.}
+\item{label_scheme_fit}{A subset of lable_scheme.}
 
-\item{label_schem_fit}{A subset of lable_scheme.}
+\item{filepath}{A file path.}
 }
 \description{
 Adds mean-deviation

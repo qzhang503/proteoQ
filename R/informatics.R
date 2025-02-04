@@ -9,6 +9,7 @@
 #'   automatically. Exemplary values include \code{anal_type = c("PCA",
 #'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 #'   "NMF", "Purge", "Trend", "LDA", ...)}.
+#' @param method_replace_na A method of NA value replacements.
 #' @inheritParams prnHist
 #' @inheritParams prnHM
 #' @inheritParams prnMDS

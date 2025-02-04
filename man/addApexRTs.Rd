@@ -38,8 +38,6 @@ window.}
 \item{min_y}{The minimum peak area.}
 
 \item{n_para}{The number of parallel processes.}
-
-\item{max_n_apexes}{The maximum number of apexes for consideration.}
 }
 \description{
 Inputs are at the levels of one RAW file.

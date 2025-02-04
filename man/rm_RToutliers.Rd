@@ -45,6 +45,18 @@ entries in a \code{df}.}
 
 \item{pep_apex_n}{List of apex lengths (number of MS2 scans).}
 
+\item{mx}{The matrix of X values.}
+
+\item{my}{The matrix of Y values.}
+
+\item{mt}{The matrix of T values.}
+
+\item{ms}{The matrix of Scan values.}
+
+\item{mf}{The matrix of FWHM values.}
+
+\item{mn}{The matrix of N (numbers of scans) values.}
+
 \item{qt_rt}{The quantile for considering retention-time outliers.}
 
 \item{ok_unv}{Logical; is the universe ready or need to be compiled.}

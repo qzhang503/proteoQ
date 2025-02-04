@@ -17,9 +17,17 @@ hparse_fasta(
 \arguments{
 \item{df_sub}{An input data frame with a single type of protein accession.}
 
-\item{fasta}{A fasta database.}
+\item{fasta_db}{FASTA databases}
 
-\item{warns}{Logical; if TRUE, show warning message(s).}
+\item{pat_uni_acc}{Patterns of Uniprot accessions.}
+
+\item{pat_uni_id}{Pattern of Uniprot IDs.}
+
+\item{pat_ref_acc}{Patterns of RefSeq accessions.}
+
+\item{fasta}{Names of FASTA database.}
+
+\item{warns}{The type of warning.}
 }
 \description{
 NA genes are replaced with prot_acc.

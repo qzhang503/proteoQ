@@ -25,6 +25,8 @@ entries in PSM tables with the number of identifying PSMs smaller than
 \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 protein entries in peptide tables with the number of identifying peptides
 smaller than \code{min_n} will be replaced with NA.}
+
+\item{rm_allna}{Logical; remove all NA values or not.}
 }
 \description{
 \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to

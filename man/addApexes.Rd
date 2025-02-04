@@ -20,6 +20,8 @@ addApexes(
 
 \item{mzs}{A vector of m-over-z values for PSMs.}
 
+\item{trs}{MS1 trace data.}
+
 \item{gap_bf}{A leading gap of maximum allowance in retention times between
 an MS2 scan and a peak apex.}
 

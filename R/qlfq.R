@@ -159,7 +159,6 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
 #' @param path_ms1 The file path to \code{ms1full_.rds}.
 #' @param from The starting point for calculating the bin indexes of masses.
 #' @param step A step size in mass for binning.
-#' @param max_n_apexes The maximum number of apexes for consideration.
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
 #' @param rt_size The width of each LC retention times in seconds.
@@ -254,6 +253,7 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
 #'
 #' @param rts A vector of retention times at MS2 events (pep_ret_range).
 #' @param mzs A vector of m-over-z values for PSMs.
+#' @param trs MS1 trace data.
 #' @param gap_bf A leading gap of maximum allowance in retention times between
 #'   an MS2 scan and a peak apex.
 #' @param gap_af A following gap of maximum allowance in retention times between
@@ -395,9 +395,6 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
 #' just like regular single-sample LFQ. The log2Ratios will be later calculated
 #' with \link{calcLFQPepNums} that are based on intensity values.
 #'
-#' @param df A data frame of peptide table, ordered by ascending \code{TMT_Set}.
-#'   Helper of \link{peptideMBR}
-#'
 #' @param ms1files The names of MS1 data files.
 #' @param path_ms1 The path to MS1 data files.
 #' @param temp_dir The path to temporary files.
@@ -414,8 +411,9 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
 #' @param dfs Lists of peptide tables in correspondence to \code{filelist}.
 #' @param df_sps A look-up table between peptide sequences and species.
 #' @param prot_spec_counts A data frame of protein spectrum counts.
+#' @param rt_tol Error tolerance in retention times.
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
-#' @param max_mbr_fold The maximum absolute fold change in MBR.
+#' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param dat_dir The working directory.
 #' @param sp_centers_only Logical; for a side-effect to return only the values
 #'   of species centers.
@@ -427,10 +425,10 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
                      are_refs, are_smpls, 
                      dfs = NULL, df_sps = NULL, prot_spec_counts = NULL, 
                      dat_dir = NULL, path_ms1 = NULL, ms1files = NULL, 
-                     temp_dir = NULL, mbr_ret_tol = 25, max_mbr_fold = 20, 
+                     temp_dir = NULL, rt_tol = 25, mbr_ret_tol = 25, 
                      sp_centers_only = FALSE, imp_refs = FALSE, 
                      group_psm_by = "pep_seq_modz", group_pep_by = "gene", 
-                     lfq_mbr = FALSE)
+                     lfq_mbr = FALSE, max_mbr_fold = 20)
 {
   if ((len <- length(basenames)) < 2L) {
     warning("Requires at least two files for MBR.")
@@ -461,12 +459,14 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     step  <- 1E-5
   }
   
+  message("Starting LFQ.")
+  
   ## (1) group-split of MS1 RAWs corresponding to basenames (peptide tables)
   ms1grps <- sep_mbrfiles(
     b_nms = basenames, dat_dir = dat_dir, 
     ms1files = ms1files, type = "calibms1full")
   
-  ## (2) find species centers
+  ## (2) find species centers (based on the tentative apexes)
   list_cols <- 
     c("pep_apex_ps", "pep_apex_ts", "pep_apex_xs", "pep_apex_ys", 
       "pep_apex_fwhms", "pep_apex_ns")
@@ -476,7 +476,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   
   dfx <- lapply(dfs, function (df) {
     df <- df[, cols]
-    df <- df[with(df, !is.na(pep_tot_int)), ]
+    # df <- df[with(df, !is.na(pep_tot_int)), ]
     # df <- df[!duplicated(df$pep_seq_modz), ]
     
     df[list_cols] <- lapply(list_cols, function (col) {
@@ -516,20 +516,14 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   # mbr_fwhms <- colMeans(fmat, na.rm = TRUE)
   # mbr_ns    <- colMeans(nmat, na.rm = TRUE)
   
-  # may also obtain contours for `are_smpls` here
-  
-  mts <- match(mbr_peps, df_sps$pep_seq_modz) # should contain no NA
-  if (FALSE && length(bads <- which(is.na(mts)))) {
+  mbr_rets <- 
+    fillMBRnaRTs(mbr_rets = mbr_rets, mbr_peps = mbr_peps, dat_dir = dat_dir) 
+
+  # should contain no NA matches since df_sps$pep_seq_modz is complete
+  if (any(is.na(mts <- match(mbr_peps, df_sps$pep_seq_modz)))) {
     stop("Developer: check for droppings of peptide entries.")
-    # mts  <- mts[-bads]
-    # mbr_peps  <- mbr_peps[-bads]
-    # mbr_mzs   <- mbr_mzs[-bads]
-    # mbr_ys    <- mbr_ys[-bads]
-    # mbr_rets  <- mbr_rets[-bads]
-    # mbr_fwhms <- mbr_fwhms[-bads]
-    # mbr_ns    <- mbr_ns[-bads]
   }
-  mbr_sps    <- df_sps$species[mts]
+  mbr_sps    <- df_sps[["species"]][mts]
   sp_centers <- find_species_centers2(
     ymat = ymat, are_refs = are_refs, are_smpls = are_smpls, sps = mbr_sps)
   mbr_sps    <- match(mbr_sps, names(sp_centers)) # convert to integers
@@ -543,6 +537,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   }
   
   ## (3) optional: make spectrum-count matrix
+  message("  Adding spectrum-count results.")
   cmat <- local({
     cmat <- matrix(rep_len(NA_integer_, prod(dim(ymat))), nrow = nrow(ymat))
     colnames(cmat) <- mbr_peps
@@ -569,7 +564,8 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   })
   rm(list = c("mats", "mts"))
   
-  ## (4) local MBR patterns
+  ## (4) extract local MBR patterns
+  message("  Extracting local apex patterns.")
   matss <- makeLFQXYTS(
     pep_seq_modzs  = lapply(dfx, `[[`, "pep_seq_modz"), 
     pep_exp_mzs    = lapply(dfx, `[[`, "pep_apex_xs"), 
@@ -584,15 +580,17 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   tsmat <- matss[["t"]]
   ssmat <- matss[["s"]]
   fsmat <- matss[["f"]]
-  nsmat <- matss[["n"]] # not to filter by n: many MS1s without MS2s -> large n
+  nsmat <- matss[["n"]]
   rm(list = c("dfx", "matss"))
   
   ###
-  # each column -> any > species-specific contour -> rematch
+  # TODO: each column -> any > species-specific contour -> rematch
   ###
   
   ## (4) MBR
   if (lfq_mbr) {
+    message("  Extracting MBR data.")
+    
     if ((n_cores <- min(parallel::detectCores(), len)) > 2L) {
       cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
       ans_mbr <- parallel::clusterMap(
@@ -641,11 +639,13 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   }
 
   ## (5) LFQ
+  message("  Executing LFQ.")
+  
   out <- pepLFQ(
     basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
     xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, cmat = cmat, 
     mbr_peps = mbr_peps, mbr_sps = mbr_sps, sp_centers = sp_centers, 
-    mbr_ret_tol = mbr_ret_tol, step = 2E-3)
+    rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, step = 2E-3)
   yout <- do.call(cbind, out[["y"]])
   tout <- do.call(cbind, out[["t"]])
   sout <- do.call(cbind, out[["s"]])
@@ -657,6 +657,8 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   
   ## (6) optional: handle missing reference values
   if (imp_refs && any(are_refs) && !identical(are_refs, are_smpls)) {
+    message("  Handling missing reference values.")
+    
     yvs <- colMeans(yout[are_refs, , drop = FALSE], na.rm = TRUE)
     
     if (length(i_narefs <- which(is.nan(yvs)))) {
@@ -668,70 +670,187 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     }
   }
   
-  ## (7) update dfs
-  for (i in seq_along(dfs)) {
-    dfi <- dfs[[i]]
+  ## (7) outputs
+  out <- vector("list", nrow(yout))
+  
+  for (i in seq_along(out)) {
     yda <- yout[i, ]
     tda <- tout[i, ]
     sda <- sout[i, ]
+    # rows <- !is.na(yda)
+
+    out[[i]] <- outi <- data.frame(
+      pep_seq_modz  = mbr_peps, 
+      pep_apex_ret  = tda, 
+      pep_apex_scan = sda, 
+      pep_exp_mz    = mbr_mzs, 
+      pep_tot_int   = yda)
     
-    mts <- match(dfi$pep_seq_modz, mbr_peps)
-    oks <- which(!is.na(mts)) # NA matches at is.na(dfi$pep_tot_int)
-    mts <- mts[oks]
-    dfi$pep_tot_int[oks]   <- dfi$I000[oks] <- dfi$N_I000[oks] <- yda[mts]
-    dfi$pep_apex_ret[oks]  <- tda[mts]
-    dfi$pep_apex_scan[oks] <- sda[mts]
-    
-    dfs[[i]] <- dfi
+    readr::write_tsv(
+      outi, file.path(dat_dir, "Peptide/cache", paste0("MBR_", basenames[[i]])))
   }
   
   ###
   # need to exclude: the same peak to different peptides???
   ###
+
+  message("Completed LFQ.")
   
-  attr(dfs, "sp_centers") <- sp_centers
+  attr(out, "sp_centers") <- sp_centers
   
-  dfs
+  out
+}
+
+
+#' Add MBR peptide intensities
+#' 
+#' @param file A file name with prepending path to a peptide table.
+#' @param pep_tbl A data frame corresponding to \code{file}.
+#' @param dat_dir A working directory.
+#' @inheritParams normPSM
+addMBRpeps <- function (file, pep_tbl = NULL, dat_dir, group_psm_by = "pep_seq_mod")
+{
+  base_name <- basename(file)
+  mbr_file  <- file.path(dat_dir, "Peptide/cache", paste0("MBR_", base_name))
+  
+  cols <- c("pep_seq_modz", "pep_seq_mod", "pep_seq", "pep_exp_mz", "pep_exp_z", 
+            "pep_apex_ret", "pep_apex_scan", "pep_tot_int", "pep_score")
+  
+  if (is.null(pep_tbl)) {
+    pep_tbl <- file |>
+      readr::read_tsv(col_types = get_col_types(), show_col_types = FALSE) |> 
+      suppressWarnings()
+  }
+  
+  # is.na(pep_apex_ret): no MBR
+  # is.na(pep_score): both MBR and no MBR
+  
+  df <- readr::read_tsv(mbr_file) |> 
+    dplyr::left_join(pep_tbl[, c("pep_seq_modz", "pep_score")], 
+                     by = "pep_seq_modz") |>
+    tidyr::separate(pep_seq_modz, into = c("pep_seq_mod", "pep_exp_z"), 
+                    sep = "@", remove = FALSE) |>
+    dplyr::mutate(pep_seq = gsub("^[\\^_~]", "", pep_seq_mod), 
+                  pep_seq = gsub("[\\^_~]$", "", pep_seq), 
+                  pep_seq = toupper(pep_seq), 
+                  pep_exp_z = as.integer(pep_exp_z))
+  
+  # for SD calculations
+  rows <- is.na(df$pep_apex_ret)
+  df   <- df[!rows, ]
+  
+  if (!all(cols %in% names(df))) {
+    stop("Developer: missing columns.")
+  }
+  
+  # (2) add `pep_ret_sd`
+  df <- df |> 
+    dplyr::group_by_at("pep_seq_mod") |> 
+    dplyr::mutate(N = dplyr::n())
+  
+  rows <- df$N == 1L
+  df0  <- df[rows, ]
+  df   <- df[!rows, ]
+  df0$N <- df$N <- NULL
+  df0$pep_ret_sd <- 0
+  
+  sds <- calc_pep_retsd(df, group_psm_by = "pep_seq_mod")
+  df  <- sds |>
+    dplyr::left_join(df, by = "pep_seq_mod")
+  df <- df[, names(df0)]
+  
+  # ASSEGTIPQVQR; 636.8285; partial peak caused by 6 ppm in ms1 tracing; need 10 ppm
+  # re-exam large differences in MBR, increase tracing tolerance to 10 ppm
+  
+  if (FALSE) {
+    out_cols <- c("pep_seq_mod", "pep_seq", "pep_tot_int", "pep_apex_ret", "pep_apex_scan")
+    list(pep_tbl = pep_tbl, mbr0 = df0[, out_cols], mbr1 = df)
+  }
+  
+  # (3) delay: pep_seq_modz -> pep_seq_mod
+  if (FALSE) {
+    mbr <- groupMZPepZ(df, group_psm_by = group_psm_by)
+  }
+  else {
+    mbr <- df[, c("pep_seq_modz", "pep_seq_mod", "pep_seq", "pep_tot_int", 
+                  "pep_apex_ret", "pep_apex_scan")]
+  }
+  
+  # some pep_seq_mod in drt0[, names(mbr)] can be in mbr
+  mbr <- dplyr::bind_rows(df0[, names(mbr)], mbr)
+  out_name <- file.path(dat_dir, "Peptide/cache", paste0("MBRpeps_", base_name))
+  readr::write_tsv(mbr, out_name)
+  
+  # (4) side effect to return the Peptide.txt
+  pep_tbl
+}
+
+
+#' Fill NA retention times with the MS2 triggering retention times
+#' 
+#' To obtain a reference point for reassess apexes and MBR.
+#' 
+#' @param mbr_rets A vector of retention times.
+#' @param mbr_peps A vector of \code{pep_seq_modz}.
+#' @param dat_dir The working directory.
+fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir) 
+{
+  if (!length(nas <- which(is.nan(mbr_rets)))) {
+    return(mbr_rets)
+  }
+  
+  peps_na  <- mbr_peps[nas]
+  filelist <- list.files(
+    path = file.path(dat_dir, "PSM"), pattern = "_PSM_N\\.txt$", full.names = TRUE)
+  
+  if (!(n_files <- length(filelist))) {
+    stop("Files of \"_PSM_N.txt\" not found.")
+  }
+  
+  df <- lapply(filelist, function (x) {
+    df <- readr::read_tsv(
+      x, col_types = get_col_types(), show_col_types = FALSE) |> 
+      suppressWarnings()
+    
+    if (!"pep_seq_modz" %in% names(df)) {
+      df[["pep_seq_modz"]] <- paste0(df[["pep_seq_mod"]], "@", df[["pep_exp_z"]])
+    }
+    
+    df <- df[, c("pep_seq_modz", "pep_ret_range")]
+    df <- df[with(df, df[["pep_seq_modz"]] %in% peps_na), ]
+  }) |>
+    dplyr::bind_rows() |>
+    dplyr::group_by(pep_seq_modz) |>
+    dplyr::summarise(rt = median(pep_ret_range))
+  
+  mbr_rets[nas] <- df[["rt"]][match(peps_na, df[["pep_seq_modz"]])]
+  
+  mbr_rets
 }
 
 
 #' LFQ of peptides
 #'
-#' @param base_name The base name of a peptide table file
+#' @param basenames The base names of a peptide table files
 #'   (\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).
-#' @param ms1files A list of file names of retention-time calibrated RAW MS1
-#'   data corresponding to the peptide table at \code{base_name} (More than one
-#'   file if with analyte pre-fractionation for a sample).
-#' @param xvs A vector of X (m-over-z) values under the peptide table at the
-#'   \code{base_name}. The length is the number of peptides in the universe. NA
-#'   values correspond to peptides (\code{pep_seq_modz}) that are not present in
-#'   the current peptide table but found in others.
-#' @param yvs A vector of apex intensities.
-#' @param tvs A vector of apex retention times.
-#' @param svs A vector of apex scan numbers.
-#' @param cvs A vector of spectrum counts.
-#' @param is_ref Logical; is reference or not.
-#' @param is_smpl Logical; is sample or not.
+#' @param are_refs Logical; are references or not.
+#' @param are_smpls Logical; are samples or not.
+#' @param xsmat A matrix of m-over-z values.
+#' @param ysmat A matrix of apex intensities.
+#' @param tsmat A matrix of apex retention times.
+#' @param ssmat A matrix of apex scan numbers.
+#' @param cmat A matrix of spectrum counts.
 #' @param mbr_peps A vector of \code{pep_seq_modz} sequences in the universe.
-#' @param mbr_ys A vector of intensity values in the universe (sample average).
-#' @param mbr_rets A vector of retention times in the universe (sample average).
 #' @param mbr_sps A vector of peptide species in the universe.
-#' @param mbr_mzs A vector of m-over-z values in the universe (sample average).
 #' @param sp_centers The centers of log2FC for each species; names: species,
 #'   values: log2FC.
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
-#' @param max_mbr_fold The maximum absolute fold change in MBR.
 #' @param step The retention-time error in \code{ppm / 1e6}.
-#' @param gap A gap in retention-time window in seconds for finding gates in the
-#'   Y values of LC. The gap value serves as a margin to trace out a whole peak
-#'   with its apex within the \code{mbr_ret_tol}.
-#' @param min_y The cut-off of intensity values in MBR.
-#' @param yco The cut-off in Y-values.
-#' @param fwhm_co The cut-off in FWHM values.
-#' @param dat_dir The working data directory.
+#' @param err_log2r Not yet used. Error tolerance in log2FC.
+#' @param rt_tol Error tolerance in retention times.
 pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
-                    cmat, mbr_peps, mbr_sps, sp_centers, 
-                    mbr_ret_tol = 25, step = 2E-3, err_log2r = .25, rt_tol = 15)
+                    cmat, mbr_peps, mbr_sps, sp_centers, rt_tol = 25, # was 15
+                    mbr_ret_tol = 25, step = 2E-3, err_log2r = .25)
   
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
@@ -743,7 +862,10 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   cents[is.na(cents)] <- cent0
   
   yout <- tout <- sout <- 
-    rep_len(list(vector("numeric", nrow(tsmat))), n_col <- ncol(tsmat))
+    rep_len(list(vector("numeric", n_row <- nrow(tsmat))), n_col <- ncol(tsmat))
+  
+  null_dbl <- rep_len(NA_real_, n_row)
+  null_int <- rep_len(NA_integer_, n_row)
 
   for (i in 1:n_col) {
     ## (1) collapse bins of T, Y and S values
@@ -755,7 +877,17 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     unv  <- ans[["u"]]
     spc  <- cents[[i]]
     
-    if ((nc <- ncol(tmat)) == 1L) {
+    nc <- ncol(tmat)
+    
+    if (!nc) {
+      yout[[i]] <- null_dbl
+      tout[[i]] <- null_dbl
+      sout[[i]] <- null_int
+      
+      next
+    }
+    
+    if (nc == 1L) {
       yout[[i]] <- ymat[, 1]
       tout[[i]] <- tmat[, 1]
       sout[[i]] <- smat[, 1]
@@ -775,7 +907,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
         smat[ibads, j] <- NA_real_
       }
     }
-    
+
     ## (3) calculate log2FCs
     ys_smpls <- ymat[are_smpls, , drop = FALSE]
     ys_refs  <- ymat[are_refs,  , drop = FALSE]
@@ -1032,6 +1164,7 @@ saddMBR <- function (base_name, ms1files, row_id = 1L,
     rng     <- .Internal(which(tss >= (mbr_ret - gap) & tss <= (mbr_ret + gap)))
     xys     <- 
       extract_mbry(xs = xss[rng], ys = yss[rng], mbr_mz = mbr_mz, step = step)
+    if (length(xys) == 1L && is.na(xys)) { next }
     yhats   <- xys[["y"]]
     if (all(is.na(yhats))) { next }
     xhats   <- xys[["x"]]

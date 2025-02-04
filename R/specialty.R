@@ -1,5 +1,6 @@
 #' TMT labeling efficiency
 #' 
+#' @param corrected_int Logical; uses corrected intensities or not.
 #' @import dplyr ggplot2
 #' @inheritParams load_expts
 #' @inheritParams splitPSM_ma

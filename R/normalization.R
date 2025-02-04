@@ -173,7 +173,7 @@ center_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
 #' Adds mean-deviation
 #' 
 #' @param df A data frame.
-#' @param label_schem_fit A subset of lable_scheme.
+#' @param label_scheme_fit A subset of lable_scheme.
 #' @param filepath A file path.
 add_mean_dev <- function (df, label_scheme_fit, filepath) 
 {

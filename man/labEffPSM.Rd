@@ -72,6 +72,8 @@ to the PSM reports. Note that the choice of \code{none} is only for
 convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
+\item{corrected_int}{Logical; uses corrected intensities or not.}
+
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
 LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 

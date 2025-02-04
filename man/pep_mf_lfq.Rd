@@ -15,6 +15,8 @@ pep_mf_lfq(
 \arguments{
 \item{label_scheme}{Experiment summary}
 
+\item{omit_single_lfq}{Logical; omit entries of single LFQ measures or not.}
+
 \item{use_maxlfq}{Logical; use MaxLFQ values or not.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
