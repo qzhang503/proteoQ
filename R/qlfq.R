@@ -501,6 +501,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   
   dfx <- lapply(dfs, function (df) {
     df <- df[, cols]
+    # need `fillMBRnaRTs` if no filetration by `pep_tot_int`
     # df <- df[with(df, !is.na(pep_tot_int)), ]
     # df <- df[!duplicated(df$pep_seq_modz), ]
   })
@@ -662,9 +663,6 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
 
   ## (5) LFQ
   message("  Executing LFQ.")
-  
-  # also need the original log2FC, no need to update if it is closer than the best from the local alignment
-  # pass ymat...
   
   out <- pepLFQ(
     basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
@@ -892,12 +890,9 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
 
-  # cent0 <- sp_centers[names(sp_centers) == new_na_species]
-  cents <- sp_centers[mbr_sps]
-  # cents[is.na(cents)] <- cent0
-  
   # distances of the reference log2FCs from the "first pass" to cents
-  log_ds <- calc_mat_log2s_to_refs(ymat, are_smpls, are_refs) - cents
+  cents  <- sp_centers[mbr_sps]
+  log_ds <- abs(calc_mat_log2s_to_refs(ymat, are_smpls, are_refs) - cents)
   
   yout <- tout <- sout <- 
     rep_len(list(vector("numeric", n_row <- nrow(tsmat))), n_col <- ncol(tsmat))
