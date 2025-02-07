@@ -4,7 +4,14 @@
 \alias{find_species_centers2}
 \title{Finds the data center of log2FC by species and samples}
 \usage{
-find_species_centers2(ymat, are_refs = NULL, are_smpls = NULL, sps)
+find_species_centers2(
+  ymat,
+  are_refs = NULL,
+  are_smpls = NULL,
+  sps,
+  new_na_species = ".other",
+  na_species_by_pri = FALSE
+)
 }
 \arguments{
 \item{ymat}{An intensity matrix.}
@@ -14,6 +21,11 @@ find_species_centers2(ymat, are_refs = NULL, are_smpls = NULL, sps)
 \item{are_smpls}{A logical vector indicating reference status.}
 
 \item{sps}{The species values corresponding the column peptides.}
+
+\item{new_na_species}{A replace value for NA species.}
+
+\item{na_species_by_pri}{Logical; if TRUE, use the center of the primary
+species for NA species.}
 }
 \description{
 Input matrix: columns, peptides; rows, samples.

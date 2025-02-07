@@ -9,7 +9,7 @@ spreadPepNums(
   dat_dir = NULL,
   basenames,
   tmt_plex = 0L,
-  ok_mbr = FALSE,
+  ok_lfq = FALSE,
   group_psm_by = "pep_seq_mod",
   group_pep_by = "gene",
   engine = "mz",
@@ -26,7 +26,7 @@ and \code{LCMS_Injection}.}
 
 \item{tmt_plex}{The multiplicity of TMT; zero for LFQ.}
 
-\item{ok_mbr}{Logical Capable of MBR or not.}
+\item{ok_lfq}{Logical Capable of LFQ or not.}
 
 \item{group_psm_by}{Group PSMs by.}
 

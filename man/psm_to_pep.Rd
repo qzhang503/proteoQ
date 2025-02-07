@@ -16,7 +16,6 @@ psm_to_pep(
   rm_allna = FALSE,
   type_sd = "log2_R",
   engine = "mz",
-  lfq_mbr = FALSE,
   ...
 )
 }
@@ -63,9 +62,9 @@ The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
 \item{engine}{The search engine name.}
 
-\item{lfq_mbr}{Logical; performs MBR for LFQ or not.}
-
 \item{...}{filter_dots.}
+
+\item{ok_lfq}{Logical; performs LFQ or not.}
 }
 \description{
 Helper of PSM2Pep

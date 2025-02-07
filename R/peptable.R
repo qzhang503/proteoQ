@@ -963,7 +963,7 @@ impRefNA <- function (df, cols_ref, cols_smpl, refChannels,
     stop("Column `species` not found.")
   }
   
-  df$species[is.na(df$species)] <- ""
+  # df$species[is.na(df$species)] <- ".other"
   
   empties <- rowSums(is.na(df[, cols_ref, drop = FALSE])) == length(cols_ref)
   if (!length(empties)) { return(df) }
@@ -1044,14 +1044,19 @@ find_species_centers <- function (df, refChannels, cols_smpl)
 
 
 #' Finds the data center of log2FC by species and samples
-#' 
+#'
 #' Input matrix: columns, peptides; rows, samples.
-#' 
+#'
 #' @param ymat An intensity matrix.
 #' @param are_refs A logical vector indicating reference status.
 #' @param are_smpls A logical vector indicating reference status.
 #' @param sps The species values corresponding the column peptides.
-find_species_centers2 <- function (ymat, are_refs = NULL, are_smpls = NULL, sps)
+#' @param new_na_species A replace value for NA species.
+#' @param na_species_by_pri Logical; if TRUE, use the center of the primary
+#'   species for NA species.
+find_species_centers2 <- function (ymat, are_refs = NULL, are_smpls = NULL, sps, 
+                                   new_na_species = ".other", 
+                                   na_species_by_pri = FALSE)
 {
   if (!length(are_smpls)) {
     if (all(are_refs)) {
@@ -1072,31 +1077,56 @@ find_species_centers2 <- function (ymat, are_refs = NULL, are_smpls = NULL, sps)
   rmat[is.nan(rmat)] <- NA_real_
   rmat <- log2(rmat)
   
-  # sps <- df_sps$species[match(mbr_peps, df_sps$pep_seq_modz)]
-  nas <- is.na(sps)
-  oks <- which(!nas)
-  nas <- which(nas)
-  rmat0 <- rmat[, nas, drop = FALSE]
-  rmat1 <- rmat[, oks, drop = FALSE]
-  rmats <- split(as.data.frame(t(rmat1)), sps[oks])
-  mvs1  <- sapply(rmats, function (mat) {
+  sps[is.na(sps)] <- new_na_species
+  
+  mvs <- sapply(split(as.data.frame(t(rmat)), sps), function (mat) {
     mean(sapply(mat, median, na.rm = TRUE), na.rm = TRUE)
   })
-  mv0   <- mean(sapply(rmat0, median, na.rm = TRUE), na.rm = TRUE)
   
-  return(mvs <- c(mvs1, mv0))
+  if (na_species_by_pri) {
+    tbl  <- table(sps)
+    imax <- which.max(tbl)
+    mvs[[new_na_species]] <- mvs[[imax]]
+    # tbl  <- table(sps, useNA = "always")
+    # names(tbl)[which(is.na(names(tbl)))] <- ""
+    # imax <- which.max(tbl)
+    # pri  <- names(tbl)[imax] # can be "", and not subset by mvs[pri]
+    # mvs[names(mvs) == ""] <- unname(mvs[names(mvs) == pri])
+  }
+
+  # names(mvs)[names(mvs) == ".other"] <- ""
+  
+  return(mvs)
   
   
   if (FALSE) {
+    tbl  <- table(sps)
+    imax <- which.max(tbl)
+    vmax <- mvs[[imax]]
+    
+    # assume NA species replaced by ".other"
+    ymats <- split(as.data.frame(t(ymat)), sps)
+    rmati <- rmats[[imax]]
+    ymati <- log2(ymats[[imax]])
+    
+    
+    
+    
+    
     ymat0 <- ymat[are_smpls, nas, drop = FALSE]
     ymat1 <- ymat[are_smpls, oks, drop = FALSE]
     ymats <- split(as.data.frame(t(ymat1)), sps[oks])
     
-    # or use the primary species and translate the results 
+    # or use the contour from the primary species and translate the results 
     #  to other species with center offsets
+    
+    
+
     for (i in seq_along(ymats)) { # by species
       rmati <- rmats[[i]]
       ymati <- log2(ymats[[i]])
+      
+      mvs[[i]] - vmax # distance of translating 
       
       for (j in 1:ncol(ymati)) { # by samples
         xvs <- rmati[, j]
@@ -1112,7 +1142,7 @@ find_species_centers2 <- function (ymat, are_refs = NULL, are_smpls = NULL, sps)
           lev <- .02
         }
         else if (nys <= 10000L) {
-          lev <- .01
+          lev <- .02
         }
         else {
           lev <- .10
@@ -1120,17 +1150,24 @@ find_species_centers2 <- function (ymat, are_refs = NULL, are_smpls = NULL, sps)
         
         conts <- 
           grDevices::contourLines(MASS::kde2d(xvs, yvs, n = 50), levels = lev)
-        cont  <- conts[[which.max(lengths(lapply(conts, `[[`, "x")))]]
+        cont1 <- conts[[which.max(lengths(lapply(conts, `[[`, "x")))]]
         
         # outliers
-        okps <- point_in_polygon(xvs, yvs, cont$x, cont$y)
+        okps <- point_in_polygon(xvs, yvs, cont1$x, cont1$y)
         xos  <- xvs[!okps]
         yos  <- yvs[!okps]
         
         if (FALSE) {
-          plot(xos, yos, xlab = "log2FC", ylab = "I")
-          points(xos, yos, col = "red", pch = 19)
-          lines(cont$x, cont$y, col = "blue")
+          ggplot() + 
+            geom_point(data = data.frame(x = xvs, y = yvs), 
+                       mapping = aes(y = y, x = x), size = .1) + 
+            geom_polygon(data = data.frame(x = cont1$x, y = cont1$y), 
+                         mapping = aes(y = y, x = x), 
+                         size = .1, fill = "red", alpha = .5)
+          
+          ggplot() +
+            geom_histogram(data = data.frame(value = xvs), aes(x = value, y = ..count..),
+                           color = "white", alpha = .5, binwidth = .05, size = .1)
         }
       }
     }
@@ -1285,14 +1322,14 @@ calcLFQPepInts <- function (df, filelist, group_psm_by)
 #'   and \code{LCMS_Injection}.
 #' @param dat_dir The working directory.
 #' @param basenames Names of peptide table files.
-#' @param ok_mbr Logical Capable of MBR or not.
+#' @param ok_lfq Logical Capable of LFQ or not.
 #' @param tmt_plex The multiplicity of TMT; zero for LFQ.
 #' @param engine The search engine.
 #' @param group_psm_by Group PSMs by.
 #' @param group_pep_by Groups peptides by.
 #' @param use_spec_counts Logical; use spectrum counts instead or not.
 spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L, 
-                           ok_mbr = FALSE, group_psm_by = "pep_seq_mod", 
+                           ok_lfq = FALSE, group_psm_by = "pep_seq_mod", 
                            group_pep_by = "gene", engine = "mz", 
                            use_spec_counts = FALSE) 
 {
@@ -1365,12 +1402,14 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::arrange(TMT_Set)
   }
   else {
-    if (ok_mbr) {
+    if (ok_lfq) {
       df_mbr <- lapply(basenames, function (file) {
         fi <- paste0("MBRpeps_", file)
         df <- readr::read_tsv(file.path(dat_dir, "Peptide/cache", fi))
-        df$TMT_Set <- as.integer(gsub("^.*TMTset(\\d+).*", "\\1", file))
-        # should first merge LCMS_Inj... 
+        
+        if (!"TMT_Set" %in% names(df)) {
+          df$TMT_Set <- as.integer(gsub("^.*TMTset(\\d+).*", "\\1", file))
+        }
         # df$LCMS_Inj <- as.integer(gsub("^.*TMTset\\d+_LCMSinj(\\d+)_.*$", "\\1", file))
         df
       }) |>
@@ -1393,9 +1432,10 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::arrange(TMT_Set)
   }
   
-  ## (2) add spectrum counts at protein levels
+  ## (2) add spectrum counts at protein levels to the peptide table
   if (!tmt_plex) {
-    rows     <- match(df_num[[group_psm_by]], df[[group_psm_by]])
+    # add column `gene` or `prot_acc`
+    rows   <- match(df_num[[group_psm_by]], df[[group_psm_by]])
     df_num <- dplyr::bind_cols(
       !!group_pep_by := df[rows, ][[group_pep_by]], df_num)
     if (is.factor(df_num[[group_pep_by]])) {
@@ -1925,9 +1965,11 @@ rep_ls_groups <- function (group_ids)
 #' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant.
 #' @param use_mf_pep Logical; if TRUE, uses the peptides.txt from MSFragger.
 #' @param rt_tol Error tolerance in retention times.
+#' @param rt_step The step size in binning retention times.
 #' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param imp_refs Logical; impute missing references or not (yet to be tested
 #'   more).
+#' @param new_na_species A replace value for NA species.
 #' @inheritParams info_anal
 #' @inheritParams normPSM
 #' @inheritParams splitPSM_ma
@@ -1938,10 +1980,11 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      use_duppeps = TRUE, duppeps_repair = "denovo", 
                      cut_points = Inf, omit_single_lfq = FALSE, 
                      use_mq_pep = FALSE, use_mf_pep = FALSE, 
-                     rm_allna = FALSE, rt_tol = 25, mbr_ret_tol = 25, 
-                     max_mbr_fold = 20, 
+                     rm_allna = FALSE, rt_tol = 25, rt_step = 2E-3, 
+                     mbr_ret_tol = 25, max_mbr_fold = 20, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
-                     imp_refs = FALSE, use_spec_counts = FALSE, ...) 
+                     imp_refs = FALSE, use_spec_counts = FALSE, 
+                     new_na_species = ".other", ...) 
 {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1986,11 +2029,11 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
   ok_mbr <- if (ok_lfq && lfq_mbr) { TRUE } else { FALSE }
 
-  if (ok_mbr) {
+  if (ok_lfq) {
     ans_trs  <- find_ms1filepath(dat_dir, pat = "calibms1full", type = 1L)
     path_ms1 <- ans_trs$path_ms1
     ms1files <- ans_trs$ms1files
-    ok_mbr   <- ans_trs$ok_mbr
+    ok_mbr   <- ans_trs$ok_mbr && ok_mbr
   }
   
   if (tmt_plex) {
@@ -2002,12 +2045,17 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     prot_spec_counts <- NULL
   }
   else {
-    prot_spec_counts <- countSpecs(
-      dat_dir = dat_dir, label_scheme_full = label_scheme_full, type = "PSM", 
-      filelist = filelist, basenames = basenames, 
-      set_idxes = set_idxes, injn_idxes = injn_idxes, 
-      group_psm_by = if (engine != "mq") "pep_seq_mod" else "pep_seq", 
-      group_pep_by = group_pep_by)
+    if (FALSE) {
+      prot_spec_counts <- countSpecs(
+        dat_dir = dat_dir, label_scheme_full = label_scheme_full, type = "PSM", 
+        filelist = filelist, basenames = basenames, 
+        set_idxes = set_idxes, injn_idxes = injn_idxes, 
+        group_psm_by = if (engine != "mq") "pep_seq_mod" else "pep_seq", 
+        group_pep_by = group_pep_by)
+    }
+    else {
+      prot_spec_counts <- readr::read_tsv(file.path(dat_dir, "PSM/cache", "prot_spec_counts_indiv.tsv"))
+    }
 
     if (engine == "mascot") {
       message("Use spectrum counts for Mascot LFQ.")
@@ -2026,6 +2074,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     if (!"TMT_Set " %in% nms) { df$TMT_Set <- set_idx }
     if (!"LCMS_Injection" %in% nms) { df$LCMS_Injection <- injn_idx }
     if ("gene" %in% nms) { df$gene <- forcats::fct_na_value_to_level(df$gene) }
+    # handling data splitting by `species`
+    if ("species" %in% nms) { df$species[is.na(df$species)] <- new_na_species }
 
     df
   }, dfs, set_idxes, injn_idxes, SIMPLIFY = FALSE, USE.NAMES = FALSE)
@@ -2054,9 +2104,11 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       df_sps = unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
       prot_spec_counts = prot_spec_counts, 
       dat_dir = dat_dir, path_ms1 = path_ms1, ms1files = ms1files, 
-      temp_dir = temp_dir, rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
+      temp_dir = temp_dir, rt_tol = rt_tol, rt_step = rt_step, 
+      mbr_ret_tol = mbr_ret_tol, 
       group_psm_by = "pep_seq_modz", group_pep_by = group_pep_by, 
-      imp_refs = imp_refs, lfq_mbr = lfq_mbr)
+      imp_refs = imp_refs, lfq_mbr = lfq_mbr, 
+      new_na_species = new_na_species)
     sp_centers <- attr(ans_lfq, "sp_centers", exact = TRUE)
     
     for (i in seq_along(filelist)) {
@@ -2080,13 +2132,13 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   if (tmt_plex) {
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
-      ok_mbr = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+      ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
       engine = engine, use_spec_counts = FALSE)
   }
   else if (engine == "mz") {
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
-      ok_mbr = ok_mbr, group_psm_by = "pep_seq_modz", 
+      ok_lfq = ok_lfq, group_psm_by = "pep_seq_modz", 
       group_pep_by = group_pep_by, 
       engine = engine, use_spec_counts = use_spec_counts)
 
@@ -2118,7 +2170,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       warning("Peptide tables not found for engine:", engine)
       df_num <- spreadPepNums(
         df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
-        ok_mbr = ok_mbr, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+        ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         engine = engine, use_spec_counts = use_spec_counts)
     }
   }
@@ -2128,7 +2180,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     use_spec_counts <- TRUE
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
-      ok_mbr = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+      ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
       engine = engine, use_spec_counts = use_spec_counts)
   }
 
@@ -3204,11 +3256,13 @@ mergePep <- function (
                 rm_allna = rm_allna, 
                 mbr_ret_tol = mbr_ret_tol, 
                 rt_tol = 25, # user accessible later
+                rt_step = 2E-3, 
                 max_mbr_fold = max_mbr_fold, 
                 ret_sd_tol = ret_sd_tol, 
                 rm_ret_outliers = rm_ret_outliers, 
                 use_spec_counts = use_spec_counts, 
                 imp_refs = imp_refs, 
+                new_na_species = ".other", 
                 !!!filter_dots)
   
   if (plot_log2FC_cv) {

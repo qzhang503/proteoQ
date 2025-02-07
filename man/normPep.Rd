@@ -18,12 +18,14 @@ normPep(
   use_mf_pep = FALSE,
   rm_allna = FALSE,
   rt_tol = 25,
+  rt_step = 0.002,
   mbr_ret_tol = 25,
   max_mbr_fold = 20,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
   imp_refs = FALSE,
   use_spec_counts = FALSE,
+  new_na_species = ".other",
   ...
 )
 }
@@ -85,6 +87,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 
 \item{rt_tol}{Error tolerance in retention times.}
 
+\item{rt_step}{The step size in binning retention times.}
+
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
 
 \item{max_mbr_fold}{Not used. The maximum absolute fold change in MBR.}
@@ -102,6 +106,8 @@ more).}
 
 \item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for
 quantitation with Mascot or Mzion outputs.}
+
+\item{new_na_species}{A replace value for NA species.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The

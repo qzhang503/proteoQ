@@ -12,10 +12,14 @@ pepLFQ(
   ysmat,
   tsmat,
   ssmat,
+  ymat,
+  tmat,
+  smat,
   cmat,
   mbr_peps,
   mbr_sps,
   sp_centers,
+  new_na_species = ".other",
   rt_tol = 25,
   mbr_ret_tol = 25,
   step = 0.002,
@@ -38,6 +42,16 @@ pepLFQ(
 
 \item{ssmat}{A matrix of apex scan numbers.}
 
+\item{ymat}{A matrix of (first-pass) apex Y values. The binning of local
+patterns by retention time intervals can have boundary effects by
+separating close retention times into bin indexes \eqn{ge +1} or \eqn{le
+-1}. If the log2FC is by ymat is closer to a species center than newly
+derived log2FC from local patterns, use the Y values from the first pass.}
+
+\item{tmat}{A matrix of (first-pass) apex retention times.}
+
+\item{smat}{A matrix of (first-pass) apex scan numbers.}
+
 \item{cmat}{A matrix of spectrum counts.}
 
 \item{mbr_peps}{A vector of \code{pep_seq_modz} sequences in the universe.}
@@ -47,11 +61,13 @@ pepLFQ(
 \item{sp_centers}{The centers of log2FC for each species; names: species,
 values: log2FC.}
 
+\item{new_na_species}{A replace value for NA species.}
+
 \item{rt_tol}{Error tolerance in retention times.}
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
-\item{step}{The retention-time error in \code{ppm / 1e6}.}
+\item{step}{The step size in binning retention times.}
 
 \item{err_log2r}{Not yet used. Error tolerance in log2FC.}
 }

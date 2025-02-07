@@ -25,6 +25,8 @@ hpepLFQ(
   group_psm_by = "pep_seq_modz",
   group_pep_by = "gene",
   lfq_mbr = FALSE,
+  rt_step = 0.002,
+  new_na_species = ".other",
   max_mbr_fold = 20
 )
 }
@@ -75,6 +77,10 @@ of species centers.}
 \item{lfq_mbr}{Logical; if TRUE, performs match-between-run (MBR) with Mzion
 LFQ data. Also requires \code{ms1full_[rawfile].rds} at the same file-folder
 level of \code{psmQ[...].txt}.}
+
+\item{rt_step}{The step size in binning retention times.}
+
+\item{new_na_species}{A replace value for NA species.}
 
 \item{max_mbr_fold}{Not used. The maximum absolute fold change in MBR.}
 }

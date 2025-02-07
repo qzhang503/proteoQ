@@ -12,7 +12,6 @@ preMZpepLFQ(
   set_idx = 1L,
   injn_idx = 1L,
   TMT_plex = 1L,
-  lfq_mbr = TRUE,
   lfq_ret_tol = 60L,
   rm_allna = FALSE
 )
@@ -44,14 +43,14 @@ as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 
-\item{lfq_mbr}{Logical; performs MBR for LFQ or not.}
-
 \item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
 aggregation of LFQ data.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
+
+\item{preMZpepLFQ}{Logical; performs LFQ or not.}
 }
 \description{
 Pre-processing of Mzion PSM tables

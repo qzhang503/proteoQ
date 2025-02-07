@@ -8,12 +8,12 @@ saddMBR(
   base_name,
   ms1files,
   row_id = 1L,
-  xmat = NULL,
-  ymat = NULL,
-  tmat = NULL,
-  smat = NULL,
-  fmat = NULL,
-  nmat = NULL,
+  xsmat = NULL,
+  ysmat = NULL,
+  tsmat = NULL,
+  ssmat = NULL,
+  fsmat = NULL,
+  nsmat = NULL,
   mbr_mzs,
   mbr_rets,
   dat_dir,
@@ -36,21 +36,21 @@ file if with analyte pre-fractionation for a sample).}
 \item{row_id}{An integer corresponding to \code{base_name}, as well as the
 row number in \code{xmat} etc.}
 
-\item{xmat}{A matrix of X (m-over-z) values under the peptide table at the
+\item{xsmat}{A matrix of X (m-over-z) values under the peptide table at the
 \code{base_name}. The length is the number of peptides in the universe. NA
 values correspond to peptides (\code{pep_seq_modz}) that are not present in
 the current peptide table but found in others. Each cell in the matrix
 contains a list of all possible m-over-z candidates.}
 
-\item{ymat}{A matrix of apex intensities.}
+\item{ysmat}{A matrix of apex intensities.}
 
-\item{tmat}{A matrix of apex retention times.}
+\item{tsmat}{A matrix of apex retention times.}
 
-\item{smat}{A matrix of apex scan numbers.}
+\item{ssmat}{A matrix of apex scan numbers.}
 
-\item{fmat}{A matrix of FWHMs.}
+\item{fsmat}{A matrix of FWHMs.}
 
-\item{nmat}{A matrix of apex width in counts of MS2 scans.}
+\item{nsmat}{A matrix of apex width in counts of MS2 scans.}
 
 \item{mbr_mzs}{A vector of m-over-z values in the universe (sample average).}
 

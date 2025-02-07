@@ -2,7 +2,7 @@
 % Please edit documentation in R/qlfq.R
 \name{calc_mat_sds}
 \alias{calc_mat_sds}
-\title{Calculate SD for matrix data}
+\title{LFQ helper: calculate SD for matrix data}
 \usage{
 calc_mat_sds(mat)
 }
@@ -10,5 +10,5 @@ calc_mat_sds(mat)
 \item{mat}{A data matrix.}
 }
 \description{
-Calculate SD for matrix data
+LFQ helper: calculate SD for matrix data
 }

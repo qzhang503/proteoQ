@@ -4310,7 +4310,7 @@ keep_psm_bestint <- function (dfs)
 
 #' Pre-processing of Mzion PSM tables
 #'
-#' @param lfq_mbr Logical; performs MBR for LFQ or not.
+#' @param preMZpepLFQ Logical; performs LFQ or not.
 #' @param lfq_ret_tol The tolerance of retention time (in seconds) for the
 #'   aggregation of LFQ data.
 #' @inheritParams mcPSM
@@ -4322,7 +4322,7 @@ keep_psm_bestint <- function (dfs)
 preMZpepLFQ <- function(df = NULL, group_psm_by = "pep_seq_mod", 
                         group_pep_by = "prot_acc", dat_dir = NULL, 
                         set_idx = 1L, injn_idx = 1L, TMT_plex = 1L, 
-                        lfq_mbr = TRUE, lfq_ret_tol = 60L, rm_allna = FALSE) 
+                        lfq_ret_tol = 60L, rm_allna = FALSE) 
 {
   if (TMT_plex) {
     stop("Do not anticipate TMT_plex > 0.")
@@ -4534,7 +4534,7 @@ checkmzLFQRT <- function (df)
 #'
 #' Argument \code{injn_idx} does not currently used.
 #'
-#' @param lfq_mbr Logical; performs MBR for LFQ or not.
+#' @param ok_lfq Logical; performs LFQ or not.
 #' @param lfq_ret_tol The tolerance of retention time (in seconds) for the
 #'   aggregation of LFQ data.
 #' @inheritParams mcPSM
@@ -4546,14 +4546,13 @@ checkmzLFQRT <- function (df)
 calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod", 
                            group_pep_by = "prot_acc", dat_dir = NULL, 
                            set_idx = 1L, injn_idx = 1L, TMT_plex = 1L, 
-                           lfq_mbr = TRUE, lfq_ret_tol = 60L, rm_allna = FALSE, 
+                           ok_lfq = TRUE, lfq_ret_tol = 60L, rm_allna = FALSE, 
                            type_sd = "log2_R") 
 {
   df <- preMZpepLFQ(df = df, group_psm_by = group_psm_by, 
                     group_pep_by = group_pep_by, dat_dir = dat_dir, 
                     set_idx = set_idx, injn_idx = injn_idx, TMT_plex = TMT_plex, 
-                    lfq_mbr = lfq_mbr, lfq_ret_tol = lfq_ret_tol, 
-                    rm_allna = rm_allna)
+                    lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna)
   group_psm_by <- attr(df, "group_psm_by", exact = TRUE)
   
   # summarizes log2FC and intensity from the same `set_idx` 
@@ -4565,7 +4564,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
                      remove = FALSE)
     }
     
-    if (lfq_mbr) {
+    if (ok_lfq) {
       cols_lfq <- c("pep_seq_modz", "pep_score", "pep_tot_int", "pep_ret_sd", 
                     "pep_apex_ret", "pep_apex_scan")
       ansmz <- groupMZPSM1(df[, cols_lfq], sdco = 3)
@@ -4575,7 +4574,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
         dplyr::filter(!duplicated(pep_seq_modz)) |>
         dplyr::right_join(ansmz, by = "pep_seq_modz")
     }
-    else {
+    else { # should not incur
       cols_lfq <- c("pep_seq_mod", "pep_seq", "pep_exp_z", "pep_score", 
                     "pep_tot_int", "pep_ret_sd", "pep_apex_ret", 
                     "pep_apex_scan")
@@ -4973,7 +4972,7 @@ calcTMTPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' 
 #' @param file The name of a PSM file.
 #' @param df A PSM table.
-#' @param lfq_mbr Logical; performs MBR for LFQ or not.
+#' @param ok_lfq Logical; performs LFQ or not.
 #' @param engine The search engine name.
 #' @param ... filter_dots.
 #' @inheritParams PSM2Pep
@@ -4986,7 +4985,8 @@ psm_to_pep <- function (file = NULL, df = NULL, dat_dir = NULL,
                         group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                         method_psm_pep = "median", lfq_ret_tol = 60L, 
                         rm_allna = FALSE, type_sd = "log2_R", engine = "mz", 
-                        lfq_mbr = FALSE, ...) 
+                        # ok_lfq = FALSE, 
+                        ...) 
 {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
@@ -5026,7 +5026,7 @@ psm_to_pep <- function (file = NULL, df = NULL, dat_dir = NULL,
       df <- calcLFQPeptide(
         df = df, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx, 
-        TMT_plex = TMT_plex, lfq_mbr = lfq_mbr, lfq_ret_tol = lfq_ret_tol, 
+        TMT_plex = TMT_plex, lfq_ret_tol = lfq_ret_tol, # ok_lfq = ok_lfq, 
         rm_allna = rm_allna, type_sd = type_sd)
     }
     else {
@@ -5170,7 +5170,7 @@ PSM2Pep <- function(method_psm_pep =
     if (exists(".saveCall", envir = rlang::current_env())) {
       if (.saveCall) {
         mget(names(fmls), envir = rlang::current_env(), 
-             inherits = FALSE) |> c(lfq_mbr = lfq_mbr, dots) |> 
+             inherits = FALSE) |> c(dots) |> 
           save_call("PSM2Pep")
       }
     }, add = TRUE)
@@ -5249,20 +5249,18 @@ PSM2Pep <- function(method_psm_pep =
   message("Primary column keys in \"PSM/TMTset1_LCMSinj1_PSM_N.txt\" etc. ", 
           "for \"filter_\" varargs.")
   
-  lfq_mbr  <- match_call_arg(normPSM, lfq_mbr)
-  n_raws   <- length(unique(fraction_scheme$RAW_File))
-  ansmbr   <- find_ms1filepath(dat_dir = dat_dir, pat = "ms1full", type = 0L)
+  mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
+  ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
+  ansmbr <- find_ms1filepath(dat_dir = dat_dir, pat = "ms1full", type = 0L)
   path_ms1 <- ansmbr$path_ms1
-  ok_mbr   <- ansmbr$ok_mbr
-  lfq_mbr  <- if (engine == "mz" && n_files > 1L && lfq_mbr && (!tmt_plex) && 
-                  ok_mbr && (!is.null(path_ms1)) ) { TRUE } else { FALSE }
-  
+  ok_lfq   <- ansmbr$ok_mbr && ok_lfq
+
   ###
   # dfs unique at c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")
   #   only keep one entry for multiple PSMs at the same unique combinations
   ###
   
-  if (lfq_mbr && n_files > 1L) {
+  if (ok_lfq) {
     if (file.exists(fi_datatype <- file.path(path_ms1, "data_type.rds"))) {
       data_type <- qs::qread(fi_datatype)
     }
@@ -5285,7 +5283,9 @@ PSM2Pep <- function(method_psm_pep =
       filelist = basenames, ms1full_files = ms1full_files, 
       dat_dir = dat_dir, path_ms1 = path_ms1, max_n_apexes = max_n_apexes, 
       data_type = data_type)
-    # qs::qsave(dfs, file.path(dat_dir, "df_haddApexRTs_allsets.rds"), preset = "fast")
+    ###
+    qs::qsave(dfs, file.path(dat_dir, "df_haddApexRTs_allsets.rds"), preset = "fast")
+    ###
     
     # (a) raws nested under TMTSet[i]LCMSInj[j]; 
     # (b) pep_n_apexes: 
@@ -5326,7 +5326,9 @@ PSM2Pep <- function(method_psm_pep =
     #  -> one pep_seq_mod at each z
     dfs <- hrm_lowIntPSMs(dfs = dfs, key = "pep_seq_modz", yfrac = .05, 
                           max_n_apexes = 1L)
-    # qs::qsave(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"), preset = "fast")
+    ###
+    qs::qsave(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"), preset = "fast")
+    ###
     # dfs <- qs::qread(file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"))
   }
   else {
@@ -5341,9 +5343,9 @@ PSM2Pep <- function(method_psm_pep =
   }
   
   if (is.null(ms1full_files)) {
-    lfq_mbr <- FALSE
+    # lfq_mbr <- FALSE
   }
-  
+
   ###
   # treat different LCMS_Injections as different samples in LFQ-MBR
   # add Sample_ID (LFQ: one Sample_ID per TMT_set)
@@ -5368,8 +5370,8 @@ PSM2Pep <- function(method_psm_pep =
         dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-        rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-        lfq_mbr = lfq_mbr, ...))
+        rm_allna = rm_allna, type_sd = type_sd, engine = engine, # ok_lfq = ok_lfq, 
+        ...))
     parallel::stopCluster(cl)
   } 
   else {
@@ -5379,8 +5381,8 @@ PSM2Pep <- function(method_psm_pep =
         dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-        rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-        lfq_mbr = lfq_mbr, ...))
+        rm_allna = rm_allna, type_sd = type_sd, engine = engine, # ok_lfq = ok_lfq, 
+        ...))
   }
   
   .saveCall <- TRUE
@@ -5395,10 +5397,8 @@ PSM2Pep <- function(method_psm_pep =
 #' 
 #' @param dfs A list of PSM tables.
 #' @param filelist A file names of PSM tables of TMTSet1_LCMSinj1_PSM_N.txt etc.
-#' @param lfq_mbr Logical; perform LFQ MBR nor not.
 #' @param max_n_apexes The maximum number of apexes for consideration.
-cleanPSMRT_by_sets <- function (dfs = NULL, filelist = NULL, lfq_mbr = TRUE, 
-                                max_n_apexes = 2L)
+cleanPSMRT_by_sets <- function (dfs = NULL, filelist = NULL, max_n_apexes = 2L)
 {
   cols <- c("pep_seq_mod", "pep_exp_mz", "pep_tot_int", "pep_apex_ret", 
             "pep_apex_scan")
@@ -5477,86 +5477,6 @@ add_pep_n_apexes <- function (df, key = "pep_seq_mod", max_n_apexes = 2L)
   }
   
   df
-}
-
-
-#' Helper of adding PSM apexes
-#'
-#' By each PSM file of \code{TMTSet1_LCMSinj1.txt}, \code{TMTSet2_LCMSinj1.txt}
-#' etc.
-#'
-#' @param file A PSM file name, e.g., \code{TMTSet1_LCMSinj1_PSM_N.txt}.
-#' @param dfs A list split of PSM data under the \code{file} at different
-#'   \code{RAW_File}.
-#' @param trace_files The file names of \code{ms1apexes_} corresponding to
-#'   \code{dfs}.
-#' @param fits The models of retention-time fittings corresponding to
-#'   \code{dfs}.
-#' @param dat_dir A working directory.
-#' @param path_ms1 The file path to MS1 data from Mzion.
-#' @param lfq_ret_tol Retention time tolerance for LFQ.
-#' @param ok_mbr Logical; OK to perform MBR or not.
-hadd_psm_apexes <- function (file = NULL, dfs = NULL, trace_files = NULL, 
-                             fits = NULL, dat_dir = NULL, path_ms1 = NULL, 
-                             lfq_ret_tol = 60L, ok_mbr = TRUE)
-{
-  out <- mapply(add_psm_apexes, df = dfs, trace_file = trace_files, 
-                MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1), 
-                SIMPLIFY = FALSE, USE.NAMES = TRUE)
-}
-
-
-#' Add PSM apexes by each \code{RAW_File}.
-#'
-#' @param df A fraction of PSM table, e.g. \code{TMTSet1_LCMSinj1_PSM_N.txt},
-#'   under a single \code{RAW_File}.
-#' @param trace_file A file name of MS1 traces (\code{ms1apexes_[...].rds}).
-#' @param dat_dir A working directory.
-#' @param path_ms1 The path to the data of MS1 traces.
-#' @param cols Column keys
-add_psm_apexes <- 
-  function (df = NULL, trace_file = NULL, dat_dir = NULL, path_ms1 = NULL, 
-            # no need of pep_exp_z since the same pep_seq_mod at 
-            # different pep_exp_mz must have different pep_exp_z?
-            # later to simply the keys in `cols`
-            cols = c("raw_file", "pep_tot_int", "pep_exp_mz", "pep_seq_mod", 
-                     "pep_ret_range", "pep_apex_ret", "pep_scan_num", 
-                     "pep_orig_scan", "pep_apex_scan", "pep_n_apexes"))
-{
-  ## MS1 traces
-  #  level-1: (chimeric) precursors
-  #    level-2: apexes for each precursor
-  trs <- qs::qread(file.path(path_ms1, trace_file))
-  mts <- fastmatch::fmatch(df$pep_orig_scan, trs$orig_scan)
-  # mts <- mts[!is.na(mts)] # shouldn't be any
-  
-  ans  <- df[, cols] |>
-    dplyr::bind_cols(trs[mts, !names(trs) %in% c("orig_scan", "ms_level")])
-  lens <- lengths(ans[["apex_ts"]])
-  rowx <- lens > 1L # with chimeric precursors
-  rows <- !rowx     # with single precursor
-  ans1 <- ans[rows, ]
-  ans1[["apex_ts"]] <- lapply(ans1[["apex_ts"]],  `[[`, 1L) # unlist
-  ans1[["apex_xs"]] <- lapply(ans1[["apex_xs"]],  `[[`, 1L)
-  ans1[["apex_ys"]] <- lapply(ans1[["apex_ys"]],  `[[`, 1L)
-  ans1[["apex_ps"]] <- lapply(ans1[["apex_ps"]],  `[[`, 1L)
-  
-  ansn <- cleanRTChim(df = ans[rowx, ]) # by the "correctness" of `pep_exp_mz`
-  
-  if (FALSE) {
-    lens <- lengths(ansn$apex_ps)
-    rowx <- lens > 3L
-    ansx <- ansn[rowx, ]
-  }
-  
-  ans[rows, ] <- ans1
-  ans[rowx, ] <- ansn
-  
-  nms  <- names(ans)
-  colx <- nms[!nms %in% cols]
-  df[, cols] <- ans[, cols] # identical?
-  
-  df <- dplyr::bind_cols(df, ans[, colx])
 }
 
 
@@ -8755,7 +8675,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
     stop("MGF files not found under ", mgf_path)
   
   if (!file.exists(mgf_file))
-    mzion:::load_mgfs(out_path = dat_dir, 
+    mzion::load_mgfs(out_path = dat_dir, 
                       mgf_path = mgf_path, 
                       min_mass = 200L, max_mass = Inf, 
                       min_ms2mass = 115L, max_ms2mass = 4500L, 
@@ -8772,7 +8692,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
   else
     message("Cached MGF results found: ", mgf_file)
   
-  mgfs <- mzion:::map_raw_n_scan(qs::qread(mgf_file), mgf_path)
+  mgfs <- mzion::map_raw_n_scan(qs::qread(mgf_file), mgf_path)
   mgfs[["raw_file"]] <- gsub("\\.raw$", "", mgfs[["raw_file"]], ignore.case = TRUE)
   mgfs <- split(mgfs, mgfs[["raw_file"]])
   mgf_raws <- names(mgfs)
@@ -8866,7 +8786,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
     df[!grepl("^prot_|^pep_|^psm_", names(df))], )
   
   if (TMT_plex)
-    df <- mzion:::calc_tmtint(df, quant = quant)
+    df <- mzion::calc_tmtint(df, quant = quant)
   
   readr::write_tsv(df, file.path(dat_dir, "psmMSGF.txt"))
   

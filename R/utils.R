@@ -5189,3 +5189,66 @@ add_scan_id <- function (df = NULL, fraction_scheme)
 }
 
 
+#' Split with NA values
+#' 
+#' @param x Data for splitting.
+#' @param f The factor to split against.
+#' @param ty The type of data.
+#' @param replace_na_by A character vector to replace NA values.
+my_split1 <- function (x, f, ty = "trans_matrix", replace_na_by = ".zzz")
+{
+  f[is.na(f)] <- replace_na_by
+  
+  if (ty == "trans_matrix") {
+    x  <- as.data.frame(t(x))
+  }
+  else if (ty == "matrix") {
+    x  <- as.data.frame(x)
+  }
+  
+  xs <- split(x, f)
+  
+  if (keep_na_names <- FALSE) {
+    names(xs)[names(xs) == replace_na_by] <- NA
+  }
+  
+  # to convert back to matrix if needed...
+  
+  xs
+}
+
+
+#' Split with NA values
+#' 
+#' @param x Data for splitting.
+#' @param f The factor to split against.
+#' @param ty The type of data.
+my_split2 <- function (x, f, ty = "trans_matrix")
+{
+  nas <- is.na(f)
+  oks <- which(!nas)
+  nas <- which(nas)
+  
+  if (ty == "trans_matrix") {
+    x  <- as.data.frame(t(x))
+    ty <- "data_frame"
+  }
+  else if (ty == "matrix") {
+    x  <- as.data.frame(x)
+    ty <- "data_frame"
+  }
+  
+  if (ty == "data_frame") {
+    xs <- c(split(x[oks, , drop = FALSE], f[oks]), list(x[nas, , drop = FALSE]))
+  }
+  else if (ty == "vec") {
+    xs <- c(split(x[oks], f[oks]), list(x[nas]))
+  }
+  else {
+    stop("Unknown data type.")
+  }
+
+  xs # data.frame
+}
+
+

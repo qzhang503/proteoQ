@@ -14,5 +14,8 @@ fillMBRnaRTs(mbr_rets, mbr_peps, dat_dir)
 \item{dat_dir}{The working directory.}
 }
 \description{
-To obtain a reference point for reassess apexes and MBR.
+To obtain a reference point for reassess apexes and MBR. NA \code{mbr_rets}
+occur at \code{mbr_peps} with all missing apex retention times (cannot be
+determined in the first pass and \code{pep_tot_int = 0}). No need to call
+this utility if data were filtered by \code{pep_tot_int > 0}.
 }

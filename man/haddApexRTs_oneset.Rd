@@ -12,7 +12,7 @@ haddApexRTs_oneset(
   max_n_apexes = 2L,
   from = 115,
   step = 1e-05,
-  rt_size = 180,
+  rt_size = 240,
   yco = 100,
   min_y = 2e+06,
   n_cores = 1L

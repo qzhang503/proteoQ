@@ -10,8 +10,8 @@ addApexRTs(
   path_ms1,
   from = 115,
   step = 1e-05,
-  rt_size = 180,
-  rt_margin = 180,
+  rt_size = 240,
+  rt_margin = 240,
   yco = 100,
   min_y = 2e+06,
   n_para = 6L
