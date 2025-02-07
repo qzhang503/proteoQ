@@ -2045,7 +2045,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     prot_spec_counts <- NULL
   }
   else {
-    if (FALSE) {
+    if (TRUE) {
       prot_spec_counts <- countSpecs(
         dat_dir = dat_dir, label_scheme_full = label_scheme_full, type = "PSM", 
         filelist = filelist, basenames = basenames, 
