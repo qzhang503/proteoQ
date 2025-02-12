@@ -13,17 +13,7 @@ calc_sd_fcts_psm(
 )
 }
 \arguments{
-\item{df}{The name of a primary data file. By default, it will be determined
-automatically after matching the types of data and analysis with an
-\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
-primary file contains normalized peptide or protein data and is among
-\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
-"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
-require the fields of significance p-values, the \code{df} will be one of
-\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
-"protein_impNA_pVal.txt")}.}
-
-\item{range_log2r}{Numeric vector at length two. The argument specifies the
+\item{df}{A data frame.
 range of the \code{log2FC} for use in the scaling normalization of standard
 deviation across samples. The default is between the 10th and the 90th
 quantiles.}
@@ -33,11 +23,9 @@ range of the \code{intensity} of reporter ions (including \code{I000}) for
 use in the scaling normalization of standard deviation across samples. The
 default is between the 5th and the 95th quantiles.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
-files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+\item{set_idx}{A set index.}
 
-\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
-as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+\item{injn_inx}{A injection index.}
 }
 \description{
 The standard deviations are based on samples under each TMT set and LCMS.

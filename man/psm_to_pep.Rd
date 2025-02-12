@@ -12,7 +12,6 @@ psm_to_pep(
   group_psm_by = "pep_seq",
   group_pep_by = "prot_acc",
   method_psm_pep = "median",
-  lfq_ret_tol = 60L,
   rm_allna = FALSE,
   type_sd = "log2_R",
   engine = "mz",
@@ -43,15 +42,12 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{method_psm_pep}{Character string; the method to summarize the
-\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will 
-be the weight when summarizing \code{log2FC} with various \code{"top_n"} 
-statistics or \code{"weighted_mean"}. The choices of summary statistics for
- LFQ are depreciated at the users' levels.}
-
-\item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
-aggregation of LFQ data.}
+\item{method_psm_pep}{Depreciated. Character string; the method to summarize
+the \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide
+entries. The \code{log10-intensity} of reporter ions at the \code{PSMs}
+levels will be the weight when summarizing \code{log2FC} with various
+\code{"top_n"} statistics or \code{"weighted_mean"}. The choices of summary
+statistics for LFQ are depreciated at the users' levels.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to

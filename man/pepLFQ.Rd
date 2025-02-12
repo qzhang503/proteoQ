@@ -22,7 +22,8 @@ pepLFQ(
   new_na_species = ".other",
   rt_tol = 25,
   mbr_ret_tol = 25,
-  step = 0.002,
+  reference_spec_counts = FALSE,
+  step = 0.005,
   err_log2r = 0.25
 )
 }
@@ -66,6 +67,9 @@ values: log2FC.}
 \item{rt_tol}{Error tolerance in retention times.}
 
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
+
+\item{reference_spec_counts}{Logical; reference protein spectrum counts or
+not.}
 
 \item{step}{The step size in binning retention times.}
 

@@ -18,9 +18,8 @@ normPep(
   use_mf_pep = FALSE,
   rm_allna = FALSE,
   rt_tol = 25,
-  rt_step = 0.002,
+  rt_step = 0.005,
   mbr_ret_tol = 25,
-  max_mbr_fold = 20,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
   imp_refs = FALSE,
@@ -90,8 +89,6 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \item{rt_step}{The step size in binning retention times.}
 
 \item{mbr_ret_tol}{Retention time tolerance (in seconds) for LFQ-MBR.}
-
-\item{max_mbr_fold}{Not used. The maximum absolute fold change in MBR.}
 
 \item{ret_sd_tol}{Depreciated. Numeric; the tolerance in the variance of
 retention time (w.r.t. measures in seconds). The thresholding applies to

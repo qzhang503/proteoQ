@@ -11,13 +11,12 @@ preMZpepLFQ(
   dat_dir = NULL,
   set_idx = 1L,
   injn_idx = 1L,
-  TMT_plex = 1L,
-  lfq_ret_tol = 60L,
+  tmt_plex = 1L,
   rm_allna = FALSE
 )
 }
 \arguments{
-\item{df}{A data frame containing the PSM table from database searches.}
+\item{df}{A data frame.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
@@ -32,25 +31,17 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{dat_dir}{A character string to the working directory. The default is to
-match the value under the global environment.}
+\item{dat_dir}{A working directory.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
-files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+\item{set_idx}{A set index.}
 
-\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
-as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
-
-\item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
-
-\item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
-aggregation of LFQ data.}
+\item{injn_idx}{An injection index.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
-\item{preMZpepLFQ}{Logical; performs LFQ or not.}
+\item{TMT_plex}{The multiplexity of TMT.}
 }
 \description{
 Pre-processing of Mzion PSM tables

@@ -4,7 +4,7 @@
 \alias{rm_apexrt_outliers}
 \title{Remove PSM retention outliers}
 \usage{
-rm_apexrt_outliers(df = NULL, rt_tol = 120, y_tol = 0.01)
+rm_apexrt_outliers(df = NULL, rt_tol = 240, y_tol = 0.01)
 }
 \arguments{
 \item{df}{A PSM table at a TMTset[i]LCMSinj[j].}

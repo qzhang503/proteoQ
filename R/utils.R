@@ -2747,10 +2747,16 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE)
 #' 
 #' The standard deviations are based on samples under each TMT set and LCMS.
 #' 
-#' @inheritParams info_anal
-#' @inheritParams standPep
-#' @inheritParams channelInfo
-#' @inheritParams calcTMTPeptide
+#' @param df A data frame.
+#'  range of the \code{log2FC} for use in the scaling normalization of standard
+#'  deviation across samples. The default is between the 10th and the 90th
+#'  quantiles.
+#'@param range_int Numeric vector at length two. The argument specifies the
+#'  range of the \code{intensity} of reporter ions (including \code{I000}) for
+#'  use in the scaling normalization of standard deviation across samples. The
+#'  default is between the 5th and the 95th quantiles.
+#' @param set_idx A set index.
+#' @param injn_inx A injection index.
 calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), 
                               set_idx, injn_idx) 
 {

@@ -1,7 +1,7 @@
 #' Helper of adding apex retention times for all PSM tables
 #'
 #' Inputs are at the levels of all TMTSet_LCMSInj.txt files.
-#' 
+#'
 #' @param filelist The file names of PSM tables, e.g.,
 #'   TMTSet1_LCMSinj1_PSM_N.txt etc.
 #' @param ms1full_files The file names of \code{ms1full_.rds}.
@@ -9,8 +9,14 @@
 #' @param path_ms1 The file path to \code{ms1full_.rds}.
 #' @param max_n_apexes The maximum number of apexes for consideration.
 #' @param data_type The type of MS data.
+#' @param rt_size The width of each LC retention times in seconds. Made big, as
+#'   an apex RT can be several minutes earlier to the reference RT (of an 
+#'   triggering MS2) in one run and several minutes later in another.
+#' @param rt_margin The bracketing margin before and after an LC retention time
+#'   window.
 haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL, 
                                  dat_dir = NULL, path_ms1 = NULL, 
+                                 rt_size = 240, rt_margin = 480, 
                                  max_n_apexes = 2L, data_type = "raw")
 {
   if (data_type == "raw") {
@@ -36,7 +42,8 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
     ans <- parallel::clusterMap(
       cl, haddApexRTs_oneset, file_psm = filelist, files_ms1 = ms1full_files, 
       MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1, yco = yco, 
-                      min_y = min_y, step = step, n_cores = n_cores), 
+                      min_y = min_y, step = step, n_cores = n_cores, 
+                      rt_size = rt_size, rt_margin = rt_margin), 
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
     parallel::stopCluster(cl)
   }
@@ -44,7 +51,8 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
     ans <- mapply(
       haddApexRTs_oneset, file_psm = filelist, files_ms1 = ms1full_files, 
       MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1, yco = yco, 
-                      min_y = min_y, step = step, n_cores = 1L),
+                      min_y = min_y, step = step, n_cores = 1L, 
+                      rt_size = rt_size, rt_margin = rt_margin),
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
   }
   
@@ -66,13 +74,15 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
 #' @param from A starting mass.
 #' @param step A step size.
 #' @param rt_size The width of each LC retention times in seconds.
+#' @param rt_margin The bracketing margin before and after an LC retention time
+#'   window.
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
 haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL, 
                                 dat_dir = NULL, path_ms1 = NULL, 
                                 max_n_apexes = 2L, from = 115, step = 1E-5, 
-                                rt_size = 240, yco = 100, min_y = 2E6, 
-                                n_cores = 1L)
+                                rt_size = 240, rt_margin = 480, 
+                                yco = 100, min_y = 2E6, n_cores = 1L)
 {
   df <- readr::read_tsv(
     file.path(dat_dir, "PSM", file_psm), col_types = get_col_types(), 
@@ -95,8 +105,8 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
     ans <- parallel::clusterMap(
       cl, addApexRTs, df = dfs, file_ms1 = files_ms1, 
       MoreArgs = 
-        list(from = from, rt_size = rt_size, step = step, path_ms1 = path_ms1, 
-             yco = yco, min_y = min_y, n_para = n_para2), 
+        list(from = from, rt_size = rt_size, rt_margin = rt_margin, step = step, 
+             path_ms1 = path_ms1, yco = yco, min_y = min_y, n_para = n_para2), 
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
     parallel::stopCluster(cl)
   }
@@ -104,8 +114,8 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
     ans <- mapply(
       addApexRTs, df = dfs, file_ms1 = files_ms1, 
       MoreArgs = 
-        list(from = from, rt_size = rt_size, step = step, path_ms1 = path_ms1, 
-             yco = yco, min_y = min_y, n_para = n_para2), 
+        list(from = from, rt_size = rt_size, rt_margin = rt_margin, step = step, 
+             path_ms1 = path_ms1, yco = yco, min_y = min_y, n_para = n_para2), 
       SIMPLIFY = FALSE, USE.NAMES = FALSE)
   }
   
@@ -166,7 +176,7 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
 #'   window.
 #' @param n_para The number of parallel processes.
 addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5, 
-                        rt_size = 240, rt_margin = 240, # was 180
+                        rt_size = 240, rt_margin = 480, 
                         yco = 100, min_y = 2E6, n_para = 6L)
 {
   # low redundancy: ELEEIRK ~ qIqELRK; TENNDHINLK ~ TENNnHINLK
@@ -280,9 +290,10 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
   scans <- tvals <- xvals <- yvals <- ns <- ranges <- fwhms <- vector("list", nr)
   
   for (i in seq_len(nr)) {
-    # i <- which(abs(mzs - 430.2620) < .0001)[[1]]
-    # i <- which(abs(mzs - 492.3117) < .0001)[[1]]
-    xref <- mzs[[i]] # pep_exp_mz
+    # i <- which(abs(mzs - 491.9071) < .0001)[[1]]
+    # i <- which(abs(mzs - 737.3578) < .0001)[[1]]
+    # pep_ret_range: can be way before apex in one run and way after in another
+    xref <- mzs[[i]] # pep_exp_mz; 
     tref <- rts[[i]] # pep_ret_range
     rgi  <- .Internal(which(tss >= (tref - gap_bf) & tss <= (tref + gap_af)))
     if (!length(rgi)) { next }
@@ -439,7 +450,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
                      temp_dir = NULL, rt_tol = 25, mbr_ret_tol = 25, 
                      sp_centers_only = FALSE, imp_refs = FALSE, 
                      group_psm_by = "pep_seq_modz", group_pep_by = "gene", 
-                     lfq_mbr = FALSE, rt_step = 2E-3, new_na_species = ".other", 
+                     lfq_mbr = FALSE, rt_step = 5E-3, new_na_species = ".other", 
                      max_mbr_fold = 20)
 {
   if ((len <- length(basenames)) < 2L) { # should not occur
@@ -658,19 +669,32 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     rownames(ssmat) <- NULL
     rownames(fsmat) <- NULL
     rownames(nsmat) <- NULL
-    rm(list = "ans_mbr")
+    # qs::qsave(ans_mbr, file.path(dat_dir, "ans_mbr.rds"), preset = "fast")
+    # rm(list = "ans_mbr")
   }
 
   ## (5) LFQ
   message("  Executing LFQ.")
   
+  # if mixed spcies and not all(human, mouse, rat) -> with spectrum count referencing
+  species <- names(sp_centers)
+  sps_oks <- tolower(species[species != new_na_species])
+  
+  if (length(sps_oks) > 1L && !all(sps_oks %in% c("human", "mouse", "rat"))) {
+    reference_spec_counts <- TRUE
+  }
+  else {
+    reference_spec_counts <- FALSE
+  }
+  rm(list = c("species", "sps_oks"))
+
   out <- pepLFQ(
     basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
     xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, 
     ymat = ymat, tmat = tmat, smat = smat, cmat = cmat, 
     mbr_peps = mbr_peps, mbr_sps = mbr_sps, sp_centers = sp_centers, 
     new_na_species = new_na_species, rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
-    step = rt_step)
+    reference_spec_counts = reference_spec_counts, step = rt_step)
   yout <- do.call(cbind, out[["y"]])
   tout <- do.call(cbind, out[["t"]])
   sout <- do.call(cbind, out[["s"]])
@@ -881,39 +905,46 @@ fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir)
 #' @param err_log2r Not yet used. Error tolerance in log2FC.
 #' @param new_na_species A replace value for NA species.
 #' @param rt_tol Error tolerance in retention times.
+#' @param reference_spec_counts Logical; reference protein spectrum counts or
+#'   not.
 pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
                     ymat, tmat, smat, cmat, mbr_peps, mbr_sps, sp_centers, 
                     new_na_species = ".other", rt_tol = 25, mbr_ret_tol = 25, 
-                    step = 2E-3, err_log2r = .25)
+                    reference_spec_counts = FALSE, step = 5E-3, err_log2r = .25)
   
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
-
-  # distances of the reference log2FCs from the "first pass" to cents
-  cents  <- sp_centers[mbr_sps]
-  log_ds <- abs(calc_mat_log2s_to_refs(ymat, are_smpls, are_refs) - cents)
   
-  yout <- tout <- sout <- 
-    rep_len(list(vector("numeric", n_row <- nrow(tsmat))), n_col <- ncol(tsmat))
-  
+  n_row <- nrow(tsmat)
+  n_col <- ncol(tsmat)
+  yout  <- tout <- sout <- rep_len(list(vector("numeric", n_row)), n_col)
   null_dbl <- rep_len(NA_real_, n_row)
   null_int <- rep_len(NA_integer_, n_row)
+
+  # distances of reference log2FCs from the "first pass" to cents
+  cents <- sp_centers[mbr_sps]
+  dys1  <- calc_mat_log2s_to_refs(ymat, are_smpls, are_refs) - cents
+
+  if (reference_spec_counts) {
+    cs1 <- calc_mat_log2s_to_refs(cmat, are_smpls, are_refs)
+  }
+  else {
+    cs1 <- rep_len(Inf, n_col)
+  }
+  rownames(cmat) <- colnames(cmat) <- NULL
   
   for (i in 1:n_col) {
-    log_dsi <- log_ds[[i]]
-    
     ## (1) collapse bins of T, Y and S values
+    # i <- which(mbr_peps == "RIEVEQALAHPYLEQYYDPSDEPIAEAPFK@4")
     ans <- collapseSTY(
       xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step)
     anst <- ans[["x"]]
     ansy <- ans[["y"]]
     anss <- ans[["z"]]
     unv  <- ans[["u"]]
-    spc  <- cents[[i]]
-    nc   <- ncol(anst)
     
-    if (!nc) {
+    if (!(nc <- ncol(anst))) {
       yout[[i]] <- null_dbl
       tout[[i]] <- null_dbl
       sout[[i]] <- null_int
@@ -921,10 +952,60 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       next
     }
     
+    # border effect
+    if (nc > 1L && length(us <- which(diff(unv) == 2L))) {
+      for (u in us) {
+        if (length(which(rows <- is.na(ansy[, u2 <- u + 1L])))) {
+          ansy[rows, u2] <- ansy[rows, u]
+          anst[rows, u2] <- anst[rows, u]
+          anss[rows, u2] <- anss[rows, u]
+          # ansy[rows, u] <- NA_real_
+          # anst[rows, u] <- NA_real_
+          # anss[rows, u] <- NA_real_
+        }
+      }
+    }
+
+    spc   <- cents[[i]]
+    
+    # for cross-referencing
+    dy1i  <- dys1[[i]]
+    dc1i  <- cs1[[i]] - spc
+    ady1i <- abs(dy1i)
+    adc1i <- abs(dc1i)
+
     if (nc == 1L) {
-      yout[[i]] <- ansy[, 1]
-      tout[[i]] <- anst[, 1]
-      sout[[i]] <- anss[, 1]
+      p      <- 1L
+      ysi    <- ansy[, p]
+      ysmpls <- ysi[are_smpls]
+      yrefs  <- ysi[are_refs]
+      ybar0  <- mean(yrefs, na.rm = TRUE)
+      di     <- mean(log2(ysmpls / ybar0) - spc, na.rm = TRUE)
+      adi    <- abs(di)
+      bst    <- find_best_lfqvec(d1 = di, d2 = dy1i, dc = dc1i)
+      
+      if (isTRUE(bst == 1L)) {
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else if (isTRUE(bst == 2L)) {
+        yout[[i]] <- ymat[, i]
+        tout[[i]] <- tmat[, i]
+        sout[[i]] <- smat[, i]
+      }
+      else if (isTRUE(bst == 3L) && !(is.nan(di) || is.na(di))) {
+        ybar1 <- mean(ysmpls / 2^(dc1i + spc), na.rm = TRUE)
+        ysi[are_refs] <- yrefs * ybar1 / ybar0
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else {
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
       
       next
     }
@@ -932,6 +1013,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     ## (2) remove retention outliers
     for (j in 1:nc) {
       tvals <- anst[, j]
+      # reduce the value to be consistent with step...
       tbads <- abs(tvals - median(tvals, na.rm = TRUE)) > rt_tol
       ibads <- .Internal(which(tbads))
       
@@ -949,104 +1031,163 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     
     # all are without reference values
     if (all(is.nan(ymeans))) {
-      col <- .Internal(which.min(calc_mat_sds(anst[are_smpls, , drop = FALSE])))
+      p <- .Internal(which.min(calc_mat_sds(anst[are_smpls, , drop = FALSE])))
       
-      if (length(col)) {
-        di <- abs(
-          calc_vec_log2s_to_refs(ayi <- ansy[, col], are_smpls, are_refs) - spc)
-
-        if (isTRUE(log_dsi < di)) {
+      if (length(p)) {
+        ysi <- ansy[, p]
+        adi <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
+        bst <- .Internal(which.min(c(adi, ady1i)))
+        
+        if (isTRUE(bst == 1L)) {
+          yout[[i]] <- ysi
+          tout[[i]] <- anst[, p]
+          sout[[i]] <- anss[, p]
+        }
+        else if (isTRUE(bst == 2L)) {
           yout[[i]] <- ymat[, i]
           tout[[i]] <- tmat[, i]
           sout[[i]] <- smat[, i]
         }
         else {
-          yout[[i]] <- ayi
-          tout[[i]] <- anst[, col]
-          sout[[i]] <- anss[, col]
+          yout[[i]] <- ysi
+          tout[[i]] <- anst[, p]
+          sout[[i]] <- anss[, p]
         }
-
-        next
       }
-      else { # e.g. all with single sample values
-        # or use the one closest to mbr_rets...
-        yout[[i]] <- ansy[, 1]
-        tout[[i]] <- anst[, 1]
-        sout[[i]] <- anss[, 1]
-        
-        next
+      else {
+        # e.g. all with single sample values (may be due to the boundary effect)
+        if (is.na(ady1i)) {
+          yout[[i]] <- ansy[, 1]
+          tout[[i]] <- anst[, 1]
+          sout[[i]] <- anss[, 1]
+        }
+        else {
+          yout[[i]] <- ymat[, i]
+          tout[[i]] <- tmat[, i]
+          sout[[i]] <- smat[, i]
+        }
       }
+      
+      next
     }
     
     rmat <- sweep(ys_smpls, 2, ymeans, "/")
     rmat <- log2(rmat)
     
     ## (4) find the best Y column
-    ds <- abs(colMeans(rmat, na.rm = TRUE) - spc)
-    p  <- .Internal(which.min(ds))
+    ds  <- colMeans(rmat, na.rm = TRUE) - spc
+    ads <- abs(ds)
+    p   <- .Internal(which.min(ads))
     
     if (length(p)) {
-      # if any NA in ansy[, p] && and log2FC outside the contour
-      #   -> refer to protein spectrum counts
+      # if any NA in ansy[, p] && and log2FC outside the contour...
+      di <- ds[[p]]
+      bst <- find_best_lfqvec(d1 = di, d2 = dy1i, dc = dc1i)
       
-      if (isTRUE(log_dsi < ds[[p]])) {
+      if (isTRUE(bst == 1L)) {
+        yout[[i]] <- ansy[, p]
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else if (isTRUE(bst == 2L)) {
         yout[[i]] <- ymat[, i]
         tout[[i]] <- tmat[, i]
         sout[[i]] <- smat[, i]
+      }
+      else if (isTRUE(bst == 3L) && !(is.nan(di) || is.na(di))) {
+        ysi    <- ansy[, p]
+        ysmpls <- ysi[are_smpls]
+        yrefs  <- ysi[are_refs]
+        ybar0  <- mean(yrefs, na.rm = TRUE)
+        ybar1  <- ysmpls / 2^(dc1i + spc)
+        ysi[are_refs] <- yrefs * ybar1 / ybar0
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
       }
       else {
         yout[[i]] <- ansy[, p]
         tout[[i]] <- anst[, p]
         sout[[i]] <- anss[, p]
       }
-    }
-    else { # e.g., one column exclusive samples, the other exclusive references
-      col <- .Internal(which.min(calc_mat_sds(ansy)))
       
-      if (length(col)) {
-        di <- abs(
-          calc_vec_log2s_to_refs(ayi <- ansy[, col], are_smpls, are_refs) - spc)
-
-        if (isTRUE(log_dsi < di)) {
-          yout[[i]] <- ymat[, i]
-          tout[[i]] <- tmat[, i]
-          sout[[i]] <- smat[, i]
-        }
-        else {
-          yout[[i]] <- ayi
-          tout[[i]] <- anst[, col]
-          sout[[i]] <- anss[, col]
-        }
-      }
-      else { # e.g. all are with references only, or all single values...
-        # may be use the column closest in RT to MS2 scan
-        col <- .Internal(which.max(colSums(ansy, na.rm = TRUE)))
-        
-        if (length(col)) {
-          di <- abs(
-            calc_vec_log2s_to_refs(ayi <- ansy[, col], are_smpls, are_refs) - spc)
-
-          if (isTRUE(log_dsi < di)) {
-            yout[[i]] <- ymat[, i]
-            tout[[i]] <- tmat[, i]
-            sout[[i]] <- smat[, i]
-          }
-          else {
-            yout[[i]] <- ansy[, col]
-            tout[[i]] <- anst[, col]
-            sout[[i]] <- anss[, col]
-          }
-        }
-        else {
-          yout[[i]] <- ansy[, 1]
-          tout[[i]] <- anst[, 1]
-          sout[[i]] <- anss[, 1]
-        }
-      }
+      next
     }
+    
+    # e.g., one column exclusive samples, the other exclusive references
+    p <- .Internal(which.min(calc_mat_sds(ansy)))
+    
+    if (length(p)) {
+      ysi <- ansy[, p]
+      adi  <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
+      bst <- .Internal(which.min(c(adi, ady1i)))
+
+      if (isTRUE(bst == 1L)) {
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else {
+        yout[[i]] <- ymat[, i]
+        tout[[i]] <- tmat[, i]
+        sout[[i]] <- smat[, i]
+      }
+      
+      next
+    }
+    
+    # e.g. all are with references only, or all single values...
+    # may be use the column closest in RT to MS2 scan
+    p <- .Internal(which.max(colSums(ansy, na.rm = TRUE)))
+    
+    if (length(p)) {
+      ysi <- ansy[, p]
+      adi <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
+      bst <- .Internal(which.min(c(adi, ady1i)))
+      
+      if (isTRUE(bst == 1L)) {
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else if (isTRUE(bst == 2L)) {
+        yout[[i]] <- ymat[, i]
+        tout[[i]] <- tmat[, i]
+        sout[[i]] <- smat[, i]
+      }
+      else {
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      
+      next
+    }
+    
+    yout[[i]] <- ansy[, 1]
+    tout[[i]] <- anst[, 1]
+    sout[[i]] <- anss[, 1]
   }
   
   out <- list(y = yout, t = tout, s = sout)
+}
+
+
+#' Find the best LFQ vector
+#' 
+#' @param d1 A vector of distance.
+#' @param d2 Another vector of distance.
+#' @param dc A vector of distance by spectrum counts.
+find_best_lfqvec <- function (d1, d2, dc)
+{
+  ad1 <- abs(d1)
+  ad2 <- abs(d2)
+  
+  if (isTRUE(abs(dc - d1) < .5 || abs(dc - d2) < .5)) {
+    return(.Internal(which.min(c(ad1, ad2))))
+  }
+  
+  .Internal(which.min(c(ad1, ad2, abs(dc))))
 }
 
 
@@ -1110,19 +1251,19 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
     c1  <- c12[[1]]
     c2  <- c12[[2]]
     
-    if (c2 == 0L) { # no following adjacent
-      next
+    if (c2 == 0L) { next } # no following adjacent
+
+    rows <- .Internal(which(is.na(xmat[, c2]) & !is.na(xmat[, c1])))
+
+    if (length(rows)) {
+      xmat[rows, c2] <- xmat[rows, c1]
+      ymat[rows, c2] <- ymat[rows, c1]
+      zmat[rows, c2] <- zmat[rows, c1]
+      xmat[rows, c1] <- NA_real_
+      ymat[rows, c1] <- NA_real_
+      zmat[rows, c1] <- NA_real_
     }
-    
-    rows <- .Internal(which(!is.na(xmat[, c1])))
-    xmat[rows, c2] <- xmat[rows, c1]
-    ymat[rows, c2] <- ymat[rows, c1]
-    zmat[rows, c2] <- zmat[rows, c1]
-    # no need since columns traverse from left to right and c1 will be dropped
-    xmat[rows, c1] <- NA_real_
-    ymat[rows, c1] <- NA_real_
-    zmat[rows, c1] <- NA_real_
-    
+
     if (look_back && i < lenp && (af <- ps[[i+1]][[1]]) == (c2 + 1L)) {
       # with NA rows in c2
       if (length(rows2 <- .Internal(which(is.na(xmat[, c2]))))) {

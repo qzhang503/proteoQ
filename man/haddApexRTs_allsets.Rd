@@ -9,6 +9,8 @@ haddApexRTs_allsets(
   ms1full_files = NULL,
   dat_dir = NULL,
   path_ms1 = NULL,
+  rt_size = 240,
+  rt_margin = 480,
   max_n_apexes = 2L,
   data_type = "raw"
 )
@@ -22,6 +24,13 @@ TMTSet1_LCMSinj1_PSM_N.txt etc.}
 \item{dat_dir}{The working directory.}
 
 \item{path_ms1}{The file path to \code{ms1full_.rds}.}
+
+\item{rt_size}{The width of each LC retention times in seconds. Made big, as
+an apex RT can be several minutes earlier to the reference RT (of an 
+triggering MS2) in one run and several minutes later in another.}
+
+\item{rt_margin}{The bracketing margin before and after an LC retention time
+window.}
 
 \item{max_n_apexes}{The maximum number of apexes for consideration.}
 

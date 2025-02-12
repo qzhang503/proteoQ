@@ -25,7 +25,7 @@ hpepLFQ(
   group_psm_by = "pep_seq_modz",
   group_pep_by = "gene",
   lfq_mbr = FALSE,
-  rt_step = 0.002,
+  rt_step = 0.005,
   new_na_species = ".other",
   max_mbr_fold = 20
 )

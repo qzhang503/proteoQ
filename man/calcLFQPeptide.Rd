@@ -11,44 +11,24 @@ calcLFQPeptide(
   dat_dir = NULL,
   set_idx = 1L,
   injn_idx = 1L,
-  TMT_plex = 1L,
+  tmt_plex = 1L,
   ok_lfq = TRUE,
-  lfq_ret_tol = 60L,
   rm_allna = FALSE,
   type_sd = "log2_R"
 )
 }
 \arguments{
-\item{df}{A data frame containing the PSM table from database searches.}
+\item{df}{A data frame.}
 
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
+\item{dat_dir}{A working directory.}
 
-\item{group_pep_by}{A character string specifying the method in peptide
-grouping. At the \code{prot_acc} default, descriptive statistics will be
-calculated based on the same \code{prot_acc} groups. At the \code{gene}
-alternative, proteins with the same gene name but different accession
-numbers will be treated as one group.}
+\item{set_idx}{A set index.}
 
-\item{dat_dir}{A character string to the working directory. The default is to
-match the value under the global environment.}
+\item{injn_idx}{Not used. An injection index.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
-files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
-
-\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
-as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
-
-\item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+\item{tmt_plex}{The multiplexity of TMT.}
 
 \item{ok_lfq}{Logical; performs LFQ or not.}
-
-\item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
-aggregation of LFQ data.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to

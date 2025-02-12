@@ -13,6 +13,7 @@ haddApexRTs_oneset(
   from = 115,
   step = 1e-05,
   rt_size = 240,
+  rt_margin = 480,
   yco = 100,
   min_y = 2e+06,
   n_cores = 1L
@@ -35,6 +36,9 @@ TMTSet1_LCMSinj1_PSM_N.txt.}
 \item{step}{A step size.}
 
 \item{rt_size}{The width of each LC retention times in seconds.}
+
+\item{rt_margin}{The bracketing margin before and after an LC retention time
+window.}
 
 \item{yco}{The cut-off in intensities.}
 

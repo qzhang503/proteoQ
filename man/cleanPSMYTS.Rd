@@ -6,7 +6,11 @@
 \usage{
 cleanPSMYTS(
   dfs,
+  ymat,
   tmat,
+  smat,
+  fmat,
+  nmat,
   key = "pep_seq_mod",
   update = TRUE,
   cols = c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan",
@@ -16,7 +20,15 @@ cleanPSMYTS(
 \arguments{
 \item{dfs}{A list of PSM tables.}
 
-\item{tmat}{A matrix of RTs.}
+\item{ymat}{A matrix of apex intensities.}
+
+\item{tmat}{A matrix of apex retention times.}
+
+\item{smat}{A matrix of apex scan numbers.}
+
+\item{fmat}{A matrix of apex FWHM values.}
+
+\item{nmat}{A matrix of apex peak widths measured by the number of MS1 scans.}
 
 \item{key}{The column key for matching.}
 

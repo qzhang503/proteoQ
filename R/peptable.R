@@ -1966,7 +1966,6 @@ rep_ls_groups <- function (group_ids)
 #' @param use_mf_pep Logical; if TRUE, uses the peptides.txt from MSFragger.
 #' @param rt_tol Error tolerance in retention times.
 #' @param rt_step The step size in binning retention times.
-#' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param imp_refs Logical; impute missing references or not (yet to be tested
 #'   more).
 #' @param new_na_species A replace value for NA species.
@@ -1980,8 +1979,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      use_duppeps = TRUE, duppeps_repair = "denovo", 
                      cut_points = Inf, omit_single_lfq = FALSE, 
                      use_mq_pep = FALSE, use_mf_pep = FALSE, 
-                     rm_allna = FALSE, rt_tol = 25, rt_step = 2E-3, 
-                     mbr_ret_tol = 25, max_mbr_fold = 20, 
+                     rm_allna = FALSE, rt_tol = 25, rt_step = 5E-3, 
+                     mbr_ret_tol = 25, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
                      imp_refs = FALSE, use_spec_counts = FALSE, 
                      new_na_species = ".other", ...) 
@@ -2189,6 +2188,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       mean_lint = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), 
                                    drop = FALSE], 
                                    na.rm = TRUE)), 
+      mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
       mean_lint = round(mean_lint, digits = 2))
   
   count_nna <- df_num %>% 
@@ -2595,149 +2595,6 @@ extract_mbry <- function (xs, ys, mbr_mz, step = 1e-5)
 }
 
 
-#' Find the MBR intensity
-#'
-#' @param ys A vector of intensity values.
-#' @param ts A vector of time values.
-#' @param ss A vector of scan numbers.
-#' @param mbr_ret The reference MBR retention time.
-#' @param mbr_y The reference MBR intensity.
-#' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
-#' @param sp_cent A species center (at log2 scale).
-#' @param max_mbr_fold The maximum absolute fold change in MBR.
-#' @param n_dia_scans The maximum number of zero-intensity scans for gap filling
-#'   in peak tracing. Not adjustable by users but synchronized with mzion.
-#' @param min_y The cut-off of intensity values in MBR. Change to a smaller
-#'   value with PASEF.
-#' @param yco The cut-off of intensity values.
-#' @param fwhm_co The cut-off in FWHM values.
-#' @param zero A zero value for replacements.
-find_mbr_int <- function (ys, ts, ss, mbr_ret, mbr_y, mbr_ret_tol = 25, 
-                          sp_cent = 0.0, 
-                          max_mbr_fold = 20L, n_dia_scans = 6L, min_y = 2e6, 
-                          yco = 100, fwhm_co = .5, zero = NA_real_)
-{
-  nout  <- list(y = zero, t = zero, s = zero)
-  
-  if (is.na(mbr_y)) {
-    return(nout)
-  }
-  
-  gates <- mzion::find_lc_gates(
-    ys = ys, ts = ts, yco = yco, n_dia_scans = n_dia_scans)
-
-  if (is.null(gates)) {
-    return(nout)
-  }
-  
-  fwhms  <- gates[["fwhm"]]
-  apexs  <- gates[["apex"]]
-  ranges <- gates[["ranges"]]
-  yints  <- gates[["yints"]]
-  ns     <- gates[["ns"]]
-  xstas  <- gates[["xstas"]]
-  lenp   <- length(apexs)
-  
-  oksfw <- fwhms > fwhm_co
-  if (!(noksfw <- length(oksfw))) {
-    return(nout)
-  }
-  
-  if (noksfw < lenp) {
-    apexs  <- apexs[oksfw]
-    ranges <- ranges[oksfw]
-    yints  <- yints[oksfw]
-    ns     <- ns[oksfw]
-    xstas  <- xstas[oksfw]
-    lenp   <- length(oksfw)
-  }
-  
-  if (lenp == 0L) {
-    return(nout)
-  }
-  
-  # (3) remove one-hit-wonders and spikes
-  oks1 <- .Internal(which(ns > 20L))
-  oks2 <- .Internal(which(ns > 15L))
-
-  if (noks1 <- length(oks1)) {
-    if (noks1 < lenp) {
-      apexs  <- apexs[oks1]
-      ranges <- ranges[oks1]
-      yints  <- yints[oks1]
-      ns     <- ns[oks1]
-      xstas  <- xstas[oks1]
-      lenp   <- length(apexs)
-    }
-  }
-  else if (noks2 <- length(oks2)) {
-    if (noks2 < lenp) {
-      apexs  <- apexs[oks2]
-      ranges <- ranges[oks2]
-      yints  <- yints[oks2]
-      ns     <- ns[oks2]
-      xstas  <- xstas[oks2]
-      lenp   <- length(apexs)
-    }
-  }
-  
-  upr <- mbr_y * max_mbr_fold
-  lwr <- mbr_y / max_mbr_fold
-
-  if (lenp == 1L) {
-    
-    # if no log2rs comparable to sp_cent -> expand to local pattern look-ups
-    
-    tval <- ts[[apexs]]
-    
-    if (abs(tval - mbr_ret) <= mbr_ret_tol) {
-      # may be removed...
-      if (yints <= upr && yints >= lwr) {
-        return(list(y = yints, t = tval, s = ss[[apexs]]))
-      }
-      else {
-        # return(list(y = mbr_y, t = tval, s = ss[[apexs]]))
-        return(nout)
-      }
-    }
-    else {
-      return(nout)
-    }
-  }
-
-  tvals <- ts[apexs]
-  scans <- ss[apexs]
-  tdiff <- abs(tvals - mbr_ret)
-  ydiff <- abs(log2(yints / mbr_y) - sp_cent)
-  idxt  <- .Internal(which.min(tdiff))
-  idxy  <- .Internal(which.min(ydiff))
-  
-  if (tdiff[idxy] <= mbr_ret_tol) {
-    yi <- yints[idxy]
-    
-    if (yi <= upr && yi >= lwr) {
-      return(list(y = yi, t = tvals[idxy], s = scans[idxy]))
-    }
-    else {
-      return(nout)
-    }
-  }
-  
-  if (tdiff[idxt] <= mbr_ret_tol) {
-    yi <- yints[idxt]
-    
-    if (yi <= upr && yi >= lwr) {
-      return(list(y = yi, t = tvals[idxt], s = scans[idxt]))
-    }
-    else {
-      return(nout)
-    }
-  }
-  
-  return(nout)
-}
-
-
 #' Group Mzion peptides by charge states
 #' 
 #' @param df A Mzion peptide table.
@@ -3036,7 +2893,6 @@ fmt_num_cols <- function (df)
 #'
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds. The
 #'   default is to match the setting in \link{normPSM}.
-#' @param max_mbr_fold Not used. The maximum absolute fold change in MBR.
 #' @param duppeps_repair Not currently used (or only with \code{majority}).
 #'   Character string; the method of reparing double-dipping peptide sequences
 #'   upon data pooling.
@@ -3149,7 +3005,7 @@ fmt_num_cols <- function (df)
 #' @importFrom magrittr %>% %T>% %$% %<>%
 #' @export
 mergePep <- function (
-    use_duppeps = TRUE, mbr_ret_tol = NULL, max_mbr_fold = 20L, 
+    use_duppeps = TRUE, mbr_ret_tol = NULL, 
     duppeps_repair = c("majority", "denovo"), plot_log2FC_cv = TRUE, 
     cut_points = Inf, rm_allna = FALSE, imp_refs = FALSE,  
     omit_single_lfq = FALSE, ret_sd_tol = Inf, 
@@ -3256,8 +3112,7 @@ mergePep <- function (
                 rm_allna = rm_allna, 
                 mbr_ret_tol = mbr_ret_tol, 
                 rt_tol = 25, # user accessible later
-                rt_step = 2E-3, 
-                max_mbr_fold = max_mbr_fold, 
+                rt_step = 5E-3, # was 2E-3
                 ret_sd_tol = ret_sd_tol, 
                 rm_ret_outliers = rm_ret_outliers, 
                 use_spec_counts = use_spec_counts, 
