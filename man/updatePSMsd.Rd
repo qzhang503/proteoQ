@@ -4,7 +4,7 @@
 \alias{updatePSMsd}
 \title{Update cross-sample PSM standard deviation}
 \usage{
-updatePSMsd(dfs, filelist, key = "pep_seq_mod", qt_sd = 0.97, clean_up = FALSE)
+updatePSMsd(dfs, filelist, key = "pep_seq_modz", qt_sd = 0.97, cleanup = FALSE)
 }
 \arguments{
 \item{dfs}{A list of PSM tables.}
@@ -15,7 +15,7 @@ updatePSMsd(dfs, filelist, key = "pep_seq_mod", qt_sd = 0.97, clean_up = FALSE)
 
 \item{qt_sd}{The quantile cut-off in retention time SD values.}
 
-\item{clean_up}{Logical; nullify data of retention outliers or not.}
+\item{cleanup}{Logical; nullify data of retention outliers or not.}
 }
 \description{
 Update cross-sample PSM standard deviation

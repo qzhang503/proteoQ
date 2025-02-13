@@ -291,7 +291,7 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
   
   for (i in seq_len(nr)) {
     # i <- which(abs(mzs - 491.9071) < .0001)[[1]]
-    # i <- which(abs(mzs - 737.3578) < .0001)[[1]]
+    # i <- which(abs(mzs - 738.8376) < .0001)[[2]]
     # pep_ret_range: can be way before apex in one run and way after in another
     xref <- mzs[[i]] # pep_exp_mz; 
     tref <- rts[[i]] # pep_ret_range

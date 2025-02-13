@@ -4,7 +4,7 @@
 \alias{hrm_lowIntPSMs}
 \title{Helper for removals of low-intensity PSMs}
 \usage{
-hrm_lowIntPSMs(dfs, key = "pep_seq_modz", yfrac = 0.05, max_n_apexes = 1L)
+hrm_lowIntPSMs(dfs, key = "pep_seq_modz", yfrac = 0.02, max_n_apexes = 1L)
 }
 \arguments{
 \item{dfs}{A list of PSM tables.}

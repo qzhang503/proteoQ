@@ -8,7 +8,7 @@ alignPSMApexs(
   dfs,
   ms1full_files = NULL,
   path_ms1 = NULL,
-  key = "pep_seq_mod",
+  key = "pep_seq_modz",
   temp_dir = NULL
 )
 }

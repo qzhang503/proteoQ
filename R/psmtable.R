@@ -4085,39 +4085,22 @@ groupMZPSM0 <- function (df, group_psm_by = "pep_seq_mod", yco = 1E7,
 #' @param yfrac The minimum percentage of intensity in relative to the base peak
 #'   for considerations.
 #' @param max_n_apexes The maximum number of apexes for consideration.
-hrm_lowIntPSMs <- function (dfs, key = "pep_seq_modz", yfrac = .05, 
+hrm_lowIntPSMs <- function (dfs, key = "pep_seq_modz", yfrac = .02, 
                             max_n_apexes = 1L)
 {
   df <- dplyr::bind_rows(dfs)
-  ###
-  if (TRUE) {
-    df$pep_true_oneapex <- ifelse(df$pep_n_apexes <= 1L, TRUE, FALSE)
-    df <- df |> reloc_col_after("pep_true_oneapex", "pep_n_apexes")
-  }
-  ###
-  
-  if (!"pep_seq_modz" %in% names(df)) {
-    df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
-    df <- df |> reloc_col_after("pep_seq_modz", "pep_seq_mod")
-  }
-  
   df$rowid. <- 1:nrow(df)
+  cols_lfq  <- c(key, "pep_score", "pep_tot_int", "pep_apex_ret", "rowid.")
   
-  cols_lfq  <- 
-    c("pep_seq_modz", "pep_score", "pep_tot_int", "pep_apex_ret", "rowid.")
   dfx <- df[, cols_lfq]
-  
-  # may also check for small distance -> more likely to be satellite peak...
-  dfx <- split(dfx, dfx[["pep_seq_modz"]]) |>
+  dfx <- split(dfx, dfx[[key]]) |>
     lapply(rm_lowIntPSMs, yfrac = yfrac) |>
     dplyr::bind_rows()
 
   df <- df[df$rowid. %in% dfx$rowid., ]
   df$rowid. <- NULL
   dfs <- split(df[, -which(names(df) == "set_id")], df$set_id)
-  # dfs <- split(df, df$set_id)
-  # dfs <- lapply(dfs, function (x) { x$set_id <- NULL; x })
-  
+
   # nullify pep_seq_modz entries at multiple apexes
   lapply(dfs, add_pep_n_apexes, key = key, max_n_apexes = 1L)
 }
@@ -4132,15 +4115,12 @@ hrm_lowIntPSMs <- function (dfs, key = "pep_seq_modz", yfrac = .05,
 #'   \code{pep_seq_modz}.
 rm_lowIntPSMs <- function (df, yfrac = .02, keep_best_score = TRUE)
 {
-  if (all(is.na(ys <- df$pep_tot_int))) { # or all(is.na(df$pep_apex_ret))
+  if (all(is.na(ys <- df$pep_tot_int))) {
     df <- df[which.max(df$pep_score), ]
   }
   else {
     df <- df[ys >= max(ys, na.rm = TRUE) * yfrac, ]
-    
-    # no NA in df$pep_apex_ret no longer valid: apex can be undetermined
-    # if (all(is.na(df$pep_apex_ret)) { return(df) }
-    
+
     # the same pep_apex_ret -> the same pep_tot_int, so use pep_score
     df <- split(df, df$pep_apex_ret) |>
       lapply(function (dx) dx[which.max(dx$pep_score), ]) |>
@@ -4205,57 +4185,68 @@ rm_psm_spikes <- function (df, yfrac = .02, sdco = 3, add_sd = TRUE)
 #' (in multi-PSM groups of \code{pep_seq_mod}).
 #'
 #' @param df A PSM table at a TMTset[i]LCMSinj[j].
+#' @param key A column key for data grouping.
 #' @param rt_tol Tolerance in retention times between \code{pep_ret_range}  and
 #'   \code{pep_apex_ret} in seconds.
 #' @param y_tol Tolerance in intensity in relative to the based apex intensity.
-rm_apexrt_outliers <- function (df = NULL, rt_tol = 240, y_tol = .01)
+rm_apexrt_outliers <- function (df = NULL, key = "pep_seq_mod", rt_tol = 240, 
+                                y_tol = .01)
 {
-  # possible that exactly the same apx between different charge states
-  df <- df[!duplicated(df[, c("raw_file", "pep_seq_mod", "pep_exp_z", 
-                              "pep_apex_scan")]), ]
+  # possible that exactly the same apx value between different charge states
+  df <- 
+    df[!duplicated(df[, c(key, "pep_exp_z", "pep_apex_scan", "raw_file")]), ]
   
   ## (1) remove or nullify entries of outlying retention apexes
   apts <- df$pep_apex_ret
   bads <- is.na(apts) | abs(df$pep_ret_range - apts) > rt_tol
   df1  <- df[bads, ]
   df   <- df[!bads, ]
-  # rm(list = "apts")
-  
-  peps1 <- unique(df1$pep_seq_mod)
-  keeps <- peps1[!peps1 %in% unique(df$pep_seq_mod)]
+
+  peps1 <- unique(df1[[key]])
+  keeps <- peps1[!peps1 %in% unique(df[[key]])]
   
   if (length(keeps)) {
-    df1 <- df1[with(df1, pep_seq_mod %in% keeps), ]
+    df1 <- df1[df1[[key]] %in% keeps, ]
     df1$pep_tot_int <- df1$I000 <- df1$N_I000 <- 
       df1$pep_apex_ret <- df1$pep_apex_scan <- NA_real_
   }
 
-  ## (2) remove entries of small intensities
-  res  <- df |>
-    dplyr::group_by(pep_seq_mod) |>
-    dplyr::summarise(
-      max = max(pep_tot_int, na.rm = TRUE), 
-      min = min(pep_tot_int, na.rm = TRUE), 
-      yco = max * y_tol)
-  bads <- res$min < res$yco
-  
-  if (any(bads)) {
-    res  <- res[bads, c("pep_seq_mod", "yco")]
-    rows <- df$pep_seq_mod %in% res$pep_seq_mod
-    df2s <- df[rows, ]
-    df   <- df[!rows, ]
-    df2s <- split(df2s, df2s$pep_seq_mod)
+  ## (2) remove entries of small intensities (probably unnecessary)
+  if (y_tol > 0) {
+    res  <- df |>
+      dplyr::group_by_at(key) |>
+      dplyr::summarise(
+        max = max(pep_tot_int, na.rm = TRUE), 
+        min = min(pep_tot_int, na.rm = TRUE), 
+        yco = max * y_tol)
     
-    if (length(df2s) != nrow(res)) { stop("Developer: entries mismatched.") }
+    if (any(bads <- res$min < res$yco)) {
+      res  <- res[bads, c(key, "yco")]
+      rows <- df[[key]] %in% res[[key]]
+      df2s <- df[rows, ]
+      df2s <- split(df2s, df2s[[key]])
+      df   <- df[!rows, ]
+      res  <- res[match(names(df2s), res[[key]]), ]
+
+      if (length(df2s) != nrow(res)) {
+        stop("Developer: entries mismatched.")
+      }
+      
+      df2 <- mapply(function (dat, yco) {
+        dat[dat$pep_tot_int >= yco, ] # must be: nrow(dat) >= 2L
+      }, df2s, res$yco, SIMPLIFY = FALSE, USE.NAMES = FALSE) |> 
+        dplyr::bind_rows()
+    }
     
-    df2 <- mapply(function (dat, yco) {
-      dat[dat$pep_tot_int >= yco, ] # must be: nrow(dat) >= 2L
-    }, df2s, res$yco, SIMPLIFY = FALSE, USE.NAMES = FALSE) |> 
-      dplyr::bind_rows()
+    df <- dplyr::bind_rows(df, df1, df2) |>
+      dplyr::arrange_at(key)
+  }
+  else {
+    df <- dplyr::bind_rows(df, df1) |>
+      dplyr::arrange_at(key)
   }
   
-  df <- dplyr::bind_rows(df, df1, df2) |>
-    dplyr::arrange(pep_seq_mod)
+  df
 }
 
 
@@ -4553,7 +4544,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
   # summarizes log2FC and intensity from the same `set_idx` 
   #   at one or multiple LCMS series
   if (checkmzLFQRT(df) && !tmt_plex) {
-    if (!"pep_seq_modz" %in% names(df)) {
+    if (FALSE && !"pep_seq_modz" %in% names(df)) {
       df <- df |>
         tidyr::unite(pep_seq_modz, pep_seq_mod, pep_exp_z, sep = "@", 
                      remove = FALSE)
@@ -4569,7 +4560,7 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
         dplyr::filter(!duplicated(pep_seq_modz)) |>
         dplyr::right_join(ansmz, by = "pep_seq_modz")
     }
-    else { # should not incur
+    else { # single sample
       cols_lfq <- c("pep_seq_mod", "pep_seq", "pep_exp_z", "pep_score", 
                     "pep_tot_int", "pep_ret_sd", "pep_apex_ret", 
                     "pep_apex_scan")
@@ -4593,13 +4584,11 @@ calcLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq_mod",
     
     # update I000 and N_I000 after the right_join with ansmz
     df$I000 <- df$N_I000 <- df$pep_tot_int
-    rm(list = "ansmz")
   }
   
   # `pep_unique_int` and `pep_razor_int` recalculated  
   #   from the newly derived `pep_tot_int`. 
   # `pep_tot_int` can be later different to the summary of I000, I126 etc. 
-  
   df <- postMZpepLFQ(df = df, group_pep_by = group_pep_by, type_sd = type_sd, 
                      set_idx = set_idx)
 }
@@ -5107,7 +5096,7 @@ PSM2Pep <- function(method_psm_pep =
   #   only keep one entry for multiple PSMs at the same unique combinations
   ###
   
-  ## only for the purpose of RT alignment
+  ## for RT alignments
   if (ok_lfq) {
     if (file.exists(fi_datatype <- file.path(path_ms1, "data_type.rds"))) {
       data_type <- qs::qread(fi_datatype)
@@ -5128,6 +5117,7 @@ PSM2Pep <- function(method_psm_pep =
       type = "ms1full")
     
     if (TRUE) {
+      ## (1) add apex RTs
       dfs <- haddApexRTs_allsets(
         filelist = basenames, ms1full_files = ms1full_files, 
         dat_dir = dat_dir, path_ms1 = path_ms1, 
@@ -5138,38 +5128,43 @@ PSM2Pep <- function(method_psm_pep =
     else {
       dfs <- qs::qread(file.path(dat_dir, "df_haddApexRTs_allsets.rds"))
     }
-
-    # (a) raws nested under TMTSet[i]LCMSInj[j]; 
-    # (b) pep_n_apexes: 
-    #     the number of PRIMARY apex under the same pep_seq_mod in a sample set;
-    #     is a confounding PRIMARY if pep_n_apexes > 1L
-    # (c) another layer of confounding apexes: apex_ps
-    dfs <- cleanPSMRT_by_sets(dfs = dfs, filelist = basenames)
-    dfs <- lapply(dfs, dplyr::bind_rows) # flatten multiple raws under a set
     
-    # (1) go back later: to handle fractions (no MBR across fractions) 
-    #     sum intensity of the same pep_seq_mod (or pep_seq_modz)
-    # 
-    # (2) align apex (across TMTSet[i]LCMSInj[j])
-    # align RT across samples; also remove RT outliers, e.g., the same 
-    # `pep_seq_mod` at different `pep_exp_z` and quite different RTs 
+    dfs <- lapply(dfs, function (df) {
+      df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
+      df <- reloc_col_after(df, "pep_seq_modz", "pep_seq_mod")
+    })
+
+    ## (2) nullify RT outliers and low Y values (by each TMTset[i]LCMSinj[j]): 
+    # maybe y_tol = 0
+    dfs <- lapply(
+      dfs, rm_apexrt_outliers, key = "pep_seq_mod", rt_tol = 240, y_tol = .01)
+
+    ## (3) nullify entries with multi-PRIMARY apex (not by lengths(apex_ps))
+    dfs <- lapply(dfs, function (df) {
+      lapply(split(df, df$raw_file), add_pep_n_apexes, key = "pep_seq_modz", 
+             max_n_apexes = 2L, cleanup = TRUE)
+    })
+    
+    # flatten multiple RAWs under a TMTSet[i]LCMSInj[j] set
+    dfs <- lapply(dfs, dplyr::bind_rows)
+
+    # (x) go back later: to handle fractions (no MBR across fractions) 
+    #     sum intensity of the same pep_seq_mod (or pep_seq_modz?)
+
+    ## (4) align apex (across TMTSet[i]LCMSInj[j])
+    # align RT across samples; 
+    # `the same pep_seq_mod` at different `pep_exp_z` and quite different RTs 
     #   -> some must be outliers
     # the output is largely (~ 96%) the same pep_seq_mod and the same pep_exp_z, 
-    #  ~ 4% are close in RT (at different pep_exp_z by the allowance in RT sd) 
-    # 
-    # pep_n_apexes based on each pep_seq_mod under a (TMTSet[i]LCMSInj[j])
+    #  ~ 4% are close in RT (at different pep_exp_z by the allowance in RT sd)
     dfs <- alignPSMApexs(
       dfs = dfs, ms1full_files = ms1full_files, path_ms1 = path_ms1, 
-      key = "pep_seq_mod", temp_dir = temp_dir)
+      key = "pep_seq_modz", temp_dir = temp_dir)
     
-    # update pep_n_apexes at each TMTSet[i]LCMSInj[j] group_by pep_seq_modz 
-    # new definition: pep_n_apexes at each pep_seq_modz under a sample_id
-    #  -> one pep_seq_mod at each z
-    dfs <- hrm_lowIntPSMs(dfs = dfs, key = "pep_seq_modz", yfrac = .05, 
-                          max_n_apexes = 1L)
-    ###
+    ## Not really matter and arbitrary since LFQ occurs within `mergePep`
+    dfs <- hrm_lowIntPSMs(
+      dfs = dfs, key = "pep_seq_modz", yfrac = .02, max_n_apexes = 1L) # was .05
     # qs::qsave(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"), preset = "fast")
-    ###
     # dfs <- qs::qread(file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"))
   }
   else {
@@ -5228,43 +5223,6 @@ PSM2Pep <- function(method_psm_pep =
 }
 
 
-#' Clean up PSM retention times for a set of TMTset[i]LCMSinj[j]
-#'
-#' No clean-ups across TMTset[i]LCMSinj[j].
-#' 
-#' @param dfs A list of PSM tables.
-#' @param filelist A file names of PSM tables of TMTSet1_LCMSinj1_PSM_N.txt etc.
-#' @param max_n_apexes The maximum number of apexes for consideration.
-cleanPSMRT_by_sets <- function (dfs = NULL, filelist = NULL, max_n_apexes = 2L)
-{
-  cols <- c("pep_seq_mod", "pep_exp_mz", "pep_tot_int", "pep_apex_ret", 
-            "pep_apex_scan")
-  colx <- c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan")
-  
-  if (is.null(dfs)) {
-    dfs  <- lapply(filelist, function (x) {
-      readr::read_tsv(file.path(dat_dir, "PSM", x), col_types = get_col_types(), 
-                      show_col_types = FALSE) |>
-        suppressWarnings()
-    })
-    names(dfs) <- filelist
-  }
-
-  ## (1) remove RT outliers (single TMTset[i]LCMSinj[j]): 
-  #  (1.a) by the distance between `pep_ret_range` and `pep_apex_ret`;
-  #  (1.b) at low intensity w.r.t. the base under the same `pep_seq_mod`
-  # 
-  # unique at c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")
-  dfs <- lapply(dfs, rm_apexrt_outliers)
-  
-  ## (2) nullify entries with multi-PRIMARY apex (not by lengths(apex_ps))
-  dfs <- lapply(dfs, function (df) {
-    lapply(split(df, df$raw_file), add_pep_n_apexes, key = "pep_seq_mod", 
-           max_n_apexes = max_n_apexes)
-  })
-}
-
-
 #' Add column \code{pep_n_apexes}
 #'
 #' @param df A PSM sub-table with only one \code{RAW_File}.
@@ -5272,20 +5230,10 @@ cleanPSMRT_by_sets <- function (dfs = NULL, filelist = NULL, max_n_apexes = 2L)
 #' @param max_n_apexes The maximum number of apexes under the same \code{key}
 #'   for consideration. Note that the clean-up does not apply to the lengths of
 #'   apexes indicated under column \code{apx_ps}.
-add_pep_n_apexes <- function (df, key = "pep_seq_mod", max_n_apexes = 2L)
+#' @param cleanup Logical; clean up data or not.
+add_pep_n_apexes <- function (df, key = "pep_seq_modz", max_n_apexes = 2L, 
+                              cleanup = TRUE)
 {
-  if (FALSE) {
-    # exclude fwhm < 5...
-    ggplot() +
-      geom_point(data = data.frame(fwhm = unlist(df$apex_fwhms), 
-                                   apex_n = unlist(df$apex_ns)), 
-                 mapping = aes(x = fwhm, y =apex_n), 
-                 size = .1, colour = "black", alpha = .5)
-    
-    # very few >= 4L apex candidates
-    hist(lengths(df$apex_ps)) 
-  }
-  
   cts <- df[, c(key, "pep_apex_ret")] |>
     dplyr::group_by_at(key) |> 
     dplyr::summarise(pep_n_apexes = dplyr::n_distinct(pep_apex_ret, na.rm = TRUE))
@@ -5296,23 +5244,25 @@ add_pep_n_apexes <- function (df, key = "pep_seq_mod", max_n_apexes = 2L)
   df$pep_n_apexes <- cts$pep_n_apexes
   df <- reloc_col_after(df, "pep_n_apexes", "pep_apex_scan")
 
-  # e.g., two pep_seq_modz's correspond to two slightly different pep_apex_ret's
-  if (key == "pep_seq_mod") {
-    rowx <- which(df$pep_n_apexes > pmax(max_n_apexes, df$pep_n_exp_z))
-  }
-  else if (key == "pep_seq_modz") {
-    rowx <- which(df$pep_n_apexes > max_n_apexes)
-  }
-  else {
-    stop("The `key` need to be one of `pep_seq_mod` or `pep_seq_modz`.")
+  if (cleanup) {
+    # e.g., two `pep_seq_modz`s at two slightly different `pep_apex_ret`s
+    if (key == "pep_seq_mod") {
+      rowx <- which(df$pep_n_apexes > pmax(max_n_apexes, df$pep_n_exp_z))
+    }
+    else if (key == "pep_seq_modz") {
+      rowx <- which(df$pep_n_apexes > max_n_apexes)
+    }
+    else {
+      stop("The `key` need to be one of `pep_seq_mod` or `pep_seq_modz`.")
+    }
+    
+    if (length(rowx)) {
+      df$pep_n_apexes[rowx] <- df$pep_tot_int[rowx] <- df$N_I000[rowx] <- 
+        df$I000[rowx] <- df$pep_apex_ret[rowx] <- df$pep_apex_scan[rowx] <- 
+        NA_real_
+    }
   }
 
-  if (length(rowx)) {
-    df$pep_n_apexes[rowx] <- df$pep_tot_int[rowx] <- df$N_I000[rowx] <- 
-      df$I000[rowx] <- df$pep_apex_ret[rowx] <- df$pep_apex_scan[rowx] <- 
-      NA_real_
-  }
-  
   df
 }
 
@@ -5394,37 +5344,31 @@ cleanRTChim <- function (df = NULL)
 #' @param key The key for data grouping.
 #' @param temp_dir A path for temporary files.
 alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL, 
-                           key = "pep_seq_mod", temp_dir = NULL)
+                           key = "pep_seq_modz", temp_dir = NULL)
 {
   n_smpls  <- length(dfs)
   min_n    <- ceiling(n_smpls / 2L)
   filelist <- names(dfs) # TMTSet[i]LCMSinj[j]...
-
+  
   # later: need Sample_ID, other than raw_file for fractionated samples...
   # 
   # no need of `pep_exp_z`: the same `pep_seq_mod` at near the same `pep_exp_mz`
   #  -> the same `pep_exp_z`
   
-  key2 <- "pep_seq_modz"
-  cols <- c(key, "raw_file", "pep_exp_mz", "pep_tot_int", "pep_scan_num", 
+  cols <- c(key, 
+            "raw_file", "pep_exp_mz", "pep_tot_int", "pep_scan_num", 
             "pep_orig_scan", "pep_apex_ret", "pep_apex_scan", "pep_apex_fwhm", 
             "pep_apex_n")
   colx <- c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan", 
             "pep_apex_fwhm", "pep_apex_n")
-
+  
   ## (1) separate into single- and multi-apex subsets
   #  further subset by non-modified peptides, intensities...???
   #  (pep_seq_mod is unique in the single-apex subset)
   dfs1 <- dfsn <- dfRTs <- vector("list", n_smpls)
-
+  
   for (i in 1:n_smpls) {
     df   <- dfs[[i]]
-    
-    if (!"pep_seq_modz" %in% names(df)) {
-      df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
-      df <- df |> reloc_col_after("pep_seq_modz", "pep_seq_mod")
-    }
-
     nps  <- df$pep_n_apexes
     rows <- (!is.na(nps)) & nps == 1L & lengths(df$apex_ps) == 1L
     
@@ -5435,12 +5379,13 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
     dfRTs[[i]] <- dfs1[[i]][, cols] |>
       dplyr::mutate(set. = filelist[[i]])
   }
-  rm(list = c("df", "rows"))
+  rm(list = c("df", "rows", "nps"))
   
   dfRTs <- dplyr::bind_rows(dfRTs)
   
+  # add numbers of occurrence
   cts <- dfRTs |>
-    dplyr::group_by_at(key) |> 
+    dplyr::group_by_at(key) |>
     dplyr::summarise(N. = dplyr::n())
   mts <- match(dfRTs[[key]], cts[[key]])
   
@@ -5459,7 +5404,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   # 
   # try ignore_n2_outliers = TRUE for high-quality
   mats <- rm_RToutliers(
-    pep_seq_modzs  = lapply(dfRTs, `[[`, "pep_seq_mod"), 
+    pep_seq_modzs  = lapply(dfRTs, `[[`, key), 
     pep_exp_mzs    = lapply(dfRTs, `[[`, "pep_exp_mz"), 
     pep_exp_ints   = lapply(dfRTs, `[[`, "pep_tot_int"), 
     pep_apex_rets  = lapply(dfRTs, `[[`, "pep_apex_ret"), 
@@ -5476,15 +5421,15 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   nmat <- mats[["n"]] # not to be filtered by large "n"s: many MS1s without MS2s
   err0 <- mats[["err"]]
   qfw0 <- mats[["qfwhm"]]
-  qs::qsave(pars <- list(fwhm_co = qfw0, sderr = err0), 
-            file.path(temp_dir, "pars_rt.rds"))
-
+  qs::qsave(
+    list(fwhm_co = qfw0, sderr = err0), file.path(temp_dir, "pars_rt.rds"))
+  
   if (FALSE) {
     sds <- vector("numeric", nps <- ncol(tmat))
     for (i in seq_len(nps)) { sds[[i]] <- sd(tmat[, i], na.rm = TRUE) }
     # bimodal; small modal: data more sparse; large modal: data more dense
     ggplot() + geom_histogram(data = data.frame(SD = sds), aes(x = SD, y = ..count..), binwidth = 1)
-
+    
     # subset the primary modal
     oks <- local({
       sds <- vector("numeric", nps <- ncol(tmat))
@@ -5501,7 +5446,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
       oks <- sds >= sd1 & sds <= sdn
     })
   }
-
+  
   ## (3.1) align retention times (based on the single-apex data)
   tmat <- fitMS1RT(tmat, sta = NULL)
   fits <- attr(tmat, "fits", exact = TRUE)
@@ -5519,15 +5464,15 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   fmat <- mats[["f"]]
   nmat <- mats[["n"]]
   err  <- mats[["err"]]
-
+  
   ## (4) update single-apex data
   # start from i = 1 (not 2), since:
   #  `rm_2RToutliers` nullify the lower intensity entry at which.min(ys) 
   #   -> reference sample at i = 1 can be RT outliers (and set to NA_real_)
   dfs1 <- cleanPSMYTS(
     dfs = dfs1, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
-    key = "pep_seq_mod", cols = colx, update = TRUE)
-
+    key = key, cols = colx, update = TRUE) # was key = "pep_seq_mod"
+  
   ## (5.1) align multi-apex RTs
   for (i in 1:n_smpls) {
     if (is.null(fit <- fits[[i]])) {
@@ -5539,7 +5484,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
       
       next
     }
-
+    
     dfi <- dfsn[[i]]
     rts <- dfi$pep_apex_ret
     ds  <- predict.lm(fit, newdata = data.frame(rts = rts))
@@ -5559,7 +5504,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   # may be postponed to give two-apex pep_seq_mod another chance, e.g., 
   # 1:1 for the primary apex and 1:2 for the secondary -> 1:2 ???
   mats <- rm_RToutliers(
-    pep_seq_modzs  = lapply(dfsn, `[[`, key2), 
+    pep_seq_modzs  = lapply(dfsn, `[[`, key), 
     pep_exp_mzs    = lapply(dfsn, `[[`, "pep_exp_mz"), 
     pep_exp_ints   = lapply(dfsn, `[[`, "pep_tot_int"), 
     pep_apex_rets  = lapply(dfsn, `[[`, "pep_apex_ret"), 
@@ -5582,19 +5527,20 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
     ggplot() + geom_histogram(data = data.frame(SD = sds[sds <= 100]), 
                               aes(x = SD, y = ..count..), binwidth = 1)
   }
-
+  
   # the same pep_seq_mod at different z can still be quite different in RTs
   dfsn <- cleanPSMYTS(
     dfs = dfsn, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
-    key = key2, cols = colx, update = TRUE)
+    key = key, cols = colx, update = TRUE)
   
   ## (6) update retention-time SDs 
-  #  addl' cleanups at clean_up = TRUE, including those due to different z's)
-  dfsn <- updatePSMsd(dfs = dfsn, filelist = filelist, key = "pep_seq_mod", 
-                      qt_sd = .97, clean_up = TRUE) # was .95
-  dfs1 <- updatePSMsd(dfs = dfs1, filelist = filelist, key = "pep_seq_mod", 
-                      clean_up = FALSE)  
-
+  #  addl' cleanups at cleanup = TRUE, including those due to different z's)
+  # was both key = "pep_seq_modz"
+  dfsn <- updatePSMsd(dfs = dfsn, filelist = filelist, key = key, 
+                      qt_sd = .97, cleanup = TRUE)
+  dfs1 <- updatePSMsd(dfs = dfs1, filelist = filelist, key = key, 
+                      qt_sd = .97, cleanup = FALSE)
+  
   ## (7) combine single- and multi-apex data; update apex_ts1
   for (i in 1:n_smpls) {
     dfs[[i]] <- dplyr::bind_rows(dfs1[[i]], dfsn[[i]])
@@ -5605,7 +5551,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   
   ## (8) nullify RT outliers after data combination
   mats <- rm_RToutliers(
-    pep_seq_modzs  = lapply(dfs, `[[`, "pep_seq_mod"), 
+    pep_seq_modzs  = lapply(dfs, `[[`, "pep_seq_modz"), 
     pep_exp_mzs    = lapply(dfs, `[[`, "pep_exp_mz"), 
     pep_exp_ints   = lapply(dfs, `[[`, "pep_tot_int"), 
     pep_apex_rets  = lapply(dfs, `[[`, "pep_apex_ret"), 
@@ -5626,7 +5572,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   # so only nullify the additional bad ones at high SDs after `dfs1 + dfsn`
   dfs <- cleanPSMYTS(
     dfs = dfs, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
-    key = "pep_seq_mod", cols = colx, update = FALSE)
+    key = key, cols = colx, update = FALSE) # was key = "pep_seq_modz"
 }
 
 
@@ -5655,9 +5601,9 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
 #' @param by_fwhm Additional outlier removals by FWHM values.
 #' @param fwhm_co The cut-off in FWHM values.
 #' @param ok_unv Logical; is the universe ready or need to be compiled.
-#' @param ignore_n2_outliers Logical; ignore discrepant retention times at a
-#'   two-sample scenario, for example, to retain a high-quality subset for RT
-#'   calibrations.
+#' @param ignore_n2_outliers Not yet used. Logical; ignore discrepant retention
+#'   times at a two-sample scenario, for example, to retain a high-quality
+#'   subset for RT calibrations.
 #' @param rt_tol Not yet used. The tolerance in retention times between two
 #'   samples.
 #' @param method A method for outlier removals.
@@ -5885,7 +5831,7 @@ makeLFQXYTS <- function (pep_seq_modzs = NULL, pep_exp_mzs = NULL,
 #'   to tmat.
 #' @param cols The column keys for value updates.
 cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat, 
-                         key = "pep_seq_mod", update = TRUE, 
+                         key = "pep_seq_modz", update = TRUE, 
                          cols = c("pep_tot_int", "N_I000", "I000", 
                                   "pep_apex_ret", "pep_apex_scan", 
                                   "pep_apex_fwhm", "pep_apex_n"))
@@ -5894,7 +5840,7 @@ cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat,
   peps <- colnames(tmat)
   
   for (i in 1:len) {
-    dfi  <- dfs[[i]] # stopifnot(length(unique(dfi$pep_seq_mod)) == nrow(dfi))
+    dfi  <- dfs[[i]]
     tmi  <- tmat[i, ]
     oks  <- !is.na(tmi)
     mts  <- match(dfi[[key]], peps[oks])
@@ -5910,10 +5856,6 @@ cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat,
     # e.g., at key = "pep_seq_modz" and tmat based on "pep_seq_mod", 
     #  the same retention time for the same `pep_seq_mod` at different z
     #  -> whatever the first matched value will be used for replacement all z's.
-    
-    # a pep_seq_modz at very different pep_apex_rets -> same pep_apex_rets
-    # need to update dfi$pep_tot_int[rows] ...
-    # dfi$pep_apex_ret[25406:25407]; tmi[mts[25406:25407]]
     if (update) {
       tmi <- tmi[oks]
       ymi <- ymat[i, ][oks]
@@ -6000,9 +5942,9 @@ rm_nRToutliers <- function (mx, my, mt, ms, mf, mn, err, zero = NA_real_)
 #' @param filelist The file names corresponding to \code{dfs}.
 #' @param key The key for data grouping.
 #' @param qt_sd The quantile cut-off in retention time SD values.
-#' @param clean_up Logical; nullify data of retention outliers or not.
-updatePSMsd <- function (dfs, filelist, key = "pep_seq_mod", qt_sd = .97, 
-                         clean_up = FALSE)
+#' @param cleanup Logical; nullify data of retention outliers or not.
+updatePSMsd <- function (dfs, filelist, key = "pep_seq_modz", qt_sd = .97, 
+                         cleanup = FALSE)
 {
   dfs <- mapply(function (x, y) {
     x$set_id <- y
@@ -6010,22 +5952,24 @@ updatePSMsd <- function (dfs, filelist, key = "pep_seq_mod", qt_sd = .97,
   }, dfs, filelist, 
   SIMPLIFY = FALSE, USE.NAMES = TRUE)
   
-  df  <- dplyr::bind_rows(dfs)
-  sds <- calc_pep_retsd(df[, c(key, "pep_apex_ret")], group_psm_by = key)
+  df   <- dplyr::bind_rows(dfs)
+  sds  <- calc_pep_retsd(df[, c(key, "pep_apex_ret")], group_psm_by = key)
+  vsds <- sds$pep_ret_sd
   
-  vsds     <- sds$pep_ret_sd
-  res_hist <- hist(vsds, ceiling(max(vsds, na.rm = TRUE)), plot = FALSE)
-  cts_hist <- res_hist$counts
-  oks_hist <- which(cts_hist / max(cts_hist) >= .005)
-  upr_hist <- oks_hist[[length(oks_hist)]]
-  qt_hist  <- sum(vsds <= upr_hist) / length(vsds)
-  
-  sco <- quantile(vsds, max(qt_hist, qt_sd))
-  sds <- sds[match(df[[key]], sds[[key]]), ]
-  cols_sd <- c("pep_ret_sd", "pep_ret_min", "pep_ret_max")
-  df[, cols_sd] <- sds[, cols_sd]
+  if (!all(vsds == 0)) {
+    res_hist <- hist(vsds, ceiling(max(vsds, na.rm = TRUE)), plot = FALSE)
+    cts_hist <- res_hist$counts
+    oks_hist <- which(cts_hist / max(cts_hist) >= .005)
+    upr_hist <- oks_hist[[length(oks_hist)]]
+    qt_hist  <- sum(vsds <= upr_hist) / length(vsds)
+    
+    sco <- quantile(vsds, max(qt_hist, qt_sd))
+    sds <- sds[match(df[[key]], sds[[key]]), ]
+    cols_sd <- c("pep_ret_sd", "pep_ret_min", "pep_ret_max")
+    df[, cols_sd] <- sds[, cols_sd]
+  }
 
-  if (clean_up) {
+  if (cleanup) {
     rowx <- df$pep_ret_sd > sco
     df$pep_tot_int[rowx] <- df$N_I000[rowx] <- df$I000[rowx] <- 
       df$pep_apex_ret[rowx] <- df$pep_apex_scan[rowx] <- 

@@ -4,10 +4,12 @@
 \alias{rm_apexrt_outliers}
 \title{Remove PSM retention outliers}
 \usage{
-rm_apexrt_outliers(df = NULL, rt_tol = 240, y_tol = 0.01)
+rm_apexrt_outliers(df = NULL, key = "pep_seq_mod", rt_tol = 240, y_tol = 0.01)
 }
 \arguments{
 \item{df}{A PSM table at a TMTset[i]LCMSinj[j].}
+
+\item{key}{A column key for data grouping.}
 
 \item{rt_tol}{Tolerance in retention times between \code{pep_ret_range}  and
 \code{pep_apex_ret} in seconds.}

@@ -61,9 +61,9 @@ entries in a \code{df}.}
 
 \item{ok_unv}{Logical; is the universe ready or need to be compiled.}
 
-\item{ignore_n2_outliers}{Logical; ignore discrepant retention times at a
-two-sample scenario, for example, to retain a high-quality subset for RT
-calibrations.}
+\item{ignore_n2_outliers}{Not yet used. Logical; ignore discrepant retention
+times at a two-sample scenario, for example, to retain a high-quality
+subset for RT calibrations.}
 
 \item{rt_tol}{Not yet used. The tolerance in retention times between two
 samples.}
