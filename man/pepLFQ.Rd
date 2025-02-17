@@ -76,5 +76,5 @@ not.}
 \item{err_log2r}{Not yet used. Error tolerance in log2FC.}
 }
 \description{
-LFQ of peptides
+Peptides are unique to species.
 }

@@ -2096,10 +2096,12 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
 
   if (ok_lfq) {
-    ans_lfq <- hpepLFQ(
+    dfs <- hpepLFQ(
       filelist = filelist, basenames = basenames, set_idxes = set_idxes, 
       injn_idxes = injn_idxes, are_refs = are_refs, are_smpls = are_smpls, 
       dfs = dfs, 
+      # `species` can be wrong for shared peptides across species 
+      # but sufficient for finding species centers
       df_sps = unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
       prot_spec_counts = prot_spec_counts, 
       dat_dir = dat_dir, path_ms1 = path_ms1, ms1files = ms1files, 
@@ -2108,8 +2110,9 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       group_psm_by = "pep_seq_modz", group_pep_by = group_pep_by, 
       imp_refs = imp_refs, lfq_mbr = lfq_mbr, 
       new_na_species = new_na_species)
-    sp_centers <- attr(ans_lfq, "sp_centers", exact = TRUE)
-    
+    sp_centers <- attr(dfs, "sp_centers", exact = TRUE)
+    df <- dplyr::bind_rows(dfs) # after updated species info
+
     for (i in seq_along(filelist)) {
       addMBRpeps(file = filelist[[i]], pep_tbl = dfs[[i]], dat_dir = dat_dir, 
                  group_psm_by = group_psm_by)
@@ -2295,6 +2298,9 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     purrr::reduce(dplyr::left_join, by = group_psm_by) |>
     reloc_col_before(group_psm_by, "pep_res_after") |>
     reloc_col_after("pep_ret_sd", "pep_ret_range")
+  
+  df$pep_apex_ps <- df$pep_apex_ts <- df$pep_apex_xs <- df$pep_apex_ys <- 
+    df$pep_apex_fwhms <- df$pep_apex_ns <- NULL
   
   if (separate_lfq_cols <- TRUE) {
     df <- df[, !grepl("^pep_.*_int \\(", names(df))]

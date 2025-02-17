@@ -10,8 +10,8 @@ collapseSTY(
   zs = NULL,
   lwr = 10,
   step = 0.002,
-  coll = TRUE,
-  look_back = TRUE
+  spc = 0,
+  coll = TRUE
 )
 }
 \arguments{
@@ -25,9 +25,9 @@ collapseSTY(
 
 \item{step}{The bin size in converting numeric X values to integers.}
 
-\item{coll}{Logical; collapse adjacent columns or not.}
+\item{spc}{A species center.}
 
-\item{look_back}{Logical; look up the preceding MS bin or not.}
+\item{coll}{Logical; collapse adjacent columns or not.}
 }
 \description{
 Near identical to \code{mzion:::collapse_mms1ints} with three fields instead

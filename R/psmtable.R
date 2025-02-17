@@ -5129,11 +5129,6 @@ PSM2Pep <- function(method_psm_pep =
       dfs <- qs::qread(file.path(dat_dir, "df_haddApexRTs_allsets.rds"))
     }
     
-    dfs <- lapply(dfs, function (df) {
-      df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
-      df <- reloc_col_after(df, "pep_seq_modz", "pep_seq_mod")
-    })
-
     ## (2) nullify RT outliers and low Y values (by each TMTset[i]LCMSinj[j]): 
     # maybe y_tol = 0
     dfs <- lapply(
@@ -9181,14 +9176,14 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       if (.savecall) 
         message("Split PSMs by TMT experiments and LCMS series --- Completed.")
     }, add = TRUE)
-
+  
   # ---
   dat_dir <- get_gl_dat_dir()
   load(file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
-  TMT_plex <- TMT_plex(label_scheme_full)
+  tmt_plex <- TMT_plex(label_scheme_full)
   filelist <- find_psmQ_files(dat_dir)
-
+  
   # (1.1) row filtration, column padding and psm file combinations
   dots <- rlang::enexprs(...)
   
@@ -9197,48 +9192,22 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     .[grepl("^filter_", names(.))]
   
   dots <- dots[!dots %in% filter_dots]
-
+  
   message("Primary column keys in \"psmQ[...].txt\" for \"filter_\" varargs.", 
           "\n")
   message("Found PSM files: \n  ", paste(filelist, collapse = ", \n  "), "\n")
   
   ###
-  # `pep_tot_int`: precursor intensities in psmQ.txt
   # `I000 = pep_tot_int`: to maintain the channels as TMT-based quantitation
   ###
   
-  df <- filelist |>
-    # added `I000 = pep_tot_int`
-    # pep_tot_int: MS1 intensities; I000: MS1 mimicking TMT-MS2 formats
+  df <- filelist |> # added `I000 = pep_tot_int`
     purrr::map(pad_tmt_channels, !!!filter_dots) |>
     pad_psm_fields() |> 
     dplyr::bind_rows()
-
-  if (FALSE) {
-    filelistC <- 
-      list.files(path = file.path(dat_dir), pattern = "^psmC.*\\.txt$")
-    
-    if (!length(filelistC)) {
-      # warning("\"psmC[...].txt\" not found for MBR.")
-      dfC <- NULL
-    }
-    else {
-      if (TMT_plex) {
-        warning("No MBR for TMT.")
-        dfC <- NULL
-      }
-      else {
-        dfC <- dplyr::bind_rows(lapply(filelistC, load_psmC))
-      }
-    }
-  }
-  else {
-    dfC <- NULL
-  }
-
+  
   # for psmC.txt to bypass
   not_psmC <- c("prot_hit_num", "prot_family_member", "prot_isess", "prot_tier")
-  
   if (!all(not_psmC %in% names(df))) {
     df <- df |>
       dplyr::group_by(prot_acc) |>
@@ -9247,7 +9216,6 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                     pep_razor_unique = TRUE, pep_literal_unique = TRUE) |>
       dplyr::ungroup()
   }
-  
   rm(list = "not_psmC")
   
   # check essential columns
@@ -9259,48 +9227,34 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
            if (!x %in% col_nms) stop("Column \"", x, "\" not found.")
          })
   
-  # (has different meaning in Mascot)
-  if ("pep_frame" %in% col_nms) {
-    df$pep_frame <- NULL
-  }
-
-  # (backward compatibility)
-  if ("pep_ret_time" %in% col_nms) {
-    df <- dplyr::rename(df, pep_ret_range = pep_ret_time)
-  }
-
-  if ("pep_ms2_n" %in% col_nms) {
-    df <- dplyr::rename(df, pep_n_ms2 = pep_ms2_n)
-  }
-
   # maybe new set cover of pep_seq's by prot_acc's here at length(filelist) > 1L; 
   # add_prot_acc(df) to avoid dependency w.r.t. terminal vs interior sequences,
   #   but need path info to access the cached lookups
-
+  
   # (1.2) add ratio columns
-  if (TMT_plex) {
+  if (tmt_plex) {
     if (!"I126" %in% col_nms) {
       stop("Column \"I126\" not found.")
     }
-
-    if (!TMT_plex %in% c(6L, 10L, 11L, 16L, 18L)) {
+    
+    if (!tmt_plex %in% c(6L, 10L, 11L, 16L, 18L)) {
       stop("For a TMT-plex other than 6, 10, 11, 16 and 18, \n", 
            "  pad it to an applicable higher plex (e.g. 8 -> 10 or 11).")
     }
-
-    df <- sweep(df[, find_int_cols(TMT_plex), drop = FALSE], 
+    
+    df <- sweep(df[, find_int_cols(tmt_plex), drop = FALSE], 
                 1, df[["I126"]], "/") %>% 
       `colnames<-`(gsub("I", "R", names(.))) %>% 
       dplyr::select(-R126) %>% 
       dplyr::mutate_at(vars(grep("^R[0-9]{3}[NC]{0,1}", names(.))), 
-                       ~ replace(.x, is.infinite(.x), NA_real_)) %>% 
+                       function (x) replace(x, is.infinite(x), NA_real_)) %>% 
       dplyr::bind_cols(df, .) 
   } 
   else {
     if (!"I000" %in% col_nms) {
       stop("Developer: column `I000` not found.")
     }
-
+    
     df <- df |>
       reloc_col_after_last("I000") |>
       dplyr::mutate(
@@ -9313,14 +9267,15 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   if (!any(grepl("^I[0-9]{3}[NC]{0,1}", col_nms2))) {
     stop("Intensity column(s) \"I[...]\" not found.")
   }
-
+  
   if (!any(grepl("^R[0-9]{3}[NC]{0,1}", col_nms2))) {
     stop("Ratio column(s) \"R[...]\" not found.")
   }
-
+  
   # (1.3) clean up prot_acc
-  df <- df %>% 
-    { if (rm_craps) dplyr::filter(., !grepl("\\|$", prot_acc)) else . } 
+  if (rm_craps) {
+    df <- df |> dplyr::filter(!grepl("\\|$", prot_acc))
+  }
   
   # (1.4) add pep_seq_mod
   # (removals NL indicators at the end of `pep_ivmod`; 
@@ -9329,19 +9284,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- split(df, df$dat_file) |>
     lapply(add_pepseqmod, use_lowercase_aa, purge_phosphodata) |>
     dplyr::bind_rows()
-
-  if (!is.null(dfC)) {
-    dfC$pep_ivmod <- with(dfC, gsub(" .*", "", pep_ivmod))
-    
-    dfC <- split(dfC, dfC$dat_file, drop = TRUE) |>
-      lapply(add_pepseqmod, use_lowercase_aa, purge_phosphodata) |>
-      dplyr::bind_rows() |>
-      dplyr::filter(pep_seq_mod %in% unique(df[["pep_seq_mod"]]))
-    
-    dfC$pep_apex_scan <- dfC$pep_ivmod <- dfC$pep_fmod <- dfC$pep_vmod <- 
-      dfC$pep_exp_z <- NULL
-  }
-
+  
   # (1.4.2) phospho (may be deleted later)
   if (all(c("pep_vmod", "pep_locprob", "pep_locdiff") %in% col_nms2)) {
     df <- df |>
@@ -9354,23 +9297,22 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   # (2.1) annotate proteins
-  df <- df %>% 
-    annotPrn(fasta, entrez) %>%  
-    { if (! "gene" %in% names(.)) dplyr::mutate(., gene = prot_acc) else . } %>% 
-    dplyr::mutate(gene = ifelse(is.na(gene), prot_acc, gene))
+  df <- annotPrn(df, fasta, entrez)
+  if (!"gene" %in% names(df)) { df$gene <- df$prot_acc }
+  if (length(nas <- which(is.na(df$gene)))) { df$genes[nas] <- df$prot_acc[nas] }
 
   # (2.2) compile "preferred" columns
-
+  
   # (2.3) find the shared prot_accs and genes for each peptide
   df <- df |>
     dplyr::arrange(prot_hit_num, prot_family_member) |> 
     find_shared_prots("pep_seq", "prot_acc") |>
     find_shared_prots("pep_seq", "gene")
   df[["pep_seq_term"]] <- df[["pep_n_prot_accs"]] <- df[["pep_n_genes"]] <- NULL
-
+  
   # (2.4) remove non-essential proteins after shared_prot_accs, shared_genes
   df <- df |> dplyr::filter(!is.na(prot_family_member))
-
+  
   # (2.5) find the uniqueness of peptides
   df <- if (pep_unique_by == "group") {
     dplyr::mutate(df, pep_isunique = pep_razor_unique)
@@ -9384,7 +9326,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   else {
     df
   }
-
+  
   local({
     cols <- c("pep_isunique", "pep_literal_unique", "pep_razor_unique", 
               "pep_tot_int")
@@ -9394,7 +9336,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       stop("Required columns not found: ", paste(cols[!oks], collapse = ", "))
     }
   })
-
+  
   # (2.6) add peptide properties and prot_cover
   df <- df |>
     annotPeppos() |>
@@ -9408,7 +9350,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(pep_istryptic = as.logical(pep_istryptic), 
                   pep_miss = as.integer(pep_miss)) |>
     calc_cover(id = !!rlang::sym(group_pep_by)) 
-
+  
   # (2.7) apply parsimony
   df <- dplyr::arrange(df, pep_rank, -prot_mass)
   uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq")
@@ -9416,42 +9358,30 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   if (length(unique(df$dat_file))) {
     uniq_by <- c("dat_file", uniq_by)
   }
-
-  # (often `pep_rank_nl == 1` after this step)
-  df <- df[!duplicated(df[, uniq_by]), ]
-
-  if (!is.null(dfC)) {
-    # remove dfC entries that are already in df (no need for MBR)
-    # (timsTOF mgf: possible with one query at multiple scan numbers)
-    uids <- 
-      tidyr::unite(df, uniq_id, uniq_by, sep = ".", remove = FALSE)[["uniq_id"]]
-    
-    dfC <- dfC[!duplicated(dfC[, uniq_by]), ] |>
-      dplyr::mutate(dat_file. = dat_file, 
-                    dat_file  = gsub("^psmC", "psmQ", dat_file)) |>
-      tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) |>
-      dplyr::filter(!uniq_id %in% uids) |>
-      dplyr::mutate(dat_file = dat_file.) |>
-      dplyr::select(-dat_file.)
-
-    rm(list = c("uids"))
-    
-    df <- add_mbr_psms(df, dfC, mbr_ret_tol = mbr_ret_tol)
-  }
-
-  df <- dplyr::arrange(df, prot_hit_num, prot_family_member, pep_start, pep_end)
   
+  # same peptide to different species: set aside for LFQ
+  df[["pep_seq_modz"]] <- paste0(df[["pep_seq_mod"]], "@", df[["pep_exp_z"]])
+  readr::write_tsv(unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
+                   file.path(dat_dir, "PSM", "cache", "protpepspecies.tsv"))
+  
+  # often `pep_rank_nl == 1` after this step; 
+  # redundancy removals includes
+  #  the same peptide to different proteins
+  #  the same pep_seq at the same pep_scan_num but different pep_seq_mods
+  df <- df[!duplicated(df[, uniq_by]), ] |>
+    dplyr::arrange(prot_hit_num, prot_family_member, pep_start, pep_end)
+
   # (2.8) add columns pep_n_psm, prot_n_psm, prot_n_pep
   # (after the non-redundant PSM entries)
   df <- add_quality_cols(df, group_psm_by, group_pep_by, uniq_by)
   
-  if (use_spec_counts && !TMT_plex) {
+  if (use_spec_counts && !tmt_plex) {
     df <- df |> 
       dplyr::mutate(I000 = df$pep_n_psm) |> 
       dplyr::mutate(R000 = I000/I000, 
                     R000 = ifelse(is.infinite(R000), NA_real_, R000))
   }
-
+  
   .saveCall <- TRUE
   
   invisible(df)
@@ -9573,184 +9503,6 @@ add_n_pepexpz <- function (df, group_psm_by = "pep_seq", use_unique = TRUE)
   df <- df %>% 
     reloc_col_after("pep_n_exp_z", "pep_exp_z") %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
-}
-
-
-#' Adds MBR PSMs from psmC
-#'
-#' Not yet used. The field of \code{pep_scan_title} from MBR does not contain
-#' new information and purposely left as NA.
-#'
-#' @param dfq psmQ data.
-#' @param dfc psmC data.
-#' @param cols Columns for use as unique identifiers of PSMs.
-#' @inheritParams normPSM
-#' @importFrom fastmatch %fin%
-add_mbr_psms <- function (dfq, dfc, group_psm_by = "pep_seq_mod", 
-                          cols = c("pep_apex_ret"), mbr_ret_tol = 25) 
-{
-  if (!"pep_apex_ret" %in% names(dfq)) {
-    warning("No MBR withoug column `pep_apex_ret`. ", 
-            "Please use a later version of Mzion (>= 1.4.2.2).")
-    return(dfq)
-  }
-  
-  cols_mbr <- c("pep_seq", "pep_tot_int", "pep_apex_ret", "RAW_File", "I000", 
-                "R000", "pep_scan_num", 
-                # "pep_ret_range", 
-                # "pep_ivmod", "pep_fmod", "pep_vmod", "pep_exp_z", 
-                # "pep_n_ms2", "pep_exp_mz", "pep_exp_mr", "pep_delta", "pep_issig", 
-                # "pep_score", "pep_locprob", "pep_locdiff", "pep_rank", "pep_expect", 
-                "dat_file")
-  cols_dfq <- c("prot_acc", "prot_mass", "prot_issig", "prot_isess", "prot_hit_num", 
-                "prot_family_member", "prot_tier", "prot_es", "prot_es_co", 
-                "pep_literal_unique", "pep_razor_unique", "pep_calc_mr", 
-                "pep_ivmod", "pep_fmod", "pep_vmod", "pep_exp_z", "pep_len", 
-                "pep_mod_group", "pep_isdecoy", 
-                "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
-                "other_acc", "entrez", "species", "acc_type", "shared_prot_accs", 
-                "shared_genes", "pep_isunique", "pep_start", "pep_end", 
-                "pep_res_before", "pep_res_after", "pep_istryptic", 
-                "pep_semitryptic", "pep_miss", "prot_cover", 
-                "gene", "prot_desc", "prot_len")
-  
-  # separate dfq into dfq0 and dfq1
-  qnotc <- setdiff(unique(dfq[[group_psm_by]]), unique(dfc[[group_psm_by]]))
-  qonly <- dfq[[group_psm_by]] %fin% qnotc
-  dfq0 <- dfq[qonly, ]
-  dfq1 <- dfq[!qonly, ]
-  rm(list = c("qonly", "qnotc", "dfq"))
-  
-  # separate dfq1 into complete (dfqu) and incomplete (dfqm) groups
-  # dfqm: missing results in some RAW_Files and seeks for MBR
-  dfq1 <- tidyr::complete(dfq1, !!rlang::sym(group_psm_by), RAW_File)
-  dfqs <- split(dfq1, dfq1[[group_psm_by]])
-  rows <- unlist(lapply(dfqs, function (x) any(is.na(x[["prot_acc"]]))))
-  dfqu <- dplyr::bind_rows(dfqs[!rows])
-  dfqm <- dfqs[rows] 
-  pepsq <- names(dfqm)
-  rm(list = "rows")
-  
-  # subset dfc
-  uniq_by <- c(group_psm_by, cols)
-  dfc <- dfc[!duplicated(dfc[, uniq_by]), ]
-  
-  # remove dfc pep_seq_mod that are not found in dfq
-  cnotq <- setdiff(dfc[[group_psm_by]], pepsq)
-  oks <- !dfc[[group_psm_by]] %fin% cnotq
-  dfc <- dfc[oks, ]
-  rm(list = c("cnotq", "oks"))
-  
-  # order dfc and dfqm by `group_psm_by`
-  ords <- order(dfc[[group_psm_by]])
-  dfc  <- dfc[ords, ]
-
-  ords <- order(pepsq)
-  dfqm <- dfqm[ords]
-  pepsq <- pepsq[ords]
-  rm(list = c("ords"))
-  
-  # split dfc by pep_seq_mod
-  dfc <- split(dfc, dfc[[group_psm_by]])
-  pepsc <- names(dfc)
-  
-  if (!identical(pepsc, pepsq)) {
-    stop("Unhandled situation; please use \"lfq_mbr = FALSE\".\n", 
-         "Report the bug: ", 
-         "mismatches in the order \"pep_seq_mod\" between psmC and psmQ.")
-  }
-
-  n_cores <- parallel::detectCores()
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  
-  parallel::clusterExport(
-    cl,
-    c("smbr_psms", "mmbr_psms"), 
-    envir = environment(proteoQ:::smbr_psms)
-  )
-  
-  ans <- parallel::clusterMap(
-    cl, mmbr_psms, 
-    mzion::chunksplit(dfqm, n_cores, "list"), 
-    mzion::chunksplit(dfc,  n_cores, "list"), 
-    MoreArgs = list(cols_mbr = cols_mbr, 
-                    cols_dfq = cols_dfq, 
-                    mbr_ret_tol = mbr_ret_tol), 
-    .scheduling = "dynamic")
-  
-  parallel::stopCluster(cl)
-  
-  ans <- dplyr::bind_rows(ans)
-  ans <- bind_rows(ans, dfqu, dfq0)
-  ans <- ans[!is.na(ans[["prot_acc"]]), ]
-}
-
-
-#' Helper of \link{smbr_psms}.
-#' 
-#' Not yet used. Batch processing of \link{smbr_psms}.
-#' 
-#' @param dfqm psmQ subset with missing intensity values for MBR.
-#' @param dfc Data from psmC.
-#' @param cols_mbr Columns for MBR information borrowing.
-#' @param cols_dfq Columns for copying from dfq.
-#' @inheritParams add_mbr_psms
-mmbr_psms <- function (dfqm, dfc, cols_mbr, cols_dfq, mbr_ret_tol = 25)
-{
-  ans <- mapply(smbr_psms, dfqm, dfc, 
-                MoreArgs = list(
-                  cols_mbr = cols_mbr, 
-                  cols_dfq = cols_dfq, 
-                  mbr_ret_tol = mbr_ret_tol), 
-                SIMPLIFY = FALSE, USE.NAMES = FALSE)
-  
-  dplyr::bind_rows(ans)
-}
-
-
-#' Single MBR.
-#' 
-#' Not yet used. At the same \code{group_psm_by}.
-#' 
-#' @param dfqi An i-th entry of dfq.
-#' @param dfci An i-th entry of dfc.
-#' @param cols_mbr Columns for MBR information borrowing.
-#' @param cols_dfq Columns for copying from dfq.
-#' @inheritParams add_mbr_psms
-smbr_psms <- function (dfqi, dfci, cols_mbr, cols_dfq, mbr_ret_tol = 25)
-{
-  rows <- is.na(dfqi[["pep_apex_ret"]])
-  retq <- median(dfqi[["pep_apex_ret"]], na.rm = TRUE)
-  
-  bad1 <- which(!rows)[[1]]
-  dfqi_first <- dfqi[bad1, ]
-  # is_razor <- dfqi_first[["pep_literal_unique"]]
-  # is_uniq  <- dfqi_first[["pep_razor_unique"]]
-  
-  for (j in seq_len(nrow(dfqi))) {
-    if (!rows[[j]]) next
-    
-    dfqj <- dfqi[j, ]
-    dfcj <- dplyr::filter(dfci, RAW_File == dfqj[["RAW_File"]])
-    
-    if (!nrow(dfcj)) next
-    
-    okrets <- which(abs(dfcj[["pep_apex_ret"]] - retq) <= mbr_ret_tol)
-    
-    if (!length(okrets)) next
-
-    ok1 <- okrets[[1]]
-    dfcj <- dfcj[ok1, ]
-
-    dfqj[, cols_mbr] <- dfcj[, cols_mbr]
-    dfqj[, cols_dfq] <- dfqi_first[, cols_dfq]
-    # dfqj[["pep_unique_int"]] <- if (is_uniq) dfqj[["pep_tot_int"]] else 0
-    # dfqj[["pep_razor_int"]]  <- if (is_razor) dfqj[["pep_tot_int"]] else 0
-    
-    dfqi[j, ] <- dfqj
-  }
-  
-  dfqi
 }
 
 

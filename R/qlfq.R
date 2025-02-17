@@ -550,7 +550,9 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   sp_centers <- find_species_centers2(
     ymat = ymat, are_refs = are_refs, are_smpls = are_smpls, sps = mbr_sps, 
     new_na_species = new_na_species, na_species_by_pri = FALSE)
-  mbr_sps    <- match(mbr_sps, names(sp_centers)) # convert to integers
+  nms_sp  <- names(sp_centers)
+  mbr_sps <- match(mbr_sps, nms_sp) # convert to integers
+  pri_sps <- as.integer(names(which.max(table(mbr_sps))))
   
   if (file.exists(parfile <- file.path(temp_dir, "pars_rt.rds"))) {
     fwhm_co <- qs::qread(parfile)$fwhm_co
@@ -560,6 +562,10 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     fwhm_co <- .5
   }
   
+  # for peptides shared across species
+  pmat <- makeLFQSpecies(
+    mbr_peps = mbr_peps, mbr_sps = mbr_sps, nms_sp = nms_sp, dat_dir = dat_dir)
+
   ## (3) optional: make spectrum-count matrix
   message("  Adding spectrum-count results.")
   cmat <- local({
@@ -686,18 +692,71 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   else {
     reference_spec_counts <- FALSE
   }
-  rm(list = c("species", "sps_oks"))
+  rm(list = c("sps_oks"))
 
-  out <- pepLFQ(
-    basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
-    xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, 
-    ymat = ymat, tmat = tmat, smat = smat, cmat = cmat, 
-    mbr_peps = mbr_peps, mbr_sps = mbr_sps, sp_centers = sp_centers, 
-    new_na_species = new_na_species, rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
-    reference_spec_counts = reference_spec_counts, step = rt_step)
-  yout <- do.call(cbind, out[["y"]])
-  tout <- do.call(cbind, out[["t"]])
-  sout <- do.call(cbind, out[["s"]])
+  
+  # entry of multiple species...
+  lens  <- lengths(pmat)
+  mcols <- lens > 1L
+  scols <- !mcols
+  mcols <- which(mcols)
+  scols <- which(scols)
+  
+  if (length(mcols)) {
+    outn <- mpepLFQ(
+      basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
+      xsmat = xsmat[, mcols, drop = FALSE], ysmat = ysmat[, mcols, drop = FALSE], 
+      tsmat = tsmat[, mcols, drop = FALSE], ssmat = ssmat[, mcols, drop = FALSE], 
+      pmat = pmat[mcols], mbr_peps = mbr_peps[mcols], 
+      sp_centers = sp_centers, pri_sps = pri_sps, 
+      new_na_species = new_na_species, 
+      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, step = rt_step)
+    youtn <- do.call(cbind, outn[["y"]])
+    toutn <- do.call(cbind, outn[["t"]])
+    soutn <- do.call(cbind, outn[["s"]])
+    # spsn  <- outn[["p"]]
+  }
+  else {
+    outn <- NULL
+  }
+  
+  if (length(scols)) {
+    out1 <- pepLFQ(
+      basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
+      xsmat = xsmat[, scols, drop = FALSE], ysmat = ysmat[, scols, drop = FALSE], 
+      tsmat = tsmat[, scols, drop = FALSE], ssmat = ssmat[, scols, drop = FALSE], 
+      ymat = ymat[, scols, drop = FALSE], tmat = tmat[, scols, drop = FALSE], 
+      smat = smat[, scols, drop = FALSE], cmat = cmat[, scols, drop = FALSE], 
+      mbr_peps = mbr_peps[scols], mbr_sps = mbr_sps[scols], 
+      sp_centers = sp_centers, new_na_species = new_na_species, 
+      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
+      reference_spec_counts = reference_spec_counts, step = rt_step)
+    yout1 <- do.call(cbind, out1[["y"]])
+    tout1 <- do.call(cbind, out1[["t"]])
+    sout1 <- do.call(cbind, out1[["s"]])
+  }
+  else {
+    out1 <- NULL
+  }
+  
+  yout <- tout <- sout <- 
+    matrix(rep_len(NA_real_, prod(dim(ymat))), nrow = nrow(ymat))
+  
+  if (!is.null(out1)) {
+    yout[, scols] <- yout1
+    tout[, scols] <- tout1
+    sout[, scols] <- sout1
+  }
+  
+  if (!is.null(outn)) {
+    yout[, mcols] <- youtn
+    tout[, mcols] <- toutn
+    sout[, mcols] <- soutn
+    mbr_sps[mcols] <- outn[["p"]]
+  }
+  
+
+  mbr_sps <- species[mbr_sps]
 
   if (ncol(yout) != ncol(tsmat)) {
     stop("Developer: check for data drops.")
@@ -730,7 +789,8 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
       pep_apex_ret  = tda, 
       pep_apex_scan = sda, 
       pep_exp_mz    = mbr_mzs, 
-      pep_tot_int   = yda)
+      pep_tot_int   = yda, 
+      species = mbr_sps)
     
     readr::write_tsv(
       outi, file.path(dat_dir, "Peptide/cache", paste0("MBR_", basenames[[i]])))
@@ -740,11 +800,19 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   # need to exclude: the same peak to different peptides???
   ###
 
+  for (i in seq_along(dfs)) {
+    dfi  <- dfs[[i]]
+    outi <- out[[i]]
+    
+    mts <- match(dfi[["pep_seq_modz"]], outi[["pep_seq_modz"]])
+    dfi[["species"]] <- outi[["species"]][mts]
+    dfs[[i]] <- dfi
+  }
+
   message("Completed LFQ.")
-  
-  attr(out, "sp_centers") <- sp_centers
-  
-  out
+  attr(dfs, "sp_centers") <- sp_centers
+
+  dfs
 }
 
 
@@ -832,6 +900,68 @@ addMBRpeps <- function (file, pep_tbl = NULL, dat_dir, group_psm_by = "pep_seq_m
 }
 
 
+#' Makes the look-ups of shared peptides across species
+#'
+#' @param mbr_peps A vector of \code{pep_seq_modz}.
+#' @param mbr_sps A vector of peptide species in the universe.
+#' @param nms_sp The names of species (for conversion from character strings to
+#'   integers).
+#' @param new_na_species A replace value for NA species.
+#' @param dat_dir A working directory.
+#' @param to_list Logical; convert output to list or not.
+makeLFQSpecies <- function (mbr_peps = NULL, mbr_sps = NULL, nms_sp, 
+                            new_na_species = ".other", dat_dir = NULL, 
+                            to_list = TRUE)
+{
+  file_sps <- file.path(dat_dir, "PSM", "cache", "protpepspecies.tsv")
+  n_col    <- length(mbr_peps)
+  
+  if (!file.exists(file_sps)) {
+    warning("File not found: ", file_sps)
+    
+    if (to_list) {
+      retrun(as.list(mbr_peps))
+    }
+    else {
+      pmat <- matrix(rep_len(NA_integer_, n_col), nrow = 1L)
+      pmat[1, ] <- mbr_sps
+      return(pmat)
+    }
+  }
+  
+  df  <- readr::read_tsv(file_sps)
+  df$species[is.na(df$species)] <- new_na_species
+  dfs <- unique(df[, c("pep_seq_modz", "species")]) |>
+    dplyr::filter(pep_seq_modz %in% mbr_peps)
+  dfs <- split(dfs$pep_seq_modz, dfs$species)
+  pmat <- rep_len(list(rep_len(NA_integer_, n_col)), n_row <- length(nms_sp))
+  names(dfs) <- nms <- match(names(dfs), nms_sp)
+  
+  for (i in seq_along(dfs)) {
+    cols <- match(dfs[[i]], mbr_peps)
+    pmat[[i]][cols] <- nms[[i]]
+  }
+  
+  pmat <- do.call(rbind, pmat)
+  
+  if (to_list) {
+    out <- vector("list", n_col)
+    oks <- !is.na(pmat)
+    
+    for (i in 1:n_col) {
+      out[[i]] <- pmat[oks[, i], i]
+    }
+    
+    out
+  }
+  else {
+    out <- pmat
+  }
+  
+  out
+}
+
+
 #' Fill NA retention times with the MS2 triggering retention times
 #'
 #' To obtain a reference point for reassess apexes and MBR. NA \code{mbr_rets}
@@ -879,6 +1009,8 @@ fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir)
 
 
 #' LFQ of peptides
+#' 
+#' Peptides are unique to species.
 #'
 #' @param basenames The base names of a peptide table files
 #'   (\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).
@@ -921,11 +1053,11 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   yout  <- tout <- sout <- rep_len(list(vector("numeric", n_row)), n_col)
   null_dbl <- rep_len(NA_real_, n_row)
   null_int <- rep_len(NA_integer_, n_row)
-
+  
   # distances of reference log2FCs from the "first pass" to cents
   cents <- sp_centers[mbr_sps]
   dys1  <- calc_mat_log2s_to_refs(ymat, are_smpls, are_refs) - cents
-
+  
   if (reference_spec_counts) {
     cs1 <- calc_mat_log2s_to_refs(cmat, are_smpls, are_refs)
   }
@@ -935,10 +1067,20 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   rownames(cmat) <- colnames(cmat) <- NULL
   
   for (i in 1:n_col) {
+    if (is.na(mbr_sps[[i]])) {
+      yout[[i]] <- null_dbl
+      tout[[i]] <- null_dbl
+      sout[[i]] <- null_int
+      
+      next
+    }
+    
     ## (1) collapse bins of T, Y and S values
-    # i <- which(mbr_peps == "RIEVEQALAHPYLEQYYDPSDEPIAEAPFK@4")
-    ans <- collapseSTY(
-      xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step)
+    # i <- which(mbr_peps == "LLDVVHPAAK@3")
+    spc  <- cents[[i]]
+    ans  <- collapseSTY(
+      xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
+      spc = spc)
     anst <- ans[["x"]]
     ansy <- ans[["y"]]
     anss <- ans[["z"]]
@@ -952,10 +1094,13 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       next
     }
     
-    # border effect
+    # border effect: may disable since values can traverse for every +2
+    # may check the scenario of consecutive +2 +2 +2...
     if (nc > 1L && length(us <- which(diff(unv) == 2L))) {
       for (u in us) {
-        if (length(which(rows <- is.na(ansy[, u2 <- u + 1L])))) {
+        rows <- which(is.na(ansy[, u2 <- u + 1L]) & !is.na(ansy[, u]))
+        
+        if (length(rows)) {
           ansy[rows, u2] <- ansy[rows, u]
           anst[rows, u2] <- anst[rows, u]
           anss[rows, u2] <- anss[rows, u]
@@ -966,14 +1111,12 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       }
     }
 
-    spc   <- cents[[i]]
-    
     # for cross-referencing
     dy1i  <- dys1[[i]]
     dc1i  <- cs1[[i]] - spc
     ady1i <- abs(dy1i)
     adc1i <- abs(dc1i)
-
+    
     if (nc == 1L) {
       p      <- 1L
       ysi    <- ansy[, p]
@@ -1013,7 +1156,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     ## (2) remove retention outliers
     for (j in 1:nc) {
       tvals <- anst[, j]
-      # reduce the value to be consistent with step...
+      # change the setting to be consistent with `step`...
       tbads <- abs(tvals - median(tvals, na.rm = TRUE)) > rt_tol
       ibads <- .Internal(which(tbads))
       
@@ -1035,24 +1178,9 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       
       if (length(p)) {
         ysi <- ansy[, p]
-        adi <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
-        bst <- .Internal(which.min(c(adi, ady1i)))
-        
-        if (isTRUE(bst == 1L)) {
-          yout[[i]] <- ysi
-          tout[[i]] <- anst[, p]
-          sout[[i]] <- anss[, p]
-        }
-        else if (isTRUE(bst == 2L)) {
-          yout[[i]] <- ymat[, i]
-          tout[[i]] <- tmat[, i]
-          sout[[i]] <- smat[, i]
-        }
-        else {
-          yout[[i]] <- ysi
-          tout[[i]] <- anst[, p]
-          sout[[i]] <- anss[, p]
-        }
+        yout[[i]] <- ysi
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
       }
       else {
         # e.g. all with single sample values (may be due to the boundary effect)
@@ -1121,7 +1249,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       ysi <- ansy[, p]
       adi  <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
       bst <- .Internal(which.min(c(adi, ady1i)))
-
+      
       if (isTRUE(bst == 1L)) {
         yout[[i]] <- ysi
         tout[[i]] <- anst[, p]
@@ -1142,24 +1270,9 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     
     if (length(p)) {
       ysi <- ansy[, p]
-      adi <- abs(calc_vec_log2s_to_refs(ysi, are_smpls, are_refs) - spc)
-      bst <- .Internal(which.min(c(adi, ady1i)))
-      
-      if (isTRUE(bst == 1L)) {
-        yout[[i]] <- ysi
-        tout[[i]] <- anst[, p]
-        sout[[i]] <- anss[, p]
-      }
-      else if (isTRUE(bst == 2L)) {
-        yout[[i]] <- ymat[, i]
-        tout[[i]] <- tmat[, i]
-        sout[[i]] <- smat[, i]
-      }
-      else {
-        yout[[i]] <- ysi
-        tout[[i]] <- anst[, p]
-        sout[[i]] <- anss[, p]
-      }
+      yout[[i]] <- ysi
+      tout[[i]] <- anst[, p]
+      sout[[i]] <- anss[, p]
       
       next
     }
@@ -1173,6 +1286,191 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 }
 
 
+#' LFQ of peptides
+#'
+#' Peptides are shared by species.
+#'
+#' @param basenames The base names of a peptide table files
+#'   (\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).
+#' @param are_refs Logical; are references or not.
+#' @param are_smpls Logical; are samples or not.
+#' @param xsmat A matrix of m-over-z values.
+#' @param ysmat A matrix of apex intensities.
+#' @param tsmat A matrix of apex retention times.
+#' @param ssmat A matrix of apex scan numbers.
+#' @param pmat A confounding matrix or vectors of peptides shared across
+#'   species.
+#' @param mbr_peps A vector of \code{pep_seq_modz} sequences in the universe.
+#' @param sp_centers The centers of log2FC for each species; names: species,
+#'   values: log2FC.
+#' @param pri_sps A primary species.
+#' @param new_na_species A replace value for NA species.
+#' @param rt_tol Error tolerance in retention times.
+#' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
+#' @param step The step size in binning retention times.
+#' @param err_log2r Not yet used. Error tolerance in log2FC.
+mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
+                     pmat, mbr_peps, sp_centers, pri_sps = 0L, 
+                     new_na_species = ".other", rt_tol = 25, mbr_ret_tol = 25, 
+                     step = 5E-3, err_log2r = .25)
+  
+{
+  # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
+  # need to compile retention times, moverzs and intensities across fractions...
+  
+  n_row <- nrow(tsmat)
+  n_col <- ncol(tsmat)
+  
+  # species indexes
+  isp_cents <- sp_centers
+  names(isp_cents) <- seq_along(isp_cents)
+  cents <- lapply(pmat, function (x) isp_cents[x])
+  isps  <- lapply(cents, function (x) as.integer(names(x)))
+  cents <- lapply(cents, unname)
+  rm(list = c("isp_cents"))
+  
+  lens  <- lengths(pmat)
+  yout  <- tout <- sout <- rep_len(list(vector("numeric", n_row)), n_col)
+  spout <- rep_len(pri_sps, n_col) # by the number of most likely species
+  null_dbl <- rep_len(NA_real_, n_row)
+  null_int <- rep_len(NA_integer_, n_row)
+  
+  for (i in 1:n_col) {
+    ## (1) collapse bins of T, Y and S values
+    # i <- which(mbr_peps == "TLSDYNIQK@2"); i <- 7, i <- 8
+    spc  <- cents[[i]] # values of species centers
+    ispi <- isps[[i]]  # indexes of species
+    len  <- lens[[i]]  # number of species
+
+    ans  <- collapseSTY(
+      xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
+      spc = spc)
+    anst <- ans[["x"]]
+    ansy <- ans[["y"]]
+    anss <- ans[["z"]]
+    unv  <- ans[["u"]]
+
+    if (!(nc <- ncol(anst))) {
+      yout[[i]] <- null_dbl
+      tout[[i]] <- null_dbl
+      sout[[i]] <- null_int
+      spout[[i]] <- if (pri_sps %in% ispi) { pri_sps } else { ispi[[1]] }
+      
+      next
+    }
+    
+    # border effect: may disable since values can traverse for every +2
+    # may check +2 +2 +2 senario...
+    if (nc > 1L && length(us <- which(diff(unv) == 2L))) {
+      for (u in us) {
+        rows <- which(is.na(ansy[, u2 <- u + 1L]) & !is.na(ansy[, u]))
+        
+        if (length(rows)) {
+          ansy[rows, u2] <- ansy[rows, u]
+          anst[rows, u2] <- anst[rows, u]
+          anss[rows, u2] <- anss[rows, u]
+          # ansy[rows, u] <- NA_real_
+          # anst[rows, u] <- NA_real_
+          # anss[rows, u] <- NA_real_
+        }
+      }
+    }
+    
+    ## (2) remove retention outliers
+    for (j in 1:nc) {
+      tvals <- anst[, j]
+      # reduce the value to be consistent with step...
+      tbads <- abs(tvals - median(tvals, na.rm = TRUE)) > rt_tol
+      ibads <- .Internal(which(tbads))
+      
+      if (length(ibads)) {
+        anst[ibads, j] <- NA_real_
+        ansy[ibads, j] <- NA_real_
+        anss[ibads, j] <- NA_real_
+      }
+    }
+    
+    ## (3) calculate log2FCs
+    ys_smpls <- ansy[are_smpls, , drop = FALSE]
+    ys_refs  <- ansy[are_refs,  , drop = FALSE]
+    ymeans   <- colMeans(ys_refs, na.rm = TRUE)
+    
+    # (3.1) all are without reference values
+    if (all(is.nan(ymeans))) {
+      p <- .Internal(which.min(calc_mat_sds(anst[are_smpls, , drop = FALSE])))
+      
+      if (length(p)) {
+        yout[[i]]  <- ysi <- ansy[, p]
+        tout[[i]]  <- anst[, p]
+        sout[[i]]  <- anss[, p]
+        spout[[i]] <- if (pri_sps %in% ispi) { pri_sps } else { ispi[[1]] }
+      }
+      else {
+        # e.g. all with single sample values (may be due to the boundary effect)
+        yout[[i]] <- ansy[, 1]
+        tout[[i]] <- anst[, 1]
+        sout[[i]] <- anss[, 1]
+        spout[[i]] <- if (pri_sps %in% ispi) { pri_sps } else { ispi[[1]] }
+      }
+      
+      next
+    }
+    
+    rmat <- sweep(ys_smpls, 2, ymeans, "/")
+    rmat <- log2(rmat)
+    
+    ## (4) find the best Y column
+    ds <- lapply(spc, function (x) colMeans(rmat, na.rm = TRUE) - x)
+    ds <- do.call(rbind, ds)
+    p <- .Internal(which.min(abs(ds)))
+    
+    if (length(p)) {
+      pc <- p %/% len # column index
+      pr <- p %% len # to determine species
+      if (pr == 0L) { pr <- len } else { pc <- pc + 1L }
+      yout[[i]]  <- ansy[, pc]
+      tout[[i]]  <- anst[, pc]
+      sout[[i]]  <- anss[, pc]
+      spout[[i]] <- ispi[[pr]]
+      
+      next
+    }
+    
+    # spout[[i]] <- if (pri_sps %in% ispi) { pri_sps } else { ispi[[1]] }
+    
+    # e.g., one column exclusive samples, the other exclusive references
+    p <- .Internal(which.min(calc_mat_sds(ansy)))
+    
+    if (length(p)) {
+      yout[[i]] <- ansy[, p]
+      tout[[i]] <- anst[, p]
+      sout[[i]] <- anss[, p]
+      
+      next
+    }
+    
+    # e.g. all are with references only, or all single values...
+    # may be use the column closest in RT to MS2 scan
+    p <- .Internal(which.max(colSums(ansy, na.rm = TRUE)))
+    
+    if (length(p)) {
+      yout[[i]]  <- ysi <- ansy[, p]
+      tout[[i]]  <- anst[, p]
+      sout[[i]]  <- anss[, p]
+      spout[[i]] <- if (pri_sps %in% ispi) { pri_sps } else { ispi[[1]] }
+      
+      next
+    }
+    
+    yout[[i]] <- ansy[, 1]
+    tout[[i]] <- anst[, 1]
+    sout[[i]] <- anss[, 1]
+  }
+  
+  out <- list(y = yout, t = tout, s = sout, p = spout)
+}
+
+
 #' Find the best LFQ vector
 #' 
 #' @param d1 A vector of distance.
@@ -1183,10 +1481,21 @@ find_best_lfqvec <- function (d1, d2, dc)
   ad1 <- abs(d1)
   ad2 <- abs(d2)
   
-  if (isTRUE(abs(dc - d1) < .5 || abs(dc - d2) < .5)) {
+  ignore_2 <- isTRUE(abs(ad1 - ad2) < .05)
+  ignore_3 <- isTRUE(abs(dc - d1) < .5 || abs(dc - d2) < .5)
+
+  if (ignore_3) {
+    if (ignore_2) {
+      return(1L)
+    }
+
     return(.Internal(which.min(c(ad1, ad2))))
   }
   
+  if (ignore_2) {
+    return(.Internal(which.min(c(ad1, Inf, abs(dc)))))
+  }
+
   .Internal(which.min(c(ad1, ad2, abs(dc))))
 }
 
@@ -1202,31 +1511,34 @@ find_best_lfqvec <- function (d1, d2, dc)
 #' @param lwr The lower (retention time) limit.
 #' @param step The bin size in converting numeric X values to integers.
 #' @param coll Logical; collapse adjacent columns or not.
-#' @param look_back Logical; look up the preceding MS bin or not.
+#' @param spc A species center.
 #' @importFrom fastmatch %fin%
 collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3, 
-                         coll = TRUE, look_back = TRUE)
+                         spc = 0.0, coll = TRUE)
 {
   ixs <- lapply(xs, mzion::index_mz, lwr, step)
-  
+
   for (i in seq_along(xs)) {
     ix <- ixs[[i]]
     ps <- .Internal(which(duplicated(ix)))
     
     if (length(ps)) {
+      # make the bin by every 2 seconds and look for +/- 12 bins
+      
       ixs[[i]] <- ix[-ps]
       xs[[i]]  <- xs[[i]][-ps]
       ys[[i]]  <- ys[[i]][-ps]
       zs[[i]]  <- zs[[i]][-ps]
     }
   }
-  
+
   ## (1) make matrices
   unv  <- .Internal(unlist(ixs, recursive = FALSE, use.names = FALSE))
   unv  <- sort(unique(unv))
   lenu <- length(unv)
   lenx <- length(xs)
   ups  <- lapply(ixs, function (x) unv %fin% x)
+  nsps <- length(spc)
   
   # note one-to-one correspondence between ixs and xs
   xmat <- mzion::mapcoll_xyz(
@@ -1243,54 +1555,138 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
     return(list(x = xmat, y = ymat, z = zmat, u = unv))
   }
   
-  # for recording matrix columns to be dropped
-  ps1 <- vector("integer", lenp <- length(ps))
-  
+  lenp <- length(ps)
   for (i in 1:lenp) {
     c12 <- ps[[i]]
     c1  <- c12[[1]]
     c2  <- c12[[2]]
     
     if (c2 == 0L) { next } # no following adjacent
+    
+    # [1,]        NA 4883455998         NA
+    # [2,] 541027076         NA 3564573412
+    
+    # bad: by replacing the original with NA
+    # 
+    # before: 
+    # [1,]       NA       NA 53929263 14373579
+    # [2,] 14125475 21169221 45035940       NA
+    # 
+    # after:
+    # [1,]       NA       NA 53929263 14373579
+    # [2,] 14125475 21169221       NA 45035940
+    
+    nas_bf <- is.na(xmat[, c1])
+    nas_cr <- is.na(xmat[, c2])
 
-    rows <- .Internal(which(is.na(xmat[, c2]) & !is.na(xmat[, c1])))
-
-    if (length(rows)) {
-      xmat[rows, c2] <- xmat[rows, c1]
-      ymat[rows, c2] <- ymat[rows, c1]
-      zmat[rows, c2] <- zmat[rows, c1]
-      xmat[rows, c1] <- NA_real_
-      ymat[rows, c1] <- NA_real_
-      zmat[rows, c1] <- NA_real_
+    c3 <- c2 + 1L
+    
+    if (i == lenp) {
+      ok3 <- FALSE
+    }
+    else {
+      pnx <- ps[[i+1]][[1]]
+      ok3 <- if (unv[[pnx]] == unv[[c2]] + 1L) { TRUE } else { FALSE }
     }
 
-    if (look_back && i < lenp && (af <- ps[[i+1]][[1]]) == (c2 + 1L)) {
-      # with NA rows in c2
-      if (length(rows2 <- .Internal(which(is.na(xmat[, c2]))))) {
-        xmat[rows2, c2] <- xmat[rows2, af]
-        ymat[rows2, c2] <- ymat[rows2, af]
-        zmat[rows2, c2] <- zmat[rows2, af]
-        # about ok to enable, but may be unnecessary
-        xmat[rows2, af] <- NA_real_
-        ymat[rows2, af] <- NA_real_
-        zmat[rows2, af] <- NA_real_
+    ###
+    # DONOT nullify the original values before collapsion, but keep both and 
+    # to discern the best column later by their closeness to a species center
+    ###
+    
+    if (ok3) {
+      nas_af <- is.na(xmat[, c3])
+      oks_af <- !nas_af
+      oks_bf <- !nas_bf
+      iboth  <- .Internal(which(oks_bf & oks_af & nas_cr))
+      
+      if (length(iboth)) {
+        oks_af[iboth] <- oks_bf[iboth] <- FALSE
+        rows_bf <- .Internal(which(oks_bf & nas_cr))
+        rows_af <- .Internal(which(oks_af & nas_cr))
+        
+        # handle `iboth` rows
+        ybar  <- mean(ymat[, c2], na.rm = TRUE)
+        y_bfs <- ymat[iboth, c1]
+        y_afs <- ymat[iboth, c3]
+        
+        # to use the one closer to species center...
+        r_bfs <- log2(mean(y_bfs, na.rm = TRUE) / ybar)
+        r_afs <- log2(mean(y_afs, na.rm = TRUE) / ybar)
+        # r_bfs <- rep_len(r_bfs, 4); r_afs <- rep_len(r_afs, 4)
+        
+        if (nsps == 1L) {
+          ad_bf <- abs(r_bfs - spc)
+          ad_af <- abs(r_afs - spc)
+          rowx  <- ad_bf < ad_af
+        }
+        else {
+          ad_bfs <- lapply(spc, function (x) abs(r_bfs - x))
+          ad_afs <- lapply(spc, function (x) abs(r_afs - x))
+          m <- which.min(mapply(min, ad_bfs, ad_afs))
+          rowx  <- ad_bfs[[m]] < ad_afs[[m]]
+          # rowx  <- abs(y_bfs - ybar) < abs(y_afs - ybar)
+        }
+
+        i_bfs <- iboth[rowx]  # `before` closer
+        i_afs <- iboth[!rowx] # `after` closer
+        
+        if (any(i_bfs)) {
+          xmat[i_bfs, c2] <- xmat[i_bfs, c1]
+          ymat[i_bfs, c2] <- y_bfs[rowx]
+          zmat[i_bfs, c2] <- zmat[i_bfs, c1]
+        }
+        
+        if (any(i_afs)) {
+          xmat[i_afs, c2] <- xmat[i_afs, c3]
+          ymat[i_afs, c2] <- y_afs[!rowx]
+          zmat[i_afs, c2] <- zmat[i_afs, c3]
+        }
+        
+        # xmat[i_bfs, c1] <- NA_real_
+        # ymat[i_bfs, c1] <- NA_real_
+        # zmat[i_bfs, c1] <- NA_real_
+        # xmat[i_afs, c3] <- NA_real_
+        # ymat[i_afs, c3] <- NA_real_
+        # zmat[i_afs, c3] <- NA_real_
+      }
+      else {
+        rows_bf <- .Internal(which(oks_bf & nas_cr))
+        rows_af <- .Internal(which(oks_af & nas_cr))
+      }
+      
+      if (length(rows_bf)) {
+        xmat[rows_bf, c2] <- xmat[rows_bf, c1]
+        ymat[rows_bf, c2] <- ymat[rows_bf, c1]
+        zmat[rows_bf, c2] <- zmat[rows_bf, c1]
+        # xmat[rows_bf, c1] <- NA_real_
+        # ymat[rows_bf, c1] <- NA_real_
+        # zmat[rows_bf, c1] <- NA_real_
+      }
+      
+      if (length(rows_af)) {
+        xmat[rows_af, c2] <- xmat[rows_af, c1]
+        ymat[rows_af, c2] <- ymat[rows_af, c1]
+        zmat[rows_af, c2] <- zmat[rows_af, c1]
+        # xmat[rows_af, c1] <- NA_real_
+        # ymat[rows_af, c1] <- NA_real_
+        # zmat[rows_af, c1] <- NA_real_
       }
     }
-    
-    ps1[[i]] <- c1
+    else {
+      if (length(rows <- .Internal(which(nas_cr & !nas_bf)))) {
+        xmat[rows, c2] <- xmat[rows, c1]
+        ymat[rows, c2] <- ymat[rows, c1]
+        zmat[rows, c2] <- zmat[rows, c1]
+        # keep the original and to discern the best column later...
+        # xmat[rows, c1] <- NA_real_
+        # ymat[rows, c1] <- NA_real_
+        # zmat[rows, c1] <- NA_real_
+      }
+    }
   }
   
-  # note `-ps1` ok in that at least one ps1 is not 0
-  # identical(xmat[, -c(0, 2:3), drop = FALSE], xmat[, -c(2:3), drop = FALSE])
-  # !identical(xmat[, 0, drop = FALSE], xmat)
-  xmat <- xmat[, -ps1, drop = FALSE]
-  ymat <- ymat[, -ps1, drop = FALSE]
-  zmat <- zmat[, -ps1, drop = FALSE]
-  unv  <- unv[-ps1]
-  
-  # possible additional all-NA columns by look_back
-  if (look_back && 
-      length(nas <- .Internal(which(colSums(is.na(xmat)) == lenx)))) {
+  if (length(nas <- .Internal(which(colSums(is.na(xmat)) == lenx)))) {
     xmat <- xmat[, -nas, drop = FALSE]
     ymat <- ymat[, -nas, drop = FALSE]
     zmat <- zmat[, -nas, drop = FALSE]
@@ -1299,7 +1695,6 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
   
   list(x = xmat, y = ymat, z = zmat, u = unv)
 }
-
 
 
 #' LFQ helper: calculate log2FC values from a matrix of samples and references
