@@ -9,7 +9,8 @@ alignPSMApexs(
   ms1full_files = NULL,
   path_ms1 = NULL,
   key = "pep_seq_modz",
-  temp_dir = NULL
+  temp_dir = NULL,
+  min_n = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ alignPSMApexs(
 \item{key}{The key for data grouping.}
 
 \item{temp_dir}{A path for temporary files.}
+
+\item{min_n}{The minimum number of samples for RT alignments.}
 }
 \description{
 Also nullify retention-time outliers.

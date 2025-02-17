@@ -4236,17 +4236,18 @@ rm_apexrt_outliers <- function (df = NULL, key = "pep_seq_mod", rt_tol = 240,
         dat[dat$pep_tot_int >= yco, ] # must be: nrow(dat) >= 2L
       }, df2s, res$yco, SIMPLIFY = FALSE, USE.NAMES = FALSE) |> 
         dplyr::bind_rows()
+      
+      df <- dplyr::bind_rows(df, df1, df2)
     }
-    
-    df <- dplyr::bind_rows(df, df1, df2) |>
-      dplyr::arrange_at(key)
+    else {
+      df <- dplyr::bind_rows(df, df1)
+    }
   }
   else {
-    df <- dplyr::bind_rows(df, df1) |>
-      dplyr::arrange_at(key)
+    df <- dplyr::bind_rows(df, df1)
   }
   
-  df
+  df <- df |> dplyr::arrange_at(key)
 }
 
 
@@ -5152,10 +5153,25 @@ PSM2Pep <- function(method_psm_pep =
     #   -> some must be outliers
     # the output is largely (~ 96%) the same pep_seq_mod and the same pep_exp_z, 
     #  ~ 4% are close in RT (at different pep_exp_z by the allowance in RT sd)
-    dfs <- alignPSMApexs(
-      dfs = dfs, ms1full_files = ms1full_files, path_ms1 = path_ms1, 
-      key = "pep_seq_modz", temp_dir = temp_dir)
+    ans_align <- tryCatch(
+      alignPSMApexs(
+        dfs = dfs, ms1full_files = ms1full_files, path_ms1 = path_ms1, 
+        key = "pep_seq_modz", temp_dir = temp_dir), 
+      error = function(e) NA)
     
+    if (length(ans_align) == 1L && is.na(ans_align)) {
+      warning("Fail to align retention times.")
+      
+      dfs <- mapply(function (x, y) {
+        x$set_id <- y
+        x
+      }, dfs, filelist, 
+      SIMPLIFY = FALSE, USE.NAMES = TRUE)
+    }
+    else {
+      dfs <- ans_align
+    }
+
     ## Not really matter and arbitrary since LFQ occurs within `mergePep`
     dfs <- hrm_lowIntPSMs(
       dfs = dfs, key = "pep_seq_modz", yfrac = .02, max_n_apexes = 1L) # was .05
@@ -5338,11 +5354,16 @@ cleanRTChim <- function (df = NULL)
 #' @param path_ms1 The file path to \code{ms1full_} files.
 #' @param key The key for data grouping.
 #' @param temp_dir A path for temporary files.
+#' @param min_n The minimum number of samples for RT alignments.
 alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL, 
-                           key = "pep_seq_modz", temp_dir = NULL)
+                           key = "pep_seq_modz", temp_dir = NULL, min_n = NULL)
 {
   n_smpls  <- length(dfs)
-  min_n    <- ceiling(n_smpls / 2L)
+  
+  if (is.null(min_n)) {
+    min_n    <- ceiling(n_smpls / 2L)
+  }
+
   filelist <- names(dfs) # TMTSet[i]LCMSinj[j]...
   
   # later: need Sample_ID, other than raw_file for fractionated samples...

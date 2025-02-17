@@ -1601,8 +1601,11 @@ countSpecs <- function (dat_dir = NULL, label_scheme_full = NULL, type = "PSM",
     if (!"TMT_Set" %in% nms) { df$TMT_Set <- set_idx }
     if (!"LCMS_Injection" %in% nms) { df$LCMS_Injection <- injn_idx }
     df
-  }, filelist, set_idxes, injn_idxes, USE.NAMES = FALSE, SIMPLIFY = FALSE) |>
-    dplyr::bind_rows()
+  }, filelist, set_idxes, injn_idxes, USE.NAMES = FALSE, SIMPLIFY = FALSE)
+  
+  df <- do.call(rbind, df)
+    # |> dplyr::bind_rows()
+    
   
   prots     <- unique(df[, c(group_pep_by, group_psm_by)])
   cols_grp  <- c(group_psm_by, "TMT_Set")
@@ -2087,7 +2090,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     })
   }
 
-  df <- dplyr::bind_rows(dfs)
+  df <- do.call(rbind, dfs)
+  # df <- dplyr::bind_rows(dfs)
   df$pep_tot_int <- df$dat_file <- NULL
   
   # already by TMT_Set and LCMS_Injection
