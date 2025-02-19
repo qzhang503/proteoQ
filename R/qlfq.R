@@ -431,6 +431,8 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
 #' @param dfs Lists of peptide tables in correspondence to \code{filelist}.
 #' @param df_sps A look-up table between peptide sequences and species.
 #' @param prot_spec_counts A data frame of protein spectrum counts.
+#' @param use_spec_counts Logical; use spectrum counts instead of intensities or
+#'   not.
 #' @param rt_tol Error tolerance in retention times.
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
 #' @param rt_step The step size in binning retention times.
@@ -446,6 +448,7 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
 hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes, 
                      are_refs, are_smpls, 
                      dfs = NULL, df_sps = NULL, prot_spec_counts = NULL, 
+                     use_spec_counts = FALSE, 
                      dat_dir = NULL, path_ms1 = NULL, ms1files = NULL, 
                      temp_dir = NULL, rt_tol = 25, mbr_ret_tol = 25, 
                      sp_centers_only = FALSE, imp_refs = FALSE, 
@@ -453,6 +456,10 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
                      lfq_mbr = FALSE, rt_step = 5E-3, new_na_species = ".other", 
                      max_mbr_fold = 20)
 {
+  if (use_spec_counts) {
+    return(dfs)
+  }
+  
   if ((len <- length(basenames)) < 2L) { # should not occur
     stop("Requires at least two files for LFQ.")
   }

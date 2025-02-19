@@ -2370,14 +2370,6 @@ splitPSM_ma <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # prot_n_psm and pep_n_psm may be inflated depends on the PSM redundancy 
   df <- df %>% add_quality_cols(group_psm_by, group_pep_by, uniq_by = NULL)
   
-  if (use_spec_counts && !TMT_plex) {
-    df <- df |> 
-      dplyr::mutate(I000 = df$pep_n_psm) |> 
-      dplyr::mutate(R000 = I000/I000, 
-                    R000 = 
-                      ifelse(is.infinite(R000) | is.nan(R000), NA_real_, R000))
-  }
-  
   # (2.9) update original Mascot fields
   # (e.g. updated counts after data merging)
   if ("pep_scan_range" %in% names(df))
@@ -3722,26 +3714,30 @@ normPSM <- function(dat_dir = NULL,
   # ---
   load(file = file.path(dat_dir, "label_scheme.rda"))
   tmt_plex <- TMT_plex(label_scheme)
+  n_files  <- length(unique(label_scheme$Sample_ID))
   
-  if (engine == "mz" && (!tmt_plex) && group_psm_by == "pep_seq") {
+  if (use_spec_counts || tmt_plex || engine != "mz") {
+    lfq_mbr <- FALSE
+    mz_lfq  <- FALSE
+    ok_lfq  <- FALSE
+  }
+  else {
+    # mz_lfq  <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
+    mz_lfq  <- TRUE
+    ok_lfq  <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
+    lfq_mbr <- if (ok_lfq && lfq_mbr) { TRUE } else { FALSE }
+    
+    if (ok_lfq) { # exit if MS1 data not found
+      ok_lfq  <- find_ms1filepath(dat_dir, pat = "ms1full", type = 1L)$ok_lfq
+      lfq_mbr <- lfq_mbr && ok_lfq
+    }
+  }
+
+  if (mz_lfq && group_psm_by == "pep_seq") {
     warning("Use group_psm_by = \"pep_seq_mod\" for LFQ experiments.")
     group_psm_by <- "pep_seq_mod"
   }
   
-  if (engine != "mz") {
-    lfq_mbr <- FALSE
-  }
-  
-  if (lfq_mbr && tmt_plex) {
-    warning("Not yet MBR for TMT experiments.")
-    lfq_mbr <- FALSE
-  }
-
-  if (lfq_mbr && 
-      !find_ms1filepath(dat_dir, pat = "ms1full", type = 0L)$ok_mbr) {
-    lfq_mbr <- FALSE
-  }
-
   # ---
   reload_expts()
   
@@ -3806,7 +3802,7 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intco = rptr_intco, 
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
-                      use_spec_counts = use_spec_counts, 
+                      # use_spec_counts = use_spec_counts, 
                       ...)
   } 
   else if (engine == "mf") {
@@ -4849,6 +4845,7 @@ calcTMTLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq",
 #' @param df A PSM table.
 #' @param ok_lfq Logical; performs LFQ or not.
 #' @param engine The search engine name.
+#' @param use_spec_counts Logical; use spectrum counts or not.
 #' @param ... filter_dots.
 #' @inheritParams PSM2Pep
 #' @inheritParams load_expts
@@ -4859,7 +4856,7 @@ psm_to_pep <- function (file = NULL, df = NULL, dat_dir = NULL,
                         label_scheme_full = NULL, group_psm_by = "pep_seq", 
                         group_pep_by = "prot_acc", method_psm_pep = "median", 
                         rm_allna = FALSE, type_sd = "log2_R", engine = "mz", 
-                        ...) 
+                        use_spec_counts = FALSE, ...) 
 {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
@@ -4892,7 +4889,7 @@ psm_to_pep <- function (file = NULL, df = NULL, dat_dir = NULL,
     df <- rm_cols_mqpsm(df, group_psm_by, set_idx)
   } 
   else {
-    if (engine == "mz" && tmt_plex == 0L) {
+    if (engine == "mz" && tmt_plex == 0L && !use_spec_counts) {
       # separate charge states: pep_seq_mod + z -> pep_seq_modz
       # I000 <- N_I000 <- pep_tot_int
       df <- calcLFQPeptide(
@@ -5086,11 +5083,22 @@ PSM2Pep <- function(method_psm_pep =
   message("Primary column keys in \"PSM/TMTset1_LCMSinj1_PSM_N.txt\" etc. ", 
           "for \"filter_\" varargs.")
   
-  mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
-  ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
-  ansmbr <- find_ms1filepath(dat_dir = dat_dir, pat = "ms1full", type = 0L)
-  path_ms1 <- ansmbr$path_ms1
-  ok_lfq   <- ansmbr$ok_mbr && ok_lfq
+  use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)
+  
+  if (use_spec_counts || tmt_plex || engine != "mz") {
+    # lfq_mbr <- FALSE
+    mz_lfq  <- FALSE
+    ok_lfq  <- FALSE
+    ok_mbr  <- FALSE
+  }
+  else {
+    # mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
+    mz_lfq <- TRUE
+    ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
+    ansmbr <- find_ms1filepath(dat_dir = dat_dir, pat = "ms1full", type = 1L)
+    path_ms1 <- ansmbr$path_ms1
+    ok_lfq   <- ansmbr$ok_lfq && ok_lfq
+  }
 
   ###
   # dfs unique at c("raw_file", "pep_seq_mod", "pep_exp_z", "pep_apex_scan")
@@ -5157,9 +5165,9 @@ PSM2Pep <- function(method_psm_pep =
       alignPSMApexs(
         dfs = dfs, ms1full_files = ms1full_files, path_ms1 = path_ms1, 
         key = "pep_seq_modz", temp_dir = temp_dir), 
-      error = function(e) NA)
+      error = function(e) NULL)
     
-    if (length(ans_align) == 1L && is.na(ans_align)) {
+    if (is.null(ans_align)) {
       warning("Fail to align retention times.")
       
       dfs <- mapply(function (x, y) {
@@ -5214,7 +5222,7 @@ PSM2Pep <- function(method_psm_pep =
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, 
         rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-        ...))
+        use_spec_counts = use_spec_counts, ...))
     parallel::stopCluster(cl)
   } 
   else {
@@ -5225,7 +5233,7 @@ PSM2Pep <- function(method_psm_pep =
         group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
         method_psm_pep = method_psm_pep, 
         rm_allna = rm_allna, type_sd = type_sd, engine = engine, 
-        ...))
+        use_spec_counts = use_spec_counts, ...))
   }
   
   .saveCall <- TRUE
@@ -7549,13 +7557,6 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
   df <- df %>% add_quality_cols(group_psm_by, group_pep_by)
   
-  if (use_spec_counts && !TMT_plex) {
-    df <- df |> 
-      dplyr::mutate(I000 = df$pep_n_psm) |> 
-      dplyr::mutate(R000 = I000/I000, 
-                    R000 = ifelse(is.infinite(R000), NA_real_, R000))
-  }
-  
   .saveCall <- TRUE
   
   invisible(df)
@@ -8292,13 +8293,6 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
   df <- add_quality_cols(df, group_psm_by, group_pep_by)
-  
-  if (use_spec_counts && !TMT_plex) {
-    df <- df |> 
-      dplyr::mutate(I000 = df$pep_n_psm) |> 
-      dplyr::mutate(R000 = I000/I000, 
-                    R000 = ifelse(is.infinite(R000), NA_real_, R000))
-  }
   
   .saveCall <- TRUE
   
@@ -9395,13 +9389,6 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.8) add columns pep_n_psm, prot_n_psm, prot_n_pep
   # (after the non-redundant PSM entries)
   df <- add_quality_cols(df, group_psm_by, group_pep_by, uniq_by)
-  
-  if (use_spec_counts && !tmt_plex) {
-    df <- df |> 
-      dplyr::mutate(I000 = df$pep_n_psm) |> 
-      dplyr::mutate(R000 = I000/I000, 
-                    R000 = ifelse(is.infinite(R000), NA_real_, R000))
-  }
   
   .saveCall <- TRUE
   

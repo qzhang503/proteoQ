@@ -43,17 +43,6 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{method_pep_prn}{Character string; the method to summarize the
-the \code{intensity} of peptides by protein entries. The
-descriptive statistics includes \code{c("mean", "median", "weighted_mean",
-"top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
-\code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
-The representative \code{log10-intensity} of reporter (or LFQ) ions at the
-peptide levels will be the weight when summarizing \code{log2FC} with
-various \code{"top_n"} statistics or \code{"weighted_mean"}.
-
-The method to summarize \code{log2FC} is \code{median}.}
-
 \item{impute_prot_na}{Logical; impute NA values of protein log2FC or not.}
 
 \item{use_spec_counts}{Logical; If TRUE, uses spectrum counts for

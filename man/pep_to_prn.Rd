@@ -11,7 +11,6 @@ pep_to_prn(
   gn_rollup = TRUE,
   rm_outliers = FALSE,
   rm_allna = FALSE,
-  is_prot_lfq = FALSE,
   engine = "mz",
   impute_prot_na = TRUE,
   use_mq_prot = FALSE,
@@ -23,17 +22,6 @@ pep_to_prn(
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
-
-\item{method_pep_prn}{Character string; the method to summarize the
-the \code{intensity} of peptides by protein entries. The
-descriptive statistics includes \code{c("mean", "median", "weighted_mean",
-"top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
-\code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
-The representative \code{log10-intensity} of reporter (or LFQ) ions at the
-peptide levels will be the weight when summarizing \code{log2FC} with
-various \code{"top_n"} statistics or \code{"weighted_mean"}.
-
-The method to summarize \code{log2FC} is \code{median}.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
 equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
@@ -54,8 +42,6 @@ used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
-
-\item{is_prot_lfq}{Logical; is protein LFQ or not.}
 
 \item{engine}{The name of search engine.}
 

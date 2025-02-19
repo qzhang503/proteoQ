@@ -164,14 +164,14 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   if (!file.exists(filename)) 
     stop(filename, " not found; run `Pep2Prn` first.")
 
-  df <- suppressWarnings(
-    readr::read_tsv(filename, col_types = get_col_types(), show_col_types = FALSE)
-  )
+  df <- filename |>
+    readr::read_tsv(col_types = get_col_types(), show_col_types = FALSE) |>
+    suppressWarnings()
 
-  if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) 
-    stop("Need more than one sample for `standPep` or `standPrn`.", 
-         call. = FALSE)
-  
+  if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) {
+    stop("Need more than one sample for `standPep` or `standPrn`.")
+  }
+
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
   
   is_prot_lfq <- if (any(grepl("^I000 ", names(df)))) TRUE else FALSE

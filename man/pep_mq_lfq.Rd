@@ -4,13 +4,19 @@
 \alias{pep_mq_lfq}
 \title{Handling of MaxQuant peptide.txt}
 \usage{
-pep_mq_lfq(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE)
+pep_mq_lfq(
+  label_scheme,
+  omit_single_lfq = FALSE,
+  use_spec_counts = FALSE,
+  use_maxlfq = TRUE
+)
 }
 \arguments{
-\item{label_scheme}{Experiment summary}
+\item{label_scheme}{Experiment summary.}
 
-\item{omit_single_lfq}{Depreciated. Logical; if TRUE, omits LFQ entries with
-single measured values across all samples. The default is FALSE.}
+\item{omit_single_lfq}{Omit entries with single LFQ value or not.}
+
+\item{use_spec_counts}{Not yet used. Logical; use spectrum counts or not.}
 
 \item{use_maxlfq}{Logical; use MaxLFQ values or not.}
 }

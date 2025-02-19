@@ -14,6 +14,7 @@ hpepLFQ(
   dfs = NULL,
   df_sps = NULL,
   prot_spec_counts = NULL,
+  use_spec_counts = FALSE,
   dat_dir = NULL,
   path_ms1 = NULL,
   ms1files = NULL,
@@ -52,6 +53,9 @@ indicating the sample status.}
 \item{df_sps}{A look-up table between peptide sequences and species.}
 
 \item{prot_spec_counts}{A data frame of protein spectrum counts.}
+
+\item{use_spec_counts}{Logical; use spectrum counts instead of intensities or
+not.}
 
 \item{dat_dir}{The working directory.}
 

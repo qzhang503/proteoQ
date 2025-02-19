@@ -9,11 +9,12 @@ pep_mf_lfq(
   omit_single_lfq = FALSE,
   use_maxlfq = TRUE,
   group_psm_by = "pep_seq_mod",
+  use_spec_counts = FALSE,
   use_lowercase_aa = FALSE
 )
 }
 \arguments{
-\item{label_scheme}{Experiment summary}
+\item{label_scheme}{Experiment summary.}
 
 \item{omit_single_lfq}{Logical; omit entries of single LFQ measures or not.}
 
@@ -25,6 +26,8 @@ based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
 alternative, peptides with different variable modifications will be treated
 as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
+
+\item{use_spec_counts}{Not yet used. Logical; use spectrum counts or not.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
 will be abbreviated with lower-case and/or \code{^_~}. See the table below

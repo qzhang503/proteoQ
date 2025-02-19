@@ -15,6 +15,7 @@ psm_to_pep(
   rm_allna = FALSE,
   type_sd = "log2_R",
   engine = "mz",
+  use_spec_counts = FALSE,
   ...
 )
 }
@@ -57,6 +58,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 The value is one \code{log2_R}, \code{N_log2_R} or \code{Z_log2_R}.}
 
 \item{engine}{The search engine name.}
+
+\item{use_spec_counts}{Logical; use spectrum counts or not.}
 
 \item{...}{filter_dots.}
 

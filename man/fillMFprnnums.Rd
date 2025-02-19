@@ -4,12 +4,19 @@
 \alias{fillMFprnnums}
 \title{Adds MSFragger intensity and ratio columns}
 \usage{
-fillMFprnnums(dat_dir, use_maxlfq = TRUE, prob_co = 0.99)
+fillMFprnnums(
+  dat_dir,
+  use_maxlfq = TRUE,
+  use_spec_counts = FALSE,
+  prob_co = 0.99
+)
 }
 \arguments{
 \item{dat_dir}{The working directory.}
 
 \item{use_maxlfq}{Logical; use MaxLFQ values or not.}
+
+\item{use_spec_counts}{Logical; use spectrum counts or not.}
 
 \item{prob_co}{The cut-off in protein probability.}
 }

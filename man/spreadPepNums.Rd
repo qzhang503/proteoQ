@@ -12,8 +12,7 @@ spreadPepNums(
   ok_lfq = FALSE,
   group_psm_by = "pep_seq_mod",
   group_pep_by = "gene",
-  engine = "mz",
-  use_spec_counts = FALSE
+  engine = "mz"
 )
 }
 \arguments{
@@ -33,8 +32,6 @@ and \code{LCMS_Injection}.}
 \item{group_pep_by}{Groups peptides by.}
 
 \item{engine}{The search engine.}
-
-\item{use_spec_counts}{Logical; use spectrum counts instead or not.}
 }
 \description{
 Spreads fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I by TMT

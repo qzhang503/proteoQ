@@ -187,8 +187,10 @@ use_mq_prottable <- function (dat_dir)
 #'
 #' @param dat_dir The working directory.
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
+#' @param use_spec_counts Logical; use spectrum counts or not.
 #' @param prob_co The cut-off in protein probability.
-fillMFprnnums <- function (dat_dir, use_maxlfq = TRUE, prob_co = .99) 
+fillMFprnnums <- function (dat_dir, use_maxlfq = TRUE, use_spec_counts = FALSE, 
+                           prob_co = .99) 
 {
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   sids <- label_scheme$Sample_ID
@@ -240,8 +242,9 @@ fillMFprnnums <- function (dat_dir, use_maxlfq = TRUE, prob_co = .99)
 #' Adds MSFragger intensity and ratio columns
 #'
 #' @param dat_dir The working directory.
+#' @param use_spec_counts Logical; use spectrum counts or not.
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
-fillMQprnnums <- function (dat_dir, use_maxlfq = TRUE) 
+fillMQprnnums <- function (dat_dir, use_spec_counts = FALSE, use_maxlfq = TRUE) 
 {
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   sids <- label_scheme$Sample_ID
@@ -415,11 +418,12 @@ extract_mq_ints <- function (df)
 #'
 #' Fill back intensity values that are not filled in LFQ msms.txt.
 #' 
-#' @param label_scheme Experiment summary
+#' @param label_scheme Experiment summary.
+#' @param omit_single_lfq Omit entries with single LFQ value or not.
+#' @param use_spec_counts Not yet used. Logical; use spectrum counts or not.
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
-#' @inheritParams n_TMT_sets
-#' @inheritParams mergePep
-pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE) 
+pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE, 
+                       use_spec_counts = FALSE, use_maxlfq = TRUE) 
 {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
@@ -648,13 +652,14 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE)
 #'
 #' Fill back intensity values.
 #' 
-#' @param label_scheme Experiment summary
+#' @param label_scheme Experiment summary.
+#' @param use_spec_counts Not yet used. Logical; use spectrum counts or not.
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
 #' @param omit_single_lfq Logical; omit entries of single LFQ measures or not.
-#' @inheritParams n_TMT_sets
 #' @inheritParams normPSM
 pep_mf_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE, 
-                       group_psm_by = "pep_seq_mod", use_lowercase_aa = FALSE) 
+                       group_psm_by = "pep_seq_mod", use_spec_counts = FALSE, 
+                       use_lowercase_aa = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
@@ -1327,11 +1332,9 @@ calcLFQPepInts <- function (df, filelist, group_psm_by)
 #' @param engine The search engine.
 #' @param group_psm_by Group PSMs by.
 #' @param group_pep_by Groups peptides by.
-#' @param use_spec_counts Logical; use spectrum counts instead or not.
 spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L, 
                            ok_lfq = FALSE, group_psm_by = "pep_seq_mod", 
-                           group_pep_by = "gene", engine = "mz", 
-                           use_spec_counts = FALSE) 
+                           group_pep_by = "gene", engine = "mz") 
 {
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
@@ -1382,13 +1385,9 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
   pat_N_I       <- "^N_I[0-9]{3}[NC]{0,1}"
   type_levels   <- c("I", "N_I", "sd_log2_R", "log2_R", "N_log2_R")
   
-  ###
-  # revisit use_spec_counts later...
-  ###
-  
   ## (1) aggregation different LCMS injections under the same TMT_Set
   nms <- names(df)
-  if (tmt_plex) { #  || use_spec_counts
+  if (tmt_plex) {
     df_num <- df |>
       dplyr::select(cols_grp, 
                     grep(pat_sd_log2_R, nms), 
@@ -1402,7 +1401,7 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::arrange(TMT_Set)
   }
   else {
-    if (ok_lfq) {
+    if (ok_lfq) { # Mzion-LFQ
       df_mbr <- lapply(basenames, function (file) {
         fi <- paste0("MBRpeps_", file)
         df <- readr::read_tsv(file.path(dat_dir, "Peptide/cache", fi))
@@ -1420,7 +1419,7 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       df_mbr <- df
     }
     
-    ## LFQ: MaxQuant, MSFragger, Mzion
+    ## LFQ: MaxQuant, MSFragger, Mzion; or spec counts: all engines
     df_num <- df_mbr |> # already ordered by TMT_Set and LCMS_Injection
       dplyr::select(c(cols_grp, "I000")) |>
       dplyr::group_by_at(cols_grp) |>
@@ -1433,7 +1432,7 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
   }
   
   ## (2) add spectrum counts at protein levels to the peptide table
-  if (!tmt_plex) {
+  if (ok_lfq) {
     # add column `gene` or `prot_acc`
     rows   <- match(df_num[[group_psm_by]], df[[group_psm_by]])
     df_num <- dplyr::bind_cols(
@@ -2027,42 +2026,47 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   }
   rm(list = c("ids"))
 
-  mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
-  ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
-  ok_mbr <- if (ok_lfq && lfq_mbr) { TRUE } else { FALSE }
+  if (tmt_plex && use_spec_counts) {
+    warning("No spectrum counting for TMT workflows.")
+    use_spec_counts <- FALSE
+  }
+  
+  if (engine == "mascot" && !tmt_plex) {
+    message("Use spectrum counts for Mascot LFQ.")
+    use_spec_counts <- TRUE
+  }
+  
+  if (use_spec_counts) {
+    lfq_mbr <- FALSE
+    mz_lfq  <- FALSE
+    ok_lfq  <- FALSE
+    ok_mbr  <- FALSE
+  }
+  else {
+    mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
+    ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
+    ok_mbr <- if (ok_lfq && lfq_mbr) { TRUE } else { FALSE }
+  }
 
   if (ok_lfq) {
     ans_trs  <- find_ms1filepath(dat_dir, pat = "calibms1full", type = 1L)
     path_ms1 <- ans_trs$path_ms1
     ms1files <- ans_trs$ms1files
-    ok_mbr   <- ans_trs$ok_mbr && ok_mbr
+    ok_lfq   <- ok_lfq && ans_trs$ok_lfq
+    ok_mbr   <- ok_lfq && ok_mbr
   }
   
   if (tmt_plex) {
-    if (use_spec_counts) {
-      warning("No spectrum counting for LFQ.")
-      use_spec_counts <- FALSE
-    }
-    
     prot_spec_counts <- NULL
   }
   else {
-    if (TRUE) {
-      prot_spec_counts <- countSpecs(
-        dat_dir = dat_dir, label_scheme_full = label_scheme_full, type = "PSM", 
-        filelist = filelist, basenames = basenames, 
-        set_idxes = set_idxes, injn_idxes = injn_idxes, 
-        group_psm_by = if (engine != "mq") "pep_seq_mod" else "pep_seq", 
-        group_pep_by = group_pep_by)
-    }
-    else {
-      prot_spec_counts <- readr::read_tsv(file.path(dat_dir, "PSM/cache", "prot_spec_counts_indiv.tsv"))
-    }
-
-    if (engine == "mascot") {
-      message("Use spectrum counts for Mascot LFQ.")
-      use_spec_counts <- TRUE
-    }
+    prot_spec_counts <- countSpecs(
+      dat_dir = dat_dir, label_scheme_full = label_scheme_full, type = "PSM", 
+      filelist = filelist, basenames = basenames, 
+      set_idxes = set_idxes, injn_idxes = injn_idxes, 
+      group_psm_by = if (engine != "mq") "pep_seq_mod" else "pep_seq", 
+      group_pep_by = group_pep_by)
+    # prot_spec_counts <- readr::read_tsv(file.path(dat_dir, "PSM/cache", "prot_spec_counts_indiv.tsv"))
   }
 
   dfs <- lapply(filelist, function (x) {
@@ -2089,12 +2093,34 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       df
     })
   }
+  
+  if (use_spec_counts) {
+    df_counts <- readr::read_tsv(
+      file.path(dat_dir, "PSM/cache", "pep_spec_counts_indiv.tsv"))
+    df_counts <- 
+      split(df_counts, interaction(df_counts$TMT_Set, df_counts$LCMS_Injection))
+    tmt_lcms <- strsplit(names(df_counts), "\\.")
+    ord <- order(as.integer(unlist(lapply(tmt_lcms, `[[`, 1L))), 
+                 as.integer(unlist(lapply(tmt_lcms, `[[`, 2L))))
+    df_counts   <- df_counts[ord]
 
-  df <- do.call(rbind, dfs)
-  # df <- dplyr::bind_rows(dfs)
+    dfs <- mapply(function (df, dx) {
+      dfx <- unique(dx[, c(group_psm_by, "pep_n_specs")])
+      df  <- dplyr::left_join(df, dfx, by = group_psm_by)
+      mts <- match(df[[group_psm_by]], dx[[group_psm_by]])
+      df  <- df[mts, ]
+      df$pep_tot_int <- df$I000 <- df$N_I000 <- df$pep_n_specs
+      df$pep_n_specs <- NULL
+      df
+    }, dfs, df_counts, SIMPLIFY = FALSE, USE.NAMES = TRUE)
+    
+    rm(list = c("df_counts", "tmt_lcms", "ord"))
+  }
+
+  df <- do.call(rbind, dfs) # df <- dplyr::bind_rows(dfs) # may fail...
   df$pep_tot_int <- df$dat_file <- NULL
   
-  # already by TMT_Set and LCMS_Injection
+  # already ordered by TMT_Set + LCMS_Injection
   df <- df |>
     filters_in_call(!!!filter_dots) |>
     assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
@@ -2104,10 +2130,10 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       filelist = filelist, basenames = basenames, set_idxes = set_idxes, 
       injn_idxes = injn_idxes, are_refs = are_refs, are_smpls = are_smpls, 
       dfs = dfs, 
-      # `species` can be wrong for shared peptides across species 
-      # but sufficient for finding species centers
+      # a few assignments of peptide `species` can be wrong for shared peptides 
+      # across species, but sufficient for finding species centers
       df_sps = unique(df[, c(group_pep_by, "pep_seq_modz", "species")]), 
-      prot_spec_counts = prot_spec_counts, 
+      prot_spec_counts = prot_spec_counts, use_spec_counts = use_spec_counts, 
       dat_dir = dat_dir, path_ms1 = path_ms1, ms1files = ms1files, 
       temp_dir = temp_dir, rt_tol = rt_tol, rt_step = rt_step, 
       mbr_ret_tol = mbr_ret_tol, 
@@ -2128,25 +2154,19 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     sp_centers <- NULL
   }
 
-  ###
-  # check spectrum count workflows later...
-  ###
-  
-  # treat spectrum counts as TMT; force Mzion-LFQ to go this route
-  
   # make `Ixxx (SID_1)`, `Ixxx (SID_2)`, ...
+  # treat spectrum counts as TMT; force Mzion-LFQ to go this route
   if (tmt_plex) {
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
       ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-      engine = engine, use_spec_counts = FALSE)
+      engine = engine)
   }
   else if (engine == "mz") {
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
-      ok_lfq = ok_lfq, group_psm_by = "pep_seq_modz", 
-      group_pep_by = group_pep_by, 
-      engine = engine, use_spec_counts = use_spec_counts)
+      ok_lfq = ok_lfq, group_psm_by = "pep_seq_modz", group_pep_by = group_pep_by, 
+      engine = engine)
 
     df_num <- groupMZPepZ2(df_num)
     
@@ -2172,22 +2192,22 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                            group_psm_by = group_psm_by, 
                            use_lowercase_aa = use_lowercase_aa)
     }
-    else { # should not incur this
-      warning("Peptide tables not found for engine:", engine)
+    else { # MaxQuant or MSFragger without the engine-generated peptide table.
+      warning("Peptide tables not found for engine: `", engine, 
+              "`. Use spectrum counting instead.")
       df_num <- spreadPepNums(
         df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
         ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-        engine = engine, use_spec_counts = use_spec_counts)
+        engine = engine)
     }
   }
   else { # no MS1-based LFQ by Mascot and use spectrum counts
-    warning("Unknown search engine or unsupported MS1-based LFQ; ", 
-            "proceed with spectrum countings.")
+    warning("No unsupported MS1-based LFQ; proceed with spectrum countings.")
     use_spec_counts <- TRUE
     df_num <- spreadPepNums(
       df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
       ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-      engine = engine, use_spec_counts = use_spec_counts)
+      engine = engine)
   }
 
   df_num <- df_num %>% 
@@ -2423,14 +2443,14 @@ find_ms1filepath <- function (dat_dir, pat = "ms1full", type = 1L)
   load(file.path(dat_dir, "fraction_scheme.rda"))
   
   msg1 <- paste0(
-    "MS1 peak lists of `^ms1full_[...].rds` not found for MBR.\n", 
+    "MS1 peak lists of `^ms1full_[...].rds` not found for LFQ.\n", 
     "Please copy them from the Mzion folder ", 
     "to your working directory.")
   msg2 <- paste0(
     "The number of MS1 `^ms1full_[...].rds` files is different ", 
     "to the number of RAW files.")
   
-  ok_mbr   <- TRUE
+  ok_lfq   <- TRUE
   pat2     <- paste0("^", pat, "_.*\\.rds$")
   n_raws   <- length(unique(fraction_scheme$RAW_File))
   ms1files <- list.files(dat_dir, pattern = pat2)
@@ -2449,21 +2469,21 @@ find_ms1filepath <- function (dat_dir, pat = "ms1full", type = 1L)
       # stop: otherwise `df` from `PSM2Pep` is unique by pep_seq_modz and 
       # need to be collapsed to pep_seq_mod
       if (type) stop(msg1) else warning(msg1)
-      ok_mbr <- FALSE
+      ok_lfq <- FALSE
     }
   }
   
   if (n_ms1fis != n_raws) {
     if (type) stop(msg2) else warning(msg2)
-    ok_mbr <- FALSE
+    ok_lfq <- FALSE
   }
   
-  if (!(ok_mbr)) {
+  if (!(ok_lfq)) {
     path_ms1 <- NULL
     ms1files <- NULL
   }
-
-  list(path_ms1 = path_ms1, ms1files = ms1files, ok_mbr = ok_mbr)
+  
+  list(path_ms1 = path_ms1, ms1files = ms1files, ok_lfq = ok_lfq)
 }
 
 
@@ -3106,13 +3126,14 @@ mergePep <- function (
          "Use either, not both.")
   }
 
-  use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)
+  use_spec_counts <- match_call_arg(normPSM, use_spec_counts)
+  lfq_mbr <- match_call_arg(normPSM, lfq_mbr)
 
   df <- normPep(dat_dir = dat_dir, 
                 group_psm_by = group_psm_by, 
                 group_pep_by = group_pep_by, 
                 engine = engine, 
-                lfq_mbr = match_call_arg(normPSM, lfq_mbr),
+                lfq_mbr = lfq_mbr,
                 use_duppeps = use_duppeps, 
                 duppeps_repair = duppeps_repair, 
                 cut_points = cut_points, 
@@ -3400,16 +3421,6 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'Fields other than \code{log2FC} and \code{intensity} are summarized with
 #'median statistics.
 #'
-#'@param method_pep_prn Character string; the method to summarize the
-#'  the \code{intensity} of peptides by protein entries. The
-#'  descriptive statistics includes \code{c("mean", "median", "weighted_mean",
-#'  "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
-#'  \code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
-#'  The representative \code{log10-intensity} of reporter (or LFQ) ions at the
-#'  peptide levels will be the weight when summarizing \code{log2FC} with
-#'  various \code{"top_n"} statistics or \code{"weighted_mean"}.
-#'  
-#'  The method to summarize \code{log2FC} is \code{median}. 
 #'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
 #'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
 #'  will be used, for summarizing the \code{log2FC} and the \code{intensity} of
@@ -3497,10 +3508,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'@import stringr dplyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-Pep2Prn <- function (method_pep_prn = 
-                       c("median", "mean", "weighted_mean", "lfq_top_3_sum", 
-                         "lfq_all", "lfq_top_2_sum", "top_3_mean", "lfq_max"), 
-                     impute_prot_na = FALSE, use_unique_pep = TRUE, 
+Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE, 
                      cut_points = Inf, rm_outliers = FALSE, rm_allna = FALSE, 
                      mc = TRUE, ...) 
 {
@@ -3514,7 +3522,7 @@ Pep2Prn <- function (method_pep_prn =
              recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
-  options(warn = 1)
+  options(warn = 1L)
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
@@ -3530,44 +3538,24 @@ Pep2Prn <- function (method_pep_prn =
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   tmt_plex <- TMT_plex(label_scheme_full)
   
-  method_pep_prn <- rlang::enexpr(method_pep_prn)
-  
-  if (tmt_plex) {
-    if (length(method_pep_prn) > 1L) {
-      method_pep_prn <- "median"
-    }
-    else {
-      method_pep_prn <- rlang::as_string(method_pep_prn)
-    }
-  } 
-  else {
-    if (length(method_pep_prn) > 1L) {
-      method_pep_prn <- "median"
-    }
-    else {
-      method_pep_prn <- rlang::as_string(method_pep_prn)
-    }
-  }
-  
-  if (method_pep_prn == "top.3") {
-    stop("Method `top.3` depreciated; instead use `top_3_mean`.")
-  } 
-  else if (method_pep_prn == "weighted.mean") {
-    stop("Method `weighted.mean` depreciated; instead use `weighted_mean`.")
-  }
-  
-  stopifnot(method_pep_prn %in% c("median", "mean", 
-                                  "weighted_mean", "top_3_mean", 
-                                  "lfq_max", "lfq_top_2_sum", 
-                                  "lfq_top_3_sum", "lfq_all"), 
-            length(method_pep_prn) == 1L)
-
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)
   
-  stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
-  stopifnot(vapply(c(use_unique_pep, mc), rlang::is_logical, logical(1)))
+  if (use_spec_counts) {
+    method_pep_prn <- "lfq_all" # sum of peptide spec counts
+  }
+  else if (tmt_plex) {
+    method_pep_prn <- "median"
+  }
+  else {
+    # method_pep_prn <- "lfq_top_3_sum" # LFQ intensity for histo color-coding
+    method_pep_prn <- "median"
+  }
+
+  stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1L)
+  stopifnot(vapply(c(use_unique_pep, mc), rlang::is_logical, logical(1L)))
   
-  gn_rollup <- if (group_pep_by == "gene") TRUE else FALSE
+  gn_rollup <- if (group_pep_by == "gene") { TRUE } else { FALSE }
 
   message("Column keys in `Peptide/Peptide.txt` ", "for \"filter_\" varargs.")
 
@@ -3586,9 +3574,7 @@ Pep2Prn <- function (method_pep_prn =
          "Use either, not both.")
   }
   
-  if (use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)) {
-    method_pep_prn <- "lfq_all"
-    
+  if (use_spec_counts) {
     if (use_mq_prot) {
       use_mq_prot <- FALSE
     }
@@ -3598,15 +3584,14 @@ Pep2Prn <- function (method_pep_prn =
     }
   }
 
-  # is_prot_lfq <- grepl("^lfq_", method_pep_prn)
   is_prot_lfq <- tmt_plex == 0L
+  
   df <- pep_to_prn(id = prot_acc, 
                    method_pep_prn = method_pep_prn, 
                    use_unique_pep = use_unique_pep, 
                    gn_rollup = gn_rollup, 
                    rm_outliers = rm_outliers, 
                    rm_allna = rm_allna, 
-                   is_prot_lfq = is_prot_lfq, 
                    engine = engine, 
                    impute_prot_na = impute_prot_na, 
                    use_mq_prot = use_mq_prot, 
@@ -3756,6 +3741,10 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     }
   }
   
+  if (use_spec_counts && method_pep_prn != "lfq_all") {
+    stop("Require `method_pep_prn = lfq_all` for spectrum counting.")
+  }
+
   prot_ints <- df |>
     dplyr::select(group_pep_by, grep("^I[0-9]{3}[NC]{0,1}", names(df)))
   prot_ints <- switch(
@@ -3765,19 +3754,21 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     lfq_all = aggrNums(sum)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
     lfq_max = aggrTopn(sum)(prot_ints, 1, na.rm = TRUE), 
     lfq_top_2_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 2, na.rm = TRUE), 
-    lfq_top_3_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 3, na.rm = TRUE), 
+    # with LFQ, e.g., for histogram color coding
+    lfq_top_3_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 3, na.rm = TRUE),
     top_3_mean = TMT_top_n(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
     weighted_mean = tmt_wtmean(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
     aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE))
   
-  if (use_spec_counts) {
+  if (use_spec_counts) { # derive log2FCs from summed spec counts
     prot_log2rs <- prot_ints |>
       calc_lfq_log2r("I000", refChannels) |>
       dplyr::mutate_if(is.numeric, function (x) replace(x, is.nan(x), NA_real_))
   }
-  else {
+  else { # use log2FCs (previously from MS1 peak areas)
+    nms <- names(df)
     prot_log2rs <- df |>
-      dplyr::select(group_pep_by, grep("^log2_R[0-9]{3}[NC]{0,1}", names(df)))
+      dplyr::select(group_pep_by, grep("^log2_R[0-9]{3}[NC]{0,1}", nms))
     prot_log2rs <- 
       aggrNums(median)(prot_log2rs, !!rlang::sym(group_pep_by), na.rm = TRUE)
   }
@@ -3792,20 +3783,6 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     }
   }
   
-  # e.g. expand the same pep_seq_mod at different prot_acc's -> multiple rows
-  if (FALSE) {
-    pep_prot_map <- df %>% 
-      map_peps_prots(group_psm_by, group_pep_by) %>% 
-      list_to_dataframe() %>% 
-      `names_pos<-`(1, group_psm_by) %>% 
-      tidyr::gather(-group_psm_by, key = n, value = !!rlang::sym(group_pep_by)) %>% 
-      dplyr::select(-n) %>% 
-      dplyr::filter(!is.na(!!rlang::sym(group_pep_by))) %>% 
-      dplyr::rename(prot_map = group_pep_by)
-
-    df <- df |> dplyr::left_join(pep_prot_map, by = group_psm_by)
-  }
-
   # --- median centering ---
   if (use_spec_counts) {
     dfw <- prot_log2rs
@@ -3894,14 +3871,13 @@ calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc",
 #' @param engine The name of search engine.
 #' @param use_mq_prot Logical; use MQ protein table or not.
 #' @param use_mf_prot Logical; use MSFragger protein table or not.
-#' @param is_prot_lfq Logical; is protein LFQ or not.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
 #' @inheritParams normPSM
 pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median", 
                        use_unique_pep = TRUE, gn_rollup = TRUE, 
                        rm_outliers = FALSE, rm_allna = FALSE, 
-                       is_prot_lfq = FALSE, engine = "mz", impute_prot_na = TRUE, 
+                       engine = "mz", impute_prot_na = TRUE, 
                        use_mq_prot = FALSE, use_mf_prot = FALSE, 
                        use_spec_counts = FALSE, ...)
 {
@@ -3993,7 +3969,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
       dplyr::select(-grep("^X[0-9]{3}[NC]{0,1}", names(.)))
   } 
 
-  if (! "pep_isunique" %in% names(df)) {
+  if (!"pep_isunique" %in% names(df)) {
     df$pep_isunique <- TRUE
     warning("Column \"pep_isunique\" created and TRUE values assumed.")
   }
@@ -4004,39 +3980,6 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  
-  ###
-  if (FALSE) {
-    # group_psm_by <- match_call_arg(normPSM, group_psm_by)
-    use_lowercase_aa <- match_call_arg(normPSM, "use_lowercase_aa")
-    
-    if (group_psm_by == "pep_seq_mod") {
-      mod_indexes <- find_mod_indexesQ(dat_dir)
-      # may not be called psmQ.txt
-      # mod_indexes <- deduce_mod_indexes("psmQ.txt", dat_dir = dat_dir) # only anywhere varmods
-      mod_nms <- names(mod_indexes)
-      
-      if (use_lowercase_aa) {
-        ums <- lapply(mod_nms, mzion::parse_unimod)
-        sites <- unlist(lapply(ums, `[[`, "site"))
-        sites <- sites[sites != "M" & !grepl("term", sites)]
-        sites <- tolower(sites)
-        pat_rmvl <- paste0("[", paste0(sites, collapse = ""), "]")
-        
-        df <- df[!grepl(pat_rmvl, df$pep_seq_mod), ]
-      }
-      else {
-        bads <- !(mod_nms == "Oxidation (M)" | 
-                    grepl("Acetyl \\(Protein", mod_nms) | 
-                    grepl("Carbamidomethyl \\(C", mod_nms))
-        mods_rmvl <- unname(mod_indexes[bads])
-        pat_rmvl <- paste0("[", paste0(mods_rmvl, collapse = ""), "]")
-        
-        df <- df[!grepl(pat_rmvl, df$pep_seq_mod), ]
-      }
-    }
-  }
-  ###
   
   # add `prot_n_uniqpep` and `prot_n_uniqpsm`
   df <- local({
@@ -4075,11 +4018,12 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   })
   
   # first by `id = prot_acc` and later optional roll-up to `gene`
-  if (is_prot_lfq) {
-    if (tmt_plex) {
-      stop("\"method_pep_prn = lfq_[...]\" only for LFQ.")
-    }
-
+  if (tmt_plex) {
+    df_num <- calc_tmt_prnnums(
+      df = df, use_unique_pep = use_unique_pep, id = id, 
+      method_pep_prn = method_pep_prn, use_spec_counts = use_spec_counts)
+  }
+  else {
     if (engine == "mz") {
       df_num <- calcLFQprnnums(
         df, label_scheme = label_scheme, use_unique_pep = use_unique_pep, 
@@ -4089,7 +4033,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     }
     else if (engine == "mf") {
       if (use_mf_prot) {
-        df_num <- fillMFprnnums(dat_dir, prob_co = .99)
+        df_num <- 
+          fillMFprnnums(dat_dir, use_spec_counts = use_spec_counts,prob_co = .99)
       }
       else {
         df_num <- calcLFQprnnums(
@@ -4101,7 +4046,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     }
     else if (engine == "mq") {
       if (use_mq_prot) {
-        df_num <- fillMQprnnums(dat_dir)
+        df_num <- fillMQprnnums(dat_dir, use_spec_counts = use_spec_counts)
       }
       else {
         df_num <- calcLFQprnnums(
@@ -4113,11 +4058,6 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     }
     
     df_num <- df_num |> dplyr::filter(!is.na(!!rlang::sym(id)))
-  } 
-  else {
-    df_num <- calc_tmt_prnnums(
-      df, use_unique_pep, id, method_pep_prn = method_pep_prn, 
-      use_spec_counts = use_spec_counts)
   }
   
   df_num <- df_num %>% 
