@@ -11,7 +11,9 @@ collapseSTY(
   lwr = 10,
   step = 0.002,
   spc = 0,
-  coll = TRUE
+  coll = TRUE,
+  are_refs,
+  are_smpls
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ collapseSTY(
 \item{spc}{A species center.}
 
 \item{coll}{Logical; collapse adjacent columns or not.}
+
+\item{are_refs}{Logical; are references or not.}
+
+\item{are_smpls}{Logical; are samples or not.}
 }
 \description{
 Near identical to \code{mzion:::collapse_mms1ints} with three fields instead

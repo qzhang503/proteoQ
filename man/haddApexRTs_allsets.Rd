@@ -11,6 +11,7 @@ haddApexRTs_allsets(
   path_ms1 = NULL,
   rt_size = 240,
   rt_margin = 480,
+  max_rt_delta = 240,
   max_n_apexes = 2L,
   data_type = "raw"
 )
@@ -31,6 +32,9 @@ triggering MS2) in one run and several minutes later in another.}
 
 \item{rt_margin}{The bracketing margin before and after an LC retention time
 window.}
+
+\item{max_rt_delta}{The maximum allowance in retention-time difference
+between the identifying MS2 event and apex.}
 
 \item{max_n_apexes}{The maximum number of apexes for consideration.}
 

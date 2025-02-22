@@ -11,8 +11,15 @@ cleanPSMYTS(
   smat,
   fmat,
   nmat,
+  xsmat = NULL,
+  ysmat = NULL,
+  tsmat = NULL,
+  ssmat = NULL,
+  fsmat = NULL,
+  nsmat = NULL,
   key = "pep_seq_modz",
   update = TRUE,
+  update2 = FALSE,
   cols = c("pep_tot_int", "N_I000", "I000", "pep_apex_ret", "pep_apex_scan",
     "pep_apex_fwhm", "pep_apex_n")
 )
@@ -29,6 +36,19 @@ cleanPSMYTS(
 \item{fmat}{A matrix of apex FWHM values.}
 
 \item{nmat}{A matrix of apex peak widths measured by the number of MS1 scans.}
+
+\item{xsmat}{A matrix of sets of moverz values.}
+
+\item{ysmat}{A matrix of sets of apexes intensities.}
+
+\item{tsmat}{A matrix of sets of retention times.}
+
+\item{ssmat}{A matrix of sets of scan numbers.}
+
+\item{fsmat}{A matrix of sets of FWHM values.}
+
+\item{nsmat}{A matrix of sets of  peak widths measured by the number of MS1
+scans.}
 
 \item{key}{The column key for matching.}
 

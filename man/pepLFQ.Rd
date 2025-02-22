@@ -20,8 +20,8 @@ pepLFQ(
   mbr_sps,
   sp_centers,
   new_na_species = ".other",
-  rt_tol = 25,
-  mbr_ret_tol = 25,
+  rt_tol = 30,
+  mbr_ret_tol = 30,
   reference_spec_counts = FALSE,
   step = 0.005,
   err_log2r = 0.25

@@ -1788,12 +1788,12 @@ aggrNumLCMS <- function (df, key = "pep_seq_mod", label_scheme_full,
       dplyr::group_split() # 40094
     
     nrows <- unlist(lapply(df_n, nrow))
-    df_n0 <- df_n[nrows == 1L] # 13240
+    df_n0 <- df_n[nrows == 1L]
     df_n0 <- dplyr::bind_rows(df_n0)
-    df_n1 <- df_n[nrows > 1L] # 26854
+    df_n1 <- df_n[nrows > 1L]
     
     df_n1_keys <- lapply(df_n1, function (x) x[1, -icols]) |>
-      dplyr::bind_rows() # 26854
+      dplyr::bind_rows()
     
     data  <- lapply(df_n1, function (x) 
       dplyr::summarise_at(x, .vars = icols, median, na.rm = TRUE))
@@ -1981,8 +1981,8 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      use_duppeps = TRUE, duppeps_repair = "denovo", 
                      cut_points = Inf, omit_single_lfq = FALSE, 
                      use_mq_pep = FALSE, use_mf_pep = FALSE, 
-                     rm_allna = FALSE, rt_tol = 25, rt_step = 5E-3, 
-                     mbr_ret_tol = 25, 
+                     rm_allna = FALSE, rt_tol = 30, rt_step = 5E-3, 
+                     mbr_ret_tol = 30, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
                      imp_refs = FALSE, use_spec_counts = FALSE, 
                      new_na_species = ".other", ...) 
@@ -3142,7 +3142,7 @@ mergePep <- function (
                 use_mf_pep = use_mf_pep, 
                 rm_allna = rm_allna, 
                 mbr_ret_tol = mbr_ret_tol, 
-                rt_tol = 25, # user accessible later
+                rt_tol = 30, # user accessible later
                 rt_step = 5E-3, # was 2E-3
                 ret_sd_tol = ret_sd_tol, 
                 rm_ret_outliers = rm_ret_outliers, 

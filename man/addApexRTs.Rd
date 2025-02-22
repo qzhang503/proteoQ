@@ -12,6 +12,7 @@ addApexRTs(
   step = 1e-05,
   rt_size = 240,
   rt_margin = 480,
+  max_rt_delta = 240,
   yco = 100,
   min_y = 2e+06,
   n_para = 6L
@@ -32,6 +33,9 @@ addApexRTs(
 
 \item{rt_margin}{The bracketing margin before and after an LC retention time
 window.}
+
+\item{max_rt_delta}{The maximum allowance in retention-time difference
+between the identifying MS2 event and apex.}
 
 \item{yco}{The cut-off in intensities.}
 

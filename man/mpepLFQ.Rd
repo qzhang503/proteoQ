@@ -17,8 +17,8 @@ mpepLFQ(
   sp_centers,
   pri_sps = 0L,
   new_na_species = ".other",
-  rt_tol = 25,
-  mbr_ret_tol = 25,
+  rt_tol = 30,
+  mbr_ret_tol = 30,
   step = 0.005,
   err_log2r = 0.25
 )

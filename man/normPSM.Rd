@@ -23,7 +23,7 @@ normPSM(
   rm_allna = FALSE,
   type_sd = c("log2_R", "N_log2_R", "Z_log2_R"),
   lfq_mbr = TRUE,
-  mbr_ret_tol = 25,
+  mbr_ret_tol = 30,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,

@@ -14,10 +14,13 @@
 #'   triggering MS2) in one run and several minutes later in another.
 #' @param rt_margin The bracketing margin before and after an LC retention time
 #'   window.
+#' @param max_rt_delta The maximum allowance in retention-time difference
+#'   between the identifying MS2 event and apex.
 haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL, 
                                  dat_dir = NULL, path_ms1 = NULL, 
                                  rt_size = 240, rt_margin = 480, 
-                                 max_n_apexes = 2L, data_type = "raw")
+                                 max_rt_delta = 240, max_n_apexes = 2L, 
+                                 data_type = "raw")
 {
   if (data_type == "raw") {
     yco   <- 100
@@ -42,8 +45,9 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
     ans <- parallel::clusterMap(
       cl, haddApexRTs_oneset, file_psm = filelist, files_ms1 = ms1full_files, 
       MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1, yco = yco, 
-                      min_y = min_y, step = step, n_cores = n_cores, 
-                      rt_size = rt_size, rt_margin = rt_margin), 
+                      max_rt_delta = max_rt_delta, min_y = min_y, step = step, 
+                      n_cores = n_cores, rt_size = rt_size, 
+                      rt_margin = rt_margin), 
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
     parallel::stopCluster(cl)
   }
@@ -51,8 +55,8 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
     ans <- mapply(
       haddApexRTs_oneset, file_psm = filelist, files_ms1 = ms1full_files, 
       MoreArgs = list(dat_dir = dat_dir, path_ms1 = path_ms1, yco = yco, 
-                      min_y = min_y, step = step, n_cores = 1L, 
-                      rt_size = rt_size, rt_margin = rt_margin),
+                      max_rt_delta = max_rt_delta, min_y = min_y, step = step, 
+                      n_cores = 1L, rt_size = rt_size, rt_margin = rt_margin),
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
   }
   
@@ -76,13 +80,16 @@ haddApexRTs_allsets <- function (filelist = NULL, ms1full_files = NULL,
 #' @param rt_size The width of each LC retention times in seconds.
 #' @param rt_margin The bracketing margin before and after an LC retention time
 #'   window.
+#' @param max_rt_delta The maximum allowance in retention-time difference
+#'   between the identifying MS2 event and apex.
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
 haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL, 
                                 dat_dir = NULL, path_ms1 = NULL, 
                                 max_n_apexes = 2L, from = 115, step = 1E-5, 
                                 rt_size = 240, rt_margin = 480, 
-                                yco = 100, min_y = 2E6, n_cores = 1L)
+                                max_rt_delta = 240, yco = 100, 
+                                min_y = 2E6, n_cores = 1L)
 {
   df <- readr::read_tsv(
     file.path(dat_dir, "PSM", file_psm), col_types = get_col_types(), 
@@ -106,7 +113,8 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
       cl, addApexRTs, df = dfs, file_ms1 = files_ms1, 
       MoreArgs = 
         list(from = from, rt_size = rt_size, rt_margin = rt_margin, step = step, 
-             path_ms1 = path_ms1, yco = yco, min_y = min_y, n_para = n_para2), 
+             max_rt_delta = max_rt_delta, path_ms1 = path_ms1, yco = yco, 
+             min_y = min_y, n_para = n_para2), 
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
     parallel::stopCluster(cl)
   }
@@ -115,7 +123,8 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
       addApexRTs, df = dfs, file_ms1 = files_ms1, 
       MoreArgs = 
         list(from = from, rt_size = rt_size, rt_margin = rt_margin, step = step, 
-             path_ms1 = path_ms1, yco = yco, min_y = min_y, n_para = n_para2), 
+             max_rt_delta = max_rt_delta, path_ms1 = path_ms1, yco = yco, 
+             min_y = min_y, n_para = n_para2), 
       SIMPLIFY = FALSE, USE.NAMES = FALSE)
   }
   
@@ -169,14 +178,17 @@ haddApexRTs_oneset <- function (file_psm = NULL, files_ms1 = NULL,
 #' @param path_ms1 The file path to \code{ms1full_.rds}.
 #' @param from The starting point for calculating the bin indexes of masses.
 #' @param step A step size in mass for binning.
+#' @param max_rt_delta The maximum allowance in retention-time difference
+#'   between the identifying MS2 event and apex.
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
 #' @param rt_size The width of each LC retention times in seconds.
 #' @param rt_margin The bracketing margin before and after an LC retention time
 #'   window.
 #' @param n_para The number of parallel processes.
+#' @importFrom fastmatch %fin%
 addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5, 
-                        rt_size = 240, rt_margin = 480, 
+                        rt_size = 240, rt_margin = 480, max_rt_delta = 240, 
                         yco = 100, min_y = 2E6, n_para = 6L)
 {
   # low redundancy: ELEEIRK ~ qIqELRK; TENNDHINLK ~ TENNnHINLK
@@ -243,14 +255,16 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
       rts = lapply(dfs, `[[`, "pep_ret_range"), 
       mzs = lapply(dfs, `[[`, "pep_exp_mz"), 
       trs = df1s, gap_bf = gaps_bf, gap_af = gaps_af, 
-      MoreArgs = list(step = step, yco = yco, min_y = min_y), 
+      MoreArgs = list(max_rt_delta = max_rt_delta, step = step, 
+                      yco = yco, min_y = min_y), 
       SIMPLIFY = FALSE, USE.NAMES = TRUE)
     parallel::stopCluster(cl)
     ans <- dplyr::bind_rows(ans)
   }
   else {
-    ans <- addApexes(rts = rts, mzs = mzs, trs = trs, gap_bf = rt_size, 
-                     gap_af = rt_size, step = step, yco = yco, min_y = min_y)
+    ans <- addApexes(
+      rts = rts, mzs = mzs, trs = trs, gap_bf = rt_size, gap_af = rt_size, 
+      max_rt_delta = max_rt_delta, step = step, yco = yco, min_y = min_y)
   }
   
   ans
@@ -264,6 +278,8 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
 #' @param rts A vector of retention times at MS2 events (pep_ret_range).
 #' @param mzs A vector of m-over-z values for PSMs.
 #' @param trs MS1 trace data.
+#' @param max_rt_delta The maximum allowance in retention-time difference
+#'   between the identifying MS2 event and apex.
 #' @param gap_bf A leading gap of maximum allowance in retention times between
 #'   an MS2 scan and a peak apex.
 #' @param gap_af A following gap of maximum allowance in retention times between
@@ -272,7 +288,7 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
 #' @param yco The cut-off in intensities.
 #' @param min_y The minimum peak area.
 addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L, 
-                      step = 1E-5, yco = 100, min_y = 2E6)
+                      max_rt_delta = 240, step = 1E-5, yco = 100, min_y = 2E6)
 {
   if (!(nr <- length(rts))) {
     return(NULL)
@@ -290,8 +306,9 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
   scans <- tvals <- xvals <- yvals <- ns <- ranges <- fwhms <- vector("list", nr)
   
   for (i in seq_len(nr)) {
-    # i <- which(abs(mzs - 491.9071) < .0001)[[1]]
-    # i <- which(abs(mzs - 738.8376) < .0001)[[2]]
+    # i <- which(abs(mzs - 681.3771) < .0001)[[1]]; 
+    # mzs[c(23294, 23333)]
+    #   two PSMs at slightly different mzs trace to different Ys;
     # pep_ret_range: can be way before apex in one run and way after in another
     xref <- mzs[[i]] # pep_exp_mz; 
     tref <- rts[[i]] # pep_ret_range
@@ -358,7 +375,7 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
       xvs = xsi, yvs = ysi, ss = ssi, 
       yints = yints, aps = sci, rts = rti, rngs = rngs, fwhms = fwhmi, 
       xref = xref, ret_ms1 = tref, step_tr = step, min_y = min_y, 
-      max_rt_delta = 180, min_n1 = 10L, min_n2 = 20L, min_n3 = 15L)
+      max_rt_delta = max_rt_delta, min_n1 = 10L, min_n2 = 20L, min_n3 = 15L)
     
     if (is.null(anx)) {
       next
@@ -450,7 +467,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
                      dfs = NULL, df_sps = NULL, prot_spec_counts = NULL, 
                      use_spec_counts = FALSE, 
                      dat_dir = NULL, path_ms1 = NULL, ms1files = NULL, 
-                     temp_dir = NULL, rt_tol = 25, mbr_ret_tol = 25, 
+                     temp_dir = NULL, rt_tol = 30, mbr_ret_tol = 30, 
                      sp_centers_only = FALSE, imp_refs = FALSE, 
                      group_psm_by = "pep_seq_modz", group_pep_by = "gene", 
                      lfq_mbr = FALSE, rt_step = 5E-3, new_na_species = ".other", 
@@ -1048,7 +1065,7 @@ fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir)
 #'   not.
 pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
                     ymat, tmat, smat, cmat, mbr_peps, mbr_sps, sp_centers, 
-                    new_na_species = ".other", rt_tol = 25, mbr_ret_tol = 25, 
+                    new_na_species = ".other", rt_tol = 30, mbr_ret_tol = 30, # was 25
                     reference_spec_counts = FALSE, step = 5E-3, err_log2r = .25)
   
 {
@@ -1083,15 +1100,17 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     }
     
     ## (1) collapse bins of T, Y and S values
-    # i <- which(mbr_peps == "LLDVVHPAAK@3")
+    # i <- which(mbr_peps == "LLDVVHPAAK@3"); i <- 354; i <- 4565
     spc  <- cents[[i]]
     ans  <- collapseSTY(
       xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
-      spc = spc)
+      spc = spc, are_refs = are_refs, are_smpls = are_smpls)
     anst <- ans[["x"]]
     ansy <- ans[["y"]]
     anss <- ans[["z"]]
     unv  <- ans[["u"]]
+    stp  <- ans[["stp"]]
+    step_reduced <- stp < step
     
     if (!(nc <- ncol(anst))) {
       yout[[i]] <- null_dbl
@@ -1111,9 +1130,6 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
           ansy[rows, u2] <- ansy[rows, u]
           anst[rows, u2] <- anst[rows, u]
           anss[rows, u2] <- anss[rows, u]
-          # ansy[rows, u] <- NA_real_
-          # anst[rows, u] <- NA_real_
-          # anss[rows, u] <- NA_real_
         }
       }
     }
@@ -1161,10 +1177,13 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     }
     
     ## (2) remove retention outliers
+    tbars <- colMeans(anst, na.rm = TRUE)
+    
     for (j in 1:nc) {
       tvals <- anst[, j]
+      mrtj  <- tbars[[j]]
       # change the setting to be consistent with `step`...
-      tbads <- abs(tvals - median(tvals, na.rm = TRUE)) > rt_tol
+      tbads <- abs(tvals - mrtj) > rt_tol
       ibads <- .Internal(which(tbads))
       
       if (length(ibads)) {
@@ -1172,6 +1191,15 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
         ansy[ibads, j] <- NA_real_
         anss[ibads, j] <- NA_real_
       }
+    }
+    
+    if (step_reduced) {
+      ans2 <- mergeSTY(
+        xmat = anss, ymat = ansy, tmat = anst, tbars = tbars, rt_tol = rt_tol, 
+        spc = spc, are_refs = are_refs, are_smpls = are_refs)
+      anss <- ans2[["x"]]
+      ansy <- ans2[["y"]]
+      anst <- ans2[["t"]]
     }
     
     ## (3) calculate log2FCs
@@ -1318,7 +1346,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 #' @param err_log2r Not yet used. Error tolerance in log2FC.
 mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
                      pmat, mbr_peps, sp_centers, pri_sps = 0L, 
-                     new_na_species = ".other", rt_tol = 25, mbr_ret_tol = 25, 
+                     new_na_species = ".other", rt_tol = 30, mbr_ret_tol = 30, 
                      step = 5E-3, err_log2r = .25)
   
 {
@@ -1351,12 +1379,13 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 
     ans  <- collapseSTY(
       xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
-      spc = spc)
+      spc = spc, are_refs = are_refs, are_smpls = are_smpls)
     anst <- ans[["x"]]
     ansy <- ans[["y"]]
     anss <- ans[["z"]]
     unv  <- ans[["u"]]
-
+    stp  <- ans[["stp"]]
+    
     if (!(nc <- ncol(anst))) {
       yout[[i]] <- null_dbl
       tout[[i]] <- null_dbl
@@ -1376,9 +1405,6 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
           ansy[rows, u2] <- ansy[rows, u]
           anst[rows, u2] <- anst[rows, u]
           anss[rows, u2] <- anss[rows, u]
-          # ansy[rows, u] <- NA_real_
-          # anst[rows, u] <- NA_real_
-          # anss[rows, u] <- NA_real_
         }
       }
     }
@@ -1478,6 +1504,92 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 }
 
 
+#' Combine values before or after when collapsing adjacent bins of retention
+#' times
+#'
+#' @param xs_cr A vector of retention-time values of the current bin.
+#' @param ys_cr A vector of intensity values of the current bin.
+#' @param zs_cr A vector of scan numbers of the current bin.
+#' @param xs_bf A vector of retention-time values of the preceding bin.
+#' @param ys_bf A vector of intensity values of the preceding bin.
+#' @param zs_bf A vector of scan numbers of the preceding bin.
+#' @param xs_af A vector of retention-time values of the following bin.
+#' @param ys_af A vector of intensity values of the following bin.
+#' @param zs_af A vector of scan numbers of the following bin.
+#' @param iboth A vector of confounding retention times present in both the
+#'   preceding and the following columns.
+#' @param are_refs A logical vector; are references or not.
+#' @param are_smpls A logical vector; are samples or not.
+#' @param spc Species center(s).
+combine_lfq123 <- function (xs_cr, ys_cr, zs_cr, xs_bf, ys_bf, zs_bf, 
+                            xs_af, ys_af, zs_af, iboth, are_refs, are_smpls, 
+                            spc)
+{
+  ys1 <- ys3 <- ys_cr
+  nsps <- length(spc)
+  # ioks <- logical(length(iboth))
+  
+  for (i in iboth) {
+    ys1[[i]] <- y1 <- ys_bf[[i]]
+    ys3[[i]] <- y3 <- ys_af[[i]]
+    rs1 <- log2(ys1[are_smpls] / mean(ys1[are_refs], na.rm = TRUE))
+    rs3 <- log2(ys3[are_smpls] / mean(ys3[are_refs], na.rm = TRUE))
+    
+    # ys1 and ys3 are exclusive refs or samples
+    # may keep track of the indexes for a second round...
+    # all NA bf -> must be all NA af
+    if (all(is.na(rs1))) { next }
+    
+    if (nsps == 1L) {
+      d1 <- abs(mean(rs1 - spc, na.rm = TRUE))
+      d3 <- abs(mean(rs3 - spc, na.rm = TRUE))
+      
+      # ioks[[i]] <- TRUE
+      if (isTRUE(d1 <= d3)) {
+        ys_cr[[i]] <- y1
+        xs_cr[[i]] <- xs_bf[[i]]
+        zs_cr[[i]] <- zs_bf[[i]]
+      }
+      else if (isTRUE(d1 > d3)) {
+        ys_cr[[i]] <- y3
+        xs_cr[[i]] <- xs_af[[i]]
+        zs_cr[[i]] <- zs_af[[i]]
+      }
+    }
+    else {
+      ds1 <- lapply(spc, function (x) abs(mean(rs1 - x, na.rm = TRUE)))
+      ds3 <- lapply(spc, function (x) abs(mean(rs3 - x, na.rm = TRUE)))
+      
+      ds1 <- .Internal(unlist(ds1, recursive = FALSE, use.names = FALSE))
+      ds3 <- .Internal(unlist(ds3, recursive = FALSE, use.names = FALSE))
+
+      # find the `min` species, then decide bf or af;
+      # warning msg of `Inf` if all NA in `bf` or `af` (should not occur)
+      # m   <- which.min(mapply(min, ds1, ds3, na.rm = TRUE))
+      
+      # directly by the min between bf and af
+      m <- which.min(c(min(ds1, na.rm = TRUE), min(ds3, na.rm = TRUE)))
+      
+      if (isTRUE(m == 1L)) {
+        # ioks[[i]] <- TRUE
+        ys_cr[[i]] <- y1
+        xs_cr[[i]] <- xs_bf[[i]]
+        zs_cr[[i]] <- zs_bf[[i]]
+        
+      }
+      else if (isTRUE(m == 2L)) {
+        # ioks[[i]] <- TRUE
+        ys_cr[[i]] <- y3
+        xs_cr[[i]] <- xs_af[[i]]
+        zs_cr[[i]] <- zs_af[[i]]
+      }
+    }
+  }
+  
+  list(x = xs_cr, y = ys_cr, z = zs_cr)
+}
+
+
 #' Find the best LFQ vector
 #' 
 #' @param d1 A vector of distance.
@@ -1519,19 +1631,25 @@ find_best_lfqvec <- function (d1, d2, dc)
 #' @param step The bin size in converting numeric X values to integers.
 #' @param coll Logical; collapse adjacent columns or not.
 #' @param spc A species center.
+#' @param are_refs Logical; are references or not.
+#' @param are_smpls Logical; are samples or not.
 #' @importFrom fastmatch %fin%
 collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3, 
-                         spc = 0.0, coll = TRUE)
+                         spc = 0.0, coll = TRUE, are_refs, are_smpls)
 {
   ixs <- lapply(xs, mzion::index_mz, lwr, step)
+  stp <- reduce_lfq_rtstep(xs = xs, ixs = ixs, lwr = lwr, step = step)
 
+  if (stp < step) {
+    ixs  <- lapply(xs, mzion::index_mz, lwr, stp)
+  }
+
+  # just in case
   for (i in seq_along(xs)) {
     ix <- ixs[[i]]
     ps <- .Internal(which(duplicated(ix)))
     
     if (length(ps)) {
-      # make the bin by every 2 seconds and look for +/- 12 bins
-      
       ixs[[i]] <- ix[-ps]
       xs[[i]]  <- xs[[i]][-ps]
       ys[[i]]  <- ys[[i]][-ps]
@@ -1555,11 +1673,11 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
   zmat <- mzion::mapcoll_xyz(
     vals = zs, ups = ups, lenx = lenx, lenu = lenu, direct_out = TRUE)
   
-  if (!coll) { return(list(x = xmat, y = ymat, z = zmat, u = unv)) }
+  if (!coll) { return(list(x = xmat, y = ymat, z = zmat, u = unv, stp = stp)) }
   
   ## (2) collapses adjacent entries with +/-1 in bin indexes
   if (is.null(ps <- mzion::find_gates(unv))) { # all discrete values
-    return(list(x = xmat, y = ymat, z = zmat, u = unv))
+    return(list(x = xmat, y = ymat, z = zmat, u = unv, stp = stp))
   }
   
   lenp <- length(ps)
@@ -1569,19 +1687,6 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
     c2  <- c12[[2]]
     
     if (c2 == 0L) { next } # no following adjacent
-    
-    # [1,]        NA 4883455998         NA
-    # [2,] 541027076         NA 3564573412
-    
-    # bad: by replacing the original with NA
-    # 
-    # before: 
-    # [1,]       NA       NA 53929263 14373579
-    # [2,] 14125475 21169221 45035940       NA
-    # 
-    # after:
-    # [1,]       NA       NA 53929263 14373579
-    # [2,] 14125475 21169221       NA 45035940
     
     nas_bf <- is.na(xmat[, c1])
     nas_cr <- is.na(xmat[, c2])
@@ -1597,7 +1702,7 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
     }
 
     ###
-    # DONOT nullify the original values before collapsion, but keep both and 
+    # DO NOT nullify the original values before collapsion, but keep both and 
     # to discern the best column later by their closeness to a species center
     ###
     
@@ -1605,94 +1710,127 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
       nas_af <- is.na(xmat[, c3])
       oks_af <- !nas_af
       oks_bf <- !nas_bf
+      oks_cr <- !nas_cr
       iboth  <- .Internal(which(oks_bf & oks_af & nas_cr))
       
       if (length(iboth)) {
+        # idx_refs <- .Internal(which(are_refs))
         oks_af[iboth] <- oks_bf[iboth] <- FALSE
         rows_bf <- .Internal(which(oks_bf & nas_cr))
         rows_af <- .Internal(which(oks_af & nas_cr))
         
+        if (length(rows_bf)) {
+          xmat[rows_bf, c2] <- xmat[rows_bf, c1]
+          ymat[rows_bf, c2] <- ymat[rows_bf, c1]
+          zmat[rows_bf, c2] <- zmat[rows_bf, c1]
+        }
+        
+        if (length(rows_af)) {
+          xmat[rows_af, c2] <- xmat[rows_af, c3]
+          ymat[rows_af, c2] <- ymat[rows_af, c3]
+          zmat[rows_af, c2] <- zmat[rows_af, c3]
+        }
+        
         # handle `iboth` rows
-        ybar  <- mean(ymat[, c2], na.rm = TRUE)
-        y_bfs <- ymat[iboth, c1]
-        y_afs <- ymat[iboth, c3]
+        ans123 <- combine_lfq123(
+          xs_cr = xmat[, c2], ys_cr = ymat[, c2], zs_cr = zmat[, c2], 
+          xs_bf = xmat[, c1], ys_bf = ymat[, c1], zs_bf = zmat[, c1], 
+          xs_af = xmat[, c3], ys_af = ymat[, c3], zs_af = zmat[, c3], 
+          iboth = iboth, are_refs = are_refs, are_smpls = are_smpls, spc = spc)
+        xmat[, c2] <- ans123[["x"]]
+        ymat[, c2] <- ans123[["y"]]
+        zmat[, c2] <- ans123[["z"]]
         
-        # to use the one closer to species center...
-        r_bfs <- log2(mean(y_bfs, na.rm = TRUE) / ybar)
-        r_afs <- log2(mean(y_afs, na.rm = TRUE) / ybar)
-        # r_bfs <- rep_len(r_bfs, 4); r_afs <- rep_len(r_afs, 4)
-        
-        if (nsps == 1L) {
-          ad_bf <- abs(r_bfs - spc)
-          ad_af <- abs(r_afs - spc)
-          rowx  <- ad_bf < ad_af
+        if (FALSE) {
+          # handle `iboth` rows
+          ybar  <- mean(ymat[, c2], na.rm = TRUE)
+          y_bfs <- ymat[iboth, c1]
+          y_afs <- ymat[iboth, c3]
+          
+          # to use the one closer to species center...
+          r_bfs <- log2(mean(y_bfs, na.rm = TRUE) / ybar)
+          r_afs <- log2(mean(y_afs, na.rm = TRUE) / ybar)
+          # r_bfs <- rep_len(r_bfs, 4); r_afs <- rep_len(r_afs, 4)
+          
+          if (nsps == 1L) {
+            ad_bf <- abs(r_bfs - spc)
+            ad_af <- abs(r_afs - spc)
+            rowx  <- ad_bf < ad_af
+          }
+          else {
+            ad_bfs <- lapply(spc, function (x) abs(r_bfs - x))
+            ad_afs <- lapply(spc, function (x) abs(r_afs - x))
+            m <- which.min(mapply(min, ad_bfs, ad_afs))
+            rowx  <- ad_bfs[[m]] < ad_afs[[m]]
+            # rowx  <- abs(y_bfs - ybar) < abs(y_afs - ybar)
+          }
+          
+          i_bfs <- iboth[rowx]  # `before` closer
+          i_afs <- iboth[!rowx] # `after` closer
+          
+          if (any(i_bfs)) {
+            xmat[i_bfs, c2] <- xmat[i_bfs, c1]
+            ymat[i_bfs, c2] <- y_bfs[rowx]
+            zmat[i_bfs, c2] <- zmat[i_bfs, c1]
+          }
+          
+          if (any(i_afs)) {
+            xmat[i_afs, c2] <- xmat[i_afs, c3]
+            ymat[i_afs, c2] <- y_afs[!rowx]
+            zmat[i_afs, c2] <- zmat[i_afs, c3]
+          }
         }
-        else {
-          ad_bfs <- lapply(spc, function (x) abs(r_bfs - x))
-          ad_afs <- lapply(spc, function (x) abs(r_afs - x))
-          m <- which.min(mapply(min, ad_bfs, ad_afs))
-          rowx  <- ad_bfs[[m]] < ad_afs[[m]]
-          # rowx  <- abs(y_bfs - ybar) < abs(y_afs - ybar)
-        }
-
-        i_bfs <- iboth[rowx]  # `before` closer
-        i_afs <- iboth[!rowx] # `after` closer
-        
-        if (any(i_bfs)) {
-          xmat[i_bfs, c2] <- xmat[i_bfs, c1]
-          ymat[i_bfs, c2] <- y_bfs[rowx]
-          zmat[i_bfs, c2] <- zmat[i_bfs, c1]
-        }
-        
-        if (any(i_afs)) {
-          xmat[i_afs, c2] <- xmat[i_afs, c3]
-          ymat[i_afs, c2] <- y_afs[!rowx]
-          zmat[i_afs, c2] <- zmat[i_afs, c3]
-        }
-        
-        # xmat[i_bfs, c1] <- NA_real_
-        # ymat[i_bfs, c1] <- NA_real_
-        # zmat[i_bfs, c1] <- NA_real_
-        # xmat[i_afs, c3] <- NA_real_
-        # ymat[i_afs, c3] <- NA_real_
-        # zmat[i_afs, c3] <- NA_real_
       }
       else {
         rows_bf <- .Internal(which(oks_bf & nas_cr))
         rows_af <- .Internal(which(oks_af & nas_cr))
-      }
-      
-      if (length(rows_bf)) {
-        xmat[rows_bf, c2] <- xmat[rows_bf, c1]
-        ymat[rows_bf, c2] <- ymat[rows_bf, c1]
-        zmat[rows_bf, c2] <- zmat[rows_bf, c1]
-        # xmat[rows_bf, c1] <- NA_real_
-        # ymat[rows_bf, c1] <- NA_real_
-        # zmat[rows_bf, c1] <- NA_real_
-      }
-      
-      if (length(rows_af)) {
-        xmat[rows_af, c2] <- xmat[rows_af, c1]
-        ymat[rows_af, c2] <- ymat[rows_af, c1]
-        zmat[rows_af, c2] <- zmat[rows_af, c1]
-        # xmat[rows_af, c1] <- NA_real_
-        # ymat[rows_af, c1] <- NA_real_
-        # zmat[rows_af, c1] <- NA_real_
+        
+        if (length(rows_bf)) {
+          xmat[rows_bf, c2] <- xmat[rows_bf, c1]
+          ymat[rows_bf, c2] <- ymat[rows_bf, c1]
+          zmat[rows_bf, c2] <- zmat[rows_bf, c1]
+        }
+        
+        if (length(rows_af)) {
+          xmat[rows_af, c2] <- xmat[rows_af, c3]
+          ymat[rows_af, c2] <- ymat[rows_af, c3]
+          zmat[rows_af, c2] <- zmat[rows_af, c3]
+        }
+        
+        rowx_bf <- .Internal(which(oks_cr & nas_bf))
+        rowx_af <- .Internal(which(oks_cr & nas_af))
+        
+        if (length(rowx_bf)) {
+          xmat[rowx_bf, c1] <- xmat[rowx_bf, c2]
+          ymat[rowx_bf, c1] <- ymat[rowx_bf, c2]
+          zmat[rowx_bf, c1] <- zmat[rowx_bf, c2]
+        }
+        
+        if (length(rowx_af)) {
+          xmat[rowx_af, c3] <- xmat[rowx_af, c2]
+          ymat[rowx_af, c3] <- ymat[rowx_af, c2]
+          zmat[rowx_af, c3] <- zmat[rowx_af, c2]
+        }
       }
     }
     else {
-      if (length(rows <- .Internal(which(nas_cr & !nas_bf)))) {
+      if (n_cr <- length(rows <- .Internal(which(nas_cr & !nas_bf)))) {
         xmat[rows, c2] <- xmat[rows, c1]
         ymat[rows, c2] <- ymat[rows, c1]
         zmat[rows, c2] <- zmat[rows, c1]
-        # keep the original and to discern the best column later...
-        # xmat[rows, c1] <- NA_real_
-        # ymat[rows, c1] <- NA_real_
-        # zmat[rows, c1] <- NA_real_
+      }
+      
+      if (n_bf <- length(rowx <- .Internal(which(nas_bf & !nas_cr)))) {
+        if (n_bf + n_cr < lenx) { # otherwise identical c1 and c2
+          xmat[rowx, c1] <- xmat[rowx, c2]
+          ymat[rowx, c1] <- ymat[rowx, c2]
+          zmat[rowx, c1] <- zmat[rowx, c2]
+        }
       }
     }
   }
   
+  # may not need this...
   if (length(nas <- .Internal(which(colSums(is.na(xmat)) == lenx)))) {
     xmat <- xmat[, -nas, drop = FALSE]
     ymat <- ymat[, -nas, drop = FALSE]
@@ -1700,7 +1838,159 @@ collapseSTY <- function (xs = NULL, ys = NULL, zs = NULL, lwr = 10, step = 2e-3,
     unv  <- unv[-nas]
   }
   
-  list(x = xmat, y = ymat, z = zmat, u = unv)
+  list(x = xmat, y = ymat, z = zmat, u = unv, stp = stp)
+}
+
+
+#' Make MS1 S, T and Y matrices across adjacent scans
+#'
+#' For adjusted step size.
+#'
+#' @param xmat A matrix of X (retention time) values.
+#' @param ymat A matrix of Y (intensity) values corresponding to \code{xs}.
+#' @param tmat A matrix of retention-time values corresponding to \code{xs}.
+#' @param tbars The mean of retention times.
+#' @param rt_tol Retention time tolerance.
+#' @param spc A species center(s).
+#' @param are_refs Logical; are references or not.
+#' @param are_smpls Logical; are samples or not.
+mergeSTY <- function (xmat = NULL, ymat = NULL, tmat = NULL, tbars = NULL, 
+                      rt_tol = 30, spc, are_refs, are_smpls)
+{
+  lenp <- ncol(xmat)
+  
+  if (lenp <= 1L) {
+    return(list(x = xmat, y = ymat, t = tmat))
+  }
+  
+  if (is.null(tbars)) {
+    tbars <- colMeans(tmat, na.rm = TRUE)
+  }
+  
+  for (i in 2:lenp) {
+    c1 <- i - 1L
+    c2 <- i
+    c3 <- i + 1L
+    
+    tbar2 <- tbars[[c2]]
+    tbar1 <- tbars[[c1]]
+    
+    if (tbar2 > tbar1 + rt_tol) {
+      next
+    }
+    
+    if (i < lenp) {
+      tbar3 <- tbars[[c3]]
+      ok_nx <- if (tbar3 > tbar2 + rt_tol) { FALSE } else { TRUE }
+    }
+    else {
+      ok_nx <- FALSE
+    }
+    
+    nas1 <- is.na(xmat[, c1])
+    nas2 <- is.na(xmat[, c2])
+    
+    if (ok_nx) {
+      nas3 <- is.na(xmat[, c3])
+      oks3 <- !nas3
+      oks1 <- !nas1
+      iboth <- .Internal(which(oks1 & oks3 & nas2))
+      
+      if (length(iboth)) {
+        oks3[iboth] <- oks1[iboth] <- FALSE
+        rows1 <- .Internal(which(oks1 & nas2))
+        rows3 <- .Internal(which(oks3 & nas2))
+        
+        if (length(rows1)) {
+          xmat[rows1, c2] <- xmat[rows1, c1]
+          ymat[rows1, c2] <- ymat[rows1, c1]
+          tmat[rows1, c2] <- tmat[rows1, c1]
+        }
+        
+        if (length(rows3)) {
+          xmat[rows3, c2] <- xmat[rows3, c3]
+          ymat[rows3, c2] <- ymat[rows3, c3]
+          tmat[rows3, c2] <- tmat[rows3, c3]
+        }
+        
+        # handle `iboth` rows
+        ans123 <- combine_lfq123(
+          xs_cr = xmat[, c2], ys_cr = ymat[, c2], zs_cr = tmat[, c2], 
+          xs_bf = xmat[, c1], ys_bf = ymat[, c1], zs_bf = tmat[, c1], 
+          xs_af = xmat[, c3], ys_af = ymat[, c3], zs_af = tmat[, c3], 
+          iboth = iboth, are_refs = are_refs, are_smpls = are_smpls, spc = spc)
+        xmat[, c2] <- ans123[["x"]]
+        ymat[, c2] <- ans123[["y"]]
+        tmat[, c2] <- ans123[["z"]]
+      }
+      else {
+        rows1 <- .Internal(which(oks1 & nas2))
+        rows3 <- .Internal(which(oks3 & nas2))
+        
+        if (length(rows1)) {
+          xmat[rows1, c2] <- xmat[rows1, c1]
+          ymat[rows1, c2] <- ymat[rows1, c1]
+          tmat[rows1, c2] <- tmat[rows1, c1]
+        }
+        
+        if (length(rows3)) {
+          xmat[rows3, c2] <- xmat[rows3, c3]
+          ymat[rows3, c2] <- ymat[rows3, c3]
+          tmat[rows3, c2] <- tmat[rows3, c3]
+        }
+      }
+    }
+    else {
+      if (length(rows <- .Internal(which(nas2 & !nas1)))) {
+        xmat[rows, c2] <- xmat[rows, c1]
+        ymat[rows, c2] <- ymat[rows, c1]
+        tmat[rows, c2] <- tmat[rows, c1]
+      }
+      
+      # may also back-fill !nas2 & nas1...
+    }
+    
+    # update `tbars` every iteration to prevent value propagation ->>>
+    tbars[[i]] <- mean(tmat[, i], na.rm = TRUE)
+  }
+  
+  list(x = xmat, y = ymat, t = tmat)
+}
+
+
+#' Reduce the step size of retention times for binning
+#' 
+#' Handling the case of multiple MS1 features in the same bin
+#' 
+#' @param xs Retention times.
+#' @param ixs Indexes of retention times.
+#' @param lwr The lower limit for indexing \code{xs}.
+#' @param step The step size of binning.
+#' @param fcts The scaling factor for reduced step size.
+reduce_lfq_rtstep <- function (xs, ixs, lwr, step, 
+                               fcts = c(.8, .6, .4, .2, .1, .05, .01, .005, .001))
+{
+  dups <- lapply(ixs, function (x) which(duplicated(x)))
+  bads <- .Internal(which(lengths(dups) > 0L))
+  
+  if (!length(bads)) {
+    return(step)
+  }
+  
+  xsb <- xs[bads]
+  
+  for (stp in fcts * step) {
+    dupx <- lapply(xsb, function (x) anyDuplicated(mzion::index_mz(x, lwr, stp)))
+    badx <- .Internal(which(lengths(dupx) > 0L))
+    
+    if (!length(badx)) {
+      return(stp)
+    }
+    
+    xsb  <- xsb[badx]
+  }
+  
+  stp
 }
 
 

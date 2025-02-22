@@ -10,6 +10,7 @@ addApexes(
   trs,
   gap_bf = 250L,
   gap_af = 250L,
+  max_rt_delta = 240,
   step = 1e-05,
   yco = 100,
   min_y = 2e+06
@@ -27,6 +28,9 @@ an MS2 scan and a peak apex.}
 
 \item{gap_af}{A following gap of maximum allowance in retention times between
 an MS2 scan and a peak apex.}
+
+\item{max_rt_delta}{The maximum allowance in retention-time difference
+between the identifying MS2 event and apex.}
 
 \item{step}{A step size in mass for mass error tolerance.}
 
