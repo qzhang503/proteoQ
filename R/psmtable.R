@@ -5042,6 +5042,7 @@ PSM2Pep <- function(method_psm_pep =
   
   dots    <- rlang::enexprs(...)
   dat_dir <- get_gl_dat_dir()
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
   
@@ -5063,7 +5064,7 @@ PSM2Pep <- function(method_psm_pep =
   
   stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
             length(type_sd) == 1L)
-  stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1)))
+  stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1L)))
   
   if (!dir.exists(temp_dir <- file.path(dat_dir, "Peptide/cache"))) {
     dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
@@ -5092,7 +5093,6 @@ PSM2Pep <- function(method_psm_pep =
     ok_mbr  <- FALSE
   }
   else {
-    # mz_lfq <- if (engine == "mz" && !tmt_plex) { TRUE } else { FALSE }
     mz_lfq <- TRUE
     ok_lfq <- if (mz_lfq && n_files > 1L) { TRUE } else { FALSE }
     ansmbr <- find_ms1filepath(dat_dir = dat_dir, pat = "ms1full", type = 1L)
@@ -5125,25 +5125,23 @@ PSM2Pep <- function(method_psm_pep =
       ms1files = list.files(path_ms1, pattern = "^ms1full_"), 
       type = "ms1full")
     
-    if (TRUE) {
-      ## (1) add apex RTs
-      # the same pep_seqmodz from different PSMs and different pep_exp_mz can 
-      #   have different Y's (due to trace error tolerance +/- 10ppm)
-      # no such problem with `mergePep` where data were unique by pep_seqmodz
-      dfs <- haddApexRTs_allsets(
-        filelist = basenames, ms1full_files = ms1full_files, 
-        dat_dir = dat_dir, path_ms1 = path_ms1, 
-        rt_size = 240, rt_margin = 480, max_rt_delta = 240, 
-        max_n_apexes = max_n_apexes, data_type = data_type)
-      # qs::qsave(dfs, file.path(dat_dir, "df_haddApexRTs_allsets.rds"), preset = "fast")
-    }
-    else {
-      dfs <- qs::qread(file.path(dat_dir, "df_haddApexRTs_allsets.rds"))
-    }
+    ## (1) add apex RTs
+    # the same pep_seq_modz may trace to different sets of apex_ts and apex_ys: 
+    #  different pep_exp_mz's at +/-10ppm tracing tolerance -> different Ys;
+    #  keep the entry at the largest Y (peak partiality -> smaller Ys);
+    # may indicate confounding apexes and retrace at different tolerances...
+    # no such problem with `mergePep`:
+    #  data unique by pep_seq_modz and traced by +/-10ppm
+    dfs <- haddApexRTs_allsets(
+      filelist = basenames, ms1full_files = ms1full_files, 
+      dat_dir = dat_dir, path_ms1 = path_ms1, 
+      rt_size = 240, rt_margin = 480, max_rt_delta = 240, 
+      max_n_apexes = max_n_apexes, data_type = data_type)
+    qs::qsave(
+      dfs, file.path(dat_dir, "PSM", "cache", "ApexRTs.rds"), preset = "fast")
     
-    ## (2) nullify RT outliers and low Y values (by each TMTset[i]LCMSinj[j]): 
-    # maybe y_tol = 0
-    dfs <- lapply(
+    ## (2) nullify RT outliers and low Y values (by each TMTset[i]LCMSinj[j])
+    dfs <- lapply( # may set y_tol = 0
       dfs, rm_apexrt_outliers, key = "pep_seq_mod", rt_tol = 240, y_tol = .01)
 
     ## (3) nullify entries with multi-PRIMARY apex (not by lengths(apex_ps))
@@ -5157,8 +5155,8 @@ PSM2Pep <- function(method_psm_pep =
     # flatten multiple RAWs under a TMTSet[i]LCMSInj[j] set
     dfs <- lapply(dfs, dplyr::bind_rows)
 
-    # (x) go back later: to handle fractions (no MBR across fractions) 
-    #     sum intensity of the same pep_seq_mod (or pep_seq_modz?)
+    # (x) come back later: to handle fractions (no MBR across fractions) 
+    #     sum intensity of the same pep_seq_modz
 
     ## (4) align apex (across TMTSet[i]LCMSInj[j])
     # align RT across samples; 
@@ -5185,7 +5183,8 @@ PSM2Pep <- function(method_psm_pep =
       dfs <- ans_align
     }
 
-    ## Not really matter and arbitrary since LFQ occurs within `mergePep`
+    ## (5) remove low-intensity PSMs
+    #  not really matter and arbitrary since LFQ occurs within `mergePep`
     dfs <- hrm_lowIntPSMs(
       dfs = dfs, key = "pep_seq_modz", yfrac = .02, max_n_apexes = 1L)
     # qs::qsave(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"), preset = "fast")
@@ -5201,16 +5200,6 @@ PSM2Pep <- function(method_psm_pep =
     })
     names(dfs) <- basenames
   }
-  
-  ###
-  # treat different LCMS_Injections as different samples in LFQ-MBR
-  # add Sample_ID (LFQ: one Sample_ID per TMT_set)
-  
-  # MBR at PSM levels to determine the "best" apex for each pep_seq_mod or pep_seq_mod_z
-  #  outer(...) to align intensities
-  #  if one is about the same, use it as an reference anchor and 
-  #    choose the apex with the most different intensity
-  ###
   
   if ((n_cores <- min(parallel::detectCores() - 1L, n_files)) > 1L) {
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
@@ -5502,7 +5491,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   ## (4) update single-apex data
   dfs1 <- cleanPSMYTS(
     dfs = dfs1, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
-    key = key, cols = colx, update = TRUE)
+    key = key, cols = colx, update = TRUE, update2 = FALSE)
   
   ## (5.1) align multi-apex RTs
   for (i in 1:n_smpls) {
@@ -5532,7 +5521,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   }
   
   ## (5.2) remove multi-apex retention-time outliers
-  # - pep_seq_modz is not yet unique in dfsn[[i]] (multiple PSMs);
+  # - pep_seq_modz is not yet unique in dfsn[[i]] (linked to multiple PSMs);
   # - ordered by ascending Y's since the last match applied for multiple dips,
   #   (lower Y's tend to represent partial peaks at an MS1 tracing tolerance)
   dfsn <- lapply(dfsn, function (df) {
@@ -5584,7 +5573,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   nsmat <- nsmat[, ord]
   rm(list = c("ord"))
 
-  # the same pep_seq_mod at different z can still be quite different in RTs
+  # the same pep_seq_mod at different z can still be quite discrepant in RTs
   dfsn <- cleanPSMYTS(
     dfs = dfsn, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
     xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, fsmat = fsmat, 
@@ -5629,7 +5618,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   # so only nullify the additional bad ones at high SDs after `dfs1 + dfsn`
   dfs <- cleanPSMYTS(
     dfs = dfs, ymat = ymat, tmat = tmat, smat = smat, fmat = fmat, nmat = nmat, 
-    key = key, cols = colx, update = FALSE)
+    key = key, cols = colx, update = FALSE, update2 = FALSE)
 }
 
 
@@ -5891,9 +5880,12 @@ makeLFQXYTS <- function (pep_seq_modzs = NULL, pep_exp_mzs = NULL,
 #' @param nsmat A matrix of sets of  peak widths measured by the number of MS1
 #'   scans.
 #' @param key The column key for matching.
-#' @param update Logical; update retention times or not. FALSE if dfs are
+#' @param update Logical; update retention times or not. FALSE if \code{dfs} are
 #'   already RT calibrated and the purpose is to nullify bad entries according
 #'   to tmat.
+#' @param update2 Logical; update \code{apex_xs} etc. or not. TRUE if the same
+#'   \code{pep_seq_modz} corresponds to different sets of \code{apex_ys},
+#'   \code{apex_ts} etc. Also require \code{update = TRUE} to have an effect.
 #' @param cols The column keys for value updates.
 cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat, 
                          xsmat = NULL, ysmat = NULL, tsmat = NULL, ssmat = NULL, 
@@ -5903,6 +5895,10 @@ cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat,
                                   "pep_apex_ret", "pep_apex_scan", 
                                   "pep_apex_fwhm", "pep_apex_n"))
 {
+  if (update2 && !update) {
+    update2 <- FALSE
+  }
+  
   if (update2) {
     cols <- c(cols, c("apex_xs", "apex_ys", "apex_ps", "apex_ts", 
                       "apex_fwhms", "apex_ns"))
@@ -5924,10 +5920,8 @@ cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat,
       dfi$pep_apex_ret[rowx] <- dfi$pep_apex_scan[rowx] <- 
       dfi$pep_apex_fwhm[rowx] <- dfi$pep_apex_n[rowx] <- NA_real_
     
-    # tmat must be built on the same key as `key`; otherwise, 
-    # e.g., at key = "pep_seq_modz" and tmat based on "pep_seq_mod", 
-    #  the same retention time for the same `pep_seq_mod` at different z
-    #  -> whatever the first matched value will be used for replacement all z's.
+    # tmat prefer to be built on the same key as `key`; otherwise, 
+    #  -> whatever the first matched value will be used for replacements.
     if (update) {
       tmi <- tmi[oks]
       ymi <- ymat[i, oks]
@@ -5940,11 +5934,11 @@ cleanPSMYTS <- function (dfs, ymat, tmat, smat, fmat, nmat,
       # mtx[c(19912, 19913)] # c(12284, 12284)
       # dfi$pep_tot_int[rows[c(19912, 19913)]]; ymi[mtx[c(19912, 19913)]] # 118250386, 118250386
       mtx <- mts[rows]
-      dfi$pep_apex_ret[rows] <- tmi[mtx]
-      dfi$pep_tot_int[rows] <- dfi$I000[rows] <- dfi$N_I000[rows] <- ymi[mtx]
+      dfi$pep_apex_ret[rows]  <- tmi[mtx]
+      dfi$pep_tot_int[rows]   <- dfi$I000[rows] <- dfi$N_I000[rows] <- ymi[mtx]
       dfi$pep_apex_scan[rows] <- smi[mtx]
       dfi$pep_apex_fwhm[rows] <- fmi[mtx]
-      dfi$pep_apex_n[rows] <- nmi[mtx]
+      dfi$pep_apex_n[rows]    <- nmi[mtx]
       
       if (update2) {
         xsmi <- xsmat[i, oks]
@@ -6134,103 +6128,6 @@ fitMS1RT <- function (tmat, sta = NULL)
 }
 
 
-#' Helper for subsetting PSMs by the best charge state under a
-#' \code{pep_seq_mod}
-#' 
-#' Not used.
-#' 
-#' @param dfs A set of PSM tables.
-#' @param cols The column keys needed for determining the best charge states.
-hsub_by_bestz <- function (dfs, cols = c("pep_seq_mod", "pep_exp_z", 
-                                         "pep_apex_ret", "I000"))
-{
-  filelist <- names(dfs)
-  
-  dfs <- mapply(function (x, y) {
-    x$set_id <- y
-    x
-  }, dfs, filelist, 
-  SIMPLIFY = FALSE, USE.NAMES = TRUE)
-  
-  df <- dplyr::bind_rows(dfs)
-  df$pep_seq_modz <- paste0(df$pep_seq_mod, "@", df$pep_exp_z)
-  df$pep_exp_z <- as.integer(df$pep_exp_z)
-  
-  dfx <- df[, cols]
-  dat <- split(dfx, dfx$pep_seq_mod)
-  uzs <- lapply(dat, function (x) unique(x$pep_exp_z))
-  nzs <- lengths(uzs)
-  oks <- nzs > 1L
-  
-  ans <- mapply(sub_by_bestz, dat[oks], uzs[oks], SIMPLIFY = FALSE, 
-                USE.NAMES = TRUE)
-  chs <- c(lapply(dat[!oks], function (x) x$pep_exp_z[[1]]), 
-           lapply(ans, function (x) x$pep_exp_z[[1]]))
-  ids <- paste0(names(chs), "@", chs)
-  
-  df <- df[df$pep_seq_modz %in% ids, ]
-  df$pep_seq_modz <- NULL
-  
-  dfs <- split(df, df$set_id)
-  dfs <- lapply(dfs, function (x) { x$set_id <- NULL; x })
-  dfs <- dfs[filelist]
-}
-
-
-#' Subset PSMs by the best charge state under a \code{pep_seq_mod}
-#' 
-#' @param df A subset of PSM table at the same \code{pep_seq_mod}.
-#' @param chs A vector of unique charge states under the \code{pep_seq_mod}.
-sub_by_bestz <- function (df, chs)
-{
-  # df$pep_apex_rt should be close among chs under the same RAW
-  # remove outliers...
-  
-  if (FALSE) {
-    df2 <- df |> dplyr::filter(pep_exp_z == 2L)
-    df3 <- df |> dplyr::filter(pep_exp_z == 3L)
-    y2 <- df2$I000
-    y3 <- df3$I000
-    y2 <- y2[!is.na(y2)]
-    y3 <- y3[!is.na(y3)]
-    d2 <- sd(y2 / mean(y2))
-    d3 <- sd(y3 / mean(y3))
-  }
-  
-  ezs <- df$pep_exp_z
-  oks <- !is.na(df$pep_apex_ret)
-  ezx <- ezs[oks]
-  
-  if (length(ezx)) {
-    cts <- lapply(chs, function (x) sum(ezx == x, na.rm = TRUE))
-  }
-  else { # all apexes undetermined
-    cts <- lapply(chs, function (x) sum(ezs == x, na.rm = TRUE))
-  }
-  
-  cts <- unlist(cts, recursive = FALSE, use.names = FALSE)
-  idx <- which(cts == max(cts, na.rm = TRUE))
-  
-  if (length(idx) == 1L) {
-    ch <- chs[[idx]]
-  }
-  else {
-    ys <- df$I000
-    rows <- ezs %in% chs[idx] & !is.na(ys)
-    
-    if (any(rows)) {
-      ybar <- lapply(split(ys[rows], ezs[rows]), mean, na.rm = TRUE)
-      ch <- as.integer(names(which.max(ybar)))
-    }
-    else {
-      ch <- chs[[1]]
-    }
-  }
-  
-  df[with(df, pep_exp_z == ch), ]
-}
-
-
 #' Calibrate PSM apex retention times under \code{apex_ts}
 #'
 #' @param df A subset of PSM table, e.g. \code{TMTSet1_LCMSinj1_PSM_N.txt},
@@ -6264,38 +6161,6 @@ calibPSMApexs2 <- function (df = NULL, fit = NULL, key = "apex_ts")
   df[[key]][oks] <- rts
   
   df
-}
-
-
-#' To lower cases
-#' 
-#' @param x A character string of amino acid sequence.
-#' @param ch A tag before the letter to conversion to its lower case.
-my_tolower <- function(x = "", ch = "^") 
-{
-  locales <- gregexpr(ch, x) %>% .[[1]] %>% `+`(., 1)
-  lowers <- purrr::map(locales, ~ substr(x, .x, .x)) %>% tolower()
-  
-  for (i in seq_along(lowers)) 
-    substr(x, locales[i], locales[i]) <- lowers[i]
-
-  gsub(ch, "", x)
-}
-
-
-#' To upper cases
-#' 
-#' @param x A character string of amino acid sequence.
-#' @param ch A tag before the letter to conversion to its upper case.
-my_upper <- function(x = "", ch = "@") 
-{
-  locs <- gregexpr(ch, x)[[1]] %>% `+`(1)
-  uprs <- purrr::map(locs, ~ substr(x, .x, .x)) %>% toupper()
-  
-  for (i in seq_along(uprs)) 
-    substr(x, locs[i], locs[i]) <- uprs[i]
-  
-  gsub(ch, "", x)
 }
 
 

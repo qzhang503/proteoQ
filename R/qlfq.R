@@ -342,35 +342,6 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
     fwhmi <- gates[["fwhm"]]
     # ns[[i]] <- gates[["ns"]]
 
-    ## for finding percent of MS1 area interpreted
-    # oks <- !is.na(ysi)
-    # csum <- cumsum(ysi[oks] * c(diff(tsi[oks]), .5))
-    # ysum1[[i]] <- sum(yints)
-    # csum[[length(csum)]] # area
-    # ysum0[[i]] <- sum(ysi, na.rm = TRUE)
-    # ysum1[[i]] <- sum(ysi[unlist(rngs, recursive = FALSE, use.names = FALSE)], na.rm = TRUE)
-    
-    # a second chance for small percents of intensity interpreted (partial peaks)
-    # stepx <- 1.5 * step
-    if (FALSE && 
-        sum(ysi[unlist(rngs)], na.rm = TRUE) / sum(ysi, na.rm = TRUE) < .02) {
-      xys  <- extract_mbry(xs = xsi, ys = ysi, mbr_mz = xref, step = stepx)
-      xsi  <- xys[["x"]]
-      ysi  <- xys[["y"]]
-      ssi  <- sss[rgi]
-      tsi  <- tss[rgi]
-      gates <- mzion:::find_lc_gates(
-        xs = xsi, ys = ysi, ts = tsi, yco = yco, ytot_co = 2E5, n_dia_scans = 6L)
-      if (is.null(gates)) { next }
-      
-      rows  <- gates[["apex"]]
-      sci   <- ssi[rows]
-      rti   <- tsi[rows]
-      yints <- gates[["yints"]]
-      rngs  <- gates[["ranges"]]
-      fwhmi <- gates[["fwhm"]]
-    }
-
     anx <- mzion:::find_best_apex(
       xvs = xsi, yvs = ysi, ss = ssi, 
       yints = yints, aps = sci, rts = rti, rngs = rngs, fwhms = fwhmi, 
@@ -393,7 +364,7 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
     yvals[[i]] <- anx[["ys"]]  # all Y values
     fwhms[[i]] <- anx[["fwhms"]]
     # ranges[[i]] <- anx[["rngs"]] # indexes along tsi
-    # tsi[anx$rngs[[3]]] # retention-time range for MBR; 
+    # tsi[anx$rngs[[3]]] # retention-time range 
   }
   
   ans <- tibble::tibble(
@@ -406,7 +377,6 @@ addApexes <- function(rts, mzs, trs, gap_bf = 250L, gap_af = 250L,
     apex_ts    = tvals,
     apex_xs    = xvals, 
     apex_ys    = yvals,
-    # differ by <= 20% for MBR
     apex_fwhms = fwhms, 
     apex_ns    = ns)
   
@@ -477,7 +447,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     return(dfs)
   }
   
-  if ((len <- length(basenames)) < 2L) { # should not occur
+  if ((len <- length(basenames)) < 2L) {
     stop("Requires at least two files for LFQ.")
   }
   
@@ -534,13 +504,8 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     df
   })
   
-  dfx <- lapply(dfs, function (df) {
-    df <- df[, cols]
-    # need `fillMBRnaRTs` if no filetration by `pep_tot_int`
-    # df <- df[with(df, !is.na(pep_tot_int)), ]
-    # df <- df[!duplicated(df$pep_seq_modz), ]
-  })
-  
+  # need `fillMBRnaRTs` if no `df <- df[with(df, !is.na(pep_tot_int)), ]`
+  dfx  <- lapply(dfs, `[`, cols)
   mats <- makeLFQXYTS(
     pep_seq_modzs  = lapply(dfx, `[[`, "pep_seq_modz"), 
     pep_exp_mzs    = lapply(dfx, `[[`, "pep_exp_mz"), 
@@ -550,12 +515,12 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     pep_apex_fwhm  = lapply(dfx, `[[`, "pep_apex_fwhm"), 
     pep_apex_n     = lapply(dfx, `[[`, "pep_apex_n"), 
     add_colnames   = FALSE)
+  # NOT to filter by n or fwhm: many MS1s without MS2s -> large n; 
+  # also the difference can be truly biological
   ymat <- mats[["y"]]
   xmat <- mats[["x"]]
   tmat <- mats[["t"]]
   smat <- mats[["s"]]
-  # not to filter by n or fwhm: many MS1s without MS2s -> large n; 
-  # also the difference can be truly biological
   fmat <- mats[["f"]]
   nmat <- mats[["n"]]
   
@@ -589,33 +554,41 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   # for peptides shared across species
   pmat <- makeLFQSpecies(
     mbr_peps = mbr_peps, mbr_sps = mbr_sps, nms_sp = nms_sp, dat_dir = dat_dir)
+  lens  <- lengths(pmat)
+  mcols <- lens > 1L
+  scols <- !mcols
+  mcols <- which(mcols)
+  scols <- which(scols)
 
   ## (3) optional: make spectrum-count matrix
-  message("  Adding spectrum-count results.")
-  cmat <- local({
-    cmat <- matrix(rep_len(NA_integer_, prod(dim(ymat))), nrow = nrow(ymat))
-    colnames(cmat) <- mbr_peps
-    rownames(cmat) <- basenames
-    dfsc <- prot_spec_counts |> dplyr::left_join(df_sps, by = group_pep_by)
-    dfsc <- dfsc[, c(group_psm_by, "TMT_Set", "LCMS_Injection", "prot_n_specs")]
-    dfsc <- split(dfsc, with(dfsc, paste0(TMT_Set, "_", LCMS_Injection)))
-    
-    names(dfsc) <- gsub(
-      "(\\d+)\\_(\\d+)", 
-      paste0("TMTset", "\\1", "_LCMSinj", "\\2", "_Peptide_N.txt"), 
-      names(dfsc))
-    dfsc <- dfsc[match(basenames, names(dfsc))]
-    dfsc <- lapply(dfsc, `[`, c(group_psm_by, "prot_n_specs"))
-    
-    for (i in seq_along(dfsc)) {
-      dfi <- dfsc[[i]]
-      mts <- match(dfi[[group_psm_by]], mbr_peps)
-      oks <- !is.na(mts)
-      cmat[i, mts[oks]] <- dfi[["prot_n_specs"]][oks]
-    }
-    
-    cmat
-  })
+  if (FALSE) {
+    message("  Adding spectrum-count results.")
+    cmat <- local({
+      cmat <- matrix(rep_len(NA_integer_, prod(dim(ymat))), nrow = nrow(ymat))
+      colnames(cmat) <- mbr_peps
+      rownames(cmat) <- basenames
+      dfsc <- prot_spec_counts |> dplyr::left_join(df_sps, by = group_pep_by)
+      dfsc <- dfsc[, c(group_psm_by, "TMT_Set", "LCMS_Injection", "prot_n_specs")]
+      dfsc <- split(dfsc, with(dfsc, paste0(TMT_Set, "_", LCMS_Injection)))
+      
+      names(dfsc) <- gsub(
+        "(\\d+)\\_(\\d+)", 
+        paste0("TMTset", "\\1", "_LCMSinj", "\\2", "_Peptide_N.txt"), 
+        names(dfsc))
+      dfsc <- dfsc[match(basenames, names(dfsc))]
+      dfsc <- lapply(dfsc, `[`, c(group_psm_by, "prot_n_specs"))
+      
+      for (i in seq_along(dfsc)) {
+        dfi <- dfsc[[i]]
+        mts <- match(dfi[[group_psm_by]], mbr_peps)
+        oks <- !is.na(mts)
+        cmat[i, mts[oks]] <- dfi[["prot_n_specs"]][oks]
+      }
+      
+      cmat
+    })
+  }
+  
   rm(list = c("mats", "mts"))
   
   ## (4) extract local MBR patterns
@@ -636,7 +609,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   fsmat <- matss[["f"]]
   nsmat <- matss[["n"]]
   rm(list = c("dfx", "matss"))
-  
+
   ###
   # TODO: each column -> any > species-specific contour -> rematch
   # More strict, pairwised local pattern for data points outside the contour
@@ -649,6 +622,12 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   # 
   # expect 50 for the unmeasured NA; not to take P2 immediately, instead
   # (1) refer to protein spectrum counts, NA <- NA or (2) toss the whole entry
+  ###
+  
+  ###
+  # |sp_center| > .5 -> require "perfect" matches for all features > 5% of base
+  # 
+  # or discard if the log2FC is closer to other species centers...
   ###
   
   ## (4) MBR
@@ -665,6 +644,9 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
         MoreArgs  = list(
           xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, 
           fsmat = fsmat, nsmat = nsmat, mbr_mzs = mbr_mzs, mbr_rets = mbr_rets, 
+          mbr_peps = mbr_peps, 
+          # mbr_sps = mbr_sps, 
+          # sp_centers = sp_centers, new_na_species = new_na_species, 
           dat_dir = dat_dir, mbr_ret_tol = mbr_ret_tol, min_y = min_y, 
           yco = yco, fwhm_co = fwhm_co))
       parallel::stopCluster(cl)
@@ -678,10 +660,14 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
         MoreArgs  = list(
           xsmat = xsmat, ysmat = ysmat, tsmat = tsmat, ssmat = ssmat, 
           fsmat = fsmat, nsmat = nsmat, mbr_mzs = mbr_mzs, mbr_rets = mbr_rets, 
+          mbr_peps = mbr_peps, 
+          # mbr_sps = mbr_sps, 
+          # sp_centers = sp_centers, new_na_species = new_na_species, 
           dat_dir = dat_dir, mbr_ret_tol = mbr_ret_tol, min_y = min_y, 
           yco = yco, fwhm_co = fwhm_co), 
         SIMPLIFY = FALSE, USE.NAMES = FALSE)
     }
+    # ans_mbr <- qs::qread(file.path(dat_dir, "ans_mbr.rds"))
 
     # xsmat is not changed
     ysmat <- lapply(ans_mbr, `[[`, "y")
@@ -689,18 +675,24 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     ssmat <- lapply(ans_mbr, `[[`, "s")
     fsmat <- lapply(ans_mbr, `[[`, "f")
     nsmat <- lapply(ans_mbr, `[[`, "n")
+    mmat  <- lapply(ans_mbr, `[[`, "m")
     ysmat <- do.call(rbind, ysmat)
     tsmat <- do.call(rbind, tsmat)
     ssmat <- do.call(rbind, ssmat)
     fsmat <- do.call(rbind, fsmat)
     nsmat <- do.call(rbind, nsmat)
+    mmat  <- do.call(rbind, mmat)
     rownames(ysmat) <- NULL
     rownames(tsmat) <- NULL
     rownames(ssmat) <- NULL
     rownames(fsmat) <- NULL
     rownames(nsmat) <- NULL
+    rownames(mmat)  <- NULL
     # qs::qsave(ans_mbr, file.path(dat_dir, "ans_mbr.rds"), preset = "fast")
     # rm(list = "ans_mbr")
+  }
+  else {
+    mmat <- NULL
   }
 
   ## (5) LFQ
@@ -710,31 +702,27 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   species <- names(sp_centers)
   sps_oks <- tolower(species[species != new_na_species])
   
-  if (length(sps_oks) > 1L && !all(sps_oks %in% c("human", "mouse", "rat"))) {
-    reference_spec_counts <- TRUE
+  if (FALSE) {
+    if (length(sps_oks) > 1L && !all(sps_oks %in% c("human", "mouse", "rat"))) {
+      reference_spec_counts <- TRUE
+    }
+    else {
+      reference_spec_counts <- FALSE
+    }
   }
-  else {
-    reference_spec_counts <- FALSE
-  }
+
   rm(list = c("sps_oks"))
 
-  
-  # entry of multiple species...
-  lens  <- lengths(pmat)
-  mcols <- lens > 1L
-  scols <- !mcols
-  mcols <- which(mcols)
-  scols <- which(scols)
-  
   if (length(mcols)) {
     outn <- mpepLFQ(
       basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
       xsmat = xsmat[, mcols, drop = FALSE], ysmat = ysmat[, mcols, drop = FALSE], 
       tsmat = tsmat[, mcols, drop = FALSE], ssmat = ssmat[, mcols, drop = FALSE], 
-      pmat = pmat[mcols], mbr_peps = mbr_peps[mcols], 
-      sp_centers = sp_centers, pri_sps = pri_sps, 
+      mmat  = mmat[,  mcols, drop = FALSE], pmat = pmat[mcols], 
+      mbr_peps = mbr_peps[mcols], sp_centers = sp_centers, pri_sps = pri_sps, 
       new_na_species = new_na_species, 
-      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, step = rt_step)
+      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, step = rt_step, 
+      lfq_mbr = lfq_mbr)
     youtn <- do.call(cbind, outn[["y"]])
     toutn <- do.call(cbind, outn[["t"]])
     soutn <- do.call(cbind, outn[["s"]])
@@ -745,16 +733,29 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   }
   
   if (length(scols)) {
-    out1 <- pepLFQ(
+    if (FALSE) {
+      out1 <- pepLFQ(
+        basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
+        xsmat = xsmat[, scols, drop = FALSE], ysmat = ysmat[, scols, drop = FALSE], 
+        tsmat = tsmat[, scols, drop = FALSE], ssmat = ssmat[, scols, drop = FALSE], 
+        mmat  = mmat[, scols, drop = FALSE], 
+        ymat = ymat[, scols, drop = FALSE], tmat = tmat[, scols, drop = FALSE], 
+        smat = smat[, scols, drop = FALSE], cmat = cmat[, scols, drop = FALSE], 
+        mbr_peps = mbr_peps[scols], mbr_sps = mbr_sps[scols], 
+        sp_centers = sp_centers, new_na_species = new_na_species, 
+        rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, lfq_mbr = lfq_mbr, 
+        reference_spec_counts = reference_spec_counts, step = rt_step)
+    }
+    
+    out1 <- pepLFQ2(
       basenames = basenames, are_refs = are_refs, are_smpls = are_smpls, 
       xsmat = xsmat[, scols, drop = FALSE], ysmat = ysmat[, scols, drop = FALSE], 
       tsmat = tsmat[, scols, drop = FALSE], ssmat = ssmat[, scols, drop = FALSE], 
-      ymat = ymat[, scols, drop = FALSE], tmat = tmat[, scols, drop = FALSE], 
-      smat = smat[, scols, drop = FALSE], cmat = cmat[, scols, drop = FALSE], 
+      mmat  = mmat[, scols, drop = FALSE], 
       mbr_peps = mbr_peps[scols], mbr_sps = mbr_sps[scols], 
       sp_centers = sp_centers, new_na_species = new_na_species, 
-      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, 
-      reference_spec_counts = reference_spec_counts, step = rt_step)
+      rt_tol = rt_tol, mbr_ret_tol = mbr_ret_tol, step = rt_step, 
+      lfq_mbr = lfq_mbr)
     yout1 <- do.call(cbind, out1[["y"]])
     tout1 <- do.call(cbind, out1[["t"]])
     sout1 <- do.call(cbind, out1[["s"]])
@@ -821,7 +822,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   }
   
   ###
-  # need to exclude: the same peak to different peptides???
+  # need to exclude: the same peak that was assigned to different peptides???
   ###
 
   for (i in seq_along(dfs)) {
@@ -1020,7 +1021,7 @@ fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir)
     }
     
     df <- df[, c("pep_seq_modz", "pep_ret_range")]
-    df <- df[with(df, df[["pep_seq_modz"]] %in% peps_na), ]
+    df <- df[df[["pep_seq_modz"]] %in% peps_na, ]
   }) |>
     dplyr::bind_rows() |>
     dplyr::group_by(pep_seq_modz) |>
@@ -1061,16 +1062,22 @@ fillMBRnaRTs <- function (mbr_rets, mbr_peps, dat_dir)
 #' @param err_log2r Not yet used. Error tolerance in log2FC.
 #' @param new_na_species A replace value for NA species.
 #' @param rt_tol Error tolerance in retention times.
+#' @param mmat A logical matrix of MBR status.
+#' @param lfq_mbr Logical; perform LFQ-MBR or not.
 #' @param reference_spec_counts Logical; reference protein spectrum counts or
 #'   not.
 pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
-                    ymat, tmat, smat, cmat, mbr_peps, mbr_sps, sp_centers, 
-                    new_na_species = ".other", rt_tol = 30, mbr_ret_tol = 30, # was 25
-                    reference_spec_counts = FALSE, step = 5E-3, err_log2r = .25)
+                    mmat, ymat, tmat, smat, cmat, mbr_peps, mbr_sps, sp_centers, 
+                    new_na_species = ".other", rt_tol = 30, mbr_ret_tol = 30, 
+                    lfq_mbr = TRUE, reference_spec_counts = FALSE, step = 5E-3, 
+                    err_log2r = .25)
   
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
+  
+  # ymat, tmat ... can be removed
+  # cross-reference to spec counts for mixed proteome can be removed
   
   n_row <- nrow(tsmat)
   n_col <- ncol(tsmat)
@@ -1110,7 +1117,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     anss <- ans[["z"]]
     unv  <- ans[["u"]]
     stp  <- ans[["stp"]]
-    step_reduced <- stp < step
+    xstp <- stp < step
     
     if (!(nc <- ncol(anst))) {
       yout[[i]] <- null_dbl
@@ -1193,7 +1200,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
       }
     }
     
-    if (step_reduced) {
+    if (xstp) {
       ans2 <- mergeSTY(
         xmat = anss, ymat = ansy, tmat = anst, tbars = tbars, rt_tol = rt_tol, 
         spc = spc, are_refs = are_refs, are_smpls = are_refs)
@@ -1322,6 +1329,213 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 
 
 #' LFQ of peptides
+#' 
+#' Peptides are unique to species.
+#'
+#' @param basenames The base names of a peptide table files
+#'   (\code{TMTset[i]_LCMSinj[j]_Peptide_N.txt}).
+#' @param are_refs Logical; are references or not.
+#' @param are_smpls Logical; are samples or not.
+#' @param xsmat A matrix of m-over-z values.
+#' @param ysmat A matrix of apex intensities.
+#' @param tsmat A matrix of apex retention times.
+#' @param ssmat A matrix of apex scan numbers.
+#' @param mmat A logical matrix of MBR status.
+#' @param mbr_peps A vector of \code{pep_seq_modz} sequences in the universe.
+#' @param mbr_sps A vector of peptide species in the universe.
+#' @param sp_centers The centers of log2FC for each species; names: species,
+#'   values: log2FC.
+#' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
+#' @param step The step size in binning retention times.
+#' @param err_log2r Not yet used. Error tolerance in log2FC.
+#' @param new_na_species A replace value for NA species.
+#' @param rt_tol Error tolerance in retention times.
+#' @param lfq_mbr Logical; perform LFQ-MBR or not.
+#' @param reference_spec_counts Logical; reference protein spectrum counts or
+#'   not.
+pepLFQ2 <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
+                     mmat, mbr_peps, mbr_sps, sp_centers, new_na_species = ".other", 
+                     rt_tol = 30, mbr_ret_tol = 30, step = 5E-3, lfq_mbr = TRUE, 
+                     err_log2r = .25)
+{
+  # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
+  # need to compile retention times, moverzs and intensities across fractions...
+  
+  n_row <- nrow(tsmat)
+  n_col <- ncol(tsmat)
+  yout  <- tout <- sout <- rep_len(list(vector("numeric", n_row)), n_col)
+  null_dbl <- rep_len(NA_real_, n_row)
+  null_int <- rep_len(NA_integer_, n_row)
+  
+  cents  <- sp_centers[mbr_sps]
+  nsps   <- length(sp_centers)
+  mulsps <- length(nsps) > 1L
+  
+  for (i in 1:n_col) {
+    if (is.na(mbr_sps[[i]])) {
+      yout[[i]] <- null_dbl
+      tout[[i]] <- null_dbl
+      sout[[i]] <- null_int
+      
+      next
+    }
+    
+    ## (1) collapse bins of T, Y and S values
+    # i <- which(mbr_peps == "LLDVVHPAAK@3")
+    # i <- which(mbr_peps == "VGLSPTPCLER@2")
+    # i <- which(mbr_peps == "HILIAVDLSPESK@2")
+    spc  <- cents[[i]] # center for the peptide species
+    ctx  <- sp_centers[sp_centers != spc] # other centers
+    
+    if (lfq_mbr) {
+      mbr  <- mmat[, i]
+    }
+
+    ans  <- collapseSTY(
+      xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
+      spc = spc, are_refs = are_refs, are_smpls = are_smpls)
+    anst <- ans[["x"]]
+    ansy <- ans[["y"]]
+    anss <- ans[["z"]]
+    unv  <- ans[["u"]]
+    stp  <- ans[["stp"]]
+    xstp <- stp < step
+    
+    if (!(nc <- ncol(anst))) {
+      yout[[i]] <- null_dbl
+      tout[[i]] <- null_dbl
+      sout[[i]] <- null_int
+      
+      next
+    }
+    
+    # border effect: may disable since values can traverse for every +2
+    # may check the scenario of consecutive +2 +2 +2...
+    if (nc > 1L && length(us <- which(diff(unv) == 2L))) {
+      for (u in us) {
+        rows <- which(is.na(ansy[, u2 <- u + 1L]) & !is.na(ansy[, u]))
+        
+        if (length(rows)) {
+          ansy[rows, u2] <- ansy[rows, u]
+          anst[rows, u2] <- anst[rows, u]
+          anss[rows, u2] <- anss[rows, u]
+        }
+      }
+    }
+    
+    if (nc == 1L) {
+      yout[[i]] <- ansy[, 1L]
+      tout[[i]] <- anst[, 1L]
+      sout[[i]] <- anss[, 1L]
+      
+      next
+    }
+    
+    ## (2) remove retention outliers
+    tbars <- colMeans(anst, na.rm = TRUE)
+    
+    for (j in 1:nc) {
+      tvals <- anst[, j]
+      mrtj  <- tbars[[j]]
+      tbads <- abs(tvals - mrtj) > rt_tol
+      ibads <- .Internal(which(tbads))
+      
+      if (length(ibads)) {
+        anst[ibads, j] <- NA_real_
+        ansy[ibads, j] <- NA_real_
+        anss[ibads, j] <- NA_real_
+      }
+    }
+    
+    # merged data binned by a smaller step; may also combine bins at diff(unv)
+    if (xstp) {
+      ans2 <- mergeSTY(
+        xmat = anss, ymat = ansy, tmat = anst, tbars = tbars, rt_tol = rt_tol, 
+        spc = spc, are_refs = are_refs, are_smpls = are_refs)
+      anss <- ans2[["x"]]
+      ansy <- ans2[["y"]]
+      anst <- ans2[["t"]]
+    }
+    
+    ## (3) calculate log2FCs
+    ys_smpls <- ansy[are_smpls, , drop = FALSE]
+    ys_refs  <- ansy[are_refs,  , drop = FALSE]
+    ymeans   <- colMeans(ys_refs, na.rm = TRUE)
+    
+    # all are without reference values
+    if (all(is.nan(ymeans))) {
+      p <- .Internal(which.min(calc_mat_sds(anst[are_smpls, , drop = FALSE])))
+      
+      if (length(p)) {
+        yout[[i]] <- ansy[, p]
+        tout[[i]] <- anst[, p]
+        sout[[i]] <- anss[, p]
+      }
+      else {
+        yout[[i]] <- ansy[, 1]
+        tout[[i]] <- anst[, 1]
+        sout[[i]] <- anss[, 1]
+      }
+      
+      next
+    }
+    
+    rmat <- sweep(ys_smpls, 2, ymeans, "/")
+    rmat <- log2(rmat)
+    
+    ## (4) find the best Y column
+    rbars <- colMeans(rmat, na.rm = TRUE)
+    ds <- rbars - spc
+    ads <- abs(ds)
+    p  <- .Internal(which.min(ads))
+
+    if (length(p)) {
+      if (lfq_mbr && mulsps && any(abs(rbars[[p]] - ctx) < ads[[p]])) {
+        ansy[mbr, p] <- NA_real_
+        anst[mbr, p] <- NA_real_
+        anss[mbr, p] <- NA_real_
+      }
+
+      yout[[i]] <- ansy[, p]
+      tout[[i]] <- anst[, p]
+      sout[[i]] <- anss[, p]
+      
+      next
+    }
+    
+    # e.g., one column exclusive samples, the other exclusive references
+    p <- .Internal(which.min(calc_mat_sds(ansy)))
+    
+    if (length(p)) {
+      yout[[i]] <- ansy[, p]
+      tout[[i]] <- anst[, p]
+      sout[[i]] <- anss[, p]
+      
+      next
+    }
+    
+    # e.g. all are with references only, or all single values...
+    # maybe use the column closest in RT to MS2 scan
+    p <- .Internal(which.max(colSums(ansy, na.rm = TRUE)))
+    
+    if (length(p)) {
+      yout[[i]] <- ansy[, p]
+      tout[[i]] <- anst[, p]
+      sout[[i]] <- anss[, p]
+      
+      next
+    }
+    
+    yout[[i]] <- ansy[, 1]
+    tout[[i]] <- anst[, 1]
+    sout[[i]] <- anss[, 1]
+  }
+  
+  out <- list(y = yout, t = tout, s = sout)
+}
+
+
+#' LFQ of peptides
 #'
 #' Peptides are shared by species.
 #'
@@ -1333,6 +1547,7 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 #' @param ysmat A matrix of apex intensities.
 #' @param tsmat A matrix of apex retention times.
 #' @param ssmat A matrix of apex scan numbers.
+#' @param mmat A logical matrix of MBR status.
 #' @param pmat A confounding matrix or vectors of peptides shared across
 #'   species.
 #' @param mbr_peps A vector of \code{pep_seq_modz} sequences in the universe.
@@ -1343,11 +1558,12 @@ pepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 #' @param rt_tol Error tolerance in retention times.
 #' @param mbr_ret_tol The tolerance in MBR retention time in seconds.
 #' @param step The step size in binning retention times.
+#' @param lfq_mbr Logical; perform LFQ-MBR or not.
 #' @param err_log2r Not yet used. Error tolerance in log2FC.
 mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat, 
-                     pmat, mbr_peps, sp_centers, pri_sps = 0L, 
+                     mmat, pmat, mbr_peps, sp_centers, pri_sps = 0L, 
                      new_na_species = ".other", rt_tol = 30, mbr_ret_tol = 30, 
-                     step = 5E-3, err_log2r = .25)
+                     step = 5E-3, lfq_mbr = TRUE, err_log2r = .25)
   
 {
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
@@ -2076,7 +2292,11 @@ calc_mat_sds <- function (mat)
 saddMBR <- function (base_name, ms1files, row_id = 1L, 
                      xsmat = NULL, ysmat = NULL, tsmat = NULL, 
                      ssmat = NULL, fsmat = NULL, nsmat = NULL, 
-                     mbr_mzs, mbr_rets, dat_dir, mbr_ret_tol = 25.0, 
+                     mbr_mzs, mbr_rets, 
+                     mbr_peps, # for debugging
+                     # mbr_sps, 
+                     # sp_centers, new_na_species = ".other", 
+                     dat_dir, mbr_ret_tol = 25.0, 
                      gap = mbr_ret_tol + 90.0, min_y = 2e6, yco = 100, 
                      step = 1e-5, fwhm_co = .5)
 {
@@ -2098,9 +2318,12 @@ saddMBR <- function (base_name, ms1files, row_id = 1L,
   fmi <- fsmat[row_id, ]
   nmi <- nsmat[row_id, ]
   
+  mbrs <- vector("logical", length(ymi))
   cols  <- which(nas <- is.na(tsmat[row_id, ]))
   
   for (i in seq_along(cols)) {
+    # i <- which(cols == which(mbr_peps == "LDNLHVAMVGDLK@3"))
+    # i <- which(cols == which(mbr_peps == "VGLSPTPCLER@2"))
     col     <- cols[[i]]
     mbr_mz  <- mbr_mzs[[col]]
     mbr_ret <- mbr_rets[[col]]
@@ -2116,16 +2339,18 @@ saddMBR <- function (base_name, ms1files, row_id = 1L,
     gates <- mzion::find_lc_gates(
       ys = yhats, ts = tsx, yco = yco, n_dia_scans = 6L, ytot_co = min_y)
     if (is.null(gates)) { next }
-    
+
     apexs  <- gates[["apex"]]
     ymi[[col]] <- gates[["yints"]]
     tmi[[col]] <- tsx[apexs]
     smi[[col]] <- sss[rng][apexs]
     fmi[[col]] <- gates[["fwhm"]]
     nmi[[col]] <- gates[["ns"]]
+    
+    mbrs[[col]] <- TRUE
   }
   
-  list(x = xmi, y = ymi, t = tmi, s = smi, f = fmi, n = nmi)
+  list(x = xmi, y = ymi, t = tmi, s = smi, f = fmi, n = nmi, m = mbrs)
 }
 
 

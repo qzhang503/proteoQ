@@ -12,6 +12,7 @@ mpepLFQ(
   ysmat,
   tsmat,
   ssmat,
+  mmat,
   pmat,
   mbr_peps,
   sp_centers,
@@ -20,6 +21,7 @@ mpepLFQ(
   rt_tol = 30,
   mbr_ret_tol = 30,
   step = 0.005,
+  lfq_mbr = TRUE,
   err_log2r = 0.25
 )
 }
@@ -39,6 +41,8 @@ mpepLFQ(
 
 \item{ssmat}{A matrix of apex scan numbers.}
 
+\item{mmat}{A logical matrix of MBR status.}
+
 \item{pmat}{A confounding matrix or vectors of peptides shared across
 species.}
 
@@ -56,6 +60,8 @@ values: log2FC.}
 \item{mbr_ret_tol}{The tolerance in MBR retention time in seconds.}
 
 \item{step}{The step size in binning retention times.}
+
+\item{lfq_mbr}{Logical; perform LFQ-MBR or not.}
 
 \item{err_log2r}{Not yet used. Error tolerance in log2FC.}
 }

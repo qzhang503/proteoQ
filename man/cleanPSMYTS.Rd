@@ -52,9 +52,13 @@ scans.}
 
 \item{key}{The column key for matching.}
 
-\item{update}{Logical; update retention times or not. FALSE if dfs are
+\item{update}{Logical; update retention times or not. FALSE if \code{dfs} are
 already RT calibrated and the purpose is to nullify bad entries according
 to tmat.}
+
+\item{update2}{Logical; update \code{apex_xs} etc. or not. TRUE if the same
+\code{pep_seq_modz} corresponds to different sets of \code{apex_ys},
+\code{apex_ts} etc. Also require \code{update = TRUE} to have an effect.}
 
 \item{cols}{The column keys for value updates.}
 }

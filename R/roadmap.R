@@ -2,7 +2,7 @@
 # mzion -> proteoQ
 #################################
 # normPSM
-#   splitPSM_pq (psmtable.R)
+#   splitPSM_mz (psmtable.R)
 #     TMT_plex (params.R)
 #     pad_tmt_channels (psmtable.R)
 #     pad_psm_fields (psmtable.R)
@@ -22,5 +22,7 @@
 #   - find_sm_psmraws
 # 
 #   - my_tolower
-#   - my_upper
+#   - my_toupper
 #   - check_raws
+
+

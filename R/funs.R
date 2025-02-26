@@ -12,6 +12,9 @@
 # $dbs.R
 # [1] "read_fasta"  "write_fasta" "load_fasta"  "calc_avgpep"
 # 
+# $funs.R
+# [1] "#   [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# 
 # $global.R
 # [1] "set_dat_dir"    "get_gl_dat_dir"
 # 
@@ -206,8 +209,8 @@
 # $qlfq.R
 #  [1] "haddApexRTs_allsets"    "haddApexRTs_oneset"     "addApexRTs"             "addApexes"              "hpepLFQ"               
 #  [6] "addMBRpeps"             "makeLFQSpecies"         "fillMBRnaRTs"           "pepLFQ"                 "mpepLFQ"               
-# [11] "find_best_lfqvec"       "collapseSTY"            "calc_mat_log2s_to_refs" "calc_vec_log2s_to_refs" "calc_mat_sds"          
-# [16] "saddMBR"               
+# [11] "combine_lfq123"         "find_best_lfqvec"       "collapseSTY"            "mergeSTY"               "reduce_lfq_rtstep"     
+# [16] "calc_mat_log2s_to_refs" "calc_vec_log2s_to_refs" "calc_mat_sds"           "saddMBR"               
 # 
 # $roadmap.R
 # character(0)

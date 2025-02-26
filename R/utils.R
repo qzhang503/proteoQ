@@ -3145,7 +3145,7 @@ count_phosphopeps <- function(filename = "Peptide.txt", collapses = c("mn"),
     
     df_phos <- df_phos %>% 
       dplyr::mutate(pep_seq_mod2 = gsub(pat, paste0("@", "\\1"), !!rlang::sym(id))) %>% 
-      dplyr::mutate_at(vars("pep_seq_mod2"), ~ purrr::map_chr(.x, my_upper, "@")) %>% 
+      dplyr::mutate_at(vars("pep_seq_mod2"), ~ purrr::map_chr(.x, my_toupper, "@")) %>% 
       dplyr::arrange(-pep_locprob) %>% 
       dplyr::filter(!duplicated(pep_seq_mod2)) %>% 
       dplyr::mutate(phos_class = dplyr::case_when(
@@ -5255,6 +5255,38 @@ my_split2 <- function (x, f, ty = "trans_matrix")
   }
 
   xs # data.frame
+}
+
+
+#' To lower cases
+#' 
+#' @param x A character string of amino acid sequence.
+#' @param ch A tag before the letter to conversion to its lower case.
+my_tolower <- function(x = "", ch = "^") 
+{
+  locales <- gregexpr(ch, x) %>% .[[1]] %>% `+`(., 1)
+  lowers <- purrr::map(locales, ~ substr(x, .x, .x)) %>% tolower()
+  
+  for (i in seq_along(lowers)) 
+    substr(x, locales[i], locales[i]) <- lowers[i]
+  
+  gsub(ch, "", x)
+}
+
+
+#' To upper cases
+#' 
+#' @param x A character string of amino acid sequence.
+#' @param ch A tag before the letter to conversion to its upper case.
+my_toupper <- function(x = "", ch = "@") 
+{
+  locs <- gregexpr(ch, x)[[1]] %>% `+`(1)
+  uprs <- purrr::map(locs, ~ substr(x, .x, .x)) %>% toupper()
+  
+  for (i in seq_along(uprs)) 
+    substr(x, locs[i], locs[i]) <- uprs[i]
+  
+  gsub(ch, "", x)
 }
 
 

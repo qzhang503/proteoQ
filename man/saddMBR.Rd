@@ -16,6 +16,7 @@ saddMBR(
   nsmat = NULL,
   mbr_mzs,
   mbr_rets,
+  mbr_peps,
   dat_dir,
   mbr_ret_tol = 25,
   gap = mbr_ret_tol + 90,
