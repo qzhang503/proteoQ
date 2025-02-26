@@ -1369,7 +1369,7 @@ pepLFQ2 <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   
   cents  <- sp_centers[mbr_sps]
   nsps   <- length(sp_centers)
-  mulsps <- length(nsps) > 1L
+  mulsps <- nsps > 1L
   
   for (i in 1:n_col) {
     if (is.na(mbr_sps[[i]])) {
@@ -1386,10 +1386,6 @@ pepLFQ2 <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     # i <- which(mbr_peps == "HILIAVDLSPESK@2")
     spc  <- cents[[i]] # center for the peptide species
     ctx  <- sp_centers[sp_centers != spc] # other centers
-    
-    if (lfq_mbr) {
-      mbr  <- mmat[, i]
-    }
 
     ans  <- collapseSTY(
       xs = tsmat[, i], ys = ysmat[, i], zs = ssmat[, i], lwr = 10, step = step, 
@@ -1491,9 +1487,11 @@ pepLFQ2 <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
 
     if (length(p)) {
       if (lfq_mbr && mulsps && any(abs(rbars[[p]] - ctx) < ads[[p]])) {
-        ansy[mbr, p] <- NA_real_
-        anst[mbr, p] <- NA_real_
-        anss[mbr, p] <- NA_real_
+        if (length(rows <- .Internal(which(mmat[, i])))) {
+          ansy[rows, p] <- NA_real_
+          anst[rows, p] <- NA_real_
+          anss[rows, p] <- NA_real_
+        }
       }
 
       yout[[i]] <- ansy[, p]
@@ -1588,7 +1586,7 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
   
   for (i in 1:n_col) {
     ## (1) collapse bins of T, Y and S values
-    # i <- which(mbr_peps == "TLSDYNIQK@2"); i <- 7, i <- 8
+    # i <- which(mbr_peps == "TLSDYNIQK@2")
     spc  <- cents[[i]] # values of species centers
     ispi <- isps[[i]]  # indexes of species
     len  <- lens[[i]]  # number of species
@@ -1612,7 +1610,7 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     }
     
     # border effect: may disable since values can traverse for every +2
-    # may check +2 +2 +2 senario...
+    # may check +2 +2 +2 scenario...
     if (nc > 1L && length(us <- which(diff(unv) == 2L))) {
       for (u in us) {
         rows <- which(is.na(ansy[, u2 <- u + 1L]) & !is.na(ansy[, u]))
@@ -1671,11 +1669,11 @@ mpepLFQ <- function (basenames, are_refs, are_smpls, xsmat, ysmat, tsmat, ssmat,
     ## (4) find the best Y column
     ds <- lapply(spc, function (x) colMeans(rmat, na.rm = TRUE) - x)
     ds <- do.call(rbind, ds)
-    p <- .Internal(which.min(abs(ds)))
+    p  <- .Internal(which.min(abs(ds)))
     
     if (length(p)) {
       pc <- p %/% len # column index
-      pr <- p %% len # to determine species
+      pr <- p %% len  # to determine species
       if (pr == 0L) { pr <- len } else { pc <- pc + 1L }
       yout[[i]]  <- ansy[, pc]
       tout[[i]]  <- anst[, pc]
