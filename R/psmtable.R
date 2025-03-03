@@ -3221,7 +3221,7 @@ annotPSM <- function(dat_dir = NULL, group_psm_by = "pep_seq",
       bads <- bads[bads]
       
       if (length(bads)) {
-        warning(sublist_i, ": all-NA channels detected: ", 
+        warning("All-NA channels detected: ", 
                 paste(names(bads), collapse = ", "))
       }
     })
