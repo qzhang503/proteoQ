@@ -4449,8 +4449,7 @@ find_psmQ_files <- function (dat_dir)
   
   if (length(filelistQ) && length(filelistC)) {
     message("Both `psmQ[...].txt` and `psmC[...].txt` are present; ", 
-            "\"psmQ[...].txt\" will be used in baseline analysis.\n", 
-            "Need \"psmC[...].txt\" for optional matches between runs in LFQ.")
+            "\"psmQ[...].txt\" will be used in baseline analysis.\n")
     
     filelist <- filelistQ
   } 

@@ -9247,7 +9247,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.1) annotate proteins
   df <- annotPrn(df, fasta, entrez)
   if (!"gene" %in% names(df)) { df$gene <- df$prot_acc }
-  if (length(nas <- which(is.na(df$gene)))) { df$genes[nas] <- df$prot_acc[nas] }
+  if (length(nas <- which(is.na(df$gene)))) { df$gene[nas] <- df$prot_acc[nas] }
 
   # (2.2) compile "preferred" columns
   
