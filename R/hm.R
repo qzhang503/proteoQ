@@ -550,8 +550,9 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
   
   check_dots(c("id", "anal_type", "df2"), ...)
 
-  id <- match_call_arg(normPSM, group_psm_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
@@ -773,8 +774,9 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
   
   check_dots(c("id", "anal_type", "df2"), ...)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
 

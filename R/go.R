@@ -132,10 +132,10 @@ get_full_entrez <- function(species, from = "egUNIPROT")
   pkg_nm_from <- paste("org", abbr_species, from, sep = ".")
   
   if (!requireNamespace(pkg_nm, quietly = TRUE)) {
-    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.", call. = FALSE)
+    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.")
   }
   
-  pkg_nm_from %>% get() %>% AnnotationDbi::mappedkeys()
+  AnnotationDbi::mappedkeys(get(pkg_nm_from))
 }
 
 
@@ -146,15 +146,31 @@ get_full_entrez <- function(species, from = "egUNIPROT")
 find_human_orthologs <- function(species, ortho_mart) 
 {
   if (species == "human") {
-    stop("Ortholog `species` needs to be different to `human`.", call. = FALSE)
+    stop("Ortholog `species` needs to be different to `human`.")
   }
   
   out_nm <- paste0("ortho_hs", sp_lookup(species))
 
   data(package = "proteoQ", mart_hs, envir = environment())
   
+  if (FALSE) {
+    mart_hs <- biomaRt::useEnsembl(
+      biomart = "genes",
+      dataset = "hsapiens_gene_ensembl"
+    )
+  }
+  
+  
   if (species == "mouse") {
     data(package = "proteoQ", mart_mm, envir = environment())
+    
+    if (FALSE) {
+      mart_mm <- biomaRt::useEnsembl(
+        biomart = "genes",
+        dataset = "mmusculus_gene_ensembl"
+      )
+    }
+
     martL <- mart_mm
   } 
   else if (species == "rat") {
@@ -264,7 +280,7 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
                     db_path = "~/proteoQ/dbs/msig", overwrite = FALSE) 
 {
   if (!grepl("\\.entrez\\.gmt$", msig_url)) {
-    stop("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.", call. = FALSE)
+    warning("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.")
   }
   
   fn_msig <- msig_url %>% gsub("^.*/(.*)$", "\\1", .)
@@ -277,7 +293,7 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
 }
 
 
-#' Helper to save `gmt` 
+#' Helper to save \code{gmt}
 #' 
 #' @param fn_gmt filename of downloaded gmt results.
 #' @inheritParams prepMSig
@@ -285,37 +301,42 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 {
   filepath <- file.path(db_path, "cache", fn_gmt)
   
-  if (!file.exists(filepath)) 
-    stop("File not found ", filepath, ".", call. = FALSE)
-  
+  if (!file.exists(filepath)) {
+    stop("File not found ", filepath, ".")
+  }
+
   df <- suppressWarnings(readr::read_tsv(filepath, col_names = FALSE)) %>% 
     `names_pos<-`(1, "term")
   
-  df <- local({
-    cols_entrez <- purrr::map_lgl(df, is.numeric) %>% which()
-    
-    df[, c(1, cols_entrez)] %>% 
-      tidyr::gather("col", "entrez", -term) %>% 
-      dplyr::select(-col)  %>% 
-      dplyr::filter(!is.na(entrez)) 
-  })
+  cols_entrez <- which(unlist(lapply(df, is.numeric)))
+  
+  df <- df[, c(1, cols_entrez)] |>
+    tidyr::pivot_longer(
+      cols = -term,
+      values_to = "entrez",
+      values_drop_na = TRUE
+    ) |>
+    dplyr::select(-name)
   
   if (species != "human") {
-    df <- local({
+    warning("Temporarily bypass biomaRt ortholog look-ups and please specify ", 
+            "the correct msig_url for sepecies other than human.")
+
+    if (FALSE) {
       orthos <- find_human_orthologs(species, ortho_mart) %>% 
-        `names<-`(c("from", "to"))
+        `names<-`(c("from", "to")) # from: mouse or rat entrez -> to: human entrez
       
       df <- df %>% 
         dplyr::left_join(orthos, by = c("entrez" = "from")) %>% 
         dplyr::filter(!is.na(to))  %>% 
         dplyr::select(-entrez) %>% 
-        dplyr::rename(entrez = to)      
-    })
+        dplyr::rename(entrez = to)
+    }
   }
   
   gsets <- df %>% 
     split(., .$term, drop = TRUE) %>% 
-    purrr::map(`[[`, 2) %>% 
+    lapply(`[[`, 2) %>% 
     `names<-`(paste(tolower(abbr_species), names(.), sep = "_"))
   
   saveRDS(gsets, file.path(db_path, filename))
@@ -323,6 +344,52 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
   invisible(file.path(db_path, filename))
 }
 
+
+if (FALSE) {
+  mart_hs <- biomaRt::useEnsembl("genes", "hsapiens_gene_ensembl")
+  all_human_ensembl <- biomaRt::getBM(attributes = c("ensembl_gene_id"), mart = mart_hs)
+  
+  # Human Ensembl -> Mouse Ensembl -> Mouse Gene
+  # one Human Ensembl can be mapped to multiple Mouse Ensembl
+  res_homolog <- biomaRt::getBM(
+    attributes = c(
+      "ensembl_gene_id",                        # human Ensembl ID
+      "mmusculus_homolog_ensembl_gene",         # mouse Ensembl ID
+      "mmusculus_homolog_associated_gene_name", # mouse gene symbol
+      "mmusculus_homolog_orthology_type"
+    ),
+    filters = "ensembl_gene_id",                # filter on human Ensembl IDs, not Entrez
+    values = all_human_ensembl,  # all human Ensembl IDs
+    mart = mart_hs
+  )
+  
+  # ensembl_gene_id mmusculus_homolog_ensembl_gene mmusculus_homolog_associated_gene_name
+  # 1 ENSG00000000003             ENSMUSG00000067377                                 Tspan6
+  # 2 ENSG00000000005             ENSMUSG00000031250                                   Tnmd
+  res_homolog <- res_homolog |>
+    dplyr::filter(mmusculus_homolog_orthology_type == "ortholog_one2one") |>
+    dplyr::select(-"mmusculus_homolog_orthology_type")
+  
+  # Human Enseml -> Human Entrez => Human Gene
+  # One Human Ensembl can be mapped to multiple Entrez IDs
+  # 
+  # ensembl_gene_id entrezgene_id hgnc_symbol
+  # 1 ENSG00000121410             1        A1BG
+  # 2 ENSG00000156006            10        NAT2
+  res_entrez <- biomaRt::getBM(
+    attributes = c(
+      "ensembl_gene_id",
+      "entrezgene_id",
+      "hgnc_symbol"
+    ),
+    filters = "entrezgene_id",
+    values = get_full_entrez(species = "human", from = "egUNIPROT"), 
+    mart = mart_hs
+  )
+  
+  # Not unique: mmusculus_homolog_associated_gene_name, entrezgene_id
+  res <- dplyr::left_join(res_homolog, res_entrez, by = "ensembl_gene_id")
+}
 
 #'Download and prepare gene ontology
 #'
@@ -434,10 +501,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"AnnotationDbi\")", 
-         "\n====================================================================",
-         call. = FALSE)
+         "\n====================================================================")
   }
-  
 
   species <- rlang::as_string(rlang::enexpr(species))
 
@@ -448,8 +513,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
                       human = c("goa_human.gaf.gz" = "http://current.geneontology.org/annotations/goa_human.gaf.gz"), 
                       mouse = c("goa_mouse.gaf.gz" = "http://current.geneontology.org/annotations/mgi.gaf.gz"), 
                       rat = c("goa_rat.gaf.gz" = "http://current.geneontology.org/annotations/rgd.gaf.gz"), 
-                      stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of GAF files.", 
-                           call. = FALSE))
+                      stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of GAF files."))
     fn_gaf <- names(gaf_url)
   } 
   else {
@@ -562,12 +626,15 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'   gset_nms = file.path("~/proteoQ/dbs/msig/msig_hs.rds"), 
 #' )
 #'
-#' # `mouse`
-#' prepMSig(species = mouse, filename = msig_mm.rds)
+#' prepMSig(species = human, msig_url = "https://data.wikipathways.org/current/gmt/wikipathways-20250810-gmt-Homo_sapiens.gmt", filename = wk_hs.rds)
+#' prepMSig(species = mouse, msig_url = "https://data.wikipathways.org/current/gmt/wikipathways-20250810-gmt-Mus_musculus.gmt", filename = wk_mm.rds)
+#' 
+#' # mouse
+#' prepMSig(species = "mouse", msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2025.1.Mm/msigdb.v2025.1.Mm.entrez.gmt", filename = msig_mm.rds)
 #' head(readRDS(file.path("~/proteoQ/dbs/msig/msig_mm.rds")))
 #'
 #' # `rat`
-#' prepMSig(species = rat, filename = msig_rn.rds)
+#' prepMSig(species = "rat", filename = msig_rn.rds)
 #' head(readRDS(file.path("~/proteoQ/dbs/msig/msig_rn.rds")))
 #'
 #' # `dog`; need `ortho_mart` for species other than `human`, `mouse` and `rat`
@@ -589,7 +656,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'
 #' msig_cf <- readRDS(file.path("~/proteoQ/dbs/msig/msig_cf.rds"))
 #' msig_cf2 <- readRDS(file.path("~/proteoQ/dbs/msig/msig_cf2.rds"))
-#'identical(msig_cf, msig_cf2)
+#' identical(msig_cf, msig_cf2)
 #'
 #' ## use an `MSig`other than the default of `c2.all`
 #' prepMSig(
@@ -633,15 +700,17 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"biomaRt\")", 
-         "\n====================================================================",
-         call. = FALSE)
+         "\n====================================================================")
   }
 
-  msig_url <- if (is.null(msig_url))
-    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
-  else
+  msig_url <- if (is.null(msig_url)) {
+    # "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
+    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.5.1/c2.all.v7.5.1.entrez.gmt"
+  }
+  else {
     rlang::as_string(rlang::enexpr(msig_url))
-
+  }
+  
   db_path <- create_db_path(db_path)
   
   fn_gmt <- dl_msig(msig_url, db_path, overwrite)
@@ -659,13 +728,13 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
     }
   })
   
-  if (species == "human" && ortho_mart != "to_itself") species <- "unknown"
+  if (species == "human" && ortho_mart != "to_itself") {
+    species <- "unknown"
+  }
 
-  if (ortho_mart == "unknown") 
-    stop(
-      "Specify the value of `ortho_mart` for species other than \"human\", \"mouse\", and \"rat\".", 
-      call. = FALSE
-    )
+  if (ortho_mart == "unknown") {
+    stop("Specify the value of `ortho_mart` for species other than \"human\", \"mouse\", and \"rat\".")
+  }
 
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
   filename <- set_db_outname(!!rlang::enexpr(filename), species, "msig")
@@ -705,7 +774,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     
     if (!requireNamespace(pkg_nm, quietly = TRUE)) {
       stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
-           then `library(", pkg_nm, ")`", call. = FALSE)
+           then `library(", pkg_nm, ")`")
     }
     
     new_from <- paste0("eg", from)
@@ -716,8 +785,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     )
     
     if (!is.object(x)) {
-      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", 
-                       call. = FALSE)
+      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?")
     }
     
     entrez_ids <- AnnotationDbi::mappedkeys(x) 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{annotPeppos}
 \alias{annotPeppos}
-\title{Annotation of peptide positions and adjacent amino acid residues}
+\title{Annotate peptide positions and adjacent amino acid residues}
 \usage{
 annotPeppos(df)
 }
@@ -13,4 +13,7 @@ annotPeppos(df)
 \code{annotPeppos} annotates the start and the end positions of peptides in
 ascribed proteins description based on the \code{fasta}. It also annotates the
 preceding and the following AA residues.
+}
+\details{
+\code{pep_start} etc. will be \code{NA} if a sequence is not found in FASTA.
 }

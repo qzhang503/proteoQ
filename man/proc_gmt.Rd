@@ -2,7 +2,7 @@
 % Please edit documentation in R/go.R
 \name{proc_gmt}
 \alias{proc_gmt}
-\title{Helper to save `gmt`}
+\title{Helper to save \code{gmt}}
 \usage{
 proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
 }
@@ -47,5 +47,5 @@ default, the name will be determined automatically at a given
 saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
 }
 \description{
-Helper to save `gmt`
+Helper to save \code{gmt}
 }

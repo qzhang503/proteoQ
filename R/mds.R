@@ -307,7 +307,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     .[names(.) %in% names(mapping_fix)] %>%
     .[!is.na(.)]
   
-  fix_args$stroke <- 0.02
+  fix_args$stroke <- 0.5
   
   # --- set up axis labels ---
   col_labs <- cols %>% gsub("\\.", " ", .)
@@ -866,24 +866,25 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   choice <- rlang::enexpr(choice)
   choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
 
-  id <- match_call_arg(normPSM, group_psm_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
+  col_group  <- rlang::enexpr(col_group)
+  col_color  <- rlang::enexpr(col_color)
+  col_fill   <- rlang::enexpr(col_fill)
+  col_shape  <- rlang::enexpr(col_shape)
+  col_size   <- rlang::enexpr(col_size)
+  col_alpha  <- rlang::enexpr(col_alpha)
 
   color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
+  fill_brewer  <- rlang::enexpr(fill_brewer)
+  size_manual  <- rlang::enexpr(size_manual)
   shape_manual <- rlang::enexpr(shape_manual)
   alpha_manual <- rlang::enexpr(alpha_manual)
 
@@ -1128,8 +1129,9 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   choice <- rlang::enexpr(choice)
   choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
 
@@ -1212,8 +1214,9 @@ pepEucDist <- function (col_select = NULL,
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   check_formalArgs(prnEucDist, dist)
 
-  id <- match_call_arg(normPSM, group_psm_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
@@ -1351,8 +1354,9 @@ prnEucDist <- function (col_select = NULL,
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   check_formalArgs(prnEucDist, dist)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
 

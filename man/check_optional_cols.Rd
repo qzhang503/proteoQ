@@ -4,10 +4,12 @@
 \alias{check_optional_cols}
 \title{Checks the default columns in metadata.}
 \usage{
-check_optional_cols(df)
+check_optional_cols(df, filename = "expt_smry.xlsx")
 }
 \arguments{
 \item{df}{A data frame of metadata (e.g., label_scheme_full).}
+
+\item{filename}{The default metadata filename.}
 }
 \description{
 Checks the default columns in metadata.

@@ -4,12 +4,14 @@
 \alias{match_call_arg}
 \title{Matches the arg to anal_prnGSPA}
 \usage{
-match_call_arg(call_rda = "foo", arg = "scale_log2r")
+match_call_arg(call_rda = "foo", arg = "scale_log2r", FUN = stop)
 }
 \arguments{
 \item{call_rda}{the name of a rda.}
 
 \item{arg}{Argument to be matched.}
+
+\item{FUN}{A callback function of stop or warning.}
 }
 \description{
 Matches the arg to anal_prnGSPA

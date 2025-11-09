@@ -7,15 +7,7 @@
 annotPrn(df, fasta, entrez)
 }
 \arguments{
-\item{df}{The name of a primary data file. By default, it will be determined
-automatically after matching the types of data and analysis with an
-\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
-primary file contains normalized peptide or protein data and is among
-\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
-"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
-require the fields of significance p-values, the \code{df} will be one of
-\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
-"protein_impNA_pVal.txt")}.}
+\item{df}{A data frame.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those

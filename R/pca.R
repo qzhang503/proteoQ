@@ -278,7 +278,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     dot_shape <- 21
     dot_size <- 4
     dot_alpha <- .9
-    dot_stroke <- 0.02
+    dot_stroke <- 0.5
     text_size <- 3
   } 
   else {
@@ -613,7 +613,8 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   choice <- rlang::enexpr(choice)
   choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
   
-  id <- match_call_arg(normPSM, group_psm_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
   
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
@@ -809,8 +810,9 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   choice <- rlang::enexpr(choice)
   choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
   

@@ -145,8 +145,11 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   range_log2r <- prep_range(range_log2r)
   range_int <- prep_range(range_int)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  pep_id <- match_call_arg(normPSM, group_psm_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  pep_id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))
 

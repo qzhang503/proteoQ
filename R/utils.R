@@ -1285,9 +1285,12 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
     "Mus musculus" = "mouse",
     "Rattus norvegicus" = "rat")
 
-  pat_uni_acc <- "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
-  pat_uni_id <- "^[[:alnum:]]+_[A-Z]{1,10}$"
-  pat_ref_acc <- "^[XNY]{1}[MRP]{1}_"
+  pat_uni_acc <- 
+    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
+  pat_uni_id  <- 
+    "^[[:alnum:]]+_[A-Z]{1,10}$"
+  pat_ref_acc <- 
+    "^[XNY]{1}[MRP]{1}_"
   
   dat_dir <- get_gl_dat_dir()
   
@@ -1329,110 +1332,98 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   
   
   # add column `acc_type`; note that `df` not saved
-  if (!nrow(df))
+  if (!nrow(df)) {
     warning("Zero row of input data.")
-  
-  df <- df %>% 
-    parse_acc() %>% 
+  }
+
+  df <- df |>
+    parse_acc() |>
     dplyr::filter(nchar(prot_acc) > 0L)
 
   # load fasta_db
-  fasta_db <- load_fasta(fasta) %>% 
-    `names<-`(gsub("\\.[0-9]*$", "", names(.)))
-  
-  if (!length(fasta_db)) 
+  fasta_db <- load_fasta(fasta)
+  names(fasta_db) <- gsub("\\.[0-9]*$", "", names(fasta_db))
+
+  if (!length(fasta_db)) {
     warning("FASTA databases are empty.")
+  }
 
   # accession lookups by acc_type's
-  df_splits <- df %>% 
-    split(.$acc_type, drop = TRUE)
-  
-  acc_lookup <- lapply(df_splits, hparse_fasta, 
-                       fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc, 
-                       fasta, warns) %>% 
+  acc_lookup <- lapply(
+    split(df, df$acc_type, drop = TRUE), hparse_fasta, fasta_db, pat_uni_acc, 
+    pat_uni_id, pat_ref_acc, fasta, warns) |>
     dplyr::bind_rows()
 
   # --- subset and annotate fasta_db with entries in acc_lookup ---
-  fasta_db <- local({
-    fasta_db <- fasta_db %>% 
-      .[names(.) %in% unique(acc_lookup$fasta_name)] %>% 
-      .[! duplicated(names(.))]
-    
-    if (!length(fasta_db)) 
-      stop("No fasta entries match protein accessions; probably wrong fasta file.", 
-           call. = FALSE)
-
-    fasta_db <- lapply(unique(df$acc_type), add_prot_desc, 
-                       acc_lookup = acc_lookup, 
-                       fasta_db = fasta_db) %>% 
-      do.call(`c`, .) %>% 
-      .[!duplicated(names(.))]
-    
-    save(fasta_db, file = file.path(dat_dir, "fasta_db.rda"))
-    
-    fasta_db
-  }) 
+  fasta_db <- fasta_db[names(fasta_db) %in% unique(acc_lookup$fasta_name)]
+  fasta_db <- fasta_db[!duplicated(names(fasta_db))]
+  
+  if (!length(fasta_db)) {
+    stop("No fasta entries match protein accessions; wrong fasta files?")
+  }
+  
+  fasta_db <- lapply(
+    unique(df$acc_type), add_prot_desc, acc_lookup = acc_lookup, 
+    fasta_db = fasta_db)
+  
+  fasta_db <- do.call(`c`, fasta_db)
+  fasta_db <- fasta_db[!duplicated(names(fasta_db))]
+  
+  save(fasta_db, file = file.path(dat_dir, "fasta_db.rda"))
 
   # -- add columns prot_desc, prot_mass, prot_len ---
-  acc_lookup <- local({
-    more <- dplyr::bind_cols(
-      prot_acc = unname(purrr::map_chr(fasta_db, attr, "prot_acc")), 
-      prot_desc = unname(purrr::map_chr(fasta_db, attr, "prot_desc")), 
-      prot_mass = unname(purrr::map_dbl(fasta_db, ~ calc_avgpep(.x))), 
-      prot_len = unname(nchar(fasta_db)), 
-    ) %>% 
-      dplyr::filter(!duplicated(prot_acc)) %>% 
-      dplyr::mutate(prot_mass = round(prot_mass, digits = 0))
-    
-    dplyr::left_join(acc_lookup, more, by = "prot_acc")
-  })
+  more <- dplyr::bind_cols(
+    prot_acc  = unname(purrr::map_chr(fasta_db, attr, "prot_acc")), 
+    prot_desc = unname(purrr::map_chr(fasta_db, attr, "prot_desc")), 
+    prot_mass = unname(purrr::map_dbl(fasta_db, function (x) calc_avgpep(x))), 
+    prot_len  = unname(nchar(fasta_db)), 
+  ) |>
+    dplyr::filter(!duplicated(prot_acc)) |>
+    dplyr::mutate(prot_mass = round(prot_mass, digits = 0L))
+  
+  acc_lookup <- dplyr::left_join(acc_lookup, more, by = "prot_acc")
+  rm(list = c("more"))
   
   # -- add columns gene, organism, species, entrez ---
-  df_splits <- df %>% 
-    split(.$acc_type, drop = TRUE)
-  
-  acc_lookup <- purrr::map(df_splits, ~ {
-    acc_type <- .x[["acc_type"]][1]
+  acc_lookup <- purrr::map(split(df, df$acc_type, drop = TRUE), function (x) {
+    acc_type <- x[["acc_type"]][1]
     
     if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
-      genes <- local({
-        genes <- acc_lookup %>% dplyr::select(prot_acc, prot_desc)
-        
-        na_genes <- genes %>% 
-          dplyr::filter(!grepl("GN=", .$prot_desc)) %>% 
-          dplyr::mutate(gene = NA_character_) 
-        
-        genes <- genes %>% 
-          dplyr::filter(grepl("GN=", .$prot_desc)) %>% 
-          dplyr::mutate(gene = gsub("^.*GN=(\\S+)\\s*.*", "\\1", prot_desc)) %>% 
-          dplyr::bind_rows(., na_genes) %>% 
-          na_genes_by_acc()
-      })
+      genes <- acc_lookup[, c("prot_acc", "prot_desc")]
+      oks   <- grepl("GN=", genes$prot_desc)
       
-      acc_lookup <- local({
-        na_org <- genes %>% 
-          dplyr::filter(!grepl("OS=", .$prot_desc)) %>% 
-          dplyr::mutate(organism = NA_character_)
-        
-        # adds gene and organism
-        acc_lookup <- genes %>% 
-          dplyr::filter(grepl("OS=", .$prot_desc)) %>% 
-          dplyr::mutate(organism = gsub("^.*OS=(.*?)=.*$", "\\1", prot_desc)) %>% 
-          dplyr::mutate(organism = gsub("\\s\\S*$", "", organism)) %>% 
-          dplyr::bind_rows(., na_org) %>% 
-          dplyr::select(-prot_desc) %>% 
-          dplyr::right_join(acc_lookup, by = "prot_acc")
-
-        # adds species
-        acc_lookup <- acc_lookup %>% 
-          dplyr::mutate(species = my_lookup[.$organism]) %>% 
-          na_species_by_org() 
-      })
+      na_genes <- genes[!oks, ] |>
+        dplyr::mutate(gene = NA_character_)
+      
+      genes <- genes[oks, ] |>
+        dplyr::mutate(gene = gsub("^.*GN=(\\S+)\\s*.*", "\\1", prot_desc)) |>
+        dplyr::bind_rows(na_genes) |>
+        na_genes_by_acc()
+      
+      rm(list = c("oks", "na_genes"))
+      
+      oks <- grepl("OS=", genes$prot_desc)
+      
+      na_org <- genes[!oks, ] |>
+        dplyr::mutate(organism = NA_character_)
+      
+      # adds gene and organism
+      acc_lookup <- genes[oks, ] |>
+        dplyr::mutate(organism = gsub("^.*OS=(.*?)=.*$", "\\1", prot_desc)) |>
+        dplyr::mutate(organism = gsub("\\s\\S*$", "", organism)) |>
+        dplyr::bind_rows(na_org) |>
+        dplyr::select(-prot_desc) |>
+        dplyr::right_join(acc_lookup, by = "prot_acc")
+      
+      # adds species
+      acc_lookup$species <- my_lookup[acc_lookup$organism]
+      acc_lookup <- na_species_by_org(acc_lookup)
+      
+      rm(list = c("oks", "na_org"))
       
       if (!nrow(acc_lookup)) {
-        warning("\nNo matches in protein accessions at `acc_type = ", acc_type, "`.\n", 
-                "Fix the FASTA before running into errors", 
-                call. = FALSE)
+        warning("\nNo matches in protein accessions at `acc_type = ", 
+                acc_type, "`.\n", "Fix the FASTA before running into errors")
       }
 
       # adds entrez
@@ -1441,22 +1432,22 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
       else 
         add_custom_entrez(acc_lookup, entrez, acc_type)
       
-      acc_lookup <- acc_lookup %>% 
-        dplyr::filter(!is.na(.[["uniprot_acc"]]))
+      acc_lookup <- acc_lookup[!is.na(acc_lookup[["uniprot_acc"]]), ]
     } 
     else if (acc_type == "refseq_acc") {
       # adds organism and species
-      acc_lookup <- acc_lookup %>% 
-        dplyr::filter(grepl("^[XNY]{1}[MRP]{1}_", prot_acc)) %>% 
-        dplyr::mutate(organism = gsub("^.*\\[(.*)\\]\\.*.*", "\\1", prot_desc)) %>% 
-        dplyr::mutate(species = my_lookup[.$organism]) %>% 
-        na_species_by_org()
+      acc_lookup <- acc_lookup |>
+        dplyr::filter(grepl("^[XNY]{1}[MRP]{1}_", prot_acc)) |>
+        dplyr::mutate(organism = gsub("^.*\\[(.*)\\]\\.*.*", "\\1", prot_desc))
       
+      acc_lookup$species <- my_lookup[acc_lookup$organism]
+      acc_lookup <- na_species_by_org(acc_lookup)
+
       if (!nrow(acc_lookup)) {
-        warning("\nNo matches in protein accessions at `acc_type = ", acc_type, "`.\n", 
+        warning("\nNo matches in protein accessions at `acc_type = ", 
+                acc_type, "`.\n", 
                 "Fix the FASTA before running into an error such as ", 
-                "no species in gene name annoation.", 
-                call. = FALSE)
+                "no species in gene name annoation.")
       }
       
       # adds entrez
@@ -1467,32 +1458,30 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
       
       # separately column gene
       acc_lookup <- add_refseq_gene(acc_lookup, acc_type)
-      
-      acc_lookup <- acc_lookup %>% 
-        dplyr::filter(!is.na(.[["refseq_acc"]]))
+      acc_lookup <- acc_lookup[!is.na(acc_lookup[["refseq_acc"]]), ]
     } 
     else {
-      acc_lookup <- acc_lookup %>% 
-        dplyr::filter(acc_type == "other_acc") %>% 
+      acc_lookup <- acc_lookup |>
+        dplyr::filter(acc_type == "other_acc") |>
         dplyr::mutate(gene = NA_character_, 
                       organism = NA_character_, 
                       species = NA_character_, 
                       entrez = NA_integer_) 
     }
     
-    acc_lookup <- acc_lookup %>% 
-      dplyr::select(c("prot_acc", "gene", "organism", "prot_desc", 
-                      "prot_mass", "prot_len", "fasta_name", "uniprot_acc", 
-                      "uniprot_id", "refseq_acc", "other_acc", "acc_type", 
-                      "entrez", "species")) %>% 
+    acc_lookup <- acc_lookup |>
+      dplyr::select(
+        c("prot_acc", "gene", "organism", "prot_desc", "prot_mass", "prot_len", 
+          "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", "other_acc", 
+          "acc_type", "entrez", "species")) |>
       na_genes_by_acc()
-  }) %>% 
-    dplyr::bind_rows() %>% 
+  }) |>
+    dplyr::bind_rows() |>
     reloc_col_after("acc_type", "species")
 
   save(acc_lookup, file = file.path(dat_dir, "acc_lookup.rda"))
   
-  invisible(acc_lookup)
+  acc_lookup
 }
 
 
@@ -1695,41 +1684,45 @@ add_prot_desc <- function (acc_type, acc_lookup, fasta_db)
 }
 
 
+#' Helper of \link{annotPrn}.
+#' 
+#' @param df A data frame.
+na_fasta_name_by_prot_acc <- function(df) 
+{
+  if (nrow(df) && ("fasta_name" %in% names(df))) {
+    bads <- (is.na(df$fasta_name)) | (stringr::str_length(df$fasta_name) == 0L)
+    df$fasta_name[bads] <- df$prot_acc[bads]
+  }
+  
+  df
+}
+
+
+#' Helper of \link{annotPrn}.
+#' 
+#' @param df A data frame.
+na_acc_type_to_other <- function(df) 
+{
+  if (nrow(df) && "acc_type" %in% names(df)) {
+    bads <- (is.na(df$acc_type)) | (stringr::str_length(df$acc_type) == 0L)
+    df$acc_type[bads] <- "other_acc"
+  }
+  
+  df
+}
+
+
 #' Adds protein annotation
 #'
 #' \code{annotPrn} cross-referencing proteins among \code{uniprot_acc},
 #' \code{uniprot_id}, \code{refseq} and \code{entrez}. 
 #' 
-#' @inheritParams info_anal
+#' @param df A data frame.
 #' @inheritParams normPSM
 #' @import dplyr purrr stringr 
 #' @importFrom magrittr %>% %$% %T>% 
 annotPrn <- function (df, fasta, entrez) 
 {
-  na_fasta_name_by_prot_acc <- function(df) 
-  {
-    if (nrow(df) && ("fasta_name" %in% names(df))) {
-      na_fasta_name <- 
-        (is.na(df$fasta_name)) | (stringr::str_length(df$fasta_name) == 0)
-      
-      df$fasta_name[na_fasta_name] <- df$prot_acc[na_fasta_name]
-    }
-    
-    invisible(df)
-  }
-  
-  na_acc_type_to_other <- function(df) 
-  {
-    if (nrow(df) && "acc_type" %in% names(df)) {
-      na_acc_type <- 
-        (is.na(df$acc_type)) | (stringr::str_length(df$acc_type) == 0)
-      
-      df$acc_type[na_acc_type] <- "other_acc"
-    }
-    
-    invisible(df)
-  }
-  
   # currently with MSGF+ outputs at UniProt DB
   uniboth <- grepl("^..\\|[[:alnum:]]+\\|[^_]+_[A-Z]{1,10}$", df[["prot_acc"]])
   
@@ -1742,12 +1735,9 @@ annotPrn <- function (df, fasta, entrez)
   acc_lookup <- parse_fasta(df, fasta, entrez)
   
   acc_lookup <- dplyr::bind_cols(
-    acc_lookup %>% 
-      dplyr::select(prot_acc), 
-    acc_lookup %>% 
-      dplyr::select(-which(names(.) %in% names(df))) %>% 
-      dplyr::select(-"organism"))
-  
+    acc_lookup[, "prot_acc", drop = FALSE], 
+    acc_lookup[, !names(acc_lookup) %in% c(names(df), "organism")], )
+
   # (1) multiple uniprot_acc(s) can share the same entrez id
   # prot_acc    gene      acc_type   uniprot_acc species entrez
   # A1AT1_MOUSE Serpina1a uniprot_id P07758      mouse    20703
@@ -1766,17 +1756,15 @@ annotPrn <- function (df, fasta, entrez)
   # [1] "gene"        "prot_len"    "fasta_name"  "uniprot_acc" "uniprot_id" 
   # [7] "refseq_acc"  "other_acc"   "entrez"      "species"     "acc_type"   
   
-  df <- df %>% 
-    dplyr::mutate(psm_index = row_number()) %>% 
-    dplyr::left_join(acc_lookup, by = "prot_acc") %>% 
-    dplyr::filter(!duplicated(psm_index)) %>% 
-    na_acc_type_to_other() %>% 
-    # na_fasta_name_by_prot_acc() %>% 
-    dplyr::select(-psm_index) %>% 
-    # dplyr::ungroup() %>% 
+  df <- df |>
+    dplyr::mutate(psm_index = dplyr::row_number()) |>
+    dplyr::left_join(acc_lookup, by = "prot_acc") |>
+    dplyr::filter(!duplicated(psm_index)) |>
+    na_acc_type_to_other() |>
+    # na_fasta_name_by_prot_acc() |>
+    dplyr::select(-psm_index) |>
+    # dplyr::ungroup() |>
     reloc_col_after("prot_mass", "prot_acc")
-  
-  invisible(df)
 }
 
 
@@ -1873,10 +1861,10 @@ match_fmls <- function(formulas)
 #'
 #' @param call_rda the name of a rda.
 #' @param arg Argument to be matched.
-#'
+#' @param FUN A callback function of stop or warning.
 #' @import dplyr purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") 
+match_call_arg <- function (call_rda = "foo", arg = "scale_log2r", FUN = stop) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -1886,14 +1874,16 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r")
   rda <- paste0(call_rda, ".rda")
   file <- file.path(dat_dir, "Calls", rda)
   
-  if (!file.exists(file)) 
-    stop(rda, " not found.")
-  
+  if (!file.exists(file)) {
+    FUN(rda, " not found.")
+  }
+
   load(file = file)
   
-  if (!arg %in% names(call_pars)) 
-    stop(arg, " not found in the latest call to ", call_rda)
-  
+  if (!arg %in% names(call_pars)) {
+    FUN(arg, " not found in the latest call to ", call_rda)
+  }
+
   call_pars[[arg]]
 }
 
@@ -2234,59 +2224,65 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
 }
 
 
-#' Annotation of peptide positions and adjacent amino acid residues
+#' Annotate peptide positions and adjacent amino acid residues
 #'
 #' \code{annotPeppos} annotates the start and the end positions of peptides in
 #' ascribed proteins description based on the \code{fasta}. It also annotates the
 #' preceding and the following AA residues.
+#' 
+#' \code{pep_start} etc. will be \code{NA} if a sequence is not found in FASTA.
 #' 
 #' @param df A data frame
 #' @import dplyr purrr stringr tidyr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 annotPeppos <- function (df) 
 {
-  stopifnot(all(c("fasta_name", "pep_seq") %in% names(df)))
+  cols <- c("fasta_name", "pep_seq")
   
-  file <- file.path(dat_dir, "fasta_db.rda")
-  
-  if (!file.exists(file)) 
-    stop("File not found: ", file, call. = FALSE)
-  
+  if (!all(oks <- cols %in% names(df))) {
+    stop("Required columns not found: ", paste0(cols[!oks], collapse = ", "))
+  }
+
+  if (!file.exists(file <- file.path(dat_dir, "fasta_db.rda"))) {
+    stop("File not found: ", file)
+  }
+
   load(file = file)
 
   # ok cases that same `pep_seq` but different `prot_acc`
   # (K)	MENGQSTAAK	(L) NP_510965
   # (-)	MENGQSTAAK	(L) NP_001129505
   
-  df <- df %>% 
+  df <- df |>
     dplyr::mutate(pep_prn = paste(pep_seq, fasta_name, sep = "@"))
   
-  df_pep_prn <- df %>% 
-    dplyr::filter(!duplicated(pep_prn)) %>% 
-    dplyr::select(c("pep_seq", "fasta_name")) 
+  df_pep_prn <- df |>
+    dplyr::filter(!duplicated(pep_prn)) |>
+    dplyr::select(c("pep_seq", "fasta_name"))
   
-  fasta_db_sub <- fasta_db %>% 
-    .[names(.) %in% unique(df_pep_prn$fasta_name)]
-
+  fasta_dbx <- fasta_db[names(fasta_db) %in% unique(df_pep_prn$fasta_name)]
+  
+  # Some prot_acc in search results may be missing from the current FASTA
   pep_pos_all <- suppressWarnings(
     purrr::map2(as.list(df_pep_prn$fasta_name), 
                 as.list(df_pep_prn$pep_seq), 
                 find_pep_pos, 
-                fasta_db_sub)
-  ) %>% 
-    do.call(rbind, .) %>% 
-    `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", 
-                   "pep_end", "pep_res_after", 
-                   "fasta_name", "pep_istryptic", "pep_semitryptic")) %>% 
-    data.frame(check.names = FALSE) %>% 
-    tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
+                fasta_dbx)
+  ) 
+  
+  pep_pos_all <- do.call(rbind, pep_pos_all)
+  
+  colnames(pep_pos_all) <- 
+    c("pep_seq", "pep_res_before", "pep_start", "pep_end", "pep_res_after", 
+      "fasta_name", "pep_istryptic", "pep_semitryptic")
+  
+  pep_pos_all <- pep_pos_all |>
+    data.frame(check.names = FALSE) |>
+    tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) |>
     dplyr::mutate(pep_start = as.integer(pep_start), 
                   pep_end = as.integer(pep_end))
   
-  df$pep_res_before <- NULL
-  df$pep_res_after <- NULL
-  df$pep_start <- NULL
-  df$pep_end <- NULL
+  df$pep_end <- df$pep_start <- df$pep_res_after <- df$pep_res_before <- NULL
   nms <- names(df)
   
   if ("pep_res_before" %in% nms) pep_pos_all$pep_res_before <- NULL
@@ -2294,10 +2290,10 @@ annotPeppos <- function (df)
   if ("pep_start" %in% nms) pep_pos_all$pep_start <- NULL
   if ("pep_end" %in% nms) pep_pos_all$pep_end <- NULL
   
-  df %>% 
-    dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
-    dplyr::select(-pep_prn) %>% 
-    reloc_col_before("pep_end", "pep_res_before") %>% 
+  df <- df |>
+    dplyr::left_join(pep_pos_all, by = "pep_prn") |>
+    dplyr::select(-pep_prn) |>
+    reloc_col_before("pep_end", "pep_res_before") |>
     reloc_col_before("pep_start", "pep_end")
 }
 

@@ -1077,7 +1077,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       }
       
       if (nchar(fn) > 50) {
-        fn <- paste0(str_sub(fn, 1, 50), "...") 
+        fn <- str_sub(fn, 1, 50)
       }
 
       width <- if (is.null(dots$width)) {
@@ -1095,6 +1095,9 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       height <- if (is.null(dots$height)) 6*nrow else dots$height
       
       ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+      
+      # WikiPathways contains % in the pathway name and not compatible...
+      # fn <- gsub("\\%", "_", fn)
       
       rlang::eval_tidy(
         rlang::quo(
@@ -1133,7 +1136,8 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- match_call_arg(normPSM, group_psm_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
   
@@ -1269,8 +1273,8 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- match_call_arg(normPSM, group_pep_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
   

@@ -210,9 +210,9 @@ p <- ggplot() +
              size = 3, color = res$palette[2], shape = 20, alpha = .8) +
   geom_point(data = res$less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
              size = 3, color = res$palette[1], shape = 20, alpha = .8) +
-  geom_hline(yintercept = -log10(res$yco), linetype = "longdash", size = .5) +
-  geom_vline(xintercept = -log2(res$xco), linetype = "longdash", size = .5) +
-  geom_vline(xintercept = log2(res$xco), linetype = "longdash", size = .5) +
+  geom_hline(yintercept = -log10(res$yco), linetype = "longdash", linewidth = .5) +
+  geom_vline(xintercept = -log2(res$xco), linetype = "longdash", linewidth = .5) +
+  geom_vline(xintercept = log2(res$xco), linetype = "longdash", linewidth = .5) +
   scale_x_continuous(limits = c(res$xmin, res$xmax)) +
   scale_y_continuous(limits = c(res$ymin, res$ymax)) +
   labs(title = res$title, x = res$x_label, y = res$y_label) +

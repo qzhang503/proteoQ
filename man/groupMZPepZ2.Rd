@@ -2,13 +2,13 @@
 % Please edit documentation in R/peptable.R
 \name{groupMZPepZ2}
 \alias{groupMZPepZ2}
-\title{Group Mzion peptides by charge states}
+\title{Group Mzion peptides by charge states.}
 \usage{
-groupMZPepZ2(df_num)
+groupMZPepZ2(df)
 }
 \arguments{
-\item{df_num}{A Mzion peptide table.}
+\item{df_num}{A peptide table.}
 }
 \description{
-Group Mzion peptides by charge states
+Uses the charge state that has least number of missing values.
 }

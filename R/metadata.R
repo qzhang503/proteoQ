@@ -596,7 +596,8 @@ check_required_cols <- function (df, filename = NULL)
 #' Checks the default columns in metadata.
 #' 
 #' @param df A data frame of metadata (e.g., label_scheme_full).
-check_optional_cols <- function (df) 
+#' @param filename The default metadata filename.
+check_optional_cols <- function (df, filename = "expt_smry.xlsx") 
 {
   default_names <- c("Select", "Group", "Order", "Fill",  "Color", 
                      "Shape", "Size", "Alpha", "Peptide_Yield")

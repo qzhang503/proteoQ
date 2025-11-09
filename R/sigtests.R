@@ -615,8 +615,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- match_call_arg(normPSM, group_psm_by)
-  
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
   
@@ -823,7 +824,8 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)

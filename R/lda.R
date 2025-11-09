@@ -447,7 +447,7 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   col_group <- rlang::enexpr(col_group)
 
   if (rlang::as_string(col_group) == "Select")
-    stop("Specify a `col_group` column other than `Select.`", call. = FALSE)
+    stop("Specify a `col_group` column other than `Select.`")
 
   df_orig <- df
 
@@ -460,7 +460,7 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   n_rows <- nrow(df)
 
   if (n_rows <= 50L)
-    stop("Need 50 or more data rows for LDA.", call. = FALSE)
+    stop("Need 50 or more data rows for LDA.")
 
   label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
 

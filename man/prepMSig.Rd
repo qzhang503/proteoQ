@@ -81,12 +81,15 @@ prnGSPA(
   gset_nms = file.path("~/proteoQ/dbs/msig/msig_hs.rds"), 
 )
 
-# `mouse`
-prepMSig(species = mouse, filename = msig_mm.rds)
+prepMSig(species = human, msig_url = "https://data.wikipathways.org/current/gmt/wikipathways-20250810-gmt-Homo_sapiens.gmt", filename = wk_hs.rds)
+prepMSig(species = mouse, msig_url = "https://data.wikipathways.org/current/gmt/wikipathways-20250810-gmt-Mus_musculus.gmt", filename = wk_mm.rds)
+
+# mouse
+prepMSig(species = "mouse", msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2025.1.Mm/msigdb.v2025.1.Mm.entrez.gmt", filename = msig_mm.rds)
 head(readRDS(file.path("~/proteoQ/dbs/msig/msig_mm.rds")))
 
 # `rat`
-prepMSig(species = rat, filename = msig_rn.rds)
+prepMSig(species = "rat", filename = msig_rn.rds)
 head(readRDS(file.path("~/proteoQ/dbs/msig/msig_rn.rds")))
 
 # `dog`; need `ortho_mart` for species other than `human`, `mouse` and `rat`

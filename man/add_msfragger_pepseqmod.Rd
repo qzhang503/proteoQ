@@ -2,17 +2,18 @@
 % Please edit documentation in R/psmtable.R
 \name{add_msfragger_pepseqmod}
 \alias{add_msfragger_pepseqmod}
-\title{Adds the \code{pep_seq_mod} field to MSFragger PSMs}
+\title{Adds the \code{pep_seq_mod} field to MSFragger \code{psm.tsv}.}
 \usage{
 add_msfragger_pepseqmod(df = NULL, use_lowercase_aa = TRUE)
 }
 \arguments{
-\item{df}{A data frame containing the PSM table from database searches.}
+\item{df}{MSFragger's \code{psm.tsv} with complication of \code{pep_start}
+etc.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
 will be abbreviated with lower-case and/or \code{^_~}. See the table below
 for details. The default is TRUE.}
 }
 \description{
-Adds the \code{pep_seq_mod} field to MSFragger PSMs
+Adds the \code{pep_seq_mod} field to MSFragger \code{psm.tsv}.
 }

@@ -1998,6 +1998,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   dots <- rlang::enexprs(...)
   filter_dots <- dots[unlist(lapply(dots, is.language))]
   filter_dots <- filter_dots[grepl("^filter_", names(filter_dots))]
+  dots <- dots[!dots %in% filter_dots]
   
   filelist  <- list.files(
     path = file.path(dat_dir, "Peptide"), 
@@ -2014,6 +2015,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   injn_idxes <- attr(filelist, "injn_idxes")
   
   ids <- paste0("TMTset", set_idxes, "_LCMSinj", injn_idxes, "_Peptide_N.txt")
+  
   if (all(are_refs <- basenames %in% ids[label_scheme_full[["Reference"]]])) {
     are_smpls <- are_refs
   }
@@ -2169,6 +2171,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       engine = engine)
 
     df_num <- groupMZPepZ2(df_num)
+    df_num$pep_seq_modz <- NULL
     
     if (!"species" %in% names(df_num)) {
       df_num <- dplyr::left_join(
@@ -2666,30 +2669,47 @@ groupMZPepZ <- function (df, group_psm_by = "pep_seq_mod", sdco = sqrt(9))
 }
 
 
-#' Group Mzion peptides by charge states
+#' Group Mzion peptides by charge states.
 #' 
-#' @param df_num A Mzion peptide table.
-groupMZPepZ2 <- function (df_num)
+#' Uses the charge state that has least number of missing values.
+#' 
+#' @param df_num A peptide table.
+groupMZPepZ2 <- function (df)
 {
-  df_num$pep_seq_mod <- gsub("@[0-9]+", "", df_num$pep_seq_modz)
-  df_num$pep_seq_modz <- NULL
-  df_nums <- split(df_num, df_num$pep_seq_mod)
-  nrows <- sapply(df_nums, nrow)
-  oks <- nrows == 1L
-  df_nums0 <- dplyr::bind_rows(df_nums[oks])
-  df_nums1 <- df_nums[!oks]
-  
-  nms <- names(df_num)
-  cols_y1 <- grep("^I000 \\(", nms)
-
-  for (i in seq_along(df_nums1)) {
-    dfi <- df_nums1[[i]]
-    nna <- rowSums(is.na(dfi[, cols_y1, drop = FALSE]))
-    row <- which.min(nna)
-    df_nums1[[i]] <- dfi[row, ]
+  if (!"pep_seq_mod" %in% names(df)) {
+    df$pep_seq_mod <- gsub("@[0-9]+", "", df$pep_seq_modz)
   }
   
-  out <- dplyr::bind_rows(df_nums0, dplyr::bind_rows(df_nums1))
+  # df$pep_seq_modz <- NULL
+  dfs   <- split(df, df$pep_seq_mod)
+  nrows <- sapply(dfs, nrow)
+  oks   <- nrows == 1L
+  dfs0  <- dplyr::bind_rows(dfs[oks])
+  dfs1  <- dfs[!oks]
+  
+  nms <- names(df)
+  
+  if (!length(cols_y1 <- grep("^I000 \\(", nms))) {
+    stop("Developer: required columns 'I000 ...' not found.")
+  }
+  
+  for (i in seq_along(dfs1)) {
+    dfi <- dfs1[[i]]
+    nna <- rowSums(is.na(dfi[, cols_y1, drop = FALSE]))
+    row <- which.min(nna)
+    
+    if (sum(oks <- nna == nna[[row]]) == 1L) {
+      dfs1[[i]] <- dfi[row, ]
+    }
+    else { # ties in 'nna'
+      dfi <- dfi[oks, ]
+      cvs <- apply(dfi[, cols_y1, drop = FALSE], 1, 
+                   function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE))
+      dfs1[[i]] <- dfi[which.min(cvs), ]
+    }
+  }
+  
+  out <- dplyr::bind_rows(dfs0, dplyr::bind_rows(dfs1))
 }
 
 
@@ -3117,9 +3137,10 @@ mergePep <- function (
   # later apply also the back-filling with MSFragger data...
   message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. ", 
           "for `filter_` varargs.")
-  use_mq_pep <- use_mq_peptable(dat_dir, label_scheme_full)
-  use_mf_pep <- use_mf_peptable(dat_dir, label_scheme_full, 
-                                group_psm_by = group_psm_by)
+  use_mq_pep <- 
+    use_mq_peptable(dat_dir, label_scheme_full)
+  use_mf_pep <- 
+    use_mf_peptable(dat_dir, label_scheme_full, group_psm_by = group_psm_by)
   
   if (use_mq_pep && use_mf_pep) {
     stop("Both MaxQuant and MSFragger peptide tables found.", 
@@ -3338,9 +3359,14 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
   
   reload_expts()
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
+  group_psm_by <- tryCatch(
+    match_call_arg(normPSM, group_psm_by),error = function(e) NULL)
+  group_pep_by <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) NULL)
+  if (is.null(group_psm_by)) { group_psm_by <- "pep_seq_mod" }
+  if (is.null(group_pep_by)) { group_pep_by <- "gene" }
+
   method_align <- rlang::enexpr(method_align)
   if (method_align == rlang::expr(c("MC", "MGKernel"))) {
     method_align <- "MC"
@@ -3538,9 +3564,11 @@ Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE,
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   tmt_plex <- TMT_plex(label_scheme_full)
   
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)
-  
+  group_pep_by <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  use_spec_counts <- tryCatch(
+    match_call_arg(normPSM, use_spec_counts), error = function(e) FALSE)
+
   if (use_spec_counts) {
     method_pep_prn <- "lfq_all" # sum of peptide spec counts
   }
@@ -4452,6 +4480,208 @@ find_mbr_ms1files <- function(dat_dir, n_files, abort = FALSE)
     
     ok_mbr <- FALSE
   }
+}
+
+
+#' Make DIANN peptide table
+#' 
+#' @inheritParams normPSM
+makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
+                          entrez = NULL, use_lowercase_aa  = FALSE)
+{
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  if (is.null(fasta)) {
+    stop("Argument 'fasta' cannot be NULL.")
+  }
+  
+  dir.create(out_path <- file.path(dat_dir, "Peptide"), showWarnings = FALSE)
+  
+  load(file.path(dat_dir, "label_scheme.rda"))
+  
+  df <- readr::read_tsv(file.path(dat_dir, "report.pr_matrix.tsv"))
+  
+  df <- df |>
+    dplyr::rename(
+      prot_acc  = Protein.Group, 
+      prot_accs = Protein.Ids, 
+      genes     = Genes,
+      pep_razor_unique = Proteotypic, 
+      pep_seq      = Stripped.Sequence, 
+      pep_seq_mod  = Modified.Sequence, 
+      pep_exp_z    = Precursor.Charge, 
+      pep_seq_modz = Precursor.Id)
+  
+  # Annotate proteins
+  df[["All Mapped Proteins"]] <- df[["All Mapped Genes"]] <- NULL
+  df[["Protein.Names"]] <- df[["First.Protein.Description"]] <- NULL
+  df <- annotPrn(df, fasta, entrez)
+  
+  # Annotate peptides
+  df <- df |>
+    annotPeppos() |> # pep_start is NA if prot_acc not found in FASTA
+    reloc_col_before("pep_seq", "pep_res_after") |>
+    reloc_col_before("pep_res_before", "pep_seq")
+  
+  df <- df |>
+    dplyr::mutate(
+      pep_seq_mod = ifelse(is.na(pep_seq_mod), pep_seq, pep_seq_mod)) |>
+    add_diann_pepseqmod(use_lowercase_aa) |>
+    dplyr::mutate(pep_seq_modz = paste0(pep_seq_mod, "@", pep_exp_z))
+
+  # df <- df |> dplyr::filter(!duplicated(pep_seq_mod))
+
+  # Update sample IDs
+  nms  <- colnames(df)
+  cols <- dirname(nms) != "."
+  raws <- basename(nms[cols])
+  raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
+  mts  <- match(raws, label_scheme[["RAW_File"]]) 
+  sids <- label_scheme[["Sample_ID"]][mts]
+  
+  # Collapse charge states (requires columns 'I000')
+  colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  df <- groupMZPepZ2(df)
+
+  # Add intensity and log2Ratio fields
+  dfr  <- dfy <- df[, cols, drop = FALSE]
+  dfrz <- dfrn <- dfr <- sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
+    log2() |>
+    dplyr::mutate_all(function (x) replace(x, is.infinite(x), NA_real_))
+  
+  colnames(dfy)  <- paste0("N_", colnames(dfy))
+  colnames(dfr)  <- gsub("^I", "log2_R", names(dfr))
+  colnames(dfrn) <- paste0("N_", colnames(dfr))
+  colnames(dfrz) <- paste0("Z_", colnames(dfr))
+
+  dfy <- dfy |>
+    dplyr::mutate(
+      mean_lint = log10(rowMeans(dfy, na.rm = TRUE)), 
+      mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
+      mean_lint = round(mean_lint, digits = 2L))
+  
+  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  df <- dplyr::bind_cols(df, dfy, dfr, dfrn, dfrz) |>
+    reloc_col_after("mean_lint", "pep_exp_z")
+  
+  df[["pep_seq_modz"]] <- NULL
+  # df[["pep_exp_z"]] <- NULL
+
+  # Add quality columns
+  prot_n_pep <- df[, group_pep_by, drop = FALSE] |>
+    # unique() |>
+    dplyr::group_by(!!rlang::sym(group_pep_by)) |>
+    dplyr::summarise(prot_n_pep = dplyr::n())
+  
+  df <- df |>
+    dplyr::left_join(prot_n_pep, by = group_pep_by) |>
+    reloc_col_after("prot_n_pep", "prot_desc")
+
+  ## Outputs
+  readr::write_tsv(df, file.path(out_path, "Peptide.txt"))
+  readr::write_tsv(prot_n_pep, file.path(out_path, "prot_n_pep.txt"))
+  
+  invisible(df)
+}
+
+
+#' Make DIANN protein table
+#' 
+#' @inheritParams normPSM
+makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene")
+{
+  # also need prot_n_pep
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  dir.create(out_path <- file.path(dat_dir, "Protein"), showWarnings = FALSE)
+  
+  load(file.path(dat_dir, "label_scheme.rda"))
+  load(file.path(dat_dir, "acc_lookup.rda"))
+  
+  if (group_pep_by == "gene") {
+    df <- readr::read_tsv(file.path(dat_dir, "report.gg_matrix.tsv"))
+    
+    df <- df |>
+      dplyr::rename(genes = Genes,) |>
+      dplyr::mutate(gene = gsub(";.*", "", genes)) |>
+      reloc_col_before("gene", "genes")
+  }
+  else if (group_pep_by == "prot_acc") {
+    df <- readr::read_tsv(file.path(dat_dir, "report.pg_matrix.tsv"))
+    
+    df <- df |>
+      dplyr::rename(
+        prot_accs  = Protein.Group, 
+        prot_ids   = Protein.Names, 
+        genes      = Genes,
+        prot_desc  = First.Protein.Description, )
+    
+    df <- df |>
+      dplyr::mutate(
+        prot_acc = gsub(";.*", "", prot_accs), 
+        prot_id = gsub(";.*", "", prot_ids), 
+        gene    = gsub(";.*", "", genes))
+    
+    df <- df |>
+      reloc_col_before("prot_acc", "prot_accs") |>
+      reloc_col_before("prot_id", "prot_ids") |>
+      reloc_col_before("gene", "genes")
+  }
+  
+  nms  <- colnames(df)
+  cols <- dirname(nms) != "."
+  raws <- basename(nms[cols])
+  raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
+  mts  <- match(raws, label_scheme[["RAW_File"]]) 
+  sids <- label_scheme[["Sample_ID"]][mts]
+
+  colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  dfr  <- dfy <- df[, cols, drop = FALSE]
+  dfrz <- dfrn <- dfr <- sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
+    log2() |>
+    dplyr::mutate_all(function (x) replace(x, is.infinite(x), NA_real_))
+  
+  colnames(dfy)  <- paste0("N_", colnames(dfy))
+  colnames(dfr)  <- gsub("^I", "log2_R", names(dfr))
+  colnames(dfrn) <- paste0("N_", colnames(dfr))
+  colnames(dfrz) <- paste0("Z_", colnames(dfr))
+  
+  dfy <- dfy |>
+    dplyr::mutate(
+      mean_lint = log10(rowMeans(dfy, na.rm = TRUE)), 
+      mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
+      mean_lint = round(mean_lint, digits = 2))
+  
+  df <- dplyr::bind_cols(df, dfy, dfr, dfrn, dfrz) |>
+    reloc_col_after("mean_lint", "genes")
+  
+  # Annotation
+  # 'mts' can have NA since DIANN may report additional genes: e.g., 
+  #   common contaminant human "ALB" "CSN1S1" "CTSD" "HBA2" "HBB" "KRT1" ...   
+  #   when searching against mouse FASTA
+  mts <- match(df[[group_pep_by]], acc_lookup[[group_pep_by]])
+  df <- dplyr::bind_cols(acc_lookup[mts, ], df[, -which(names(df) == group_pep_by)])
+  df <- df[!is.na(df[[group_pep_by]]), ]
+
+  # prots <- readr::read_tsv(file.path(dat_dir, "prot_annots.txt"))
+  # mts <- match(df[[group_pep_by]], prots[[group_pep_by]])
+  # df <- dplyr::bind_cols(prots[mts, ], df[, -which(names(df) == group_pep_by)])
+  
+  # prot_n_pep
+  prot_n_pep <- readr::read_tsv(file.path(dat_dir, "Peptide", "prot_n_pep.txt"))
+  df <- df |>
+    dplyr::left_join(prot_n_pep, by = group_pep_by) |>
+    reloc_col_after("prot_n_pep", "prot_acc")
+  
+  ## Outputs
+  readr::write_tsv(df, file.path(out_path, "Protein.txt"))
+  
+  invisible(df)
 }
 
 
