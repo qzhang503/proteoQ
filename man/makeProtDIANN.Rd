@@ -2,9 +2,15 @@
 % Please edit documentation in R/peptable.R
 \name{makeProtDIANN}
 \alias{makeProtDIANN}
-\title{Make DIANN protein table}
+\title{Make DIANN protein table.}
 \usage{
-makeProtDIANN(dat_dir = NULL, group_pep_by = "gene", ...)
+makeProtDIANN(
+  dat_dir = NULL,
+  group_pep_by = "gene",
+  fasta = NULL,
+  add_ibaq = TRUE,
+  ...
+)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
@@ -16,8 +22,15 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{...}{Additional arguments}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
+
+\item{add_ibaq}{Logical; adds iBAQ value or not.}
+
+\item{...}{Additional arguments.}
 }
 \description{
-Make DIANN protein table
+Make DIANN protein table.
 }

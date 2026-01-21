@@ -2,7 +2,7 @@
 % Please edit documentation in R/peptable.R
 \name{makePepDIANN}
 \alias{makePepDIANN}
-\title{Make DIANN peptide table}
+\title{Makes DIANN peptide table.}
 \usage{
 makePepDIANN(
   dat_dir = NULL,
@@ -39,8 +39,8 @@ preparing custom entrez files.}
 will be abbreviated with lower-case and/or \code{^_~}. See the table below
 for details. The default is TRUE.}
 
-\item{...}{Additional arguments}
+\item{...}{Additional arguments.}
 }
 \description{
-Make DIANN peptide table
+Makes DIANN peptide table.
 }

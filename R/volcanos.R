@@ -397,7 +397,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   
   dfw <- lapply(contrast_groups, subset_volcano_df, df = df, 
                 keys = c("pVal", "adjP", "log2Ratio"))
-
+  
   local({
     if (length(dfw) > 1L) {
       ncols <- unlist(lapply(dfw, ncol))
@@ -429,8 +429,9 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
     dplyr::mutate(Index = row_number()) %>%
     data.frame (check.names = FALSE)
   
-  if(is.null(highlights)) 
+  if(is.null(highlights)) {
     dfw_high <- dfw_sub[0, ]
+  }
   else {
     if (!is.list(highlights)) 
       highlights <- list(highlights)
@@ -466,7 +467,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
       dplyr::rename(!!rlang::sym(id) := id) %>%
       dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
   }
-
+  
   dt <- dfw_sub_top20 %>% 
     split(.$Contrast) %>% 
     lapply(`[`, c("Index", id)) %>% 
@@ -528,15 +529,35 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   else {
     ymin <- eval(dots$ymin)
     stopifnot(ymin < ymax)
-  }	
+  }
+  
+  if (FALSE) {
+    p <- ggplot() +
+      geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                 size = 3, colour = "#252525", shape = 20, alpha = .5) +
+      geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                 size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+      geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                 size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+      geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
+      geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
+      geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth = .5) +
+      scale_x_continuous(limits = c(xmin, xmax)) +
+      scale_y_continuous(limits = c(ymin, ymax)) +
+      labs(title = title, x = x_label, y = y_label) +
+      theme
+  }
   
   p <- ggplot() +
     geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 3, colour = "#252525", shape = 20, alpha = .5) +
+               size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
+               alpha = .2, stroke = .5) +
     geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+               size = 2, fill = myPalette[2], color = "white", shape = 21, 
+               alpha = .6, stroke = .5) +
     geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+               size = 2, fill = myPalette[1], color = "white", shape = 21, 
+               alpha = .6, stroke = .5) +
     geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
     geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
     geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth = .5) +
@@ -1104,6 +1125,119 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
       
     })
   }
+}
+
+
+#' Rank plot of protein iBAQ.
+#' 
+#' @param outname The output file name.
+#' @param highlights The protein names to be highlighted.
+#' @param ... Additional arguments passed to \code{ggsave}.
+#' @import dplyr purrr ggplot2 ggrepel
+#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @export
+plot_ibaq <- function(outname = NULL, highlights = NULL, ...) 
+{
+  cytosol <- c("Actb", "Acta1", "Actbl2", "Gapdh") # 
+  pm <- c("Atp1a1")
+  er <- c("Canx", "Calr", "Hspa5")
+  golgi <- c("Golga2", "Golga1")
+  mito <- c("Tomm20", "Vdac1")
+  lyso <- c("Lamp1", "Lamp2", "Ctsd")
+  endosome <- c("Eea1", "Rab5a")
+  nuclear <- c("H4c1", "H2ax", "H1-2")
+  prot_all <- c(cytosol, pm, er, golgi, mito, lyso, endosome, nuclear)
+  
+  highlights <- highlights[!highlights %in% prot_all]
+  
+  dat_dir <- get_gl_dat_dir()
+  df <- readr::read_tsv(file.path(dat_dir, 'iBAQ.txt'))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  if (!all(is.na(label_scheme$Fold_dilute))) {
+    nms <- names(df)
+    cols <- grepl("^iBAQ \\(", nms)
+    names(df)[cols] <- gsub("^iBAQ \\((.*)\\)$", "\\1", nms[cols])
+    
+    sids <- label_scheme$Sample_ID
+    mts <- match(label_scheme$Sample_ID, names(df)[cols])
+    df[, cols] <- mapply(`*`, df[, cols], label_scheme$Fold_dilute[mts])
+  }
+  
+  dfx <- 
+    dplyr::bind_cols(df[, "gene"], y = rowMeans(df[, cols], na.rm = TRUE)) |>
+    dplyr::mutate(gene = reorder(gene, log10(y), FUN = desc)) |>
+    dplyr::arrange(desc(y)) |>
+    dplyr::mutate(rank = dplyr::row_number())
+  
+  dfx_high <- dplyr::bind_rows(
+    dfx[dfx$gene %in% highlights, ],
+    dfx[dfx$gene %in% prot_all, ], 
+  )
+  # dfx_high <- dfx[dfx$gene %in% highlights, ]
+  
+  dfx_high <- dfx_high |>
+    dplyr::mutate(
+      label_group = case_when(
+        gene %in% nuclear ~ "Nuclear", 
+        gene %in% cytosol ~ "Cytosol", 
+        gene %in% pm ~ "PM", 
+        gene %in% er ~ "ER", 
+        gene %in% golgi ~ "Golgi", 
+        gene %in% mito ~ "Mitochondrial", 
+        gene %in% lyso ~ "Lysosome", 
+        gene %in% endosome ~ "Endosome", 
+        # gene %in% highlights ~ "", 
+        TRUE                   ~ "Other"
+      )
+    )
+  
+  ggplot(data = dfx, mapping = aes(x = rank, y = log10(y))) +
+    geom_point(size = .5, fill = "gray", color = "#252525", shape = 21, 
+               alpha = .2, stroke = .25) +
+    geom_point(
+      data = dfx_high,
+      aes(x = rank, y = log10(y)),
+      size = 2, fill = "#D55E00", color = "white", shape = 21, 
+      alpha = .6, stroke = .5
+    ) +
+    geom_text_repel(
+      data = dfx_high,
+      aes(label = gene, color = label_group),
+      size = 3,
+      box.padding = 0.3,
+      point.padding = 0.2,
+      max.overlaps = Inf,
+      segment.size = 0.25,
+      segment.color = "grey70"
+    ) +
+    scale_color_manual(values = c(
+      Mitochondrial = "#4C72B0",   # muted blue
+      Golgi = "#DD8452",   # soft orange
+      ER    = "#55A868",   # muted green
+      Lysosome = "#bcbddc",
+      Nuclear = "#756bb1", 
+      Other    = "red"
+      # Other    = "grey30"
+    )) +
+    guides(color = "none") + 
+    
+    # scale_x_continuous(breaks = scales::breaks_width(1000)) + 
+    # scale_x_continuous(limits = c(xmin, xmax)) +
+    # scale_y_continuous(limits = c(ymin, ymax)) +
+    labs(title = NULL, x = "Rank", y = expression("iBAQ ("*log[10]*")") ) +
+    theme_bw() + theme(
+      # axis.text.x  = element_blank(),
+      # axis.ticks.x = element_blank(),
+      # axis.title.x = element_blank(), 
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+    )
+  
+  ggsave(file.path(dat_dir, "Protein", outname), 
+         dpi = 600, width = 4.5, height = 4)
 }
 
 
