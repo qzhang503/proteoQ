@@ -177,7 +177,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   }
   
   mypalette <- if (is.null(dots$color)) {
-    grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
+    grDevices::colorRampPalette(c("#1f78b4", "white", "#e31a1c"))(n_color)
   }
   else if (is.na(dots$color)) {
     grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
@@ -226,6 +226,17 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
     `colnames<-`(label_scheme$Sample_ID) %>%
     dplyr::select(which(names(.) %in% sample_ids)) %>%
     dplyr::select(as.character(sample_ids)) # ensure the same order
+  
+  # Add pep_start and pep_end
+  add_pep_range <- dots[["add_pep_range"]]
+  
+  if (id %in% c("pep_seq_mod", "pep_seq") && "pep_start" %in% names(df) && 
+      "pep_end" %in% names(df) && isTRUE(add_pep_range)) {
+    pep_ids <- paste0(rownames(df), " (", df$pep_start, ":", df$pep_end, ")")
+    rownames(df) <- df[[id]] <- pep_ids
+  } else {
+    pep_ids <- df[[id]]
+  }
 
   df <- df %>%
     dplyr::select(-grep("log2_R[0-9]{3}", names(.))) %>%
@@ -234,7 +245,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
     `rownames<-`(.[[id]])
   
   rm(list = c("dfR"))
-  
+
   if (!is.null(dots$annotation_row)) {
     dots$annotation_row <- NULL
     warning("Argument `annotation_row` disabled; use `annot_rows` instead.")

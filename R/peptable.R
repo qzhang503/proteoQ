@@ -3069,12 +3069,10 @@ mergePep <- function (
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
-    if (exists(".savecall", envir = environment())) {
-      if (.savecall) {
-        mget(names(formals()), envir = environment(), inherits = FALSE) |>
-          c(dots) |>
-          save_call("mergePep")
-      }
+    if (exists(".saveCall", envir = environment()) && .saveCall) {
+      mget(names(formals()), envir = environment(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("mergePep")
     }, add = TRUE)
 
   # ---
@@ -3345,13 +3343,11 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
-      if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), 
-             inherits = FALSE) %>% 
-          c(dots) %>% 
-          save_call("standPep")
-      }
+    if (exists(".saveCall", envir = rlang::current_env()) && .saveCall) {
+      mget(names(formals()), envir = rlang::current_env(), 
+           inherits = FALSE) %>% 
+        c(dots) %>% 
+        save_call("standPep")
     }, 
     add = TRUE
   )
@@ -3552,12 +3548,10 @@ Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE,
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
-      if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-          c(dots) |>
-          save_call("Pep2Prn")
-      }
+    if (exists(".saveCall", envir = rlang::current_env()) && .saveCall) {
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("Pep2Prn")
     }, add = TRUE)
 
   reload_expts()
@@ -4483,21 +4477,19 @@ find_mbr_ms1files <- function(dat_dir, n_files, abort = FALSE)
 }
 
 
-#' Make DIANN peptide table
+#' Makes DIANN peptide table.
 #' 
 #' @inheritParams normPSM
-#' @param ... Additional arguments
+#' @param ... Additional arguments.
 #' @export
 makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
                           entrez = NULL, use_lowercase_aa  = FALSE, ...)
 {
   on.exit(
-    if (exists(".saveCall", envir = environment())) {
-      if (.saveCall) {
-        mget(names(formals()), envir = environment(), inherits = FALSE) |>
-          c(dots) |>
-          save_call("makePepDIANN")
-      }
+    if (exists(".saveCall", envir = environment()) && .saveCall) {
+      mget(names(formals()), envir = environment(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("makePepDIANN")
     }, add = TRUE)
   
   dots <- rlang::enexprs(...)
@@ -4510,13 +4502,21 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     stop("Argument 'fasta' cannot be NULL.")
   }
   
-  dir.create(out_path <- file.path(dat_dir, "Peptide"), showWarnings = FALSE)
-  
-  load(file.path(dat_dir, "label_scheme.rda"))
-  
-  df <- readr::read_tsv(file.path(dat_dir, "report.pr_matrix.tsv"))
-  
-  df <- df |>
+  if (!dir.exists(out_path <- file.path(dat_dir, "Peptide"))) {
+    dir.create(out_path, showWarnings = FALSE)
+  }
+
+  if (!file.exists(fn_meta <- file.path(dat_dir, "label_scheme_full.rda"))) {
+    stop("File not found: '", fn_meta, "'. Run 'load_expts' first.")
+  }
+  load(fn_meta)
+
+  if (!file.exists(fn_diann <- file.path(dat_dir, "report.pr_matrix.tsv"))) {
+    stop("File not found: '", fn_diann, "'. Copy the file to ", dat_dir, ".")
+  }
+
+  df <- fn_diann |>
+    readr::read_tsv() |>
     dplyr::rename(
       prot_acc  = Protein.Group, 
       prot_accs = Protein.Ids, 
@@ -4530,11 +4530,11 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   # Annotate proteins
   df[["All Mapped Proteins"]] <- df[["All Mapped Genes"]] <- NULL
   df[["Protein.Names"]] <- df[["First.Protein.Description"]] <- NULL
-  df <- annotPrn(df, fasta, entrez)
+  df <- annotPrn(df, fasta = fasta, entrez = entrez)
   
   # Annotate peptides
   df <- df |>
-    annotPeppos() |> # pep_start is NA if prot_acc not found in FASTA
+    annotPeppos() |> # NA pep_start if 'prot_acc' not found in FASTA
     reloc_col_before("pep_seq", "pep_res_after") |>
     reloc_col_before("pep_res_before", "pep_seq")
   
@@ -4551,14 +4551,18 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   cols <- dirname(nms) != "."
   raws <- basename(nms[cols])
   raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  mts  <- match(raws, label_scheme[["RAW_File"]]) 
-  sids <- label_scheme[["Sample_ID"]][mts]
-  
-  # Collapse charge states (requires columns 'I000')
+  mts  <- match(raws, label_scheme_full[["RAW_File"]])
+  sids <- label_scheme_full[["Sample_ID"]][mts]
   colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  
+  # Merge duplicated LCMS
+  df <- aggrLCMS_DIANN(df)
+
+  # Collapse charge states (requires columns 'I000')
   df <- groupMZPepZ2(df)
 
   # Add intensity and log2Ratio fields
+  cols <- grepl("^I000 \\(", colnames(df))
   dfr  <- dfy <- df[, cols, drop = FALSE]
   dfrz <- dfrn <- dfr <- sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
     log2() |>
@@ -4602,47 +4606,61 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 }
 
 
-#' Make DIANN protein table
+#' Make DIANN protein table.
 #' 
 #' @inheritParams normPSM
-#' @param ... Additional arguments
+#' @param add_ibaq Logical; adds iBAQ value or not.
+#' @param ... Additional arguments.
 #' @export
-makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
+makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
+                           add_ibaq = TRUE, ...)
 {
   on.exit(
-    if (exists(".saveCall", envir = environment())) {
-      if (.saveCall) {
-        mget(names(formals()), envir = environment(), inherits = FALSE) |>
-          c(dots) |>
-          save_call("makeProtDIANN")
-      }
+    if (exists(".saveCall", envir = environment()) && .saveCall) {
+      mget(names(formals()), envir = environment(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("makeProtDIANN")
     }, add = TRUE)
   
   dots <- rlang::enexprs(...)
-  
-  # also need prot_n_pep
   
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
   }
   
-  dir.create(out_path <- file.path(dat_dir, "Protein"), showWarnings = FALSE)
+  if (!dir.exists(out_path <- file.path(dat_dir, "Protein"))) {
+    dir.create(out_path, showWarnings = FALSE)
+  }
   
-  load(file.path(dat_dir, "label_scheme.rda"))
-  load(file.path(dat_dir, "acc_lookup.rda"))
+  if (!file.exists(fn_meta <- file.path(dat_dir, "label_scheme_full.rda"))) {
+    stop("File not found: '", fn_meta, "'. \nRun 'load_expts' first.")
+  }
+
+  if (!file.exists(fn_acc <- file.path(dat_dir, "acc_lookup.rda"))) {
+    stop("File not found: '", fn_acc, "'. Run 'makePepDIANN' first.")
+  }
   
+  load(fn_meta)
+  load(fn_acc)
+
   if (group_pep_by == "gene") {
-    df <- readr::read_tsv(file.path(dat_dir, "report.gg_matrix.tsv"))
+    if (!file.exists(fn_prot <- file.path(dat_dir, "report.gg_matrix.tsv"))) {
+      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+    }
     
-    df <- df |>
+    df <- fn_prot |>
+      readr::read_tsv() |>
       dplyr::rename(genes = Genes,) |>
       dplyr::mutate(gene = gsub(";.*", "", genes)) |>
       reloc_col_before("gene", "genes")
   }
   else if (group_pep_by == "prot_acc") {
-    df <- readr::read_tsv(file.path(dat_dir, "report.pg_matrix.tsv"))
+    if (!file.exists(fn_prot <- file.path(dat_dir, "report.pg_matrix.tsv"))) {
+      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+    }
     
-    df <- df |>
+    df <- fn_prot |>
+      readr::read_tsv() |>
       dplyr::rename(
         prot_accs  = Protein.Group, 
         prot_ids   = Protein.Names, 
@@ -4652,8 +4670,8 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
     df <- df |>
       dplyr::mutate(
         prot_acc = gsub(";.*", "", prot_accs), 
-        prot_id = gsub(";.*", "", prot_ids), 
-        gene    = gsub(";.*", "", genes))
+        prot_id  = gsub(";.*", "", prot_ids), 
+        gene     = gsub(";.*", "", genes))
     
     df <- df |>
       reloc_col_before("prot_acc", "prot_accs") |>
@@ -4665,12 +4683,16 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
   cols <- dirname(nms) != "."
   raws <- basename(nms[cols])
   raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  mts  <- match(raws, label_scheme[["RAW_File"]]) 
-  sids <- label_scheme[["Sample_ID"]][mts]
-
+  mts  <- match(raws, label_scheme_full[["RAW_File"]]) 
+  sids <- label_scheme_full[["Sample_ID"]][mts]
   colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  
+  df <- aggrLCMS_DIANN(df)
+  
+  cols <- grepl("^I000 \\(", colnames(df))
   dfr  <- dfy <- df[, cols, drop = FALSE]
-  dfrz <- dfrn <- dfr <- sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
+  dfrz <- dfrn <- dfr <- 
+    sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
     log2() |>
     dplyr::mutate_all(function (x) replace(x, is.infinite(x), NA_real_))
   
@@ -4683,7 +4705,7 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
     dplyr::mutate(
       mean_lint = log10(rowMeans(dfy, na.rm = TRUE)), 
       mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
-      mean_lint = round(mean_lint, digits = 2))
+      mean_lint = round(mean_lint, digits = 2L))
   
   df <- dplyr::bind_cols(df, dfy, dfr, dfrn, dfrz) |>
     reloc_col_after("mean_lint", "genes")
@@ -4693,18 +4715,56 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
   #   common contaminant human "ALB" "CSN1S1" "CTSD" "HBA2" "HBB" "KRT1" ...   
   #   when searching against mouse FASTA
   mts <- match(df[[group_pep_by]], acc_lookup[[group_pep_by]])
-  df <- dplyr::bind_cols(acc_lookup[mts, ], df[, -which(names(df) == group_pep_by)])
+  df <- dplyr::bind_cols(
+    acc_lookup[mts, ], 
+    df[, -which(names(df) == group_pep_by)])
   df <- df[!is.na(df[[group_pep_by]]), ]
 
-  # prots <- readr::read_tsv(file.path(dat_dir, "prot_annots.txt"))
-  # mts <- match(df[[group_pep_by]], prots[[group_pep_by]])
-  # df <- dplyr::bind_cols(prots[mts, ], df[, -which(names(df) == group_pep_by)])
-  
-  # prot_n_pep
   prot_n_pep <- readr::read_tsv(file.path(dat_dir, "Peptide", "prot_n_pep.txt"))
   df <- df |>
     dplyr::left_join(prot_n_pep, by = group_pep_by) |>
     reloc_col_after("prot_n_pep", "prot_acc")
+  
+  # iBAQ
+  if (add_ibaq) {
+    if (is.null(fasta)) {
+      warning("No iBAQ calculation at 'fasta = NULL'.")
+      add_ibaq <- FALSE
+    }
+  }
+  
+  if (add_ibaq) {
+    pep_cts <- lapply(fasta, function (fa) {
+      peps <- mzion:::split_fastaseqs(
+        fasta = fa, enzyme = "trypsin_p", max_miss = 0L)
+      
+      lapply(peps, function (ps) {
+        ps <- ps[[2]]
+        lens <- nchar(ps)
+        sum(lens >= 7 & lens <= 40) # - 1L # "-MDGPTR"
+      })
+    }) |>
+      unlist()
+    
+    # df[["prot_acc"]] is unique too at group_pep_by = "gene"
+    df_ibaq <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 1, 
+                     pep_cts[match(df[["prot_acc"]], names(pep_cts))], "/")
+    colnames(df_ibaq) <- gsub("^N_I000", "iBAQ", colnames(df_ibaq))
+    df_ibaq <- dplyr::bind_cols(df[, group_pep_by, drop = FALSE], df_ibaq)
+    readr::write_tsv(df_ibaq, file.path(dat_dir, "iBAQ.txt"))
+    
+    if (FALSE && group_pep_by == "gene") {
+      n_tryptics <- pep_cts[match(df[["prot_acc"]], names(pep_cts))]
+      n_tryptics <- data.frame(prot_acc = names(n_tryptics), N. = n_tryptics)
+      n_tryptics <- n_tryptics |>
+        dplyr::left_join(acc_lookup[, c("prot_acc", "gene")], by = "prot_acc") |>
+        dplyr::select(-prot_acc) |>
+        dplyr::group_by(gene) |>
+        dplyr::summarise(N. = mean(N., na.rm = TRUE))
+
+      # change names to gene
+    }
+  }
   
   ## Outputs
   readr::write_tsv(df, file.path(out_path, "Protein.txt"))
@@ -4713,5 +4773,45 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
   
   invisible(df)
 }
+
+
+
+#' Aggregates DIANN data from multiple LCMS injections.
+#' 
+#' @param df A DIANN table.
+aggrLCMS_DIANN <- function (df)
+{
+  cols <- grepl("^I000 \\(", colnames(df))
+  dfx  <- df[, cols, drop = FALSE]
+  nms  <- colnames(dfx)
+  keys <- table(nms)
+  
+  if (!any(keys > 1L)) {
+    return(df)
+  }
+  
+  ans  <- data.frame(matrix(nrow = nrow(df), ncol = 0L))
+  knms <- names(keys)
+  
+  for (i in seq_along(keys)) {
+    key <- keys[i]
+    knm <- names(key)
+    dfi <- dfx[, nms == knm, drop = FALSE]
+    
+    # val <- keys[[i]]
+    # knm <- knms[[i]]
+    # dfi <- dfx[, nms == knm, drop = FALSE]
+    
+    if (key == 1L) {
+      ans <- bind_cols(ans, dfi)
+      next
+    }
+    
+    ans <- bind_cols(ans, tibble(!!knm := rowMeans(dfi)))
+  }
+  
+  dplyr::bind_cols(df[, !cols, drop = FALSE], ans)
+}
+
 
 

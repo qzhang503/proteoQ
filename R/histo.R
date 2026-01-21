@@ -226,7 +226,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
   
   p <- ggplot() +
     geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = col_cut),
-                   color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
+                   color = "white", alpha = alpha, binwidth = binwidth, 
+                   linewidth = .1) +
     scale_fill_brewer(palette = "Spectral", direction = -1) +
     labs(title = "", x = x_label, y = expression("Frequency")) +
     scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
@@ -236,8 +237,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     theme
   
   if (show_curves) {
-    p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
-                       size = .2) +
+    p <- p + geom_line(data = fit, 
+                       mapping = aes(x = x, y = value, colour = variable), 
+                       linewidth = .2) +
       scale_colour_manual(values = myPalette, name = "Gaussian",
                           breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
                           labels = nm_full)

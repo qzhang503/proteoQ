@@ -125,7 +125,19 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   dir.create(file.path(dat_dir, "Protein/GSVA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), 
+    error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(id)) {
+    id <- "gene"
+  }
   
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)

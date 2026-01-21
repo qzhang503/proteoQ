@@ -120,12 +120,10 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   options(warn = 1)
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
-      if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-          c(dots) %>% 
-          save_call("standPrn")
-      }
+    if (exists(".saveCall", envir = rlang::current_env()) && .saveCall) {
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("standPrn")
     }, 
     add = TRUE
   )

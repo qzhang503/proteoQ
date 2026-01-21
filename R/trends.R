@@ -45,9 +45,10 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
                        scale_log2r, complete_cases, impute_na, 
                        filepath, filename, anal_type, ...) 
 {
-  if (!nrow(label_scheme_sub))
+  if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
-  
+  }
+
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
   if (complete_cases)
@@ -88,6 +89,11 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   local({
     grps <- label_scheme_sub[[as.character(col_group)]]
     ords <- label_scheme_sub[[as.character(col_order)]]
+    
+    if (all(is.na(ords))) {
+      stop("Need to specify the order of data groups.")
+    }
+    
     grp_nas <- is.na(grps)
     ord_nas <- is.na(ords)
     
@@ -95,7 +101,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
       nas <- tibble::tibble(
         !!col_group := grps, !!col_order := ords,
       )
-      warning("Mismatches in metadata columns: \n", )
+      warning("Mismatches in metadata columns: \n")
       print(nas)
     }
     
@@ -113,22 +119,22 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  df_mean <- t(df_num) %>%
-    data.frame(check.names = FALSE) %>%
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
-    dplyr::filter(!is.na(!!col_group)) %>%
-    dplyr::mutate(Group := !!col_group) %>% 
+  df_mean <- t(df_num) |>
+    data.frame(check.names = FALSE) |>
+    tibble::rownames_to_column("Sample_ID") |>
+    dplyr::left_join(label_scheme_sub, by = "Sample_ID") |>
+    dplyr::filter(!is.na(!!col_group)) |>
+    dplyr::mutate(Group := !!col_group) |>
     dplyr::group_by(Group)
   
   df_mean <- suppressWarnings(
-    df_mean %>%
+    df_mean |>
       dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
   )
   
   if (rlang::as_string(col_order) %in% names(df_mean)) {
-    df_mean <- df_mean %>%
-      dplyr::arrange(!!col_order) %>%
+    df_mean <- df_mean |>
+      dplyr::arrange(!!col_order) |>
       dplyr::select(-col_order) %>%
       dplyr::select(-which(names(.) %in% cols_lsnum))
   }
@@ -390,7 +396,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   ins <- list.files(path = filepath, pattern = "Trend_[ONZ]_.*nclust\\d+.*\\.txt$")
   
   if (!length(ins)) 
-    stop("No inputs under ", filepath, call. = FALSE)
+    stop("No inputs under ", filepath)
   
   if (is.null(df2)) {
     ins <- if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
@@ -725,13 +731,13 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_pepTrend"))
     } 
     else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_prnTrend"))
     }
     , add = TRUE
@@ -743,8 +749,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   
   check_dots(c("id", "df2", "anal_type"), ...)
   
-  purrr::walk(formals(anal_prnTrend)[["choice"]] %>% eval(), 
-              ~ check_formalArgs(anal_prnTrend, !!.x))
+  purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
+              function (x) check_formalArgs(anal_prnTrend, !!x))
   
   choice <- rlang::enexpr(choice)
   choice <- if (length(choice) > 1L) "cmeans" else rlang::as_string(choice)
@@ -758,16 +764,27 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   dir.create(file.path(get_gl_dat_dir(), "Protein/Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), 
+    error = function(e) NA)
   
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(id)) {
+    id <- "gene"
+  }
+
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-  col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
+  col_select  <- rlang::enexpr(col_select)
+  col_group   <- rlang::enexpr(col_group)
+  col_order   <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
@@ -912,7 +929,19 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Protein/Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), 
+    error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(id)) {
+    id <- "gene"
+  }
   
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
