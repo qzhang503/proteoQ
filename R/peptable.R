@@ -4486,9 +4486,22 @@ find_mbr_ms1files <- function(dat_dir, n_files, abort = FALSE)
 #' Make DIANN peptide table
 #' 
 #' @inheritParams normPSM
+#' @param ... Additional arguments
+#' @export
 makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
-                          entrez = NULL, use_lowercase_aa  = FALSE)
+                          entrez = NULL, use_lowercase_aa  = FALSE, ...)
 {
+  on.exit(
+    if (exists(".saveCall", envir = environment())) {
+      if (.saveCall) {
+        mget(names(formals()), envir = environment(), inherits = FALSE) |>
+          c(dots) |>
+          save_call("makePepDIANN")
+      }
+    }, add = TRUE)
+  
+  dots <- rlang::enexprs(...)
+  
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
   }
@@ -4583,6 +4596,8 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   readr::write_tsv(df, file.path(out_path, "Peptide.txt"))
   readr::write_tsv(prot_n_pep, file.path(out_path, "prot_n_pep.txt"))
   
+  .saveCall <- TRUE
+  
   invisible(df)
 }
 
@@ -4590,8 +4605,21 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 #' Make DIANN protein table
 #' 
 #' @inheritParams normPSM
-makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene")
+#' @param ... Additional arguments
+#' @export
+makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", ...)
 {
+  on.exit(
+    if (exists(".saveCall", envir = environment())) {
+      if (.saveCall) {
+        mget(names(formals()), envir = environment(), inherits = FALSE) |>
+          c(dots) |>
+          save_call("makeProtDIANN")
+      }
+    }, add = TRUE)
+  
+  dots <- rlang::enexprs(...)
+  
   # also need prot_n_pep
   
   if (is.null(dat_dir)) {
@@ -4680,6 +4708,8 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene")
   
   ## Outputs
   readr::write_tsv(df, file.path(out_path, "Protein.txt"))
+  
+  .saveCall <- TRUE
   
   invisible(df)
 }

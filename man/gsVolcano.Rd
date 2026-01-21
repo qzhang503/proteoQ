@@ -7,9 +7,11 @@
 gsVolcano(
   df2 = NULL,
   df = NULL,
+  id = "gene",
   contrast_groups = NULL,
   gsea_key = "term",
   gsets = NULL,
+  id_gspa = "entrez",
   theme = NULL,
   fml_nm = NULL,
   filepath = NULL,
@@ -41,11 +43,17 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{contrast_groups}{The contrast groups defined under a formula at \code{fml_nm}.}
 
 \item{gsea_key}{Character string; the column key indicating the terms of gene sets.}
 
 \item{gsets}{The gene sets.}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
@@ -72,19 +80,19 @@ plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{show_sig}{Character string indicating the type of significance values to
-be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
+be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 
 \item{gspval_cutoff}{Numeric value or vector for uses with
-\code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
+\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals} less
 significant than the threshold will be excluded from volcano plot
 visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector for uses with
-\code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
+\code{\link{prnGSPAMap}}. \code{Gene sets} with absolute enrichment
 \code{log2FC} less than the threshold will be excluded from volcano plot
 visualization. The default magnitude is \code{log2(1.2) } for all formulas
 matched to or specified in argument \code{fml_nms}. Formula-specific

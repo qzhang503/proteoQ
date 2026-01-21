@@ -9,7 +9,8 @@ makePepDIANN(
   group_pep_by = "gene",
   fasta = NULL,
   entrez = NULL,
-  use_lowercase_aa = FALSE
+  use_lowercase_aa = FALSE,
+  ...
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ preparing custom entrez files.}
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid residues
 will be abbreviated with lower-case and/or \code{^_~}. See the table below
 for details. The default is TRUE.}
+
+\item{...}{Additional arguments}
 }
 \description{
 Make DIANN peptide table

@@ -19,6 +19,7 @@ fml_gspa(
   df,
   col_ind,
   id,
+  id_gspa,
   gsets,
   label_scheme_sub,
   complete_cases,
@@ -108,6 +109,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
 
 \item{id}{Currently only "entrez".}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 
 \item{gsets}{The gene sets.}
 

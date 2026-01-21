@@ -6,6 +6,7 @@
 \usage{
 info_anal(
   id = gene,
+  id_gspa = "entrez",
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
@@ -34,6 +35,9 @@ info_anal(
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in

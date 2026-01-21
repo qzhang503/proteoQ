@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{byfml_gspahm}
 \alias{byfml_gspahm}
-\title{A helper function for gspaHM by formula names}
+\title{A helper function for prnGSPAMap by formula names}
 \usage{
 byfml_gspahm(
   fml_nm,
@@ -62,5 +62,5 @@ xmin)/80}. \cr \code{ncol}, the number of columns; the default is 1. \cr
 "fixed" and the alternative is "free".}
 }
 \description{
-A helper function for gspaHM by formula names
+A helper function for prnGSPAMap by formula names
 }

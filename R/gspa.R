@@ -14,16 +14,17 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
                      min_size = 10, max_size = Inf, 
                      min_delta = 4, min_greedy_size = 1, 
                      use_adjP = FALSE, 
-                     fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) 
+                     fml_nms = NULL, df = NULL, id_gspa = "entrez", 
+                     filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_pepGSPA"))
     } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_prnGSPA"))
     }, 
     add = TRUE
@@ -36,13 +37,27 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
   dir.create(file.path(dat_dir, "Peptide/GSPA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_call_arg(normPSM, group_psm_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), 
+    error = function(e) NA)
   
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_psm_by), 
+      error = function(e) NA)
+  }
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  if (is.na(id)) {
+    id <- "pep_seq_mod"
+  }
+
+  stopifnot(
+    rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  
+  id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
+
+  scale_log2r <- 
+    match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -70,26 +85,27 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
   
   info_anal(df = !!df, 
             id = !!id, 
+            id_gspa = id_gspa, 
             filepath = !!filepath, 
             filename = !!filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            anal_type = "GSPA")(gset_nms = gset_nms, 
-                                var_cutoff = 1000, 
-                                pval_cutoff = pval_cutoff, 
-                                logFC_cutoff = logFC_cutoff, 
-                                gspval_cutoff = gspval_cutoff, 
-                                gslogFC_cutoff = gslogFC_cutoff,
-                                min_size = min_size, 
-                                max_size = max_size, 
-                                min_delta = min_delta, 
-                                min_greedy_size = min_greedy_size, 
-                                use_adjP = use_adjP, 
-                                method = method, 
-                                !!!dots)
+            anal_type = "GSPA")(
+              gset_nms = gset_nms, 
+              var_cutoff = 1000, 
+              pval_cutoff = pval_cutoff, 
+              logFC_cutoff = logFC_cutoff, 
+              gspval_cutoff = gspval_cutoff, 
+              gslogFC_cutoff = gslogFC_cutoff,
+              min_size = min_size, 
+              max_size = max_size, 
+              min_delta = min_delta, 
+              min_greedy_size = min_greedy_size, 
+              use_adjP = use_adjP, 
+              method = method, 
+              !!!dots)
 }
-
 
 
 #'GSPA of protein data
@@ -129,6 +145,8 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
 #'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
 #'  custom data bases, follow the same format of list as \code{GO} or
 #'  \code{MSig}.
+#'@param id_gspa Character string; the ID type used in GSPA. The default is
+#'  \code{entrez}.
 #'@param method Character string or vector; the method to assess the p-values of
 #'  GSPA. The default is \code{mean} and the alternative is \code{limma}. See
 #'  also section \code{Details} for the calculations.
@@ -192,67 +210,68 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 #'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{prnHM}} for the format of \code{arrange_} statements.
-#'@import dplyr ggplot2 
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@import dplyr ggplot2
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@example inst/extdata/examples/prnGSPA_.R
 #'
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
+#'\code{\link{purgePep}} for extended examples in data purging \cr
+#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+#'histogram visualization. \cr \code{\link{extract_raws}} and
+#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'
+#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'missing value imputation \cr
+#'
+#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'analysis by protein significance pVals \cr \code{\link{prnGSPAMap}} for mapping
+#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+#'and visualization \cr
+#'
+#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
+#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'
+#'\emph{Column keys in PSM, peptide and protein outputs} \cr
+#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
@@ -262,17 +281,18 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
                      min_size = 10, max_size = Inf, 
                      min_delta = 4, min_greedy_size = 1, 
                      use_adjP = FALSE, 
-                     fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) 
+                     fml_nms = NULL, df = NULL, id_gspa = "entrez", 
+                     filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_pepGSPA"))
     } 
     else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-        c(rlang::enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+        c(rlang::enexprs(...)) |>
         save_call(paste0("anal", "_prnGSPA"))
     }, 
     add = TRUE
@@ -285,13 +305,25 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
   dir.create(file.path(dat_dir, "Protein/GSPA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), 
+    error = function(e) NA)
   
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(id)) {
+    id <- "gene"
+  }
+  
+  stopifnot(
+    rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -319,24 +351,26 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
   
   info_anal(df = !!df, 
             id = !!id, 
+            id_gspa = id_gspa, 
             filepath = !!filepath, 
             filename = !!filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            anal_type = "GSPA")(gset_nms = gset_nms, 
-                                var_cutoff = 1000, 
-                                pval_cutoff = pval_cutoff, 
-                                logFC_cutoff = logFC_cutoff, 
-                                gspval_cutoff = gspval_cutoff, 
-                                gslogFC_cutoff = gslogFC_cutoff,
-                                min_size = min_size, 
-                                max_size = max_size, 
-                                min_delta = min_delta, 
-                                min_greedy_size = min_greedy_size, 
-                                use_adjP = use_adjP, 
-                                method = method, 
-                                !!!dots)
+            anal_type = "GSPA")(
+              gset_nms = gset_nms, 
+              var_cutoff = 1000, 
+              pval_cutoff = pval_cutoff, 
+              logFC_cutoff = logFC_cutoff, 
+              gspval_cutoff = gspval_cutoff, 
+              gslogFC_cutoff = gslogFC_cutoff,
+              min_size = min_size, 
+              max_size = max_size, 
+              min_delta = min_delta, 
+              min_greedy_size = min_greedy_size, 
+              use_adjP = use_adjP, 
+              method = method, 
+              !!!dots)
 }
 
 
@@ -355,7 +389,8 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
 #'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% is_greater_than not 
-gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
+gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez", 
+                     label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      filepath = NULL, filename = NULL, 
                      gset_nms = "go_sets", var_cutoff = 0.5, 
@@ -382,47 +417,43 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      min_greedy_size), 
                    rlang::is_double, logical(1L)))
   
-  if (!nrow(label_scheme_sub))
+  if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
-  
-  if (!"entrez" %in% names(df))
+  }
+
+  if (!"entrez" %in% names(df)) {
     stop("Column \"entrez\" not found.")
-  
-  if (all(is.na(df[["entrez"]])))
+  }
+
+  if (all(is.na(df[["entrez"]]))) {
     stop("All values are NA under the column `entrez` in the input data.")
+  }
 
-  id <- rlang::as_string(rlang::enexpr(id))
-  dots = rlang::enexprs(...)
-  fmls <- dots %>% .[grepl("^\\s*~", .)]
-  dots <- dots %>% .[! names(.) %in% names(fmls)]
+  id   <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
+  fmls <- dots[grepl("^\\s*~", dots)]
+  dots <- dots[!names(dots) %in% names(fmls)]
 
-  filter_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  arrange_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^arrange_", names(.))]
-  
-  select_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^select_", names(.))]
-  
-  dots <- dots %>% 
-    .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  select_dots  <- lang_dots[grepl("^select_", names(lang_dots))]
+  dots         <- dots[!dots %in% c(filter_dots, arrange_dots, select_dots)]
 
-  df <- df %>% 
-    filters_in_call(!!!filter_dots) %>% 
+  df <- df |>
+    filters_in_call(!!!filter_dots) |>
     arrangers_in_call(!!!arrange_dots)
   
-  if (!nrow(df))
-    stop("No data available after row filtration.", call. = FALSE)
+  if (!nrow(df)) {
+    stop("No data available after row filtration.")
+  }
 
-  if (!length(fmls))
-    stop("Formula(s) of contrasts not available.", call. = FALSE)
+  if (!length(fmls)) {
+    stop("Formula(s) of contrasts not available.")
+  }
 
   species <- unique(df$species) %>% .[!is.na(.)] %>% as.character()
-  gsets <- load_dbs(gset_nms = gset_nms, species = species)
+  gsets   <- load_dbs(gset_nms = gset_nms, species = species)
   
   fml_nms <- names(df) %>% 
     .[grepl("pVal\\s*\\(", .)] %>% 
@@ -430,8 +461,8 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     unique() %>% 
     .[. %in% names(fmls)]
   
-  fmls <- fmls %>% .[names(.) %in% fml_nms]
-  fml_nms <- fml_nms %>% .[purrr::map_dbl(., ~ which(.x == names(fmls)))]
+  fmls <- fmls[names(fmls) %in% fml_nms]
+  fml_nms <- fml_nms[fml_nms %in% names(fmls)]
 
   if (!length(fml_nms)) {
     stop("No formula matached; ", 
@@ -441,31 +472,34 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   # Note: wrong number of arguments to '>' at devtools building of a package
   # (https://github.com/Mouse-Imaging-Centre/RMINC/issues/226)
   col_ind <- fml_nms %>% 
-    purrr::map(~ grepl(paste0("^", .x, "\\."), names(df))) %>%
+    lapply(function (x) grepl(paste0("^", x, "\\."), names(df))) %>%
     `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
     magrittr::is_greater_than(0)
   
-  stopifnot(sum(col_ind) > 0L)
+  if (!sum(col_ind)) {
+    stop("No matching columns found for the given formula(s).")
+  }
 
   switch(anal_type,
-         GSPA = purrr::pwalk(list(fmls, 
-                                  fml_nms, 
-                                  pval_cutoff, 
-                                  logFC_cutoff, 
-                                  gspval_cutoff, 
-                                  gslogFC_cutoff, 
-                                  min_size, 
-                                  max_size, 
-                                  min_delta, 
-                                  min_greedy_size, 
-                                  method
-         ), 
+         GSPA = purrr::pwalk(
+           list(fmls, 
+                fml_nms, 
+                pval_cutoff, 
+                logFC_cutoff, 
+                gspval_cutoff, 
+                gslogFC_cutoff, 
+                min_size, 
+                max_size, 
+                min_delta, 
+                min_greedy_size, 
+                method), 
          fml_gspa, 
          df = df, 
          col_ind = col_ind, 
          id = !!id, 
+         id_gspa = id_gspa,
          gsets = gsets, 
          label_scheme_sub = label_scheme_sub, 
          complete_cases = complete_cases, 
@@ -474,16 +508,17 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
          filename = filename, 
          use_adjP = use_adjP, 
          !!!filter_dots), 
-         GSEA = purrr::pwalk(list(fmls, 
-                                  fml_nms, 
-                                  var_cutoff, 
-                                  pval_cutoff, 
-                                  logFC_cutoff, 
-                                  gspval_cutoff, 
-                                  gslogFC_cutoff, 
-                                  min_size, 
-                                  max_size
-         ), 
+         
+         GSEA = purrr::pwalk(
+           list(fmls, 
+                fml_nms, 
+                var_cutoff, 
+                pval_cutoff, 
+                logFC_cutoff, 
+                gspval_cutoff, 
+                gslogFC_cutoff, 
+                min_size, 
+                max_size), 
          fml_gsea, 
          df = df, 
          col_ind = col_ind, 
@@ -513,10 +548,10 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #' @inheritParams gsVolcano
 #' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, 
-                      gspval_cutoff, gslogFC_cutoff, 
+fml_gspa <- function (fml, fml_nm, 
+                      pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, method, 
-                      df, col_ind, id, gsets, 
+                      df, col_ind, id, id_gspa, gsets, 
                       label_scheme_sub, complete_cases, scale_log2r, 
                       filepath, filename, use_adjP = FALSE, ...) 
 {
@@ -528,38 +563,40 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
       save_call(paste0(fn_prefix, "@", fml_nm))
   )
   
-  if (!length(gsets))
-    stop("Zero entries in \"gsets\".")
+  if (!length(gsets)) {
+    stop("No gene sets available.")
+  }
 
-  dir.create(file.path(filepath, fml_nm), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(filepath, fml_nm), recursive = TRUE, 
+             showWarnings = FALSE)
 
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  df <- df %>% 
-    prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
+  df <- df |>
+    prep_gspa(id = id_gspa, fml_nm = fml_nm, col_ind = col_ind, 
               pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
               use_adjP = use_adjP) 
   
   if (complete_cases) {
     df <- df[complete.cases(df), ]
-    
-    nms <- names(df)
-    
-    if (length(nms)) 
+
+    if (length(nms <- names(df))) {
       message("Complete cases against columns: ", paste(nms, collapse = ", "))
+    }
 
     rm(list = "nms")
   }
   
-  df <- df %>% 
-    dplyr::mutate(p_val = -log10(p_val)) %>% 
-    dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
-    dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) %>% 
+  df <- df |>
+    dplyr::mutate(p_val = -log10(p_val)) |>
+    dplyr::mutate(valence = ifelse(log2Ratio > 0, "pos", "neg")) |>
+    dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) |>
     tidyr::complete(entrez, contrast, valence)
   
   # do not re-`arrange` df, df_sub for limma after this point
-  df <- df %>% dplyr::arrange(entrez, contrast, valence)
+  df <- df |> 
+    dplyr::arrange(entrez, contrast, valence)
 
   gsets <- gsets %>% 
     .[!grepl("molecular_function$", names(.))] %>% 
@@ -569,14 +606,14 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
     .[purrr::map_lgl(., ~ length(.x) <= max_size)]
   
   res_pass <- local({
-    contrast_groups <- unique(df$contrast) %>% as.character()
+    contrast_groups <-  as.character(unique(df$contrast))
     
     contrast_table <- tibble::tibble(
       contrast = rep(contrast_groups, 2), 
-      valence = rep(c("neg", "pos"), length(contrast_groups)), 
-      p_val = rep(-log10(0.05), 2 * length(contrast_groups))) %>% 
+      valence  = rep(c("neg", "pos"), length(contrast_groups)), 
+      p_val    = rep(-log10(0.05), 2 * length(contrast_groups))) |>
       dplyr::mutate(contrast = factor(contrast, levels = levels(df$contrast)), 
-                    valence = factor(valence, levels(df$valence)))
+                    valence  = factor(valence, levels(df$valence)))
     
     res <- switch(method, 
                   limma = purrr::map(gsets, 
@@ -597,32 +634,33 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
 
     idx <- purrr::map_dbl(res, is.null)
     
-    if (all(idx == 1L))
+    if (all(idx == 1L)) {
       stop("No GSPA results available.")
+    }
 
-    res <- res[!idx] %>% 
-      do.call(rbind, .) %>% 
-      tibble::rownames_to_column("term") %>% 
+    res <- do.call(rbind, res[!idx]) |>
+      tibble::rownames_to_column("term") |>
       dplyr::mutate(term = factor(term)) %>% 
-      dplyr::mutate_at(.vars = grep("^pVal\\s+\\(", names(.)), ~ abs(.x)) %>% 
-      dplyr::group_by(term) %>% 
-      dplyr::arrange(term) %>% 
+      dplyr::mutate_at(.vars = grep("^pVal\\s+\\(", names(.)), function (x) abs(x)) |>
+      dplyr::group_by(term) |>
+      dplyr::arrange(term) |>
       data.frame(check.names = FALSE) 
     
     pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], 
-                       ~ .x <= gspval_cutoff) %>%
-      dplyr::bind_cols() %>%
-      rowSums() %>%
+                       function (x) x <= gspval_cutoff) |>
+      dplyr::bind_cols() |>
+      rowSums() |>
       magrittr::is_greater_than(0)
     
     res_pass <- res[pass, ] %>% 
       dplyr::mutate_at(vars(grep("^pVal", names(.))), 
-                       ~ replace(.x, .x < 1E-50, 1E-50))
+                       function (x) replace(x, x < 1E-50, 1E-50))
   })
   
-  if (!nrow(res_pass))
+  if (!nrow(res_pass)) {
     return(NULL)
-  
+  }
+
   out <- local({
     adjp <- res_pass %>% 
       dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
@@ -921,8 +959,9 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff)
 #' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readr read_tsv
-prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, 
-                      logFC_cutoff = log2(1.2), use_adjP = FALSE) 
+prep_gspa <- function(df = NULL, id = NULL, fml_nm = NULL, 
+                      col_ind = 0L, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                      use_adjP = FALSE) 
 {
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -963,7 +1002,13 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2,
     dplyr::filter(abs(log2Ratio) >= logFC_cutoff) %>% 
     dplyr::filter(!is.na(id)) %>% 
     dplyr::mutate(contrast = factor(contrast, levels = contrast_groups)) %>%
-    dplyr::arrange(contrast) 
+    dplyr::arrange(contrast)
+  
+  # e.g., id == "pep_seq_mod" for phosphoproteomics
+  if (id != "entrez") {
+    df <- df |>
+      dplyr::rename(entrez = !!id)
+  }
 
   invisible(df)
 }
@@ -1116,7 +1161,7 @@ map_essential <- function (sig_sets)
 #'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
 #'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
 #'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAMap}} for mapping GSPA to volcano plot visualization \cr 
 #'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
 #'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
@@ -1205,7 +1250,7 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE,
 #' 
 #' @inheritParams prnHist
 #' @inheritParams prnHM
-#' @inheritParams gspaMap
+#' @inheritParams prnGSPAMap
 gspaHM <- function(scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                    df2, filepath, filename, ...) 
 {
@@ -1225,11 +1270,11 @@ gspaHM <- function(scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE
 }
 
 
-#' A helper function for gspaHM by formula names
+#' A helper function for prnGSPAMap by formula names
 #' 
 #' @inheritParams prnHist
 #' @inheritParams prnHM
-#' @inheritParams gspaMap
+#' @inheritParams prnGSPAMap
 #' @inheritParams fml_gspa
 #' @import purrr dplyr pheatmap 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
@@ -1287,7 +1332,7 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r = TRUE,
 }
 
 
-#' A helper function for gspaHM by input file names
+#' A helper function for prnGSPAMap by input file names
 #' 
 #' @param ess_in A list of file names for input data
 #' @param meta_in A list of file names for input metadata

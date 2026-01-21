@@ -1178,83 +1178,89 @@ check_lfq_exptraws <- function (df)
 
 
 
-#'Loads species-specific Databases
+#' Loads species-specific Databases
 #'
-#'A function loads a set of precompiled gene sets of 
-#'\href{http://current.geneontology.org/products/pages/downloads.html}{GO}
-#'and
-#'\href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
-#'@seealso \code{\link{load_expts}} for supported species.
+#' A function loads a set of precompiled gene sets of 
+#' \href{http://current.geneontology.org/products/pages/downloads.html}{GO}
+#' and
+#' \href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
+#' @seealso \code{\link{load_expts}} for supported species.
 #'
 #' @examples
-#' \donttest{load_dbs("go_sets", "human")}
+#' \donttest{load_dbs("go_sets", "human", "go_sets")}
 #'
-#'@param species Character string; the name of a species. 
-#'@inheritParams prnGSPA
-#'@import dplyr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
-#'@export
-load_dbs <- function (gset_nms = NULL, species = NULL) 
+#' @param species Character string; the name of a species. 
+#' @param defaults Default gene set names.
+#' @inheritParams prnGSPA
+#' @import dplyr
+#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @export
+load_dbs <- function (gset_nms = NULL, species = NULL, 
+                      defaults = c("go_sets", "kegg_sets", "c2_msig", "kinsub")) 
 {
-  if (is.null(gset_nms)) 
-    stop("`gset_nms` cannot be NULL.", call. = FALSE)
-  if (is.null(species)) 
-    stop("`species` cannot be NULL.", call. = FALSE)
-  
-  defaults <- c("go_sets", "kegg_sets", "c2_msig", "kinsub")
-  sys_defs <- gset_nms %>% .[. %in% defaults]
-  not_sys_defs <- gset_nms %>% .[! . %in% defaults]
+  if (is.null(gset_nms)) {
+    gset_nms <- defaults
+  }
 
-  if (!purrr::is_empty(sys_defs)) {
+  if (is.null(species)) {
+    species <- "human"
+  }
+
+  oks <- gset_nms %in% defaults
+  sys_defs <- gset_nms[oks]
+  not_sys_defs <- gset_nms[!oks]
+
+  if (length(sys_defs)) {
     abbr_sp <- purrr::map_chr(species, sp_lookup)
     
-    if (purrr::is_empty(abbr_sp)) {
-      warning("Unknown species.", call. = FALSE)
+    if (!length(abbr_sp)) {
+      warning("Unknown species.")
     }
     
-    filelist <- purrr::map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% 
+    filelist <- lapply(abbr_sp, function (x) paste0(sys_defs, "_", x)) |>
       unlist()
 
     suppressWarnings(data(package = "proteoQ", list = filelist, 
                           envir = environment()))
-    gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% 
-      do.call(`c`, .)
-    # suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
-    
-    if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
+    gsets <- lapply(filelist, function (x) try(get(x), silent = TRUE))
+    gsets <- do.call(`c`, gsets)
+
+    if (length(gsets)) {
+      names(gsets) <- gsub("/", "-", names(gsets))
+    } else {
+      stop("Empty data file in system gene sets for species: ", species)
+    }
   } else {
     gsets <- NULL
   }
   
-  if (!purrr::is_empty(not_sys_defs)) {
+  if (length(not_sys_defs)) {
     if (!all(grepl("\\.rds$", not_sys_defs))) {
       stop("Custom gene set files indicated by `gset_nms` must ", 
-           "end with extension `.rds`.", 
-           call. = FALSE)
+           "end with extension `.rds`.")
     }
 
-    not_oks <- not_sys_defs %>% .[!file.exists(not_sys_defs)]
-    if (!purrr::is_empty(not_oks)) {
-      stop("File not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), 
-           call. = FALSE)
+    if (length(bads <- not_sys_defs[!file.exists(not_sys_defs)])) {
+      stop("File(s) not found: \n", paste(bads, collapse = ", "))
     }
     
-    gsets2 <- purrr::map(not_sys_defs, readRDS) %>% do.call(`c`, .)
+    gsets2 <- lapply(not_sys_defs, readRDS) 
+    gsets2 <- do.call(`c`, gsets2)
     
     if (length(gsets2))  {
       names(gsets2) <- gsub("/", "-", names(gsets2))
     } else {
-      stop("Empty data file in: \n", purrr::reduce(not_sys_defs, paste, sep = ", \n"), 
-           call. = FALSE)
+      stop("Empty data file in: \n", paste(not_sys_defs, collapse = ", \n"))
     }
   } else {
     gsets2 <- NULL
   }
   
-  gsets <- c(gsets, gsets2) %>% .[!duplicated(.)]
-  
+  gsets <- c(gsets, gsets2)
+  gsets <- gsets[!duplicated(gsets)]
+
   if (!length(gsets)) {
-    warning("Zero entries in `gsets`.", call. = FALSE)
+    warning("Zero entries in `gsets`.")
   }
 
   assign("gsets", gsets, envir = .GlobalEnv)

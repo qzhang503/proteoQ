@@ -4,7 +4,11 @@
 \alias{load_dbs}
 \title{Loads species-specific Databases}
 \usage{
-load_dbs(gset_nms = NULL, species = NULL)
+load_dbs(
+  gset_nms = NULL,
+  species = NULL,
+  defaults = c("go_sets", "kegg_sets", "c2_msig", "kinsub")
+)
 }
 \arguments{
 \item{gset_nms}{Character string or vector containing the shorthanded name(s),
@@ -20,6 +24,8 @@ custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
 
 \item{species}{Character string; the name of a species.}
+
+\item{defaults}{Default gene set names.}
 }
 \description{
 A function loads a set of precompiled gene sets of 
@@ -28,7 +34,7 @@ and
 \href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
 }
 \examples{
-\donttest{load_dbs("go_sets", "human")}
+\donttest{load_dbs("go_sets", "human", "go_sets")}
 
 }
 \seealso{

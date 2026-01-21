@@ -5,10 +5,10 @@
 \title{Helper of GSPA}
 \usage{
 prep_gspa(
-  df,
-  id,
-  fml_nm,
-  col_ind,
+  df = NULL,
+  id = NULL,
+  fml_nm = NULL,
+  col_ind = 0L,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
   use_adjP = FALSE

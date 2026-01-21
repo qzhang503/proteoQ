@@ -2,7 +2,7 @@
 % Please edit documentation in R/gspa.R
 \name{byfile_gspahm}
 \alias{byfile_gspahm}
-\title{A helper function for gspaHM by input file names}
+\title{A helper function for prnGSPAMap by input file names}
 \usage{
 byfile_gspahm(
   ess_in,
@@ -60,5 +60,5 @@ xmin)/80}. \cr \code{ncol}, the number of columns; the default is 1. \cr
 "fixed" and the alternative is "free".}
 }
 \description{
-A helper function for gspaHM by input file names
+A helper function for prnGSPAMap by input file names
 }

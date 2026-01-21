@@ -4,7 +4,7 @@
 \alias{makeProtDIANN}
 \title{Make DIANN protein table}
 \usage{
-makeProtDIANN(dat_dir = NULL, group_pep_by = "gene")
+makeProtDIANN(dat_dir = NULL, group_pep_by = "gene", ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
@@ -15,6 +15,8 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{...}{Additional arguments}
 }
 \description{
 Make DIANN protein table

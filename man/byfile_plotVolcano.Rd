@@ -8,6 +8,7 @@ byfile_plotVolcano(
   df = NULL,
   df2 = NULL,
   id = "gene",
+  id_gspa = "entrez",
   fml_nm = NULL,
   filepath = NULL,
   filename = NULL,
@@ -41,6 +42,9 @@ of \code{df} and \code{df2}.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
 

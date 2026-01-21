@@ -7,6 +7,7 @@
 gspaTest(
   df = NULL,
   id = "entrez",
+  id_gspa = "entrez",
   label_scheme_sub = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -41,6 +42,9 @@ require the fields of significance p-values, the \code{df} will be one of
 "protein_impNA_pVal.txt")}.}
 
 \item{id}{Currently only "entrez".}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}

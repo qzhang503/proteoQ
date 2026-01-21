@@ -8,6 +8,7 @@ plotVolcano(
   df = NULL,
   df2 = NULL,
   id = "gene",
+  id_gspa = "entrez",
   adjP = FALSE,
   topn_labels = 20,
   anal_type = "Volcano",
@@ -49,6 +50,9 @@ of \code{df} and \code{df2}.}
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
+
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
 The default is FALSE.}
 
@@ -63,14 +67,14 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{gspval_cutoff}{Numeric value or vector for uses with
-\code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
+\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals} less
 significant than the threshold will be excluded from volcano plot
 visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector for uses with
-\code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
+\code{\link{prnGSPAMap}}. \code{Gene sets} with absolute enrichment
 \code{log2FC} less than the threshold will be excluded from volcano plot
 visualization. The default magnitude is \code{log2(1.2) } for all formulas
 matched to or specified in argument \code{fml_nms}. Formula-specific
@@ -90,7 +94,7 @@ threshold is allowed by supplying a vector of absolute values in
  bases.}
 
 \item{show_sig}{Character string indicating the type of significance values to
-be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
+be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 

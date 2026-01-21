@@ -211,7 +211,7 @@ prnGSPAHM(
  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAMap}} for mapping GSPA to volcano plot visualization \cr 
  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
  \code{\link{prnGSVA}} for gene set variance analysis \cr 
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
