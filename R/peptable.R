@@ -4546,14 +4546,20 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 
   # df <- df |> dplyr::filter(!duplicated(pep_seq_mod))
 
+  # Move intensity columns to the last
+  cols <- dirname(colnames(df)) != "."
+  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  
   # Update sample IDs
   nms  <- colnames(df)
   cols <- dirname(nms) != "."
   raws <- basename(nms[cols])
   raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  mts  <- match(raws, label_scheme_full[["RAW_File"]])
-  sids <- label_scheme_full[["Sample_ID"]][mts]
-  colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  
+  dfI <- df[, cols, drop = FALSE]
+  dfI <- dfI[, match(label_scheme_full[["RAW_File"]], raws), drop = FALSE]
+  df[, cols] <- dfI
+  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
   
   # Merge duplicated LCMS
   df <- aggrLCMS_DIANN(df)
@@ -4679,13 +4685,20 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
       reloc_col_before("gene", "genes")
   }
   
+  # Move intensity columns to the last
+  cols <- dirname(colnames(df)) != "."
+  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+
+  # Align DIA-NN sample IDs with lable_scheme
   nms  <- colnames(df)
   cols <- dirname(nms) != "."
   raws <- basename(nms[cols])
   raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  mts  <- match(raws, label_scheme_full[["RAW_File"]]) 
-  sids <- label_scheme_full[["Sample_ID"]][mts]
-  colnames(df)[cols] <- paste0("I000 (", sids, ")")
+  
+  dfI <- df[, cols, drop = FALSE]
+  dfI <- dfI[, match(label_scheme_full[["RAW_File"]], raws), drop = FALSE]
+  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], dfI)
+  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
   
   df <- aggrLCMS_DIANN(df)
   

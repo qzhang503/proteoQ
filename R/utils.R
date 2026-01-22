@@ -63,10 +63,15 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
   
   dfR <- local({
     dfR <- df %>%
-      dplyr::select(grep(NorZ_ratios, names(.))) %>%
-      `colnames<-`(label_scheme$Sample_ID) %>%
-      dplyr::select(which(names(.) %in% sub_grp)) 
+      dplyr::select(grep(NorZ_ratios, names(.)))
+    colnames(dfR) <- gsub("^.* \\((.*)\\)$", "\\1", colnames(dfR))
     
+    # sids <- label_scheme$Sample_ID
+    # mts <- match(gsub("^.* \\((.*)\\)$", "\\1", colnames(dfR)), sids)
+    # colnames(dfR) <- sids[mts]
+
+    dfR <- dfR[, names(dfR) %in% sub_grp, drop = FALSE]
+
     # reference will drop with single reference
     non_trivials <- dfR %>% 
       dplyr::select(which(not_all_zero(.))) %>% 

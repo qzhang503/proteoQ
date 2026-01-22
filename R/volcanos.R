@@ -1138,6 +1138,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
 #' @export
 plot_ibaq <- function(outname = NULL, highlights = NULL, ...) 
 {
+  # Need species information later for case sensitivity or ignore case
+  
   cytosol <- c("Actb", "Acta1", "Actbl2", "Gapdh") # 
   pm <- c("Atp1a1")
   er <- c("Canx", "Calr", "Hspa5")
@@ -1145,7 +1147,7 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
   mito <- c("Tomm20", "Vdac1")
   lyso <- c("Lamp1", "Lamp2", "Ctsd")
   endosome <- c("Eea1", "Rab5a")
-  nuclear <- c("H4c1", "H2ax", "H1-2")
+  nuclear <- c("H4c1", "H2ax", "H1-2", "Npm1")
   prot_all <- c(cytosol, pm, er, golgi, mito, lyso, endosome, nuclear)
   
   highlights <- highlights[!highlights %in% prot_all]
