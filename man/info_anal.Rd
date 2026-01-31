@@ -24,6 +24,7 @@ info_anal(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  impute_group_na = FALSE,
   method_replace_na = "none",
   df = NULL,
   df2 = NULL,

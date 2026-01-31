@@ -4477,6 +4477,42 @@ find_mbr_ms1files <- function(dat_dir, n_files, abort = FALSE)
 }
 
 
+#' Helper in removing DIANN samples not found in metadata.
+#' 
+#' @param df A data frame of DIANN outputs.
+#' @param label_scheme_full Metadata.
+rm_diann_empties <- function (df, label_scheme_full)
+{
+  # Align DIA-NN sample IDs with lable_scheme
+  nms  <- colnames(df)
+  cols <- dirname(nms) != "."
+  raws <- basename(nms[cols])
+  raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
+  
+  # Remove samples not in metadata and align sample IDs by metadata
+  mts  <- match(label_scheme_full[["RAW_File"]], raws)
+  dfx  <- df[, cols, drop = FALSE]
+  dfx  <- dfx[, mts, drop = FALSE]
+  raws <- raws[mts]
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], dfx)
+  
+  nms  <- colnames(df)
+  cols <- dirname(nms) != "."
+  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
+  
+  rm(list = c("dfx", "mts"))
+  
+  # remove all-NA intensity rows
+  nas <- rowSums(is.na(df[, cols, drop = FALSE])) == sum(cols)
+  
+  if (sum(nas)) {
+    df <- df[!nas, ]
+  }
+  
+  df
+}
+
+
 #' Makes DIANN peptide table.
 #' 
 #' @inheritParams normPSM
@@ -4527,6 +4563,8 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
       pep_exp_z    = Precursor.Charge, 
       pep_seq_modz = Precursor.Id)
   
+  df <- rm_diann_empties(df, label_scheme_full)
+  
   # Annotate proteins
   df[["All Mapped Proteins"]] <- df[["All Mapped Genes"]] <- NULL
   df[["Protein.Names"]] <- df[["First.Protein.Description"]] <- NULL
@@ -4546,21 +4584,6 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 
   # df <- df |> dplyr::filter(!duplicated(pep_seq_mod))
 
-  # Move intensity columns to the last
-  cols <- dirname(colnames(df)) != "."
-  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
-  
-  # Update sample IDs
-  nms  <- colnames(df)
-  cols <- dirname(nms) != "."
-  raws <- basename(nms[cols])
-  raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  
-  dfI <- df[, cols, drop = FALSE]
-  dfI <- dfI[, match(label_scheme_full[["RAW_File"]], raws), drop = FALSE]
-  df[, cols] <- dfI
-  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
-  
   # Merge duplicated LCMS
   df <- aggrLCMS_DIANN(df)
 
@@ -4613,13 +4636,15 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 
 
 #' Make DIANN protein table.
-#' 
+#'
 #' @inheritParams normPSM
 #' @param add_ibaq Logical; adds iBAQ value or not.
+#' @param type_int Character string; the type of intensities for iBAQ
+#'   calculations. The value is either \code{I} or \code{N_I}.
 #' @param ... Additional arguments.
 #' @export
 makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
-                           add_ibaq = TRUE, ...)
+                           add_ibaq = TRUE, type_int = c("N_I", "I"), ...)
 {
   on.exit(
     if (exists(".saveCall", envir = environment()) && .saveCall) {
@@ -4627,6 +4652,21 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
         c(dots) |>
         save_call("makeProtDIANN")
     }, add = TRUE)
+  
+  # ---
+  fmls <- formals()
+  type_int <- rlang::enexpr(type_int)
+  type_int <- if (length(type_int) > 1L) "I" else rlang::as_string(type_int)
+  oks <- eval(fmls[["type_int"]])
+  
+  if (!type_int %in% oks) {
+    stop("The `type_int` is not one of ", paste(oks, collapse = ", "))
+  }
+  
+  if (length(type_int) != 1L) {
+    stop("The length of `type_int` needs to be one.")
+  }
+  # ---
   
   dots <- rlang::enexprs(...)
   
@@ -4685,21 +4725,11 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
       reloc_col_before("gene", "genes")
   }
   
+  df <- rm_diann_empties(df, label_scheme_full)
+  
   # Move intensity columns to the last
   cols <- dirname(colnames(df)) != "."
   df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
-
-  # Align DIA-NN sample IDs with lable_scheme
-  nms  <- colnames(df)
-  cols <- dirname(nms) != "."
-  raws <- basename(nms[cols])
-  raws <- gsub("(\\.raw$|\\.d$|_uncalibrated\\.mzML$)", "", raws)
-  
-  dfI <- df[, cols, drop = FALSE]
-  dfI <- dfI[, match(label_scheme_full[["RAW_File"]], raws), drop = FALSE]
-  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], dfI)
-  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
-  
   df <- aggrLCMS_DIANN(df)
   
   cols <- grepl("^I000 \\(", colnames(df))
@@ -4760,9 +4790,10 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
       unlist()
     
     # df[["prot_acc"]] is unique too at group_pep_by = "gene"
-    df_ibaq <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 1, 
-                     pep_cts[match(df[["prot_acc"]], names(pep_cts))], "/")
-    colnames(df_ibaq) <- gsub("^N_I000", "iBAQ", colnames(df_ibaq))
+    df_ibaq <- sweep(df[, grepl(paste0("^", type_int, "[0-9]{3}"), names(df))], 
+                     1, pep_cts[match(df[["prot_acc"]], names(pep_cts))], "/")
+    colnames(df_ibaq) <- 
+      gsub(paste0("^", type_int, "000"), "iBAQ", colnames(df_ibaq))
     df_ibaq <- dplyr::bind_cols(df[, group_pep_by, drop = FALSE], df_ibaq)
     readr::write_tsv(df_ibaq, file.path(dat_dir, "iBAQ.txt"))
     

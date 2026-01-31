@@ -8,6 +8,7 @@
 pepSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
+  impute_group_na = FALSE,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
@@ -25,6 +26,7 @@ pepSig(
 prnSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
+  impute_group_na = FALSE,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
@@ -47,6 +49,10 @@ be used.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
+exclusively NA under a sample group. The sample grouping is defined under
+\code{label_scheme}.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

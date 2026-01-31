@@ -9,6 +9,7 @@ makeProtDIANN(
   group_pep_by = "gene",
   fasta = NULL,
   add_ibaq = TRUE,
+  type_int = c("N_I", "I"),
   ...
 )
 }
@@ -28,6 +29,9 @@ used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
 \item{add_ibaq}{Logical; adds iBAQ value or not.}
+
+\item{type_int}{Character string; the type of intensities for iBAQ
+calculations. The value is either \code{I} or \code{N_I}.}
 
 \item{...}{Additional arguments.}
 }

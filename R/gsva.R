@@ -285,6 +285,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
       res_es %>% 
         `rownames<-`(NULL) %>% 
         tibble::column_to_rownames("term"), 
+      # dfI = NULL, 
       id = !!id,
       .x, label_scheme_sub, complete_cases, method = lm_method,
       padj_method = padj_method, var_cutoff, pval_cutoff, logFC_cutoff

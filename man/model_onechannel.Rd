@@ -6,29 +6,23 @@
 in `label_scheme_sub`}
 \usage{
 model_onechannel(
-  df,
+  dfR = NULL,
+  dfI = NULL,
   id,
   formula,
   label_scheme_sub,
-  complete_cases,
-  method,
-  padj_method,
-  var_cutoff,
-  pval_cutoff,
-  logFC_cutoff,
+  complete_cases = FALSE,
+  impute_group_na = FALSE,
+  method = "limma",
+  padj_method = "BH",
+  var_cutoff = 0.001,
+  pval_cutoff = 1,
+  logFC_cutoff = log2(1),
   ...
 )
 }
 \arguments{
-\item{df}{The name of a primary data file. By default, it will be determined
-automatically after matching the types of data and analysis with an
-\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
-primary file contains normalized peptide or protein data and is among
-\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
-"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
-require the fields of significance p-values, the \code{df} will be one of
-\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
-"protein_impNA_pVal.txt")}.}
+\item{dfI}{Intensity data frame.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
@@ -40,6 +34,10 @@ for selected samples.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
+exclusively NA under a sample group. The sample grouping is defined under
+\code{label_scheme}.}
 
 \item{method}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}

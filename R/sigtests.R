@@ -73,7 +73,7 @@ prepFml <- function(formula, label_scheme_sub, ...)
   
   # formula = ~ Term[ ~ V]
   base <- if (grepl("\\[\\s*\\~\\s*", fml[len])) 
-    fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
+    gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", fml[len])
   else 
     NULL
   
@@ -165,11 +165,12 @@ prepFml <- function(formula, label_scheme_sub, ...)
   
   message("random_vars: ", as.character(random_vars), "\n\n")
   
-  invisible(list(design = design, 
-                 contr_mat = contr_mat, 
-                 key_col = key_col, 
-                 random_vars = random_vars,
-                 label_scheme_sub_sub = label_scheme_sub_sub))
+  list(design = design, 
+       contr_mat = contr_mat, 
+       key_col = key_col, 
+       random_vars = random_vars,
+       elements = elements, 
+       label_scheme_sub_sub = label_scheme_sub_sub)
 }
 
 
@@ -245,13 +246,17 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 #' in `label_scheme_sub`
 #' 
 #' @param formula Language; the formula in linear modeling.
+#' @param dfI Intensity data frame.
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
 #' @importFrom MASS ginv
-model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, 
-                              method, padj_method, var_cutoff, 
-                              pval_cutoff, logFC_cutoff, ...) 
+model_onechannel <- function (dfR = NULL, dfI = NULL, 
+                              id, formula, label_scheme_sub, 
+                              complete_cases = FALSE, impute_group_na = FALSE, 
+                              method = "limma", padj_method = "BH", 
+                              var_cutoff = 1E-3, pval_cutoff = 1.00, 
+                              logFC_cutoff = log2(1), ...) 
 {
   # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
   # formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
@@ -271,49 +276,72 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
   # lmFit_dots <- dots %>% .[. %in% c("method")]
   # eBayes_dots <- dots %>% .[. %in% c("proportion")]
   
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  fml_ops <- prepFml(formula, label_scheme_sub, ...)
-  contr_mat <- fml_ops$contr_mat
-  
-  local({
-    col_nms <- colnames(contr_mat)
-    dups <- which(duplicated(col_nms))
-    
-    if (length(dups)) {
-      stop("Duplicated contrasts found: ", paste(col_nms[dups], collapse = ", "))
-    }
-  })
-  
-  
-  design <- fml_ops$design
-  key_col <- fml_ops$key_col
+  fml_ops     <- prepFml(formula, label_scheme_sub, ...)
+  elements    <- fml_ops$elements
+  contr_mat   <- fml_ops$contr_mat
+  design      <- fml_ops$design
+  key_col     <- fml_ops$key_col
   random_vars <- fml_ops$random_vars
   label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
   
   local({
-    ss <- (colSums(design) == 1)
-    bads <- ss[ss]
+    col_nms <- colnames(contr_mat)
+    if (length(dups <- which(duplicated(col_nms)))) {
+      stop("Duplicated contrasts found: ", 
+           paste(col_nms[dups], collapse = ", "))
+    }
     
-    if (length(bads)) 
+    ss <- (colSums(design) == 1)
+    if (length(bads <- ss[ss])) 
       warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
               " under `", formula, "`.")
   })
   
   # keep the name list as rows may drop in filtration
-  df_nms <- df %>%
-    tibble::rownames_to_column(id) %>%
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  df_nms <- dfR |>
+    tibble::rownames_to_column(id) |>
     dplyr::select(id)
   
-  if (complete_cases) 
-    df <- df[complete.cases(df), ]
-  
-  df <- df %>% 
-    filterData(var_cutoff = var_cutoff) %>% 
+  if (complete_cases) {
+    dfR <- dfR[complete.cases(dfR), ]
+  }
+
+  dfR <- dfR |>
+    filterData(var_cutoff = var_cutoff) |>
     dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
+  dfI <- dfI[, colnames(dfR), drop = FALSE]
+  dfI <- dfI[rownames(dfI) %in% rownames(dfR), , drop = FALSE]
   
+  stopifnot(identical(colnames(dfI), colnames(dfR)))
+  stopifnot(identical(rownames(dfI), rownames(dfR)))
+  
+  ###
+  # Haven't yet test within-group imputation at mixed effect modeling...
+  ###
+  
+  if (impute_group_na && !is.null(dfI)) {
+    ans <- base_sigtest_y(
+      dfR = dfR, dfI = dfI, elements = elements, key_col = key_col, 
+      label_scheme_sub_sub = label_scheme_sub_sub, seed = 1234L)
+    dfsR <- ans[["log2R"]]
+    dfsI <- ans[["Intensity"]]
+    ys_base <- ans[["baseline"]]
+    rm(list = "ans")
+
+    mapply(function (x, y) {
+      stopifnot(identical(rownames(x), rownames(y)))
+      stopifnot(identical(colnames(x), colnames(y)))
+    }, dfsR, dfsI)
+
+    dfR <- impute_baseline_ints(
+      dfsR = dfsR, dfsI = dfsI, ys_base = ys_base, 
+      sample_ids = colnames(dfI))
+  }
+
   local({
-    ncol <- ncol(df)
+    ncol <- ncol(dfR)
     
     if (ncol < 4L) 
       warning(formula, ": the total number of samples is ", ncol, ".\n", 
@@ -326,10 +354,10 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
     }
     
     design_random <- label_scheme_sub_sub[[random_vars[1]]] 
-    corfit <- duplicateCorrelation(df, design = design, block = design_random)
+    corfit <- duplicateCorrelation(dfR, design = design, block = design_random)
     
     fit <- suppressWarnings(
-      df %>%
+      dfR %>%
         lmFit(design = design, 
               block = design_random, 
               correlation = corfit$consensus) %>%
@@ -339,9 +367,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
   } 
   else {
     fit <- suppressWarnings(
-      df %>%
-        lmFit(design = design) %>%
-        contrasts.fit(contr_mat) %>%
+      lmFit(dfR, design = design) |>
+        contrasts.fit(contr_mat) |>
         eBayes()
     )
   }
@@ -372,10 +399,10 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
     names(dimnames(contr_mat_lm)) <- c("Levels", "Contrasts")
     contr_mat_lm <- list(Cdn = contr_mat_lm) %>% `names<-`(key_col)
     
-    smpl_levels <- names(df)
+    smpl_levels <- names(dfR)
     contr_levels <- attributes(contr_mat_lm[[key_col]])$dimnames$Contrasts
     
-    df_lm <- df %>%
+    df_lm <- dfR %>%
       tibble::rownames_to_column(id) %>%
       tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
@@ -387,17 +414,15 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
     
     if (length(random_vars)) {
       if (!requireNamespace("broom.mixed", quietly = TRUE)) {
-        stop("\n====================================================================", 
+        stop("\n============================================================", 
              "\nNeed package \"broom.mixed\" for this function to work.",
-             "\n====================================================================",
-             call. = FALSE)
+             "\n============================================================")
       }
       
       if (!requireNamespace("lmerTest", quietly = TRUE)) {
         stop("\n============================================================", 
              "\nNeed package \"lmerTest\" for this function to work.",
-             "\n============================================================",
-             call. = FALSE)
+             "\n============================================================")
       }
       
       res_lm <- df_lm %>%
@@ -422,8 +447,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
       if (!requireNamespace("broom", quietly = TRUE)) {
         stop("\n============================================================", 
              "\nNeed package \"broom\" for this function to work.",
-             "\n============================================================",
-             call. = FALSE)
+             "\n============================================================")
       }
       
       res_lm <- df_lm %>%
@@ -461,8 +485,9 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
-                    scale_log2r, complete_cases, impute_na, rm_allna, 
-                    method_replace_na, 
+                    scale_log2r = TRUE, complete_cases = FALSE, 
+                    impute_na = FALSE, impute_group_na = FALSE, 
+                    rm_allna = FALSE, method_replace_na, 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
                     data_type, anal_type, ...) 
@@ -472,24 +497,16 @@ sigTest <- function(df, id, label_scheme_sub,
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
                    logical(1L)))
   
-  id <- rlang::as_string(rlang::enexpr(id))
+  id     <- rlang::as_string(rlang::enexpr(id))
   method <- rlang::as_string(rlang::enexpr(method))
+  dots   <- rlang::enexprs(...)
   
-  dots <- rlang::enexprs(...)
-  
-  filter_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  arrange_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^arrange_", names(.))]
-  
-  dots <- dots %>% 
-    .[! . %in% c(filter_dots, arrange_dots)]
-  
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots         <- dots[!dots %in% c(filter_dots, arrange_dots)]
   non_fml_dots <- dots[!purrr::map_lgl(dots, is_formula)]
-  dots <- dots[purrr::map_lgl(dots, is_formula)]
+  dots         <- dots[purrr::map_lgl(dots, is_formula)]
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     pepSig_formulas <- dots
@@ -497,11 +514,11 @@ sigTest <- function(df, id, label_scheme_sub,
     rm(list = "pepSig_formulas")
   } 
   else if (id %in% c("prot_acc", "gene")) {
-    if (!length(dots)) {
-      prnSig_formulas <- dots <- concat_fml_dots()
+    if (length(dots)) {
+      prnSig_formulas <- dots
     } 
     else {
-      prnSig_formulas <- dots
+      prnSig_formulas <- dots <- concat_fml_dots()
     }
     
     save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
@@ -510,47 +527,52 @@ sigTest <- function(df, id, label_scheme_sub,
   
   fn_prefix2 <- if (impute_na) "_impNA_pVals.txt" else "_pVals.txt"
   
-  df_op <- local({
-    dfw <- df %>% 
-      filters_in_call(!!!filter_dots) %>% 
-      arrangers_in_call(!!!arrange_dots) %>% 
-      prepDM(id = !!id, 
-             scale_log2r = scale_log2r, 
-             sub_grp = label_scheme_sub$Sample_ID, 
-             anal_type = anal_type, 
-             rm_allna = rm_allna) %>% 
-      .$log2R
-    
+  tempdata <- df |>
+    filters_in_call(!!!filter_dots) |>
+    arrangers_in_call(!!!arrange_dots) |>
+    prepDM(id = !!id, 
+           scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub$Sample_ID, 
+           anal_type = anal_type, 
+           rm_allna = rm_allna)
+  dfR <- tempdata[["log2R"]]
+  dfI <- tempdata[["Intensity"]]
+  
+  # in case of all-NA sample columns being removed
+  label_scheme_sub <- label_scheme_sub |> 
+    dplyr::filter(Sample_ID %in% colnames(dfR))
+  
+  dfR <- local({
     if ((!impute_na) && method_replace_na == "min") {
-      row_mins <- apply(dfw, 1, FUN = min, na.rm = TRUE)
-      row_sds  <- apply(dfw, 1, FUN = sd,  na.rm = TRUE)
+      row_mins <- apply(dfR, 1, FUN = min, na.rm = TRUE)
+      row_sds  <- apply(dfR, 1, FUN = sd,  na.rm = TRUE)
       row_sds[is.na(row_sds)] <- 5E-3
-      n_nas <- rowSums(is.na(dfw))
+      n_nas <- rowSums(is.na(dfR))
       
       for (i in seq_along(row_mins)) {
         n_i <- n_nas[[i]]
         
         if (n_i > 0) {
           vals <- rnorm(n_i, mean = row_mins[[i]] - 1, sd = row_sds[[i]]/5)
-          x <- dfw[i, ]
+          x <- dfR[i, ]
           x[is.na(x)] <- vals
-          dfw[i, ] <- x
+          dfR[i, ] <- x
         }
       }
     }
     
-    # in case of all-NA sample columns being removed
-    label_scheme_sub <- label_scheme_sub |> 
-      dplyr::filter(Sample_ID %in% colnames(dfw))
-    
-    # `complete_cases` depends on lm contrasts
-    purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
-                                        complete_cases, method, 
-                                        padj_method, var_cutoff, 
-                                        pval_cutoff, logFC_cutoff, 
-                                        !!!non_fml_dots)) %>% 
-      do.call("cbind", .)
+    dfR
   })
+
+  # `complete_cases` depends on lm contrasts
+  df_op <- lapply(dots, function (formula) model_onechannel(
+    dfR = dfR, dfI = dfI, id = !!id, formula = formula, 
+    label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
+    impute_group_na = impute_group_na, method = method, 
+    padj_method = padj_method, var_cutoff = var_cutoff, 
+    pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+    !!!non_fml_dots))
+  df_op <- do.call("cbind", df_op)
   
   # record the `scale_log2r` status; otherwise, need to indicate it in a way
   # for example, `_N` or `_Z` in file names
@@ -593,6 +615,140 @@ sigTest <- function(df, id, label_scheme_sub,
 }
 
 
+#' Impute baseline intensities.
+#'
+#' The values of log2Ratios are derived accordingly
+#'
+#' @param dfsR List of log2Ratio data frames. Data are grouped according to the
+#'   formulas in \link{prnSig}.
+#' @param dfsI The corresponding intensity data frames.
+#' @param ys_base The baseline intensities. The length is equal to the number of
+#'   columns in \code{dfR}.
+#' @param sample_ids The sample IDs for joining data at the original order.
+#' @param max_fold The maximum fold change allowed.
+#' @importFrom magrittr %>%
+impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids, 
+                                  max_fold = 100)
+{
+  grps <- names(dfsR)
+  
+  if (FALSE) {
+    i <- 1L
+    dfR <- dfsR[[i]]
+    dfI <- dfsI[[i]]
+    g <- grps[[i]]
+    b <- ys_base[[i]]
+  }
+  
+  ans  <- mapply(function (dfR, dfI, g, b) {
+    # Complementary columns
+    oks  <- !grps %in% g
+    dfRc <- dfsR[oks]
+    dfIc <- dfsI[oks]
+    dfRc <- dplyr::bind_cols(dfRc)
+    dfIc <- dplyr::bind_cols(dfIc)
+    
+    if (sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
+      ybars <- rowMeans(dfIc, na.rm = TRUE)
+      
+      for (i in seq_along(dfI)) {
+        dfI[nas, i] <- b[[i]]
+      }
+      
+      dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
+    }
+    
+    # Set lower bounds
+    min_log2_fold <- -log2(max_fold)
+    dfR_emp[dfR_emp <= min_log2_fold] <- min_log2_fold
+    dfR[nas, ] <- dfR_emp
+    
+    dfR
+  }, dfsR, dfsI, grps, ys_base, 
+  SIMPLIFY = FALSE)
+  
+  ans <- dplyr::bind_cols(ans)
+  
+  ans <- ans[, sample_ids, drop = FALSE]
+}
+
+
+#' Calculate baseline intensities.
+#'
+#' @param dfR The complete data frame of log2Ratios.
+#' @param dfI The corresponding intensity data frame.
+#' @param ys_base The baseline intensities. The length is equal to the number of
+#'   columns in \code{dfR}.
+#' @param elements The elements of groups in contrast fits.
+#' @param key_col The key column in contrast fits, e.g., column \code{Term}.
+#' @param label_scheme_sub_sub The metadata corresponding \code{dfR}.
+#' @param seed A seed for reproducible random number generations.
+#' @importFrom magrittr %>%
+base_sigtest_y <- function(dfR, dfI, elements, key_col,label_scheme_sub_sub, 
+                           seed = NULL) 
+{
+  sids <- colnames(dfR)
+  rnms <- rownames(dfR)
+  
+  gl_min <- max(
+    min(dfI, na.rm = TRUE),  # * 5,
+    quantile(dfI, .0001, na.rm = TRUE)
+  )
+  log10_gl_min <- log10(gl_min)
+  
+  ans <- lapply(elements, function (element) {
+    sids_sub <- label_scheme_sub_sub |>
+      dplyr::filter(!!rlang::sym(key_col) %in% element) |>
+      dplyr::select(Sample_ID) |>
+      unlist(use.names = FALSE)
+    
+    oks <- sids %in% sids_sub
+    dfR_sub <- dfR[, oks, drop = FALSE]
+    dfI_sub <- dfI[, oks, drop = FALSE]
+    
+    list(log2R = dfR_sub, Intensity = dfI_sub)
+  })
+  names(ans) <- elements
+  dfsR <- lapply(ans, `[[`, "log2R")
+  dfsI <- lapply(ans, `[[`, "Intensity")
+  n_samples <-lengths(dfsR)
+  rm(list = "ans")
+  
+  ## (1) Generate random, baseline intensities for each contrast group
+  slope <- mapply(function (x, y) {
+    coef(lm(log10(x) ~ rowMeans(log10(y), na.rm = TRUE)))[[2]]
+  }, lapply(dfsI, rowVars), dfsI) |>
+    mean()
+  ys_base <- lapply(n_samples, gen_randoms, mu = log10_gl_min, sigma = slope, 
+                    seed = seed)
+  ys_base <- lapply(ys_base, function (x) 10^x + gl_min)
+  
+  list(baseline = ys_base, log2R = dfsR, Intensity = dfsI)
+}
+
+
+#' Generate random intensity values.
+#' 
+#' @param n The number of random values.
+#' @param mu The mean.
+#' @param sigma The standard deviation.
+#' @param seed A seed for reproducible random number generations.
+#' @importFrom magrittr %>%
+gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
+{
+  if (!is.null(seed)) set.seed(seed)
+  
+  x <- NULL
+  
+  while(length(x) < n) {
+    x <- c(x, rnorm(n - length(x), mean = mu, sd = sigma))
+    x <- x[abs(x - mu) <= 2 * sigma]
+  }
+  
+  x
+}
+
+
 #' Significance tests of peptide/protein log2FC
 #' 
 #' \code{pepSig} performs significance tests against peptide log2FC. 
@@ -601,9 +757,10 @@ sigTest <- function(df, id, label_scheme_sub,
 #' 
 #' @import purrr
 #' @export
-pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                    rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
-                    method_replace_na = c("none", "min"), 
+pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
+                    impute_group_na = FALSE, complete_cases = FALSE, 
+                    rm_allna = FALSE, method = c("limma", "lm"), 
+                    padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -668,6 +825,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
+            impute_group_na = impute_group_na, 
             method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 
@@ -707,6 +865,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
 #'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
 #'  be used for models with random effects.
+#'@param impute_group_na Logical; if TRUE, impute (intensity) values that are
+#'  exclusively NA under a sample group. The sample grouping is defined under
+#'  \code{label_scheme}.
 #'@param padj_method Character string; the method of multiple-test corrections
 #'  for uses with \link[stats]{p.adjust}. The default is "BH". See
 #'  ?p.adjust.methods for additional choices.
@@ -808,9 +969,10 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@export
-prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                    rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
-                    method_replace_na = c("none", "min"), 
+prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
+                    impute_group_na = FALSE, complete_cases = FALSE, 
+                    rm_allna = FALSE, method = c("limma", "lm"), 
+                    padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -831,28 +993,25 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   method <- rlang::enexpr(method)
-  
-  method <- if (method == rlang::expr(c("limma", "lm")))
+  method <- if (method == rlang::expr(c("limma", "lm"))) {
     "limma"
-  else
+  } else {
     rlang::as_string(method)
-  
-  stopifnot(method %in% c("limma", "lm"), 
-            length(method) == 1L)
+  }
+  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   
   # replace NA other than mice imputation
   # (only for sigTest)
   method_replace_na <- rlang::enexpr(method_replace_na)
-  
-  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min")))
+  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min"))) {
     "none"
-  else
+  } else {
     rlang::as_string(method_replace_na)
-  
+  }
+
   stopifnot(method_replace_na %in% c("none", "min"), 
             length(method_replace_na) == 1L)
-  
-  
+
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
@@ -876,6 +1035,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
+            impute_group_na = impute_group_na, 
             method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 

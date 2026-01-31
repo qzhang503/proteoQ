@@ -1132,52 +1132,118 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
 #' 
 #' @param outname The output file name.
 #' @param highlights The protein names to be highlighted.
+#' @param subcellular A list defining subcellular protein markers.
+#' @param show_subcelluar Logical; show subcellular proteins or not.
 #' @param ... Additional arguments passed to \code{ggsave}.
+#' @inheritParams normPSM
+#' @inheritParams info_anal
 #' @import dplyr purrr ggplot2 ggrepel
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-plot_ibaq <- function(outname = NULL, highlights = NULL, ...) 
+plot_ibaq <- function(outname = NULL, highlights = NULL, group_pep_by = "gene", 
+                      col_group = NULL, 
+                      subcellular = list(
+                        cytosol = c("Actb", "Acta1", "Actbl2", "Gapdh"),
+                        pm = c("Atp1a1"),
+                        er = c("Canx", "Calr", "Hspa5"),
+                        golgi = c("Golga2", "Golga1"),
+                        mito = c("Tomm20", "Vdac1"),
+                        lyso = c("Lamp1", "Lamp2", "Ctsd"),
+                        endosome = c("Eea1", "Rab5a"),
+                        nuclear = c("H4c1", "H2ax", "H1-2", "Npm1")
+                      ), 
+                      show_subcelluar = TRUE, 
+                      ...) 
 {
+  dots <- rlang::enexprs(...)
+  
+  col_group <- rlang::enexpr(col_group)
+  
+  col_group <- if (is.null(col_group)) {
+    rlang::expr(Group)
+  } else {
+    rlang::sym(col_group)
+  }
+
   # Need species information later for case sensitivity or ignore case
   
-  cytosol <- c("Actb", "Acta1", "Actbl2", "Gapdh") # 
-  pm <- c("Atp1a1")
-  er <- c("Canx", "Calr", "Hspa5")
-  golgi <- c("Golga2", "Golga1")
-  mito <- c("Tomm20", "Vdac1")
-  lyso <- c("Lamp1", "Lamp2", "Ctsd")
-  endosome <- c("Eea1", "Rab5a")
-  nuclear <- c("H4c1", "H2ax", "H1-2", "Npm1")
-  prot_all <- c(cytosol, pm, er, golgi, mito, lyso, endosome, nuclear)
+  nms_sub <- names(subcellular)
+  prot_all <- unique(unlist(subcellular, recursive = FALSE))
   
-  highlights <- highlights[!highlights %in% prot_all]
-  
+  if (show_subcelluar) {
+    list2env(subcellular, envir = environment())
+    highlights <- highlights[!highlights %in% prot_all]
+  } else {
+    list2env(
+      setNames(as.list(rep(list(NULL), length(nms_sub))), nms_sub),
+      envir = environment()
+    )
+    
+    prot_all <- NULL
+  }
+
   dat_dir <- get_gl_dat_dir()
   df <- readr::read_tsv(file.path(dat_dir, 'iBAQ.txt'))
+  
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  grps  <- label_scheme[["Group"]]
+  ugrps <- unique(grps)
+  ugrps <- ugrps[!is.na(ugrps)]
+  sids  <- label_scheme$Sample_ID
+  
+  nms <- names(df)
+  cols <- grepl("^iBAQ \\(", nms)
+  names(df)[cols] <- gsub("^iBAQ \\((.*)\\)$", "\\1", nms[cols])
   
   if (!all(is.na(label_scheme$Fold_dilute))) {
-    nms <- names(df)
-    cols <- grepl("^iBAQ \\(", nms)
-    names(df)[cols] <- gsub("^iBAQ \\((.*)\\)$", "\\1", nms[cols])
-    
-    sids <- label_scheme$Sample_ID
-    mts <- match(label_scheme$Sample_ID, names(df)[cols])
+    mts <- match(sids, names(df)[cols])
     df[, cols] <- mapply(`*`, df[, cols], label_scheme$Fold_dilute[mts])
   }
   
-  dfx <- 
-    dplyr::bind_cols(df[, "gene"], y = rowMeans(df[, cols], na.rm = TRUE)) |>
-    dplyr::mutate(gene = reorder(gene, log10(y), FUN = desc)) |>
+  if (is.null(col_group)) {
+    dfx <- 
+      dplyr::bind_cols(df[, "gene"], y = rowMeans(df[, cols], na.rm = TRUE))
+  } else {
+    if (all(is.na(grps))) {
+      dfx <- df
+    } else {
+      cnms  <- colnames(df)
+      
+      dfx <- lapply(ugrps, function (g) {
+        label_scheme_sub <- label_scheme |>
+          dplyr::filter(Group == g)
+        
+        df_sub <- df[, cnms %in% label_scheme_sub[["Sample_ID"]], drop = FALSE]
+        df_sub <- tibble::tibble(!!g := rowMeans(df_sub, na.rm = TRUE))
+      }) |>
+        dplyr::bind_cols()
+      dfx <- dplyr::bind_cols(df[, group_pep_by, drop = FALSE], dfx)
+    }
+  }
+  
+  dfx <- dfx |>
+    tidyr::pivot_longer(
+      cols = -all_of(group_pep_by),
+      names_to = "group",
+      values_to = "y"
+    )
+
+  dfx <- dfx |>
+    dplyr::group_by(group) |>
+    dplyr::mutate(!!group_pep_by := reorder(.data[[group_pep_by]], log10(y), FUN = desc)) |>
     dplyr::arrange(desc(y)) |>
     dplyr::mutate(rank = dplyr::row_number())
+  fnx <- tools::file_path_sans_ext(basename(outname))
+  ext  <- tools::file_ext(outname)
   
+  readr::write_tsv(dfx, file.path(dat_dir, "Protein", 
+                                  paste0(fnx, "_iBAQ.tsv")))
+
   dfx_high <- dplyr::bind_rows(
     dfx[dfx$gene %in% highlights, ],
     dfx[dfx$gene %in% prot_all, ], 
   )
-  # dfx_high <- dfx[dfx$gene %in% highlights, ]
-  
+
   dfx_high <- dfx_high |>
     dplyr::mutate(
       label_group = case_when(
@@ -1194,7 +1260,26 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
       )
     )
   
-  ggplot(data = dfx, mapping = aes(x = rank, y = log10(y))) +
+  readr::write_tsv(dfx_high, file.path(dat_dir, "Protein", 
+                                  paste0(fnx, "_highlight_iBAQ.tsv")))
+  
+  nrow <- 1L
+  if(is.null(dots$width)) {
+    width <- if (nrow > 1L) 
+      6*length(ugrps)/nrow + 1 
+    else 
+      6*length(ugrps)/nrow
+  } 
+  else {
+    width <- eval(dots$width)
+  }
+  
+  height <- if(is.null(dots$height))
+    6*nrow
+  else
+    eval(dots$height)
+  
+  p <- ggplot(data = dfx, mapping = aes(x = rank, y = log10(y))) +
     geom_point(size = .5, fill = "gray", color = "#252525", shape = 21, 
                alpha = .2, stroke = .25) +
     geom_point(
@@ -1202,7 +1287,9 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
       aes(x = rank, y = log10(y)),
       size = 2, fill = "#D55E00", color = "white", shape = 21, 
       alpha = .6, stroke = .5
-    ) +
+    ) 
+  
+  p <- p +
     geom_text_repel(
       data = dfx_high,
       aes(label = gene, color = label_group),
@@ -1212,7 +1299,9 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
       max.overlaps = Inf,
       segment.size = 0.25,
       segment.color = "grey70"
-    ) +
+    ) 
+  
+  p <- p +
     scale_color_manual(values = c(
       Mitochondrial = "#4C72B0",   # muted blue
       Golgi = "#DD8452",   # soft orange
@@ -1223,7 +1312,7 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
       # Other    = "grey30"
     )) +
     guides(color = "none") + 
-    
+    facet_wrap(~ group) + 
     # scale_x_continuous(breaks = scales::breaks_width(1000)) + 
     # scale_x_continuous(limits = c(xmin, xmax)) +
     # scale_y_continuous(limits = c(ymin, ymax)) +
@@ -1239,7 +1328,7 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, ...)
     )
   
   ggsave(file.path(dat_dir, "Protein", outname), 
-         dpi = 600, width = 4.5, height = 4)
+         dpi = 600, width = width, height = height)
 }
 
 

@@ -8,10 +8,11 @@ sigTest(
   df,
   id,
   label_scheme_sub,
-  scale_log2r,
-  complete_cases,
-  impute_na,
-  rm_allna,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  impute_group_na = FALSE,
+  rm_allna = FALSE,
   method_replace_na,
   filepath,
   filename,
@@ -52,6 +53,10 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
+exclusively NA under a sample group. The sample grouping is defined under
+\code{label_scheme}.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to

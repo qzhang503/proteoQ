@@ -20,42 +20,43 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   
-  if (!nrow(df))
+  if (!nrow(df)) {
     stop("Zero row of data after subsetting.")
+  }
 
   id <- rlang::as_string(rlang::enexpr(id))
   
-  if (anal_type %in% c("ESGAGE", "GSVA"))
+  if (anal_type %in% c("ESGAGE", "GSVA")) {
     id <- "entrez"
+  }
 
-  if ((anal_type %in% c("GSEA")) && (id != "gene"))
-    stop("Primary ID is not `gene`.", call. = FALSE)
+  if ((anal_type %in% c("GSEA")) && (id != "gene")) {
+    stop("Primary ID is not `gene`.")
+  }
 
   NorZ_ratios <- find_NorZ(scale_log2r)
 
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
 
-  df <- local({
-    df <- df %>% 
-      dplyr::ungroup() %>% 
-      dplyr::filter(!duplicated(!!rlang::sym(id)),
-                    !is.na(!!rlang::sym(id)),) 
-    
-    if (!nrow(df))
-      stop("Zero row of data after the removals of duplicated or NA `", id, "`.")
-
-    df <- df %>% 
-      dplyr::ungroup() %>% 
-      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
-        else . } %>% 
-      reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
-    
-    if (!nrow(df))
-      stop("All intensity are NA or 0 in the input data.")
-    
-    df
-  })
+  df <- df |>
+    dplyr::ungroup() |>
+    dplyr::filter(!duplicated(!!rlang::sym(id)),
+                  !is.na(!!rlang::sym(id)),) 
+  
+  if (!nrow(df)) {
+    stop("Zero row of data after the removals of duplicated or NA `", id, "`.")
+  }
+  
+  df <- df %>% 
+    dplyr::ungroup() %>% 
+    { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
+      else . } %>% 
+    reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
+  
+  if (!nrow(df)) {
+    stop("All intensity are NA or 0 in the input data.")
+  }
 
   Levels <- sub_grp %>%
     as.character(.) %>%
@@ -104,8 +105,11 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
   tempR <- dfR
   rownames(tempR) <- paste(rownames(tempR), "log2R", sep = "@")
   
+  stopifnot(nrow(df) == length(df[["mean_lint"]]))
+  
   invisible(list(log2R = dfR, 
                  Intensity = dfI, 
+                 mean_lint = df[["mean_lint"]], 
                  IR = rbind(tempR, tempI)))
 }
 
