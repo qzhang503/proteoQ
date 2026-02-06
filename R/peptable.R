@@ -4568,6 +4568,9 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   # Annotate proteins
   df[["All Mapped Proteins"]] <- df[["All Mapped Genes"]] <- NULL
   df[["Protein.Names"]] <- df[["First.Protein.Description"]] <- NULL
+  
+  # Merge duplicated LCMS
+  df <- aggrLCMS_DIANN(df)
   df <- annotPrn(df, fasta = fasta, entrez = entrez)
   
   # Annotate peptides
@@ -4583,9 +4586,6 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     dplyr::mutate(pep_seq_modz = paste0(pep_seq_mod, "@", pep_exp_z))
 
   # df <- df |> dplyr::filter(!duplicated(pep_seq_mod))
-
-  # Merge duplicated LCMS
-  df <- aggrLCMS_DIANN(df)
 
   # Collapse charge states (requires columns 'I000')
   df <- groupMZPepZ2(df)
@@ -4726,12 +4726,11 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   }
   
   df <- rm_diann_empties(df, label_scheme_full)
+  df <- aggrLCMS_DIANN(df)
   
   # Move intensity columns to the last
   cols <- dirname(colnames(df)) != "."
-  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
-  df <- aggrLCMS_DIANN(df)
-  
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
   cols <- grepl("^I000 \\(", colnames(df))
   dfr  <- dfy <- df[, cols, drop = FALSE]
   dfrz <- dfrn <- dfr <- 
@@ -4851,7 +4850,9 @@ aggrLCMS_DIANN <- function (df)
       next
     }
     
-    ans <- bind_cols(ans, tibble(!!knm := rowMeans(dfi)))
+    temp <- rowMeans(dfi, na.rm = TRUE)
+    temp[is.nan(temp)] <- NA_real_
+    ans <- bind_cols(ans, tibble(!!knm := temp))
   }
   
   dplyr::bind_cols(df[, !cols, drop = FALSE], ans)

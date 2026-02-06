@@ -246,7 +246,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
   }
   
   if (show_vline) {
-    p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+    p <- p + geom_vline(xintercept = 0, linewidth = .25, linetype = "dashed")
   }
   
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
