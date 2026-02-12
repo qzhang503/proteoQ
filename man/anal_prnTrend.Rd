@@ -13,6 +13,7 @@ anal_prnTrend(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  impute_group_na = TRUE,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -57,6 +58,10 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
+exclusively NA under a sample group. The sample grouping is defined under
+\code{label_scheme}.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an

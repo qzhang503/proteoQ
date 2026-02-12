@@ -253,7 +253,7 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 #' @importFrom MASS ginv
 model_onechannel <- function (dfR = NULL, dfI = NULL, 
                               id, formula, label_scheme_sub, 
-                              complete_cases = FALSE, impute_group_na = FALSE, 
+                              complete_cases = FALSE, impute_group_na = TRUE, 
                               method = "limma", padj_method = "BH", 
                               var_cutoff = 1E-3, pval_cutoff = 1.00, 
                               logFC_cutoff = log2(1), ...) 
@@ -297,25 +297,23 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
               " under `", formula, "`.")
   })
   
-  # keep the name list as rows may drop in filtration
   id <- rlang::as_string(rlang::enexpr(id))
   
-  df_nms <- dfR |>
-    tibble::rownames_to_column(id) |>
-    dplyr::select(id)
+  # keep the name list as rows may drop in filtration
+  df_nms <- tibble::tibble(!!id := rownames(dfR))
   
   if (complete_cases) {
     dfR <- dfR[complete.cases(dfR), ]
   }
 
-  dfR <- dfR |>
-    filterData(var_cutoff = var_cutoff) |>
-    dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
-  dfI <- dfI[, colnames(dfR), drop = FALSE]
-  dfI <- dfI[rownames(dfI) %in% rownames(dfR), , drop = FALSE]
-  
+  sids <- label_scheme_sub_sub[["Sample_ID"]]
+  dfR  <- filterData(dfR, var_cutoff = var_cutoff)
+  dfR  <- dfR[, sids, drop = FALSE]
+  dfI  <- dfI[, sids, drop = FALSE]
+  dfI  <- dfI[rownames(dfI) %in% rownames(dfR), ]
+
   stopifnot(identical(colnames(dfI), colnames(dfR)))
-  stopifnot(identical(rownames(dfI), rownames(dfR)))
+  stopifnot(identical(nrow(dfI), nrow(dfR)))
   
   ###
   # Haven't yet test within-group imputation at mixed effect modeling...
@@ -335,9 +333,15 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       stopifnot(identical(colnames(x), colnames(y)))
     }, dfsR, dfsI)
 
-    dfR <- impute_baseline_ints(
+    ans2 <- impute_baseline_ints(
       dfsR = dfsR, dfsI = dfsI, ys_base = ys_base, 
-      sample_ids = colnames(dfI))
+      sample_ids = sids)
+    
+    dfR <- dplyr::bind_cols(lapply(ans2, `[[`, "log2R"))
+    dfR <- dfR[, sids, drop = FALSE]
+    # dfI <- dplyr::bind_cols(lapply(ans2, `[[`, "Intensity"))
+    # dfI <- dfI[, sids, drop = FALSE]
+    rm(list = "ans2")
   }
 
   local({
@@ -468,11 +472,42 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     }
   }
   
-  df_op <- res_lm %>% 
-    tibble::rownames_to_column(id) %>%
-    dplyr::right_join(df_nms, by = id) %>%
-    `rownames<-`(NULL) %>% 
+  bads <- df_nms[!df_nms[[id]] %in% rownames(res_lm), ] |>
     tibble::column_to_rownames(var = id)
+  
+  if (FALSE) {
+    df_op <- res_lm %>% 
+      tibble::rownames_to_column(id) %>%
+      dplyr::right_join(df_nms, by = id) %>%
+      `rownames<-`(NULL) %>% 
+      tibble::column_to_rownames(var = id)
+  }
+  
+  df_op <- dplyr::bind_rows(res_lm, bads)
+  
+  df_op <- df_op %>%
+    dplyr::mutate(
+      dplyr::across(
+        dplyr::matches("^(pVal \\(|adjP \\()"),
+        function (x) tidyr::replace_na(as.numeric(x), 1)
+      )
+    )
+  
+  df_op <- df_op %>%
+    dplyr::mutate(
+      dplyr::across(
+        dplyr::matches("^log2Ratio \\(", ),
+        function (x) tidyr::replace_na(x, 0.0)
+      )
+    )
+  
+  df_op <- df_op %>%
+    dplyr::mutate(
+      dplyr::across(
+        dplyr::matches("^FC \\(", ),
+        function (x) tidyr::replace_na(x, 1.0)
+      )
+    )
 }
 
 
@@ -486,7 +521,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r = TRUE, complete_cases = FALSE, 
-                    impute_na = FALSE, impute_group_na = FALSE, 
+                    impute_na = FALSE, impute_group_na = TRUE, 
                     rm_allna = FALSE, method_replace_na, 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
@@ -631,15 +666,7 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
                                   max_fold = 100)
 {
   grps <- names(dfsR)
-  
-  if (FALSE) {
-    i <- 1L
-    dfR <- dfsR[[i]]
-    dfI <- dfsI[[i]]
-    g <- grps[[i]]
-    b <- ys_base[[i]]
-  }
-  
+
   ans  <- mapply(function (dfR, dfI, g, b) {
     # Complementary columns
     oks  <- !grps %in% g
@@ -658,18 +685,16 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
       dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
     }
     
-    # Set lower bounds
+    # Lower bounds
     min_log2_fold <- -log2(max_fold)
     dfR_emp[dfR_emp <= min_log2_fold] <- min_log2_fold
     dfR[nas, ] <- dfR_emp
     
-    dfR
+    list(log2R = dfR, Intensity = dfI)
   }, dfsR, dfsI, grps, ys_base, 
   SIMPLIFY = FALSE)
   
-  ans <- dplyr::bind_cols(ans)
-  
-  ans <- ans[, sample_ids, drop = FALSE]
+  ans
 }
 
 
@@ -684,8 +709,8 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
 #' @param label_scheme_sub_sub The metadata corresponding \code{dfR}.
 #' @param seed A seed for reproducible random number generations.
 #' @importFrom magrittr %>%
-base_sigtest_y <- function(dfR, dfI, elements, key_col,label_scheme_sub_sub, 
-                           seed = NULL) 
+base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL, 
+                           label_scheme_sub_sub, seed = NULL) 
 {
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
@@ -758,7 +783,7 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' @import purrr
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
-                    impute_group_na = FALSE, complete_cases = FALSE, 
+                    impute_group_na = TRUE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
@@ -970,7 +995,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
-                    impute_group_na = FALSE, complete_cases = FALSE, 
+                    impute_group_na = TRUE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 

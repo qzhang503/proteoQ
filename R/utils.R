@@ -3085,7 +3085,7 @@ rptr_violin <- function(df, filepath, width, height)
   
   p <- ggplot() +
     geom_violin(df_int, mapping = aes(x = Channel, y = log10(Intensity), fill = Channel), 
-                alpha = .8, size = .25, linetype = 0) +
+                alpha = .8, linewidth = .25, linetype = 0) +
     geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), 
                  width = 0.2, lwd = .2, fill = "white") +
     stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), 

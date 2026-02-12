@@ -25,6 +25,7 @@ plotHM(
   p_dist_cols = 2,
   hc_method_rows = "complete",
   hc_method_cols = "complete",
+  type_int = "N_I",
   x = NULL,
   p = NULL,
   method = NULL,

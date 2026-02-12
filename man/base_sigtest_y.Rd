@@ -4,7 +4,14 @@
 \alias{base_sigtest_y}
 \title{Calculate baseline intensities.}
 \usage{
-base_sigtest_y(dfR, dfI, elements, key_col, label_scheme_sub_sub, seed = NULL)
+base_sigtest_y(
+  dfR,
+  dfI,
+  elements = NULL,
+  key_col = NULL,
+  label_scheme_sub_sub,
+  seed = NULL
+)
 }
 \arguments{
 \item{dfR}{The complete data frame of log2Ratios.}

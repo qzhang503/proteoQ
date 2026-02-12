@@ -12,6 +12,7 @@ analTrend(
   label_scheme_sub,
   choice,
   n_clust,
+  impute_group_na = TRUE,
   scale_log2r,
   complete_cases,
   impute_na,
@@ -57,6 +58,10 @@ for selected samples.}
 divided into. At the NULL default, it will be determined by the gap method
 in \code{\link[cluster]{clusGap}}. The \code{n_clust} overwrites the
 argument \code{centers} in \code{\link[e1071]{cmeans}}.}
+
+\item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
+exclusively NA under a sample group. The sample grouping is defined under
+\code{label_scheme}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At

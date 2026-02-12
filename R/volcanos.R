@@ -363,22 +363,24 @@ subset_volcano_df <- function (x, df, keys = c("pVal", "adjP", "log2Ratio"))
 #' @import dplyr purrr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom limma vennDiagram
-fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = NULL,
-                        fml_nm = NULL, filepath = NULL, filename = NULL, adjP = FALSE, 
-                        topn_labels = 20, highlights = NULL, grids = NULL, ...) 
+fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, 
+                        theme = NULL, fml_nm = NULL, filepath = NULL, 
+                        filename = NULL, adjP = FALSE, topn_labels = 20, 
+                        highlights = NULL, grids = NULL, ...)
 {
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  dots <- rlang::enexprs(...)
-  xco <- if (is.null(dots[["xco"]])) 1.2 else dots[["xco"]]
-  yco <- if (is.null(dots[["yco"]])) .05 else dots[["yco"]]
+  id    <- rlang::as_string(rlang::enexpr(id))
+  dots  <- rlang::enexprs(...)
+  xco   <- if (is.null(dots[["xco"]])) 1.2 else dots[["xco"]]
+  yco   <- if (is.null(dots[["yco"]])) .05 else dots[["yco"]]
   title <- dots[["title"]]
   
-  x_label <- if (is.null(dots[["x_label"]])) 
+  x_label <- if (is.null(dots[["x_label"]])) {
     expression("Ratio ("*log[2]*")")
-  else 
+  }
+  else {
     dots[["x_label"]]
-  
+  }
+
   y_label <- if (is.null(dots[["y_label"]])) {
     if (adjP) 
       expression("adjP ("*-log[10]*")") 
@@ -389,12 +391,14 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
     dots[["y_label"]]
   }
   
-  if (!length(contrast_groups))
+  if (!length(contrast_groups)) {
     stop("No constrasts available.")
-  
-  if (!is.null(grids))
+  }
+
+  if (!is.null(grids)) {
     contrast_groups <- contrast_groups[grids]
-  
+  }
+
   dfw <- lapply(contrast_groups, subset_volcano_df, df = df, 
                 keys = c("pVal", "adjP", "log2Ratio"))
   
@@ -414,19 +418,18 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
     }
   })
   
-  dfw <- dfw %>% 
-    do.call(rbind, .) %>% 
+  dfw <- do.call(rbind, dfw) %>%
     dplyr::mutate(
       Contrast = factor(Contrast, levels = contrast_groups),
-      valence = ifelse(.$log2Ratio > 0, "pos", "neg")
-    ) %>%
+      valence = ifelse(.data[["log2Ratio"]] > 0, "pos", "neg")
+    ) |>
     dplyr::filter(!is.na(pVal))
   
-  dfw_sub <- dfw %>%
-    dplyr::filter((pVal < yco) & (abs(log2Ratio) > log2(xco))) %>%
-    dplyr::arrange(Contrast, pVal) %>%
-    dplyr::group_by(Contrast) %>%
-    dplyr::mutate(Index = row_number()) %>%
+  dfw_sub <- dfw |>
+    dplyr::filter((pVal < yco) & (abs(log2Ratio) > log2(xco))) |>
+    dplyr::arrange(Contrast, pVal) |>
+    dplyr::group_by(Contrast) |>
+    dplyr::mutate(Index = dplyr::row_number()) |>
     data.frame (check.names = FALSE)
   
   if(is.null(highlights)) {
@@ -448,88 +451,67 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
     dfw_sub_top20 <- dfw_high
   } 
   else {
-    dfw_sub_top20 <- dfw_sub %>%
-      dplyr::group_by(Contrast) %>%
-      dplyr::top_n(n = -topn_labels, wt = pVal) %>%
+    dfw_sub_top20 <- dfw_sub |>
+      dplyr::group_by(Contrast) |>
+      dplyr::top_n(n = -topn_labels, wt = pVal) |>
       data.frame (check.names = FALSE)
   }
   
   # data table for labels
-  if (FALSE) {
-    dt <- purrr::map(contrast_groups, ~ {
-      to_csv_(dfw_sub_top20 %>%
-                dplyr::filter(Contrast == .x) %>%
-                dplyr::select(c("Index", id))) %>%
-        {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # zero-entry exception
-    })  %>%
-      do.call(rbind, .) %>%
-      data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
-      dplyr::rename(!!rlang::sym(id) := id) %>%
-      dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
-  }
-  
-  dt <- dfw_sub_top20 %>% 
-    split(.$Contrast) %>% 
-    lapply(`[`, c("Index", id)) %>% 
-    lapply(to_csv_) %>% 
+  dt <- split(dfw_sub_top20, dfw_sub_top20[["Contrast"]])
+  dt <- dt |>
+    lapply(`[`, c("Index", id)) |>
+    lapply(to_csv_) |>
     lapply(function (x) {
       if(!grepl("\n", x)) x <- paste0(x,"\n1,\"NA\"") else x
-    }) %>%
-    do.call(rbind, .) %>%
-    data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
-    dplyr::rename(!!rlang::sym(id) := id) %>%
-    dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
-  
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
+    })
+  dt <- do.call(rbind, dt)
+  dt <- data.frame(Contrast = contrast_groups, id = dt, 
+                   stringsAsFactors = FALSE) |>
+    dplyr::rename(!!rlang::sym(id) := id) |>
+    dplyr::mutate(Contrast = factor(Contrast, levels = contrast_groups))
+
+  fn_prefix <- tools::file_path_sans_ext(filename)
   myPalette <- c("#377EB8", "#E41A1C")
   
-  if (nrow(dfw_high)) {
-    dfw_greater <- dfw_high[dfw_high$valence == "pos", ]
-    dfw_less <- dfw_high[dfw_high$valence == "neg", ]
+  tempdata <- if (nrow(dfw_high)) dfw_high else dfw_sub
+  dfw_greater <- tempdata[tempdata[["valence"]] == "pos", ]
+  dfw_less    <- tempdata[tempdata[["valence"]] == "neg", ]
+  rm(list = "tempdata")
+
+  ucont  <- unique(dfw$Contrast)
+  nucont <- length(ucont)
+  
+  nrow <- if (is.null(dots$nrow)) {
+    if (nucont > 3L) 2L else 1L
   }
   else {
-    dfw_greater <- dfw_sub[dfw_sub$valence == "pos", ]
-    dfw_less <- dfw_sub[dfw_sub$valence == "neg", ]
-  }
-  
-  nrow <- if (is.null(dots$nrow))
-    if (length(unique(dfw$Contrast)) > 3L) 2L else 1L
-  else
     dots$nrow
-  
+  }
+  stopifnot(nrow >= 1L)
+
   if (is.null(dots$xmax)) {
     xmax <- ceiling(pmax(abs(min(dfw$log2Ratio, na.rm = TRUE)), 
                          max(dfw$log2Ratio, na.rm = TRUE)))
   } 
   else {
     xmax <- eval(dots$xmax)
-    stopifnot(xmax > 0)
   }
+  stopifnot(xmax > 0)
   
-  if (is.null(dots$xmin)) {
-    xmin <- -xmax
-  } 
-  else {
-    xmin <- eval(dots$xmin)
-    stopifnot(xmin < 0)
-  }
+  if (is.null(dots$xmin)) { xmin <- -xmax } else { xmin <- eval(dots$xmin) }
+  stopifnot(xmin < 0)
   
   if (is.null(dots$ymax)) {
     ymax <- ceiling(max(-log10(dfw$pVal), na.rm = TRUE)) * 1.1
   } 
   else {
     ymax <- eval(dots$ymax)
-    stopifnot(ymax > 0)
-  }	
-  
-  if (is.null(dots$ymin)) {
-    ymin <- 0
-  } 
-  else {
-    ymin <- eval(dots$ymin)
-    stopifnot(ymin < ymax)
   }
+  stopifnot(ymax > 0)
+  
+  if (is.null(dots$ymin)) { ymin <- 0 } else { ymin <- eval(dots$ymin) }
+  stopifnot(ymin < ymax)
   
   if (FALSE) {
     p <- ggplot() +
@@ -548,16 +530,47 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
       theme
   }
   
+  dfw[["uid"]] <- paste0(dfw[[id]], dfw[["Contrast"]])
+  dfw_greater[["uid"]] <- paste0(dfw_greater[[id]], dfw_greater[["Contrast"]])
+  dfw_less[["uid"]] <- paste0(dfw_less[[id]], dfw_less[["Contrast"]])
+  
+  dfw <- dfw |> 
+    dplyr::filter(
+      !.data[["uid"]] %in% c(dfw_greater[["uid"]], dfw_less[["uid"]]))
+  
   p <- ggplot() +
     geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
                size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
-               alpha = .2, stroke = .5) +
-    geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 2, fill = myPalette[2], color = "white", shape = 21, 
-               alpha = .6, stroke = .5) +
-    geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 2, fill = myPalette[1], color = "white", shape = 21, 
-               alpha = .6, stroke = .5) +
+               alpha = .2, stroke = .5)
+  
+  if (is.null(highlights)) {
+    p <- p +
+      geom_point(
+        data = dfw_greater, 
+        mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+        size = 2, fill = myPalette[2], color = "white", shape = 21, 
+        alpha = .6, stroke = .5) +
+      geom_point(
+        data = dfw_less, 
+        mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+        size = 2, fill = myPalette[1], color = "white", shape = 21, 
+        alpha = .6, stroke = .5)
+  }
+  else {
+    p <- p +
+      geom_point(
+        data = dfw_greater, 
+        mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+        fill = myPalette[2], color = "white", shape = 21, 
+        alpha = .6, stroke = .5) +
+      geom_point(
+        data = dfw_less, 
+        mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+        fill = myPalette[1], color = "white", shape = 21, 
+        alpha = .6, stroke = .5)
+  }
+
+  p <- p +
     geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
     geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
     geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth = .5) +
@@ -567,18 +580,13 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
     theme
   
   if (nrow(dfw_sub_top20)) {
-    p <- p + geom_text(data = dfw_sub_top20, 
-                       mapping = aes(x = log2Ratio, 
-                                     y = -log10(pVal), 
-                                     label = Index, 
-                                     color = Index),
-                       size = 3, 
-                       alpha = .5, 
-                       hjust = 0, 
-                       nudge_x = 0.05, 
-                       vjust = 0, 
-                       nudge_y = 0.05, 
-                       na.rm = TRUE)
+    p <- p + 
+      geom_text(
+        data = dfw_sub_top20, 
+        mapping = aes(x = log2Ratio, y = -log10(pVal), label = Index, 
+                      color = Index),
+        size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, 
+        nudge_y = 0.05, na.rm = TRUE)
     p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
     p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), 
                         x = -xmax*.85, y = ymax/2)
@@ -588,28 +596,21 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
   }
   
   if(is.null(dots$width)) {
-    width <- if (nrow > 1L) 
-      6*length(unique(dfw$Contrast))/nrow + 1 
-    else 
-      6*length(unique(dfw$Contrast))/nrow
+    width <- if (nrow > 1L) 6 * nucont/nrow + 1 else 6 * nucont/nrow
   } 
   else {
     width <- eval(dots$width)
   }
   
-  height <- if(is.null(dots$height))
-    6*nrow
-  else
-    eval(dots$height)
-  
+  height <- if(is.null(dots$height)) 6 * nrow else eval(dots$height)
+
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
   
-  rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, fml_nm, filename),
-                                     plot = p, 
-                                     width = width, 
-                                     height = height, 
-                                     !!!ggsave_dots)))
-  
+  rlang::eval_tidy(
+    rlang::quo(ggsave(filename = file.path(filepath, fml_nm, filename),
+                      plot = p, width = width, height = height, 
+                      !!!ggsave_dots)))
+
   summ_venn(df = dfw_greater, id = id, contrast_groups = contrast_groups, 
             filepath = filepath, direction = paste0(fn_prefix, "_greater"), 
             fml_nm = fml_nm)
@@ -1051,17 +1052,31 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
         dots$nrow
       }
 
-      ###
-      # print(names(gsets_sub))
-      ###
+      # Avoid double-plot of dots
+      dfw_sub[["uid"]] <- paste0(dfw_sub[[id]], dfw_sub[["newContrast"]])
+      dfw_greater[["uid"]] <- paste0(dfw_greater[[id]], dfw_greater[["newContrast"]])
+      dfw_less[["uid"]] <- paste0(dfw_less[[id]], dfw_less[["newContrast"]])
+      
+      dfw_sub <- dfw_sub |> 
+        dplyr::filter(
+          !.data[["uid"]] %in% c(dfw_greater[["uid"]], dfw_less[["uid"]]))
       
       p <- ggplot() +
         geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                   size = 3, colour = "gray", shape = 20, alpha = .5) +
-        geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                   size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-        geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                   size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+                   size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
+                   alpha = .2, stroke = .5)
+      p <- p +
+        geom_point(
+          data = dfw_greater, 
+          mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+          fill = myPalette[2], color = "white", shape = 21, 
+          alpha = .6, stroke = .5) +
+        geom_point(
+          data = dfw_less, 
+          mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+          fill = myPalette[1], color = "white", shape = 21, 
+          alpha = .6, stroke = .5)
+      p <- p +
         geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
         geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
         geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth =.5) +
@@ -1075,6 +1090,32 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
         scale_x_continuous(limits = c(xmin, xmax)) +
         scale_y_continuous(limits = c(ymin, ymax)) +
         theme
+      ###
+      
+      if (FALSE) {
+        p <- ggplot() +
+          geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                     size = 3, colour = "#252525", shape = 20, alpha = .5) +
+          geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                     size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+          geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+                     size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+          geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
+          geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
+          geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth =.5) +
+          geom_hline(yintercept = -log10(pval_cutoff), 
+                     linetype = "longdash", linewidth = .5, color = "#fc9272") +
+          geom_vline(xintercept = -logFC_cutoff, 
+                     linetype = "longdash", linewidth = .5, color = "#fc9272") +
+          geom_vline(xintercept = logFC_cutoff, 
+                     linetype = "longdash", linewidth =.5, color = "#fc9272") +
+          labs(title = names(gsets_sub), x = x_label, y = y_label) +
+          scale_x_continuous(limits = c(xmin, xmax)) +
+          scale_y_continuous(limits = c(ymin, ymax)) +
+          theme
+      }
+      
+      
       
       p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
       

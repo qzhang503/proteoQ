@@ -11,7 +11,7 @@ sigTest(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
-  impute_group_na = FALSE,
+  impute_group_na = TRUE,
   rm_allna = FALSE,
   method_replace_na,
   filepath,

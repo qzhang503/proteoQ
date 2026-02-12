@@ -8,7 +8,7 @@
 pepSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
-  impute_group_na = FALSE,
+  impute_group_na = TRUE,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
@@ -26,7 +26,7 @@ pepSig(
 prnSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
-  impute_group_na = FALSE,
+  impute_group_na = TRUE,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),

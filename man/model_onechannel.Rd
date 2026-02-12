@@ -12,7 +12,7 @@ model_onechannel(
   formula,
   label_scheme_sub,
   complete_cases = FALSE,
-  impute_group_na = FALSE,
+  impute_group_na = TRUE,
   method = "limma",
   padj_method = "BH",
   var_cutoff = 0.001,

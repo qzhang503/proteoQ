@@ -319,8 +319,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mea
     id <- "gene"
   }
   
-  stopifnot(
-    rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
 
   scale_log2r <- match_prnSig_scale_log2r(
     scale_log2r = scale_log2r, impute_na = impute_na)
@@ -573,10 +572,9 @@ fml_gspa <- function (fml, fml_nm,
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  df <- df |>
-    prep_gspa(id = id_gspa, fml_nm = fml_nm, col_ind = col_ind, 
-              pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-              use_adjP = use_adjP) 
+  df <- prep_gspa(df, id = id_gspa, fml_nm = fml_nm, col_ind = col_ind, 
+                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+                  use_adjP = use_adjP) 
   
   if (complete_cases) {
     df <- df[complete.cases(df), ]
@@ -815,21 +813,21 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
                               gspval_cutoff = 0.05, 
                               gslogFC_cutoff = log2(1)) 
 {
-  df <- df %>% 
+  df <- df |>
     dplyr::filter(entrez %in% gset)
   
-  if (length(unique(df$entrez)) < min_size)
+  if (length(unique(df$entrez)) < min_size) {
     return(NULL)
+  }
 
-  df <- df %>% dplyr::group_by(contrast, valence)
+  df <- df |> dplyr::group_by(contrast, valence)
 
-  ok_delta_n <- ok_min_size(df = df, 
-                            min_delta = min_delta, 
-                            gspval_cutoff = gspval_cutoff, 
-                            gslogFC_cutoff = gslogFC_cutoff)
+  ok_delta_n <- ok_min_size(
+    df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff, 
+    gslogFC_cutoff = gslogFC_cutoff)
   
   # penalty term
-  dfw <- df %>% dplyr::mutate(p_val = ifelse(is.na(p_val), 1, p_val))
+  dfw <- df |> dplyr::mutate(p_val = ifelse(is.na(p_val), 1.0, p_val))
 
   delta_p <- dfw %>% 
     dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
@@ -838,7 +836,7 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
     dplyr::select(-valence) %>% 
     `colnames<-`(paste0("pVal (", colnames(.), ")"))
   
-  if (nrow(delta_p) == 2) 
+  if (nrow(delta_p) == 2L) 
     delta_p <- delta_p[2, ] - delta_p[1, ]
   
   delta_p <- abs(delta_p)
@@ -854,9 +852,10 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
     `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
     abs(.)
   
-  if (nrow(delta_fc) == 2L) 
+  if (nrow(delta_fc) == 2L) {
     delta_fc <- delta_fc[2, ] - delta_fc[1, ]
-  
+  }
+
   invisible(dplyr::bind_cols(delta_p, delta_fc))
 } 
 
@@ -963,10 +962,10 @@ prep_gspa <- function(df = NULL, id = NULL, fml_nm = NULL,
                       col_ind = 0L, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                       use_adjP = FALSE) 
 {
-  id <- rlang::as_string(rlang::enexpr(id))
+  # id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
-    dplyr::select(grep(paste0("^", fml_nm, "\\."), names(.))) %>%
+    dplyr::select(matches(paste0("^", fml_nm, "\\."))) %>%
     `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) %>% 
     rm_pval_whitespace() %>% 

@@ -197,7 +197,7 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 #' @importFrom cluster clusGap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, 
-                       choice, n_clust,
+                       choice, n_clust, impute_group_na = TRUE, 
                        scale_log2r, complete_cases, impute_na, 
                        filepath, filename, anal_type, ...) 
 {
@@ -205,8 +205,11 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     stop("Empty metadata.")
   }
 
-  complete_cases <- to_complete_cases(
-    complete_cases = complete_cases, impute_na = impute_na)
+  if (!impute_group_na) {
+    complete_cases <- 
+      to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+  }
+  
   if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   }
@@ -262,26 +265,52 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   ugrps <- unique(grps)
   ugrps <- ugrps[!is.na(ugrps)]
   
-  dfs_log2r  <- lapply(ugrps, function (g) {
-    rowMeans(df_log2r[, which(grps == g), drop = FALSE], na.rm = TRUE)
-  })
-  dfs_log2r <- do.call(cbind, dfs_log2r)
-  colnames(dfs_log2r) <- ugrps
-  
-  dfs_int  <- lapply(ugrps, function (g) {
-    rowMeans(df_int[, which(grps == g), drop = FALSE], na.rm = TRUE)
-  })
-  dfs_int <- do.call(cbind, dfs_int)
-  colnames(dfs_int) <- ugrps
-  
   fcts <- label_scheme_sub |>
     dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
     dplyr::arrange(.data[[col_order]]) |>
     dplyr::pull(.data[[col_group]])
   
-  df_mean_log2r <- dfs_log2r[, fcts, drop = FALSE]
+  if (impute_group_na) {
+    ans <- base_sigtest_y(
+      dfR = df_log2r, dfI = df_int, elements = ugrps, key_col = col_group, 
+      label_scheme_sub_sub = label_scheme_sub, seed = 1234L)
+    dfs_log2r <- ans[["log2R"]]
+    dfs_int <- ans[["Intensity"]]
+    ys_base <- ans[["baseline"]]
+    rm(list = "ans")
+    
+    mapply(function (x, y) {
+      stopifnot(identical(rownames(x), rownames(y)))
+      stopifnot(identical(colnames(x), colnames(y)))
+    }, dfs_log2r, dfs_int)
+    
+    ans2 <- impute_baseline_ints(
+      dfsR = dfs_log2r, dfsI = dfs_int, ys_base = ys_base, 
+      sample_ids = label_scheme_sub[["Sample_ID"]])
+    
+    dfs_log2r <- lapply(ans2, `[[`, "log2R")
+    dfs_int   <- lapply(ans2, `[[`, "Intensity")
+    rm(list = "ans2")
+    
+    df_mean_log2r <- do.call(cbind, lapply(dfs_log2r, rowMeans, na.rm = TRUE))
+    df_mean_int <- do.call(cbind, lapply(dfs_int, rowMeans, na.rm = TRUE))
+  } else {
+    dfs_log2r  <- lapply(ugrps, function (g) {
+      rowMeans(df_log2r[, which(grps == g), drop = FALSE], na.rm = TRUE)
+    })
+    df_mean_log2r <- do.call(cbind, dfs_log2r)
+    colnames(df_mean_log2r) <- ugrps
+    
+    dfs_int  <- lapply(ugrps, function (g) {
+      rowMeans(df_int[, which(grps == g), drop = FALSE], na.rm = TRUE)
+    })
+    df_mean_int <- do.call(cbind, dfs_int)
+    colnames(df_mean_int) <- ugrps
+  }
 
-  df_mean_int <- data.frame(dfs_int[, fcts, drop = FALSE])
+  df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
+  df_mean_int <- data.frame(df_mean_int[, fcts, drop = FALSE])
+  
   df_mean_int <- log10(df_mean_int) |>
     tibble::rownames_to_column(id)
   df_mean_int <- df_mean_int |>
@@ -319,7 +348,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
                    id = id, df_mean_log2r = df_mean_log2r)
   
-  df_mean_log2r <- data.frame(df_mean_log2r) |>
+  df_mean_log2r <- df_mean_log2r |>
     tibble::rownames_to_column(id)
 
   out <- vector("list", length(n_clust))
@@ -367,14 +396,16 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   dots <- rlang::enexprs(...)
 
   # find input df2 ---------------------------
-  ins <- list.files(path = filepath, pattern = "Trend_[ONZ]_.*nclust\\d+.*\\.txt$")
+  ins <- 
+    list.files(path = filepath, pattern = "Trend_[ONZ]_.*nclust\\d+.*\\.txt$")
   
   if (!length(ins)) {
     stop("No inputs under ", filepath)
   }
 
   if (is.null(df2)) {
-    ins <- if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
+    ins <- 
+      if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
 
     ins <- if (is.na(scale_log2r))
       ins[grepl("_Trend_O_", ins)]
@@ -613,6 +644,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@inheritParams prnCorr_logFC
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnHM
+#'@inheritParams prnSig
 #'@param choice Character string; the clustering method in \code{c("cmeans",
 #'  "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
@@ -707,7 +739,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
                            choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
                            n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
-                           impute_na = FALSE, 
+                           impute_na = FALSE, impute_group_na = TRUE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
@@ -779,6 +811,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
+            impute_group_na = impute_group_na, 
             df = !!df, 
             df2 = NULL, 
             filepath = !!filepath, 

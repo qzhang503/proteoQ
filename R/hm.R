@@ -47,13 +47,15 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_sub, 
+plotHM <- function(df, id, col_select, col_order, col_benchmark, 
+                   label_scheme_sub, 
                    filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
+                   type_int = "N_I", 
                    
                    x = NULL, 
                    p = NULL, 
@@ -107,9 +109,9 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   stopifnot(xmin < xmax, xmargin >= 0, xmargin <= abs(xmax))
   stopifnot(p_dist_rows > 0, p_dist_cols > 0)
   
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  fn_suffix <- tools::file_ext(filename)
+
   dir.create(file.path(filepath, "Subtrees", fn_prefix), 
              recursive = TRUE, showWarnings = FALSE)
   
@@ -120,20 +122,11 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   
   dots <- rlang::enexprs(...)
   
-  filter_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  arrange_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^arrange_", names(.))]
-  
-  select_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^select_", names(.))]
-  
-  dots <- dots %>% 
-    .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  select_dots  <- lang_dots[grepl("^select_", names(lang_dots))]
+  dots         <- dots[!dots %in% c(filter_dots, arrange_dots, select_dots)]
 
   # needed defaults before calling pheatmap
   cluster_rows <- if (is.null(dots$cluster_rows)) TRUE else dots$cluster_rows
@@ -222,10 +215,11 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   }
 
   dfR <- df %>%
-    dplyr::select(grep(NorZ_ratios, names(.))) %>%
-    `colnames<-`(label_scheme$Sample_ID) %>%
-    dplyr::select(which(names(.) %in% sample_ids)) %>%
-    dplyr::select(as.character(sample_ids)) # ensure the same order
+    dplyr::select(matches(NorZ_ratios)) %>%
+    setNames(label_scheme[["Sample_ID"]]) %>%
+    dplyr::select(any_of(sample_ids)) %>%
+    # enforce exact order
+    dplyr::select(all_of(sample_ids))
   
   # Add pep_start and pep_end
   add_pep_range <- dots[["add_pep_range"]]
@@ -238,10 +232,10 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
     pep_ids <- df[[id]]
   }
 
-  df <- df %>%
-    dplyr::select(-grep("log2_R[0-9]{3}", names(.))) %>%
-    dplyr::bind_cols(., dfR) %>% 
-    dplyr::filter(!is.na(.[[id]])) %>% 
+  df <- df |>
+    dplyr::select(-matches("log2_R[0-9]{3}")) |>
+    dplyr::bind_cols(dfR) |>
+    dplyr::filter(!is.na(.data[[id]])) %>% 
     `rownames<-`(.[[id]])
   
   rm(list = c("dfR"))
@@ -292,10 +286,11 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   }
 
   df_hm <- df_hm %>%
-    `rownames<-`(.[[id]])	%>%
-    dplyr::select(which(names(.) %in% sample_ids)) %>% 
-    { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
-  
+    { rownames(.) <- .[[id]]; . } %>%
+    { if (rm_allna) .[rowSums(!is.na(.[, intersect(names(.), sample_ids)])) > 0L, ] 
+      else . } # %>% 
+    # dplyr::select(any_of(sample_ids))
+
   if (!nrow(df_hm)) {
     stop("Zero data rows after removing all-NA rows.")
   }
@@ -308,38 +303,52 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   if ((!cluster_cols) && (!is.null(col_order)) && 
       length(unique(label_scheme_sub[[col_order]])) > 1L) {
     
-    df_hm <- local({
-      plot_orders <- label_scheme_sub %>%
-        dplyr::select(Sample_ID, !!col_order) %>%
-        dplyr::filter(!is.na(!!col_order)) %>%
-        unique() %>%
-        dplyr::arrange(!!col_order)
-      
-      if (nrow(plot_orders) != length(sample_ids)) {
-        stop("The number of entries under `", rlang::as_string(col_order), 
-             "` is different to the number of selected samples.")
-      }
-      
-      df_hm <- df_hm[, as.character(plot_orders$Sample_ID), drop = FALSE]
-    })
+    plot_orders <- label_scheme_sub %>%
+      dplyr::select(Sample_ID, !!col_order) %>%
+      dplyr::filter(!is.na(!!col_order)) %>%
+      unique() %>%
+      dplyr::arrange(!!col_order)
+    
+    if (nrow(plot_orders) != length(sample_ids)) {
+      stop("The number of entries under `", rlang::as_string(col_order), 
+           "` is different to the number of selected samples.")
+    }
+    
+    plot_sids <- plot_orders$Sample_ID
+    rm(list = "plot_orders")
+    
+    df_hm <- dplyr::bind_cols(
+      df_hm[, !colnames(df_hm) %in% plot_sids, drop = FALSE], 
+      df_hm[, plot_sids, drop = FALSE], )
+  } else {
+    plot_sids <- sample_ids
   }
 
+  df_log2r <- df_lgr <- df_hm[, plot_sids, drop = FALSE]
+  
+  df_int <- df_hm %>%
+    dplyr::select(tidyr::matches(paste0("^", type_int, "[0-9]{3} \\(")))
+  names(df_int) <- sub("^N_I[0-9]{3} \\((.*)\\)$", "\\1", names(df_int))
+  df_int <- df_int[, plot_sids, drop = FALSE]
+
   if (cluster_rows) {
-    d <- stats::dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
+    d <- 
+      stats::dist(df_log2r, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
 
     h <- tryCatch(
       hclust(d, hc_method_rows), 
-      error = function(e) 1L
-    )
-    
+      error = function(e) 1L)
+
     if (class(h) != "hclust" && h == 1L) {
       warning("Row clustering cannot be performed.")
       h <- FALSE
+    } else {
+      df_int <- df_int[h$order, ]
+      df_lgr <- df_lgr[h$order, ]
     }
 
     dots$cluster_rows <- h
-    rm(list = c("d", "h"))
   } 
   else {
     dots$cluster_rows <- FALSE
@@ -347,8 +356,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   }
   
   if (cluster_cols) {
-    d_cols <- stats::dist(t(df_hm), method = clustering_distance_cols, 
-                          p = p_dist_cols)
+    d_cols <- 
+      stats::dist(t(df_log2r), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
 
     h_cols <- tryCatch(
@@ -359,10 +368,12 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
     if ((class(h_cols) != "hclust") && (h_cols == 1)) {
       warning("Column clustering cannot be performed.")
       h_cols <- FALSE
+    } else {
+      df_int <- df_int[, h_cols$order, drop = FALSE]
+      df_lgr <- df_lgr[, h_cols$order, drop = FALSE]
     }
     
     dots$cluster_cols <- h_cols
-    # rm(list = c("d_cols", "h_cols")) # h_cols also for subtrees
   } 
   else {
     dots$cluster_cols <- FALSE
@@ -371,19 +382,64 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
   
   filename <- gg_imgname(filename)
   
-  # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row` 
-  dots <- dots %>% 
-    .[! names(.) %in% c("mat", "filename", "annotation_col", "annotation_row", 
-                        "clustering_distance_rows", "clustering_distance_cols", 
-                        "clustering_method", 
-                        "color", "annotation_colors", "breaks")]
+  ### 
+  df_lgr <- df_lgr |>
+    tibble::rownames_to_column(id) |>
+    tidyr::pivot_longer(-!!id, names_to = "sample", values_to = "log2Ratio")
+  df_int <- df_int |>
+    tibble::rownames_to_column(id) |>
+    tidyr::pivot_longer(-!!id, names_to = "sample", values_to = "intensity")
   
+  if (identical(df_lgr[[id]], df_int[[id]]) && 
+      identical(df_lgr[["sample"]], df_int[["sample"]])) {
+    df_both <- dplyr::bind_cols(df_lgr, df_int[, "intensity", drop = FALSE])
+  }
+  readr::write_tsv(df_both, file.path(filepath, paste0(fn_prefix, "_XY.txt")))
+  
+  n_smps <- length(sample_ids)
+  n_ids  <- length(unique(df[[id]]))
+  
+  if (n_ids <= 200 || id %in% c("pep_seq", "pep_seq_mod")) {
+    width  <- dots[["width"]]
+    height <- dots[["height"]]
+    if (is.null(width)) width <- n_smps * .8 + 2
+    if (is.null(height)) height <- .8 * n_ids
+    
+    p_dot <- ggplot(df_both, aes(x = sample, y = gene)) +
+      geom_point(aes(size = log10(intensity), color = log2Ratio)) +
+      scale_size_continuous(name = "intensity") +
+      scale_color_gradient2(
+        low = "#2166AC",
+        mid = "white",
+        high = "#B2182B",
+        midpoint = 0,
+        name = "log2Ratio"
+      ) +
+      theme_minimal() +
+      theme(
+        panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+    
+    ggsave(file.path(filepath, paste0(fn_prefix, "_XYDOT.", fn_suffix)), 
+           width = 10, height = 8)
+  } else {
+    warning("Too many entries for a X-Y dot plot.")
+  }
+  ###
+  
+  # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row`
+  dots <- dots[!names(dots) %in% 
+                 c("mat", "filename", "annotation_col", "annotation_row", 
+                   "clustering_distance_rows", "clustering_distance_cols", 
+                   "clustering_method", "color", "annotation_colors", "breaks")]
+
   # setHMlims after hclust
-  df_hm <- setHMlims(df_hm, xmin, xmax)
+  df_log2r <- setHMlims(df_log2r, xmin, xmax)
   
   # references under expt_smry::Sample_ID may be included
   p <- my_pheatmap(
-    mat = df_hm,
+    mat = df_log2r,
     filename = file.path(filepath, filename),
     annotation_col = annotation_col,
     annotation_row = annotation_row, 
@@ -410,7 +466,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark, label_scheme_su
         tibble::column_to_rownames(var = id)
       
       for (cluster_id in unique(Cluster$Cluster)) {
-        df_sub <- Cluster[Cluster$Cluster == cluster_id, names(Cluster) %in% sample_ids]
+        df_sub <- 
+          Cluster[Cluster$Cluster == cluster_id, names(Cluster) %in% sample_ids]
         
         if (complete_cases) {
           df_sub <- df_sub %>%
@@ -596,6 +653,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
                                    hc_method_cols = hc_method_cols, 
+                                   type_int = "N_I", 
 
                                    x = x, 
                                    p = p, 
@@ -822,6 +880,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
                                    hc_method_cols = hc_method_cols, 
+                                   type_int = "N_I", 
                                    
                                    x = x, 
                                    p = p, 
