@@ -38,11 +38,11 @@ prnGSPAMap(
   filename = NULL,
   fml_nms = NULL,
   adjP = FALSE,
-  topn_labels = 20,
+  topn_labels = 20L,
   show_sig = "none",
-  gspval_cutoff = 0.05,
+  gspval_cutoff = 0.01,
   gslogFC_cutoff = log2(1.2),
-  topn_gsets = Inf,
+  topn_gsets = .Machine$integer.max,
   theme = NULL,
   ...
 )

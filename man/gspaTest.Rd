@@ -18,12 +18,13 @@ gspaTest(
   var_cutoff = 0.5,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
-  gspval_cutoff = 0.05,
+  gsscore_cutoff = 10,
   gslogFC_cutoff = log2(1),
-  min_size = 6,
-  max_size = Inf,
-  min_delta = 4,
-  min_greedy_size = 1,
+  gspval_cutoff = 0.01,
+  min_size = 6L,
+  max_size = .Machine$integer.max,
+  min_delta = 5L,
+  min_greedy_size = 1L,
   use_adjP = FALSE,
   method = "mean",
   anal_type = "GSPA",
@@ -100,19 +101,19 @@ is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
-\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
-significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported. The default is 0.05 for all
-formulas matched to or specified in argument \code{fml_nms}.
-Formula-specific threshold is allowed by supplying a vector of cut-off
-values.}
-
 \item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
 enrichment fold change. Only enrichment terms with absolute fold change
 greater than the threshold will be reported. The default magnitude is
 \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
+
+\item{gspval_cutoff}{Depreciated. Numeric value or vector; the cut-off in
+gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
+more significant than the threshold will be reported. The default is 0.05
+for all formulas matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by

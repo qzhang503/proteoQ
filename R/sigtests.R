@@ -63,28 +63,32 @@ prepFml <- function(formula, label_scheme_sub, ...)
   
   dots <- rlang::enexprs(...)
   
-  fml <- as.character(formula) %>% gsub("\\s+", "", .) %>% .[. != "~"]
+  fml <- gsub("\\s+", "", as.character(formula))
+  fml <- fml[fml != "~"]
   len <- length(fml)
   
-  key_col <- fml[len] %>% gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", .)
+  fml_last <- fml[[len]]
+  key_col  <- gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", fml_last)
   
   label_scheme_sub <- label_scheme_sub %>% 
     dplyr::filter(!is.na(!!sym(key_col)))
   
   # formula = ~ Term[ ~ V]
-  base <- if (grepl("\\[\\s*\\~\\s*", fml[len])) 
-    gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", fml[len])
-  else 
+  base <- if (grepl("\\[\\s*\\~\\s*", fml_last)) {
+    gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", fml_last)
+  }
+  else {
     NULL
-  
+  }
+
   if (!is.null(base)) { # formula = ~ Term[~V]
-    new_levels <- label_scheme_sub[[key_col]] %>% levels()
+    new_levels <- levels(label_scheme_sub[[key_col]])
     new_levels <- c(new_levels[new_levels == base], 
                     new_levels[new_levels != base])
     label_scheme_sub <- label_scheme_sub %>%
       dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
   } 
-  else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
+  else if (!grepl("\\[", fml_last)) { # formula = log2Ratio ~ Term
     new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
   }
   else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
@@ -96,15 +100,12 @@ prepFml <- function(formula, label_scheme_sub, ...)
     elements <- new_levels
   } 
   else {
-    contrs <- fml[len] %>%
-      gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-      gsub("\\\"", "", .) %>%
-      str_split(",\\s*", simplify = TRUE) %>%
+    contrs <- gsub("\\\"", "", gsub(".*\\[(.*)\\].*", "\\1", fml_last)) |>
+      str_split(",\\s*", simplify = TRUE) |>
       as.character()
     
-    new_contrs <- fml[len] %>%
-      gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
-      gsub("\\\"", "", .) %>% 
+    # may have random terms at the end
+    new_contrs <- gsub("\\\"", "", gsub("^.*\\[(.*)\\].*", "\\1", fml_last)) %>% 
       str_split(",\\s*", simplify = TRUE) %>% 
       gsub("\\s+", "", .) %>% 
       gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
@@ -133,10 +134,11 @@ prepFml <- function(formula, label_scheme_sub, ...)
     dplyr::filter(!!sym(key_col) %in% elements) %>%
     dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
   
-  if (!nrow(label_scheme_sub_sub))
+  if (!nrow(label_scheme_sub_sub)) {
     stop("No samples were found for formula ", formula, 
          "\nCheck the terms under column ", key_col)
-  
+  }
+
   design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
     `colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
   
@@ -152,9 +154,9 @@ prepFml <- function(formula, label_scheme_sub, ...)
     `colnames<-`(contrs) %>% 
     `rownames<-`(colnames(design))
   
-  rm(new_design_nms, new_design)
-  
-  random_vars <- fml[len] %>%
+  rm(list = c("new_design_nms", "new_design"))
+
+  random_vars <- fml_last %>%
     gsub("\\[.*\\]+?", "", .) %>%
     paste("~", .) %>%
     as.formula() %>%
@@ -224,10 +226,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
     `rownames<-`(nms) %>%
     tibble::rownames_to_column() %>% 
     dplyr::bind_cols(pvals, .) %>%
-    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
-                     scientific = TRUE, digits = 2L) %>%
-    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
-                     scientific = TRUE, digits = 2L) %>% 
+    # dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2L) %>%
+    # dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2L) %>% 
     tibble::remove_rownames() %>% 
     tibble::column_to_rownames()
   
@@ -527,6 +527,8 @@ sigTest <- function(df, id, label_scheme_sub,
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
                     data_type, anal_type, ...) 
 {
+  options(warn = 1L)
+  
   dat_dir <- get_gl_dat_dir()
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
@@ -631,18 +633,22 @@ sigTest <- function(df, id, label_scheme_sub,
     save(call_pars, file = file.path(dat_dir, "Calls", file))
   })
   
-  suppressWarnings(
-    df_op <- df_op %>%
-      tibble::rownames_to_column(id) %>% 
-      dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
-      dplyr::right_join(df, ., by = id) %T>% 
-      write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
-                  col.names = TRUE, row.names = FALSE)	  
-  )
+  df_op <- df_op %>%
+    tibble::rownames_to_column(id) %>% 
+    dplyr::mutate(!!id := forcats::fct_na_value_to_level(!!rlang::sym(id))) %>% 
+    dplyr::right_join(df, ., by = id) 
   
+  df_op2 <- df_op %>%
+    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2L) %>%
+    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2L) %T>% 
+    write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
+                col.names = TRUE, row.names = FALSE)
+
   wb <- createWorkbook("proteoQ")
   addWorksheet(wb, sheetName = "Results")
-  openxlsx::writeData(wb, sheet = "Results", df_op)
+  openxlsx::writeData(wb, sheet = "Results", df_op2)
   saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
                overwrite = TRUE) 
   

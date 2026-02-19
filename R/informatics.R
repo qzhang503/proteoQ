@@ -20,7 +20,7 @@
 #' @return A function to the given \code{anal_type}.
 #' @import dplyr ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-info_anal <- function (id = gene, id_gspa = "entrez", 
+info_anal <- function (id = "gene", id_gspa = "entrez", 
                        col_select = NULL, col_group = NULL, col_order = NULL,
                        col_color = NULL, col_fill = NULL, col_shape = NULL, 
                        col_size = NULL, col_alpha = NULL,
@@ -32,8 +32,7 @@ info_anal <- function (id = gene, id_gspa = "entrez",
                        method_replace_na = "none", 
                        df = NULL, df2 = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", 
-                                     "MA", "MDS", "Model",
-                                     "NMF", "Trend")) 
+                                     "MA", "MDS", "Model","NMF", "Trend")) 
 {
   scipen <- if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 999 else 0
   
@@ -130,16 +129,17 @@ info_anal <- function (id = gene, id_gspa = "entrez",
     rlang::sym(col_benchmark)
   }
 
-  if (col_select == rlang::expr(Sample_ID)) stop(err_msg1)
-  if (col_group == rlang::expr(Sample_ID))  stop(err_msg1)
-  if (col_order == rlang::expr(Sample_ID))  stop(err_msg1)
-  if (col_color == rlang::expr(Sample_ID))  stop(err_msg1)
-  if (col_fill == rlang::expr(Sample_ID))   stop(err_msg1)
-  if (col_shape == rlang::expr(Sample_ID))  stop(err_msg1)
-  if (col_size == rlang::expr(Sample_ID))   stop(err_msg1)
-  if (col_alpha == rlang::expr(Sample_ID))  stop(err_msg1)
-  if (col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1)
-  
+  sid_expr <- rlang::expr(Sample_ID)
+  if (col_select == sid_expr) stop(err_msg1)
+  if (col_group  == sid_expr) stop(err_msg1)
+  if (col_order  == sid_expr) stop(err_msg1)
+  if (col_color  == sid_expr) stop(err_msg1)
+  if (col_fill   == sid_expr) stop(err_msg1)
+  if (col_shape  == sid_expr) stop(err_msg1)
+  if (col_size   == sid_expr) stop(err_msg1)
+  if (col_alpha  == sid_expr) stop(err_msg1)
+  if (col_benchmark == sid_expr) stop(err_msg1)
+
   color_brewer <- rlang::enexpr(color_brewer)
   fill_brewer  <- rlang::enexpr(fill_brewer)
   if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
@@ -229,8 +229,8 @@ info_anal <- function (id = gene, id_gspa = "entrez",
   } else if (id %in% c("pep_seq", "pep_seq_mod")) {
     data_type <- "Peptide"
   } else {
-    stop("Unrecognized 'id'; ", 
-         "needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")")
+    stop("Unrecognized 'id'; needs to be in ", 
+         "c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")")
   }
 
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))
@@ -710,7 +710,8 @@ info_anal <- function (id = gene, id_gspa = "entrez",
   else if (anal_type == "GSPA") {
     function(gset_nms = "go_sets", var_cutoff = .5,
              pval_cutoff = 1E-2, logFC_cutoff = log2(1.1),
-             gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1),
+             gsscore_cutoff = 10., gslogFC_cutoff = log2(1),
+             gspval_cutoff = 1E-2, 
              min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1,
              use_adjP = FALSE,
              method = "mean",
@@ -728,8 +729,9 @@ info_anal <- function (id = gene, id_gspa = "entrez",
                var_cutoff = var_cutoff,
                pval_cutoff = pval_cutoff,
                logFC_cutoff = logFC_cutoff,
-               gspval_cutoff = gspval_cutoff,
+               gsscore_cutoff = gsscore_cutoff, 
                gslogFC_cutoff = gslogFC_cutoff,
+               gspval_cutoff = gspval_cutoff,
                min_size = min_size,
                max_size = max_size,
                min_delta = min_delta,

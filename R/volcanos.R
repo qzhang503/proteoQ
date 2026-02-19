@@ -754,7 +754,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   
   dat_dir <- get_gl_dat_dir()
   par_filepath <- 
-    file.path(dat_dir, "Calls", gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
+    file.path(dat_dir, "Calls", 
+              gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
   
   if (file.exists(par_filepath)) {
     load(par_filepath)
@@ -812,9 +813,9 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   dir.create(path = file.path(filepath, fml_nm, custom_prefix), 
              recursive = TRUE, showWarnings = FALSE)
   
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) 
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  filename <- paste0(custom_prefix, fn_prefix, ".", fn_suffix)
+  fn_suffix <- tools::file_ext(filename)
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  filename  <- paste0(custom_prefix, filename)
   
   dots <- rlang::enexprs(...)
   
@@ -873,7 +874,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   dots <- dots[!dots %in% c(filter2_dots, arrange2_dots, select2_dots)]
 
   gsea_res <- gsea_res |>
-    dplyr::arrange(p_val, abs(log2fc)) |>
+    dplyr::mutate(score = abs(score)) |>
+    dplyr::arrange(score, abs(log2Ratio)) |>
     filters_in_call(!!!filter2_dots) |>
     arrangers_in_call(!!!arrange2_dots)
   
@@ -886,19 +888,22 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   topn_gsets <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), topn_gsets)
   
   terms <- gsea_res |>
-    dplyr::arrange(p_val) |>
+    dplyr::arrange(-score) |>
     dplyr::slice(1:(topn_gsets * length(contrast_groups))) |>
-    dplyr::filter(p_val <= gspval_cutoff, 
-                  abs(log2fc) >= gslogFC_cutoff) |>
     dplyr::select(gsea_key) |>
     unique() |>
     unlist() %>%
     .[. %in% names(gsets)]
 
   gsea_res <- gsea_res |>
-    dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2L), 
-                  q_val = format(p_val, scientific = TRUE, digits = 2L), 
-                  log2fc = round(log2fc, digits = 2L), )
+    dplyr::mutate(score = round(score, digits = 1L), 
+                  # q_val = format(p_val, scientific = TRUE, digits = 2L), 
+                  log2Ratio = round(log2Ratio, digits = 2L), )
+  
+  if (TRUE) {
+    gsea_res <- gsea_res |>
+      dplyr::rename(log2Ratio_gs = log2Ratio)
+  }
   
   if (length(terms)) {
     dfw <- do.call(
@@ -1002,11 +1007,11 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
       if (show_sig != "none") {
         if (grepl("^p", show_sig)) {
           dfw_sub <- dfw_sub %>%
-            dplyr::mutate(newContrast = paste0(Contrast, " (p = ", p_val, ")"))
+            dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
         } 
         else if (grepl("^q", show_sig)) {
           dfw_sub <- dfw_sub %>%
-            dplyr::mutate(newContrast = paste0(Contrast, " (q = ", q_val, ")"))
+            dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
         }
       }
       
@@ -1114,9 +1119,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
           scale_y_continuous(limits = c(ymin, ymax)) +
           theme
       }
-      
-      
-      
+
       p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
       
       if (nrow(dfw_sub_top20)) {
@@ -1762,10 +1765,10 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
-                        adjP = FALSE, topn_labels = 20, 
+                        adjP = FALSE, topn_labels = 20L, 
                         show_sig = "none", 
-                        gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
-                        topn_gsets = Inf, theme = NULL, ...) 
+                        gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1.2), 
+                        topn_gsets = .Machine$integer.max, theme = NULL, ...) 
 {
   check_dots(c("id", "anal_type"), ...)
   

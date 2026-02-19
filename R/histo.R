@@ -316,12 +316,13 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Histogram")(cut_points = cut_points, 
-                                     show_curves = show_curves,
-                                     show_vline = show_vline, 
-                                     scale_y = scale_y, 
-                                     theme = theme, 
-                                     !!!dots)
+            anal_type = "Histogram")(
+              cut_points = cut_points, 
+              show_curves = show_curves, 
+              show_vline = show_vline, 
+              scale_y = scale_y, 
+              theme = theme, 
+              !!!dots)
 }
 
 
@@ -502,11 +503,12 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Histogram")(cut_points = cut_points, 
-                                     show_curves = show_curves,
-                                     show_vline = show_vline, 
-                                     scale_y = scale_y, 
-                                     theme = theme, 
-                                     !!!dots)
+            anal_type = "Histogram")(
+              cut_points = cut_points, 
+              show_curves = show_curves,
+              show_vline = show_vline, 
+              scale_y = scale_y, 
+              theme = theme, 
+              !!!dots)
 }
 

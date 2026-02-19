@@ -4,7 +4,17 @@
 \alias{ok_min_size}
 \title{checks the size of a gene set}
 \usage{
-ok_min_size(df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0)
+ok_min_size(
+  df,
+  min_delta = 4L,
+  max_low_n = 3L,
+  gspval_cutoff = 1,
+  gsscore_cutoff = 10,
+  gslogFC_cutoff = log2(1.2),
+  n_ignore = 1L,
+  p_x = 1,
+  FUN = mean
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -26,10 +36,13 @@ assessed. The number is after data filtration by \code{pval_cutoff},
 is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
 
-\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
-significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported. The default is 0.05 for all
-formulas matched to or specified in argument \code{fml_nms}.
+\item{max_low_n}{The maximum number of entries in the lower side of a volcano
+plot.}
+
+\item{gspval_cutoff}{Depreciated. Numeric value or vector; the cut-off in
+gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
+more significant than the threshold will be reported. The default is 0.05
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
@@ -39,6 +52,13 @@ greater than the threshold will be reported. The default magnitude is
 \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
+
+\item{n_ignore}{The number of entries to be ignored on both the left and the
+right side of volcano to handle, e.g., one-hit-wonders on a side.}
+
+\item{p_x}{A trivialized p-value for replacing NA values.}
+
+\item{FUN}{A summary function.}
 }
 \description{
 checks the size of a gene set

@@ -49,10 +49,10 @@ is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
-\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
-significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported. The default is 0.05 for all
-formulas matched to or specified in argument \code{fml_nms}.
+\item{gspval_cutoff}{Depreciated. Numeric value or vector; the cut-off in
+gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
+more significant than the threshold will be reported. The default is 0.05
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 

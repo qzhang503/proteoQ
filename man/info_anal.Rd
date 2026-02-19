@@ -5,7 +5,7 @@
 \title{Function factories for informatic analysis}
 \usage{
 info_anal(
-  id = gene,
+  id = "gene",
   id_gspa = "entrez",
   col_select = NULL,
   col_group = NULL,

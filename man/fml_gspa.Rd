@@ -7,23 +7,24 @@
 fml_gspa(
   fml,
   fml_nm,
-  pval_cutoff,
-  logFC_cutoff,
-  gspval_cutoff,
-  gslogFC_cutoff,
-  min_size,
-  max_size,
-  min_delta,
-  min_greedy_size,
-  method,
+  pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2),
+  gsscore_cutoff = 10,
+  gslogFC_cutoff = log2(1.2),
+  gspval_cutoff = 0.01,
+  min_size = 10L,
+  max_size = .Machine$integer.max,
+  min_delta = 5L,
+  min_greedy_size = 1L,
+  method = "mean",
   df,
   col_ind,
-  id,
-  id_gspa,
-  gsets,
+  id = "gene",
+  id_gspa = "entrez",
+  gsets = "go_sets",
   label_scheme_sub,
-  complete_cases,
-  scale_log2r,
+  complete_cases = FALSE,
+  scale_log2r = TRUE,
   filepath,
   filename,
   use_adjP = FALSE,
@@ -49,19 +50,19 @@ is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
-\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
-significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported. The default is 0.05 for all
-formulas matched to or specified in argument \code{fml_nms}.
-Formula-specific threshold is allowed by supplying a vector of cut-off
-values.}
-
 \item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
 enrichment fold change. Only enrichment terms with absolute fold change
 greater than the threshold will be reported. The default magnitude is
 \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
+
+\item{gspval_cutoff}{Depreciated. Numeric value or vector; the cut-off in
+gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
+more significant than the threshold will be reported. The default is 0.05
+for all formulas matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by

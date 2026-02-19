@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 #
 # $global.R
 # set_dat_dir
@@ -270,6 +271,7 @@
 # replace_by_rowone
 # impPepNA
 # find_mbr_ms1files
+# rm_diann_empties
 # makePepDIANN
 # makeProtDIANN
 # aggrLCMS_DIANN
@@ -447,6 +449,8 @@
 #
 # $trends.R
 # checkdots_analTrend
+# find_trend_m
+# makeTrendRes
 # analTrend
 # plotTrend
 # anal_prnTrend

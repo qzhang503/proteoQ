@@ -9,6 +9,7 @@ gspa_summary_limma(
   df,
   min_size = 10,
   min_delta = 4,
+  gsscore_cutoff = 10,
   gspval_cutoff = 0.05,
   gslogFC_cutoff = 1.2
 )
@@ -42,10 +43,10 @@ assessed. The number is after data filtration by \code{pval_cutoff},
 is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
 
-\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
-significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported. The default is 0.05 for all
-formulas matched to or specified in argument \code{fml_nms}.
+\item{gspval_cutoff}{Depreciated. Numeric value or vector; the cut-off in
+gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
+more significant than the threshold will be reported. The default is 0.05
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
