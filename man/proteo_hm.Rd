@@ -61,9 +61,9 @@ annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
-under the selected keys will be used to color-code peptides or proteins on
-the side of the indicated plot. The default is NULL without row annotation.}
+input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
+the selected keys will be used to color-code peptides or proteins on the
+side of the indicated plot. The default is NULL without row annotation.}
 
 \item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
 

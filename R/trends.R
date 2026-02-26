@@ -198,7 +198,8 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, 
                        choice, n_clust, impute_group_na = TRUE, 
-                       scale_log2r, complete_cases, impute_na, 
+                       scale_log2r = TRue, complete_cases = FALSE, 
+                       impute_na = FALSE, 
                        filepath, filename, anal_type, ...) 
 {
   if (!nrow(label_scheme_sub)) {
@@ -309,7 +310,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   }
 
   df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
-  df_mean_int <- data.frame(df_mean_int[, fcts, drop = FALSE])
+  df_mean_int   <- data.frame(df_mean_int[, fcts, drop = FALSE])
   
   df_mean_int <- log10(df_mean_int) |>
     tibble::rownames_to_column(id)
@@ -318,8 +319,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
   
   ## Analysis
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  fn_suffix <- tools::file_ext(basename(filename))
+  fn_prefix <- tools::file_path_sans_ext(filename)
 
   if (is.null(n_clust)) {
     n_clust <- local({
@@ -371,6 +372,12 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
                   col.names = TRUE, row.names = FALSE, quote = FALSE)	
   }
   
+  saveRDS(
+    list(log2R = df_log2r, Intensity = df_int, group = grps), 
+    file.path(filepath, 
+              paste0(sub("_nclust\\d+\\.txt", "", filename[[1]]), ".rds"))
+    )
+
   invisible(out)
 }
 
@@ -654,6 +661,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param filepath Use system default.
+#'@param type The type of data: either \code{Protein} or \code{Peptide}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
@@ -737,7 +745,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@export
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
                            choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
-                           n_clust = NULL, 
+                           n_clust = NULL, type = "protein", 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, impute_group_na = TRUE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) 
@@ -774,24 +782,41 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   # difficult to make every dummy variables in the instance
   ##############################################################
   
-  dir.create(file.path(get_gl_dat_dir(), "Protein/Trend/log"), 
+  dir.create(file.path(get_gl_dat_dir(), type, "Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
-
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
-    error = function(e) NA)
   
-  if (is.na(id)) {
+  if (type == "protein") {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg(normPSM, group_pep_by), 
       error = function(e) NA)
-  }
-  
-  if (is.na(id)) {
-    id <- "gene"
+    
+    if (is.na(id)) {
+      id <- tryCatch(
+        match_call_arg(makeProtDIANN, group_pep_by), 
+        error = function(e) NA)
+    }
+    
+    if (is.na(id)) {
+      id <- "gene"
+    }
+  } else {
+    id <- tryCatch(
+      match_call_arg(normPSM, group_psm_by), 
+      error = function(e) NA)
+    
+    if (is.na(id)) {
+      id <- tryCatch(
+        match_call_arg(makeProtDIANN, group_psm_by), 
+        error = function(e) NA)
+    }
+    
+    if (is.na(id)) {
+      id <- "pep_seq_mod"
+    }
   }
 
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene", 
+                                        "pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)

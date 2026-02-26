@@ -11,6 +11,7 @@ Pep2Prn(
   rm_outliers = FALSE,
   rm_allna = FALSE,
   mc = TRUE,
+  col_group = NULL,
   ...
 )
 }

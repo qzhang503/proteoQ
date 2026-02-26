@@ -13,6 +13,7 @@ pepHM(
   complete_cases = FALSE,
   impute_na = FALSE,
   rm_allna = TRUE,
+  row_entries_must = NULL,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -45,6 +46,7 @@ prnHM(
   complete_cases = FALSE,
   impute_na = FALSE,
   rm_allna = TRUE,
+  row_entries_must = NULL,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -100,6 +102,9 @@ will be used. The default is FALSE.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
+\item{row_entries_must}{Row entries that must be present in the output heatmap for
+padding purposes across datasets.}
+
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
 \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -129,9 +134,9 @@ annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
-under the selected keys will be used to color-code peptides or proteins on
-the side of the indicated plot. The default is NULL without row annotation.}
+input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
+the selected keys will be used to color-code peptides or proteins on the
+side of the indicated plot. The default is NULL without row annotation.}
 
 \item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
 
@@ -139,15 +144,15 @@ the side of the indicated plot. The default is NULL without row annotation.}
 
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
 
-\item{hc_method_rows}{A character string; the same agglomeration method for 
+\item{hc_method_rows}{A character string; the same agglomeration method for
 \code{\link[stats]{hclust}} of data rows. The default is \code{complete}.}
 
-\item{hc_method_cols}{A character string; similar to \code{hc_method_rows} 
-but for column data.}
+\item{hc_method_cols}{A character string; similar to \code{hc_method_rows} but
+for column data.}
 
-\item{p_dist_rows}{Numeric; the power of the Minkowski distance in the measures 
-of row \code{\link[stats]{dist}} at \code{clustering_distance_rows = "minkowski"}. 
-The default is 2.}
+\item{p_dist_rows}{Numeric; the power of the Minkowski distance in the
+measures of row \code{\link[stats]{dist}} at \code{clustering_distance_rows
+= "minkowski"}. The default is 2.}
 
 \item{p_dist_cols}{Numeric; similar to \code{p_dist_rows} but for column data.}
 
@@ -207,8 +212,8 @@ Heat maps and optional sub trees.
 for the visualization of the heat maps of peptide \code{log2FC} via 
 \code{\link[pheatmap]{pheatmap}}.
 
-\code{prnHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}} 
-for the visualization of the heat maps of protein \code{log2FC} via 
+\code{prnHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}}
+for the visualization of the heat maps of protein \code{log2FC} via
 \code{\link[pheatmap]{pheatmap}}.
 }
 \details{
@@ -571,59 +576,61 @@ prnHM(
 
 }
 \seealso{
-\emph{Metadata} \cr 
- \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+\emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+and a reduced working example in data normalization \cr
 
- \emph{Data normalization} \cr 
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
- \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
- \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
- \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
- ontology}} \cr 
- \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
- signatures} \cr 
- \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
- 
- \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+peptide data merging \cr \code{\link{standPep}} for extended examples in
+peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+peptide to protein summarization \cr \code{\link{standPrn}} for extended
+examples in protein data normalization. \cr \code{\link{purgePSM}} and
+\code{\link{purgePep}} for extended examples in data purging \cr
+\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+histogram visualization. \cr \code{\link{extract_raws}} and
+\code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+
+\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+missing value imputation \cr
+
+\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+and visualization \cr
+
+\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+among RefSeq accessions, gene names and Entrez IDs \cr
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology}} \cr
+ \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+ signatures} \cr
+\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+
+\emph{Column keys in PSM, peptide and protein outputs} \cr
+system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

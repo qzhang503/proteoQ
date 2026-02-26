@@ -26,6 +26,7 @@ plotHM(
   hc_method_rows = "complete",
   hc_method_cols = "complete",
   type_int = "N_I",
+  row_entries_must = NULL,
   x = NULL,
   p = NULL,
   method = NULL,
@@ -97,9 +98,9 @@ annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
-under the selected keys will be used to color-code peptides or proteins on
-the side of the indicated plot. The default is NULL without row annotation.}
+input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
+the selected keys will be used to color-code peptides or proteins on the
+side of the indicated plot. The default is NULL without row annotation.}
 
 \item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
 
@@ -107,17 +108,20 @@ the side of the indicated plot. The default is NULL without row annotation.}
 
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
 
-\item{p_dist_rows}{Numeric; the power of the Minkowski distance in the measures 
-of row \code{\link[stats]{dist}} at \code{clustering_distance_rows = "minkowski"}. 
-The default is 2.}
+\item{p_dist_rows}{Numeric; the power of the Minkowski distance in the
+measures of row \code{\link[stats]{dist}} at \code{clustering_distance_rows
+= "minkowski"}. The default is 2.}
 
 \item{p_dist_cols}{Numeric; similar to \code{p_dist_rows} but for column data.}
 
-\item{hc_method_rows}{A character string; the same agglomeration method for 
+\item{hc_method_rows}{A character string; the same agglomeration method for
 \code{\link[stats]{hclust}} of data rows. The default is \code{complete}.}
 
-\item{hc_method_cols}{A character string; similar to \code{hc_method_rows} 
-but for column data.}
+\item{hc_method_cols}{A character string; similar to \code{hc_method_rows} but
+for column data.}
+
+\item{row_entries_must}{Row entries that must be present in the output heatmap for
+padding purposes across datasets.}
 
 \item{x}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}

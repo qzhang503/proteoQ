@@ -105,7 +105,8 @@
 standPrn <- function (method_align = c("MC", "MGKernel"), 
                       range_log2r = c(10, 90), range_int = c(5, 95), 
                       n_comp = NULL, seed = NULL, 
-                      col_select = NULL, cut_points = Inf, cache = TRUE, ...) 
+                      col_select = NULL, col_group = NULL, cut_points = Inf, 
+                      cache = TRUE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
@@ -158,8 +159,15 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     rlang::sym(col_select)
   col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
 
-  dots <- rlang::enexprs(...)
+  col_group <- rlang::enexpr(col_group)
+  col_group <- if (is.null(col_group)) 
+    rlang::expr(Group) 
+  else 
+    rlang::sym(col_group)
+  col_group <- rlang::as_string(col_group)
   
+  dots <- rlang::enexprs(...)
+
   filename <- file.path(dat_dir, "Protein/Protein.txt")
   
   if (!file.exists(filename)) 
@@ -186,6 +194,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     range_int = range_int, 
     filepath = file.path(dat_dir, "Protein/Histogram"), 
     col_select = col_select, 
+    col_group = col_group, 
     cut_points = cut_points, 
     is_prot_lfq = is_prot_lfq, 
     !!!dots,

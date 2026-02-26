@@ -13,6 +13,7 @@ normMulGau(
   range_int = c(0, 100),
   filepath = NULL,
   col_select = NULL,
+  col_group = NULL,
   cut_points = Inf,
   is_prot_lfq = FALSE,
   ...

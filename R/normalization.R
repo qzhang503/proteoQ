@@ -76,7 +76,7 @@ hfind_fit_nms <- function (field = "^N_log2_R", nms, sub_sids,
 #' @return A data frame. Column \code{SD}, the original standard deviations;
 #'   \code{fct}, the scaling factors as SD/mean(SD).
 calc_sd_fcts <- function (df, range_log2r = c(0, 100), range_int = c(0, 100), 
-                          label_scheme) 
+                          label_scheme, col_group = NULL) 
 {
   sids <- label_scheme$Sample_ID
   
@@ -97,9 +97,10 @@ calc_sd_fcts <- function (df, range_log2r = c(0, 100), range_int = c(0, 100),
   non_triv_sds <- SD %>% .[names(.) %in% non_triv_sids]
   coef_sd <- SD/mean(non_triv_sds, na.rm = TRUE)
   
-  cbind.data.frame(fct = coef_sd, SD) %>%
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) %>%
+  cbind.data.frame(fct = coef_sd, SD) |>
+    tibble::rownames_to_column("Sample_ID") |>
+    dplyr::left_join(label_scheme[, c("Sample_ID", col_group)]) |>
+    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sids)) |>
     dplyr::arrange(Sample_ID)
 }
 
@@ -434,8 +435,8 @@ spline_coefs <- function (df, label_scheme, label_scheme_fit,
 #' @importFrom magrittr %>% %T>% %$% %<>%
 normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL, 
                        range_log2r = c(0, 100), range_int = c(0, 100), 
-                       filepath = NULL, col_select = NULL, cut_points = Inf, 
-                       is_prot_lfq = FALSE, ...) 
+                       filepath = NULL, col_select = NULL, col_group = NULL, 
+                       cut_points = Inf, is_prot_lfq = FALSE, ...) 
 {
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   dat_dir <- get_gl_dat_dir()
@@ -645,6 +646,27 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
       dplyr::bind_rows()
     
     rm(list = "ans")
+  } else if (method_align == "None") {
+    message("method_align = ", method_align)
+    message("n_comp = NULL")
+    message("col_select = ", col_select)
+    message("col_group = ", col_group)
+
+    # (MC.1) SDs and scaling factors (all samples)
+    sd_coefs <- calc_sd_fcts(df, range_log2r, range_int, label_scheme, 
+                             col_group = col_group)
+    x_vals <- spline_coefs(df, label_scheme, label_scheme_fit, 
+                           is_prot_lfq = is_prot_lfq, method_align = method_align, 
+                           !!!slice_dots)
+
+    # grps <- sd_coefs[[col_group]]
+    # sd_coefs <- split(sd_coefs, grps)
+    # x_vals <- split(x_vals, grps)
+    # label_scheme <- split(label_scheme, grps)
+
+    df <- df
+  } else {
+    df <- df
   }
   
   # (1) median deviation based sample IDs in `label_scheme` not `label_scheme_fit`

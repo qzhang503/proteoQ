@@ -5,8 +5,9 @@
 \title{Standardize peptide results}
 \usage{
 standPep(
-  method_align = c("MC", "MGKernel"),
+  method_align = c("MC", "MGKernel", "None"),
   col_select = NULL,
+  col_group = NULL,
   range_log2r = c(10, 90),
   range_int = c(5, 95),
   n_comp = NULL,

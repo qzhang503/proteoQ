@@ -5,7 +5,13 @@
 \title{Calculates standard deviations and the corresponding factors for scaling
 normalization.}
 \usage{
-calc_sd_fcts(df, range_log2r = c(0, 100), range_int = c(0, 100), label_scheme)
+calc_sd_fcts(
+  df,
+  range_log2r = c(0, 100),
+  range_int = c(0, 100),
+  label_scheme,
+  col_group = NULL
+)
 }
 \arguments{
 \item{df}{A data frame.}

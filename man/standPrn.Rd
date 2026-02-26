@@ -11,6 +11,7 @@ standPrn(
   n_comp = NULL,
   seed = NULL,
   col_select = NULL,
+  col_group = NULL,
   cut_points = Inf,
   cache = TRUE,
   ...

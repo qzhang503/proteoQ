@@ -1985,7 +1985,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
                      mbr_ret_tol = 30, 
                      ret_sd_tol = Inf, rm_ret_outliers = FALSE, 
                      imp_refs = FALSE, use_spec_counts = FALSE, 
-                     new_na_species = ".other", ...) 
+                     new_na_species = ".other", col_group = NULL, ...) 
 {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -2427,6 +2427,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
     range_int = c(0, 100),
     filepath = file.path(dat_dir, "Peptide/Histogram"),
     col_select = rlang::expr(Sample_ID), 
+    col_group = col_group, 
     cut_points = cut_points, 
     is_prot_lfq = FALSE,
   ) %>% 
@@ -3331,9 +3332,10 @@ mergePep <- function (
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, 
-                      range_log2r = c(10, 90), 
-                      range_int = c(5, 95), n_comp = NULL, seed = NULL, 
+standPep <- function (method_align = c("MC", "MGKernel", "None"), 
+                      col_select = NULL, col_group = NULL, 
+                      range_log2r = c(10, 90), range_int = c(5, 95), 
+                      n_comp = NULL, seed = NULL, 
                       plot_log2FC_cv = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
@@ -3363,14 +3365,21 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   if (is.null(group_psm_by)) { group_psm_by <- "pep_seq_mod" }
   if (is.null(group_pep_by)) { group_pep_by <- "gene" }
 
+  ok_method_align <- c("MC", "MGKernel", "None")
   method_align <- rlang::enexpr(method_align)
-  if (method_align == rlang::expr(c("MC", "MGKernel"))) {
+  if (method_align == rlang::expr(ok_method_align)) {
     method_align <- "MC"
   } 
   else {
     method_align <- rlang::as_string(method_align)
-    stopifnot(method_align %in% c("MC", "MGKernel"), 
-              length(method_align) == 1L)
+    if (length(method_align) != 1L) {
+      warning("More than one 'method_align'; set to 'MC'.")
+      method_align <- "MC"
+    }
+    else if (!method_align %in% ok_method_align) {
+      warning("Unknown 'method_align'; set to 'MC'.")
+      method_align <- "MC"
+    }
   }
   
   range_log2r <- prep_range(range_log2r)
@@ -3387,6 +3396,13 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
     rlang::sym(col_select)
   col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
 
+  col_group <- rlang::enexpr(col_group)
+  col_group <- if (is.null(col_group)) 
+    rlang::expr(Group) 
+  else 
+    rlang::sym(col_group)
+  col_group <- rlang::as_string(col_group)
+  
   dots <- rlang::enexprs(...)
   
   filename <- file.path(dat_dir, "Peptide/Peptide.txt")
@@ -3413,6 +3429,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
     range_int = range_int,
     filepath = file.path(dat_dir, "Peptide/Histogram"),
     col_select = col_select, 
+    col_group = col_group, 
     cut_points = Inf, 
     is_prot_lfq = FALSE, 
     !!!dots, 
@@ -3532,7 +3549,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'@export
 Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE, 
                      cut_points = Inf, rm_outliers = FALSE, rm_allna = FALSE, 
-                     mc = TRUE, ...) 
+                     mc = TRUE, col_group = NULL, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -3630,6 +3647,7 @@ Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE,
       range_int = c(0, 100),
       filepath = file.path(dat_dir, "Protein/Histogram"),
       col_select = rlang::expr(Sample_ID), 
+      col_group = col_group, 
       is_prot_lfq = is_prot_lfq, 
       cut_points = cut_points) 
   }
@@ -4768,11 +4786,9 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     reloc_col_after("prot_n_pep", "prot_acc")
   
   # iBAQ
-  if (add_ibaq) {
-    if (is.null(fasta)) {
-      warning("No iBAQ calculation at 'fasta = NULL'.")
-      add_ibaq <- FALSE
-    }
+  if (add_ibaq && is.null(fasta)) {
+    iwarning("No iBAQ calculation at 'fasta = NULL'.")
+    add_ibaq <- FALSE
   }
   
   if (add_ibaq) {
