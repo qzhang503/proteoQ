@@ -6,13 +6,17 @@
 \usage{
 ok_min_size(
   df,
+  min_size = 10L,
   min_delta = 4L,
   max_low_n = 3L,
   gspval_cutoff = 1,
   gsscore_cutoff = 10,
   gslogFC_cutoff = log2(1.2),
+  id = "gene",
+  id_gspa = "entrez",
   n_ignore = 1L,
   p_x = 1,
+  bi_direction = FALSE,
   FUN = mean
 )
 }
@@ -26,6 +30,13 @@ primary file contains normalized peptide or protein data and is among
 require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
+
+\item{min_size}{Numeric value or vector; minimum number of protein entries for
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default is 10 for all formulas matched to or specified
+in argument \code{fml_nms}. Formula-specific threshold is allowed by
+supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
 the up- and the down-expressed group of proteins for consideration in gene
@@ -53,10 +64,15 @@ greater than the threshold will be reported. The default magnitude is
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
+
 \item{n_ignore}{The number of entries to be ignored on both the left and the
 right side of volcano to handle, e.g., one-hit-wonders on a side.}
 
 \item{p_x}{A trivialized p-value for replacing NA values.}
+
+\item{bi_direction}{Logical; is bi-directional or not.}
 
 \item{FUN}{A summary function.}
 }

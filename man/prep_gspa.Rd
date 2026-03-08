@@ -29,7 +29,8 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
 
-\item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
+\item{col_ind}{Numeric vector; the indexes of columns for the ascribed
+\code{fml_nm}.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than

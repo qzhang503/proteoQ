@@ -10,6 +10,7 @@ base_sigtest_y(
   elements = NULL,
   key_col = NULL,
   label_scheme_sub_sub,
+  perc_baseline_intensity = 0.01,
   seed = NULL
 )
 }
@@ -23,6 +24,10 @@ base_sigtest_y(
 \item{key_col}{The key column in contrast fits, e.g., column \code{Term}.}
 
 \item{label_scheme_sub_sub}{The metadata corresponding \code{dfR}.}
+
+\item{perc_baseline_intensity}{An estimated percentage of baseline intensity
+in relative to the measured intensities. The setting will be modified to an
+absolute value in a later version.}
 
 \item{seed}{A seed for reproducible random number generations.}
 

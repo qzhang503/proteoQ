@@ -924,12 +924,9 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
     lapply(terms, function(gt) {
       # some results may be based on gene sets from an older database, 
       # which become missing terms in the current
-      
       gsets_sub <- gsets[names(gsets) == gt]
       
-      ###
       print(names(gsets_sub))
-      ###
 
       if (!length(gsets_sub)) {
         return(NULL)

@@ -533,7 +533,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   else if (anal_type == "Model") {
     function(method = "limma", padj_method = "BH", 
              var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), 
-             rm_allna = FALSE, ...) {
+             perc_baseline_intensity = 1E-4, rm_allna = FALSE, ...) {
       sigTest(df = df,
               id = !!id,
               label_scheme_sub = label_scheme_sub,
@@ -541,6 +541,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
               complete_cases = complete_cases,
               impute_na = impute_na,
               impute_group_na = impute_group_na, 
+              perc_baseline_intensity = perc_baseline_intensity, 
               rm_allna = rm_allna, 
               method_replace_na = method_replace_na, 
               filepath = filepath,

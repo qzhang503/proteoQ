@@ -77,7 +77,8 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
 
-\item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
+\item{col_ind}{Numeric vector; the indexes of columns for the ascribed
+\code{fml_nm}.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}

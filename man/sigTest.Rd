@@ -12,8 +12,9 @@ sigTest(
   complete_cases = FALSE,
   impute_na = FALSE,
   impute_group_na = TRUE,
+  perc_baseline_intensity = 0.01,
   rm_allna = FALSE,
-  method_replace_na,
+  method_replace_na = "none",
   filepath,
   filename,
   method,
@@ -58,6 +59,10 @@ will be used. The default is FALSE.}
 exclusively NA under a sample group. The sample grouping is defined under
 \code{label_scheme}.}
 
+\item{perc_baseline_intensity}{An estimated percentage of baseline intensity
+in relative to the measured intensities. The setting will be modified to an
+absolute value in a later version.}
+
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
@@ -99,7 +104,8 @@ is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
-\item{data_type}{The type of data being either \code{Peptide} or \code{Protein}.}
+\item{data_type}{The type of data being either \code{Peptide} or
+\code{Protein}.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined

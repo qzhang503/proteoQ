@@ -13,6 +13,7 @@ model_onechannel(
   label_scheme_sub,
   complete_cases = FALSE,
   impute_group_na = TRUE,
+  perc_baseline_intensity = 0.001,
   method = "limma",
   padj_method = "BH",
   var_cutoff = 0.001,
@@ -38,6 +39,10 @@ missing values will be used. The default is FALSE.}
 \item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
 exclusively NA under a sample group. The sample grouping is defined under
 \code{label_scheme}.}
+
+\item{perc_baseline_intensity}{An estimated percentage of baseline intensity
+in relative to the measured intensities. The setting will be modified to an
+absolute value in a later version.}
 
 \item{method}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}

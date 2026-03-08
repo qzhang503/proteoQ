@@ -254,6 +254,7 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 model_onechannel <- function (dfR = NULL, dfI = NULL, 
                               id, formula, label_scheme_sub, 
                               complete_cases = FALSE, impute_group_na = TRUE, 
+                              perc_baseline_intensity = .001, 
                               method = "limma", padj_method = "BH", 
                               var_cutoff = 1E-3, pval_cutoff = 1.00, 
                               logFC_cutoff = log2(1), ...) 
@@ -311,10 +312,14 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   dfR  <- dfR[, sids, drop = FALSE]
   dfI  <- dfI[, sids, drop = FALSE]
   dfI  <- dfI[rownames(dfI) %in% rownames(dfR), ]
-
-  stopifnot(identical(colnames(dfI), colnames(dfR)))
-  stopifnot(identical(nrow(dfI), nrow(dfR)))
   
+  if (!identical(colnames(dfI), colnames(dfR))) {
+    stop("Developer: Check mismatches between Intensity and Ratio data.")
+  }
+  if (!identical(nrow(dfI), nrow(dfR))) {
+    stop("Developer: Check mismatches between Intensity and Ratio data.")
+  }
+
   ###
   # Haven't yet test within-group imputation at mixed effect modeling...
   ###
@@ -322,6 +327,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   if (impute_group_na && !is.null(dfI)) {
     ans <- base_sigtest_y(
       dfR = dfR, dfI = dfI, elements = elements, key_col = key_col, 
+      perc_baseline_intensity = perc_baseline_intensity, 
       label_scheme_sub_sub = label_scheme_sub_sub, seed = 1234L)
     dfsR <- ans[["log2R"]]
     dfsI <- ans[["Intensity"]]
@@ -339,8 +345,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     
     dfR <- dplyr::bind_cols(lapply(ans2, `[[`, "log2R"))
     dfR <- dfR[, sids, drop = FALSE]
-    # dfI <- dplyr::bind_cols(lapply(ans2, `[[`, "Intensity"))
-    # dfI <- dfI[, sids, drop = FALSE]
+    dfI <- dplyr::bind_cols(lapply(ans2, `[[`, "Intensity"))
+    dfI <- dfI[, sids, drop = FALSE]
     rm(list = "ans2")
   }
 
@@ -410,10 +416,11 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       tibble::rownames_to_column(id) %>%
       tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
-      dplyr::left_join(label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
-                       by = "Sample_ID") %>%
+      dplyr::left_join(
+        label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
+        by = "Sample_ID") %>%
       dplyr::select(which(not_all_NA(.))) %>%
-      dplyr::group_by(!!rlang::sym(id)) %>%
+      dplyr::group_by(.data[[id]]) %>%
       tidyr::nest()
     
     if (length(random_vars)) {
@@ -512,17 +519,19 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
 
 
 #' Significance tests
-#' 
-#' @param data_type The type of data being either \code{Peptide} or \code{Protein}.
+#'
+#' @param data_type The type of data being either \code{Peptide} or
+#'   \code{Protein}.
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
-#' @import limma stringr purrr tidyr dplyr 
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @import limma stringr purrr tidyr dplyr
+#' @importFrom magrittr %>% %T>% %$% %<>%
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, impute_group_na = TRUE, 
-                    rm_allna = FALSE, method_replace_na, 
+                    perc_baseline_intensity = .01, 
+                    rm_allna = FALSE, method_replace_na = "none", 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
                     data_type, anal_type, ...) 
@@ -574,6 +583,7 @@ sigTest <- function(df, id, label_scheme_sub,
            rm_allna = rm_allna)
   dfR <- tempdata[["log2R"]]
   dfI <- tempdata[["Intensity"]]
+  rm(list = "tempdata")
   
   # in case of all-NA sample columns being removed
   label_scheme_sub <- label_scheme_sub |> 
@@ -605,8 +615,9 @@ sigTest <- function(df, id, label_scheme_sub,
   df_op <- lapply(dots, function (formula) model_onechannel(
     dfR = dfR, dfI = dfI, id = !!id, formula = formula, 
     label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
-    impute_group_na = impute_group_na, method = method, 
-    padj_method = padj_method, var_cutoff = var_cutoff, 
+    impute_group_na = impute_group_na, 
+    perc_baseline_intensity = perc_baseline_intensity, 
+    method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
     pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
     !!!non_fml_dots))
   df_op <- do.call("cbind", df_op)
@@ -714,24 +725,26 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
 #' @param key_col The key column in contrast fits, e.g., column \code{Term}.
 #' @param label_scheme_sub_sub The metadata corresponding \code{dfR}.
 #' @param seed A seed for reproducible random number generations.
+#' @inheritParams prnSig
 #' @importFrom magrittr %>%
 base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL, 
-                           label_scheme_sub_sub, seed = NULL) 
+                           label_scheme_sub_sub, perc_baseline_intensity = .01, 
+                           seed = NULL) 
 {
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
   
   gl_min <- max(
-    min(dfI, na.rm = TRUE),  # * 5,
-    quantile(dfI, .0001, na.rm = TRUE)
+    min(dfI, na.rm = TRUE), 
+    # quantile(dfI, .0001, na.rm = TRUE)
+    quantile(dfI, perc_baseline_intensity, na.rm = TRUE)
   )
   log10_gl_min <- log10(gl_min)
   
-  ans <- lapply(elements, function (element) {
+  ans <- lapply(elements, function (x) {
     sids_sub <- label_scheme_sub_sub |>
-      dplyr::filter(!!rlang::sym(key_col) %in% element) |>
-      dplyr::select(Sample_ID) |>
-      unlist(use.names = FALSE)
+      dplyr::filter(.data[[key_col]] %in% x) |>
+      dplyr::pull(Sample_ID)
     
     oks <- sids %in% sids_sub
     dfR_sub <- dfR[, oks, drop = FALSE]
@@ -746,8 +759,12 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
   rm(list = "ans")
   
   ## (1) Generate random, baseline intensities for each contrast group
+  # var(log10_Int) ~ mean(log10_Int)
   slope <- mapply(function (x, y) {
-    coef(lm(log10(x) ~ rowMeans(log10(y), na.rm = TRUE)))[[2]]
+    lx <- log10(x)
+    ly <- log10(y)
+    oks <- !(is.na(lx) | is.infinite(lx))
+    coef(lm(lx[oks] ~ rowMeans(ly[oks, ], na.rm = TRUE)))[[2]]
   }, lapply(dfsI, rowVars), dfsI) |>
     mean()
   ys_base <- lapply(n_samples, gen_randoms, mu = log10_gl_min, sigma = slope, 
@@ -789,9 +806,10 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' @import purrr
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
-                    impute_group_na = TRUE, complete_cases = FALSE, 
-                    rm_allna = FALSE, method = c("limma", "lm"), 
-                    padj_method = "BH", method_replace_na = c("none", "min"), 
+                    impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
+                    complete_cases = FALSE, rm_allna = FALSE, 
+                    method = c("limma", "lm"), padj_method = "BH", 
+                    method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -860,13 +878,15 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
             method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 
-            anal_type = "Model")(method = method, 
-                                 padj_method = padj_method, 
-                                 var_cutoff = var_cutoff, 
-                                 pval_cutoff = pval_cutoff, 
-                                 logFC_cutoff = logFC_cutoff, 
-                                 rm_allna = rm_allna, 
-                                 ...)
+            anal_type = "Model")(
+              method = method, 
+              padj_method = padj_method, 
+              var_cutoff = var_cutoff, 
+              pval_cutoff = pval_cutoff, 
+              logFC_cutoff = logFC_cutoff, 
+              perc_baseline_intensity = perc_baseline_intensity, 
+              rm_allna = rm_allna, 
+              ...)
 }
 
 
@@ -899,6 +919,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@param impute_group_na Logical; if TRUE, impute (intensity) values that are
 #'  exclusively NA under a sample group. The sample grouping is defined under
 #'  \code{label_scheme}.
+#'@param perc_baseline_intensity An estimated percentage of baseline intensity
+#'  in relative to the measured intensities. The setting will be modified to an
+#'  absolute value in a later version.
 #'@param padj_method Character string; the method of multiple-test corrections
 #'  for uses with \link[stats]{p.adjust}. The default is "BH". See
 #'  ?p.adjust.methods for additional choices.
@@ -1001,8 +1024,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
-                    impute_group_na = TRUE, complete_cases = FALSE, 
-                    rm_allna = FALSE, method = c("limma", "lm"), 
+                    impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
+                    complete_cases = FALSE, rm_allna = FALSE, 
+                    method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
@@ -1070,13 +1094,15 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE,
             method_replace_na = method_replace_na, 
             filepath = !!filepath, 
             filename = !!filename, 
-            anal_type = "Model")(method = method, 
-                                 padj_method = padj_method, 
-                                 var_cutoff = var_cutoff, 
-                                 pval_cutoff = pval_cutoff, 
-                                 logFC_cutoff = logFC_cutoff, 
-                                 rm_allna = rm_allna, 
-                                 ...)
+            anal_type = "Model")(
+              method = method, 
+              padj_method = padj_method, 
+              var_cutoff = var_cutoff, 
+              pval_cutoff = pval_cutoff, 
+              logFC_cutoff = logFC_cutoff, 
+              perc_baseline_intensity = perc_baseline_intensity, 
+              rm_allna = rm_allna, 
+              ...)
 }
 
 

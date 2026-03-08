@@ -6,10 +6,13 @@
 \usage{
 lm_gspa(
   df,
-  min_delta,
+  min_size = 10L,
+  min_delta = 4L,
   gsscore_cutoff = 10,
   gspval_cutoff = 0.01,
-  gslogFC_cutoff = 1.2
+  gslogFC_cutoff = 1.2,
+  id = "gene",
+  id_gspa = "entrez"
 )
 }
 \arguments{
@@ -22,6 +25,13 @@ primary file contains normalized peptide or protein data and is among
 require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
+
+\item{min_size}{Numeric value or vector; minimum number of protein entries for
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default is 10 for all formulas matched to or specified
+in argument \code{fml_nms}. Formula-specific threshold is allowed by
+supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
 the up- and the down-expressed group of proteins for consideration in gene
@@ -45,6 +55,9 @@ greater than the threshold will be reported. The default magnitude is
 \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
+
+\item{id_gspa}{Character string; the ID type used in GSPA. The default is
+\code{entrez}.}
 }
 \description{
 significance tests of pVals between the up and the down groups

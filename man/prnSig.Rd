@@ -9,6 +9,7 @@ pepSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
   impute_group_na = TRUE,
+  perc_baseline_intensity = 1e-04,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
@@ -27,6 +28,7 @@ prnSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
   impute_group_na = TRUE,
+  perc_baseline_intensity = 1e-04,
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
@@ -53,6 +55,10 @@ will be used. The default is FALSE.}
 \item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
 exclusively NA under a sample group. The sample grouping is defined under
 \code{label_scheme}.}
+
+\item{perc_baseline_intensity}{An estimated percentage of baseline intensity
+in relative to the measured intensities. The setting will be modified to an
+absolute value in a later version.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

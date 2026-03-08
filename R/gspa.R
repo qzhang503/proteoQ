@@ -11,7 +11,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                      method = "mean", scale_log2r = TRUE, 
                      complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     gsscore_cutoff = 10.0, gslogFC_cutoff = log2(1.2), 
+                     gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1.2), 
                      gspval_cutoff = 1E-2, 
                      min_size = 10L, max_size = .Machine$integer.max, 
                      min_delta = 5L, min_greedy_size = 1L, 
@@ -282,7 +282,7 @@ prnGSPA <- function (
     gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-    gsscore_cutoff = 10.0, gslogFC_cutoff = log2(1.2), 
+    gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1.2), 
     gspval_cutoff = 1E-2, min_size = 10L, 
     max_size = .Machine$integer.max, min_delta = 5L, min_greedy_size = 1L, 
     use_adjP = FALSE, fml_nms = NULL, df = NULL, id_gspa = "entrez", 
@@ -401,7 +401,7 @@ gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez",
                      impute_na = FALSE,filepath = NULL, filename = NULL, 
                      gset_nms = "go_sets", var_cutoff = 0.5, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     gsscore_cutoff = 10.0, gslogFC_cutoff = log2(1), 
+                     gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1), 
                      gspval_cutoff = 1E-2, 
                      min_size = 6L, max_size = .Machine$integer.max, 
                      min_delta = 5L, min_greedy_size = 1L, use_adjP = FALSE, 
@@ -547,19 +547,21 @@ gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez",
 
 
 #' Helper of GSPA.
-#' 
+#'
 #' @param fml A character string; the formula used in \link{prnSig}.
 #' @param fml_nm A character string; the name of \code{fml}.
-#' @param col_ind Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.
+#' @param col_ind Numeric vector; the indexes of columns for the ascribed
+#'   \code{fml_nm}.
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
 #' @inheritParams gspaTest
 #' @inheritParams gsVolcano
-#' @import purrr dplyr 
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @import purrr dplyr
+#' @importFrom fastmatch fmatch %fin%
+#' @importFrom magrittr %>% %T>% %$% %<>%
 fml_gspa <- function (fml, fml_nm, 
                       pval_cutoff = .05, logFC_cutoff = log2(1.2), 
-                      gsscore_cutoff = 10.0, gslogFC_cutoff = log2(1.2), 
+                      gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1.2), 
                       gspval_cutoff = 0.01, min_size = 10L, 
                       max_size = .Machine$integer.max, min_delta = 5L, 
                       min_greedy_size = 1L, method = "mean", 
@@ -622,28 +624,61 @@ fml_gspa <- function (fml, fml_nm,
   gsets <- gsets[!grepl("biological_process$", names(gsets))]
   lens  <- lengths(gsets)
   gsets <- gsets[lens >= min_size & lens <= max_size]
+  
+  dfs <- lapply(gsets, function (gset) {
+    df <- df |>
+      dplyr::filter(.data[[id_gspa]] %fin% gset) |>
+      dplyr::group_by(contrast, valence)
+  })
+  
+  if (length(gsets) >= 200L) {
+    res <- switch(method, 
+                  limma = hgspa_summary_limma(
+                    dfs = dfs, 
+                    min_size = min_size, 
+                    min_delta = min_delta, 
+                    gsscore_cutoff = gsscore_cutoff, 
+                    gspval_cutoff = gspval_cutoff, 
+                    gslogFC_cutoff = gslogFC_cutoff, 
+                    id = id, 
+                    id_gspa = id_gspa), 
+                  mean = hgspa_summary_mean(
+                    dfs = dfs, 
+                    min_size = min_size, 
+                    min_delta = min_delta, 
+                    gsscore_cutoff = gsscore_cutoff, 
+                    gspval_cutoff = gspval_cutoff, 
+                    gslogFC_cutoff = gslogFC_cutoff, 
+                    id = id, 
+                    id_gspa = id_gspa), 
+                  rlang::abort("Unknown `method`."))
+  }
+  else {
+    res <- switch(method, 
+                  limma = lapply(
+                    dfs, 
+                    lm_gspa, 
+                    min_size = min_size, 
+                    min_delta = min_delta, 
+                    gsscore_cutoff = gsscore_cutoff, 
+                    gspval_cutoff = gspval_cutoff, 
+                    gslogFC_cutoff = gslogFC_cutoff, 
+                    id = id, 
+                    id_gspa = id_gspa), 
+                  mean = lapply(
+                    dfs, 
+                    ok_min_size, 
+                    min_size = min_size, 
+                    min_delta = min_delta, 
+                    gsscore_cutoff = gsscore_cutoff, 
+                    gspval_cutoff = gspval_cutoff, 
+                    gslogFC_cutoff = gslogFC_cutoff, 
+                    id = id, id_gspa = id_gspa), 
+                  rlang::abort("Unknown `method`."))
+    
+    res <- dplyr::bind_rows(res, .id = "term")
+  }
 
-  res <- switch(method, 
-                limma = purrr::map(gsets, 
-                                   gspa_summary_limma, 
-                                   df = df, 
-                                   min_size = min_size, 
-                                   min_delta = min_delta, 
-                                   gsscore_cutoff = gsscore_cutoff, 
-                                   gspval_cutoff = gspval_cutoff, 
-                                   gslogFC_cutoff = gslogFC_cutoff), 
-                mean = purrr::map(gsets, 
-                                  gspa_summary_mean, 
-                                  df = df, 
-                                  min_size = min_size, 
-                                  min_delta = min_delta, 
-                                  gsscore_cutoff = gsscore_cutoff, 
-                                  gspval_cutoff = gspval_cutoff, 
-                                  gslogFC_cutoff = gslogFC_cutoff), 
-                rlang::abort("Unknown `method`."))
-  
-  res <- dplyr::bind_rows(res, .id = "term")
-  
   if (!nrow(res)) {
     stop("No GSPA results available.")
   }
@@ -699,6 +734,105 @@ fml_gspa <- function (fml, fml_nm,
 }
 
 
+#' Helper of \link{ok_min_size}.
+#' 
+#' @param dfs A set of data frames.
+#' @inheritParams fml_gspa
+hgspa_summary_mean <- function (dfs, min_size = 10L, min_delta = 5L, 
+                                gsscore_cutoff = 5.0, gspval_cutoff = .01, 
+                                gslogFC_cutoff = log2(1.2), id = "gene", 
+                                id_gspa = "entrez")
+{
+  if (FALSE) {
+    res <- ok_min_size(
+      dfs[[8]], 
+      min_size = min_size, 
+      min_delta = min_delta, 
+      gspval_cutoff = gspval_cutoff, 
+      gsscore_cutoff = gsscore_cutoff, 
+      gslogFC_cutoff = gslogFC_cutoff, 
+      id = id, 
+      id_gspa = id_gspa
+    )
+  }
+
+  n_cores <- parallel::detectCores() - 1L
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  
+  parallel::clusterExport(
+    cl, 
+    varlist = c("ok_min_size", "min_size", "min_delta", 
+                "gspval_cutoff", "gsscore_cutoff", "gslogFC_cutoff", 
+                "id", "id_gspa"), 
+    envir = environment())
+
+  res <- parallel::parLapply(
+    cl, 
+    X = dfs, 
+    fun = ok_min_size, 
+    min_size = min_size, 
+    min_delta = min_delta, 
+    gspval_cutoff = gspval_cutoff, 
+    gsscore_cutoff = gsscore_cutoff, 
+    gslogFC_cutoff = gslogFC_cutoff, 
+    id = id, 
+    id_gspa = id_gspa)
+
+  parallel::stopCluster(cl)
+
+  res <- dplyr::bind_rows(res, .id = "term")
+}
+
+
+#' Helper of \link{ok_min_size}.
+#' 
+#' @param dfs A set of data frames.
+#' @inheritParams fml_gspa
+hgspa_summary_limma <- function (dfs, min_size = 10L, min_delta = 5L, 
+                                 gsscore_cutoff = 5.0, gspval_cutoff = .01, 
+                                 gslogFC_cutoff = log2(1.2), id = "gene", 
+                                 id_gspa = "entrez")
+{
+  if (FALSE) {
+    res <- lm_gspa(
+      dfs[[8]], 
+      min_size = min_size, 
+      min_delta = min_delta, 
+      gsscore_cutoff = gsscore_cutoff, 
+      gspval_cutoff = gspval_cutoff, 
+      gslogFC_cutoff = gslogFC_cutoff
+    )
+  }
+  
+  
+  n_cores <- parallel::detectCores() - 1L
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  
+  parallel::clusterExport(
+    cl, 
+    varlist = c("lm_gspa", "ok_min_size", "min_size", "min_delta", 
+                "gspval_cutoff", "gsscore_cutoff", "gslogFC_cutoff", 
+                "id", "id_gspa"), 
+    envir = environment())
+
+  res <- parallel::parLapply(
+    cl, 
+    X = dfs, 
+    fun = lm_gspa, 
+    min_size = min_size, 
+    min_delta = min_delta, 
+    gsscore_cutoff = gsscore_cutoff, 
+    gspval_cutoff = gspval_cutoff, 
+    gslogFC_cutoff = gslogFC_cutoff)
+  
+  parallel::stopCluster(cl)
+  
+  res <- res |>
+    lapply(function (x) dplyr::bind_rows(x, .id = "term")) |>
+    dplyr::bind_rows(.id = "term")
+}
+
+
 #' checks the size of a gene set
 #'
 #' @param n_ignore The number of entries to be ignored on both the left and the
@@ -706,13 +840,21 @@ fml_gspa <- function (fml, fml_nm,
 #' @param max_low_n The maximum number of entries in the lower side of a volcano
 #'   plot.
 #' @param p_x A trivialized p-value for replacing NA values.
+#' @param bi_direction Logical; is bi-directional or not.
 #' @param FUN A summary function.
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
-ok_min_size <- function (df, min_delta = 4L, max_low_n = 3L, gspval_cutoff = 1.0, 
-                         gsscore_cutoff = 10.0, gslogFC_cutoff = log2(1.2), 
-                         n_ignore = 1L, p_x = 1.0, FUN = mean) 
+ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L, 
+                         gspval_cutoff = 1.0, gsscore_cutoff = 5.0, 
+                         gslogFC_cutoff = log2(1.2), 
+                         id = "gene", id_gspa = "entrez", 
+                         n_ignore = 1L, p_x = 1.0, bi_direction = FALSE, 
+                         FUN = mean) 
 {
+  if ((!nrow(df)) || (length(unique(df[[id_gspa]])) < min_size)) {
+    return(NULL)
+  }
+  
   # data "already" ordered by entrez, contrast and then valence: "neg", "pos"
   dfw <- df |>
     # dplyr::arrange(entrez, contrast, valence) |>
@@ -761,16 +903,17 @@ ok_min_size <- function (df, min_delta = 4L, max_low_n = 3L, gspval_cutoff = 1.0
     dplyr::select(-valence)
 
   delta_fc <- dfw |>
-    dplyr::summarise(log2Ratio = median(log2Ratio, na.rm = TRUE)) |>
+    # dplyr::summarise(log2Ratio = median(log2Ratio, na.rm = TRUE)) |>
+    dplyr::summarise(log2Ratio = sum(log2Ratio, na.rm = TRUE)) |>
     tidyr::pivot_wider(
       names_from = contrast, 
       values_from = log2Ratio, 
       values_fill = 0.0) |>
     dplyr::arrange(valence) |>
     dplyr::select(-valence)
-
-  # delta_sc <- abs(delta_p  * log2(delta_n + 1L)/2) # with mean stat
-  delta_sc <- delta_p  / log2(delta_n + 2L) # with sum stat
+  
+  # delta_sc <- abs(delta_p  * log2(delta_n + 1L)/2) # with mean statistics
+  delta_sc <- delta_p  / log2(delta_n + 2L) # with sum statistics
 
   if (nrow(delta_p) == 2L) {
     delta_p1  <- delta_p[2, ]  - delta_p[1, ]
@@ -780,7 +923,12 @@ ok_min_size <- function (df, min_delta = 4L, max_low_n = 3L, gspval_cutoff = 1.0
   }
   
   if (nrow(delta_fc) == 2L) {
-    delta_fc1 <- delta_fc[2, ] - delta_fc[1, ]
+    if (bi_direction) {
+      delta_fc1 <- delta_fc[2, ] - delta_fc[1, ]
+    }
+    else {
+      delta_fc1 <- abs(delta_fc[2, ]) - abs(delta_fc[1, ])
+    }
   } else {
     delta_fc1 <- delta_fc[1, ]
   }
@@ -797,6 +945,8 @@ ok_min_size <- function (df, min_delta = 4L, max_low_n = 3L, gspval_cutoff = 1.0
     delta_sc1 <- delta_sc[1, ]
   }
 
+  delta_fc1 <- delta_fc1 / delta_n1
+  
   passes <- sign(delta_sc1) == sign(delta_n1) & 
     # (abs(delta_p1) >= -log10(gspval_cutoff) | abs(delta_sc1) >= gsscore_cutoff) & 
     abs(delta_sc1) >= gsscore_cutoff & 
@@ -844,59 +994,18 @@ ok_min_size <- function (df, min_delta = 4L, max_low_n = 3L, gspval_cutoff = 1.0
 }
 
 
-#' gspa pVal calculations using geomean
-#' 
-#' @param gset Character string; a gene set indicated by \code{gset_nms}.
-#' @param p_x A trivalized p-value for replacing NA values.
-#' @inheritParams prnHist
-#' @inheritParams prnGSPA
-gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4L, 
-                              gsscore_cutoff = 10., gspval_cutoff = 0.05, 
-                              gslogFC_cutoff = log2(1.0), p_x = 1.0) 
-{
-  df <- df |>
-    dplyr::filter(entrez %in% gset) |>
-    dplyr::group_by(contrast, valence)
-  
-  if (length(unique(df$entrez)) < min_size) {
-    return(NULL)
-  }
-
-  ok_min_size(
-    df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff, 
-    gsscore_cutoff = gsscore_cutoff, gslogFC_cutoff = gslogFC_cutoff)
-} 
-
-
-#' GSPA pVal calculations using limma
-#' 
-#' @inheritParams prnHist
-#' @inheritParams prnGSPA
-#' @inheritParams gspa_summary_mean
-gspa_summary_limma <- function(gset, df, min_size = 10, min_delta = 4, 
-                               gsscore_cutoff = 10., gspval_cutoff = 0.05, 
-                               gslogFC_cutoff = 1.2) 
-{
-  df <- df %>% 
-    dplyr::filter(entrez %in% gset)
-  
-  if (!nrow(df))
-    stop("No entrez IDs matched to the provided gene sets.")
-
-  if (length(unique(df$entrez)) < min_size) 
-    return(NULL)
-  
-  lm_gspa(df, min_delta, gspval_cutoff, gslogFC_cutoff)
-}  
-
-
 #' significance tests of pVals between the up and the down groups
 #' 
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
-lm_gspa <- function(df, min_delta, gsscore_cutoff = 10.0, 
-                    gspval_cutoff = .01, gslogFC_cutoff = 1.2) 
+lm_gspa <- function(df, min_size = 10L, min_delta = 4L, gsscore_cutoff = 5.0, 
+                    gspval_cutoff = .01, gslogFC_cutoff = 1.2, id = "gene", 
+                    id_gspa = "entrez") 
 {
+  if ((!nrow(df)) || (length(unique(df[[id_gspa]])) < min_size)) {
+    return(NULL)
+  }
+  
   delta_fc <- df |>
     dplyr::group_by(contrast, valence) |>
     dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) |>
@@ -913,14 +1022,16 @@ lm_gspa <- function(df, min_delta, gsscore_cutoff = 10.0,
     `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
     abs()
   
-  if (nrow(delta_fc) == 2L) 
+  if (nrow(delta_fc) == 2L) {
     delta_fc <- delta_fc[2, ] - delta_fc[1, ]
-  
+  }
+
   ok_delta_n <- ok_min_size(df = df, 
                             min_delta = min_delta, 
                             gspval_cutoff = gspval_cutoff, 
                             gsscore_cutoff = gsscore_cutoff, 
-                            gslogFC_cutoff = gslogFC_cutoff)
+                            gslogFC_cutoff = gslogFC_cutoff, 
+                            id = id, id_gspa = id_gspa)
 
   data <- df %>% 
     dplyr::group_by(contrast, valence) %>% 
