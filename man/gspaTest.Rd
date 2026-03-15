@@ -6,7 +6,7 @@
 \usage{
 gspaTest(
   df = NULL,
-  id = "entrez",
+  id = "gene",
   id_gspa = "entrez",
   label_scheme_sub = NULL,
   scale_log2r = TRUE,
@@ -18,7 +18,7 @@ gspaTest(
   var_cutoff = 0.5,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
-  gsscore_cutoff = 10,
+  gsscore_cutoff = 5,
   gslogFC_cutoff = log2(1),
   gspval_cutoff = 0.01,
   min_size = 6L,

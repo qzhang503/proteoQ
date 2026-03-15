@@ -1180,22 +1180,23 @@ check_lfq_exptraws <- function (df)
 
 #' Loads species-specific Databases
 #'
-#' A function loads a set of precompiled gene sets of 
-#' \href{http://current.geneontology.org/products/pages/downloads.html}{GO}
-#' and
+#' A function loads a set of precompiled gene sets of
+#' \href{http://current.geneontology.org/products/pages/downloads.html}{GO} and
 #' \href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
 #' @seealso \code{\link{load_expts}} for supported species.
 #'
 #' @examples
 #' \donttest{load_dbs("go_sets", "human", "go_sets")}
 #'
-#' @param species Character string; the name of a species. 
+#' @param species Character string; the name of a species.
+#' @param id An identifier of gene IDs in the gene sets. The default is
+#'   "entrez".
 #' @param defaults Default gene set names.
 #' @inheritParams prnGSPA
 #' @import dplyr
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @importFrom magrittr %>% %T>% %$% %<>%
 #' @export
-load_dbs <- function (gset_nms = NULL, species = NULL, 
+load_dbs <- function (gset_nms = NULL, species = NULL, id = "entrez", 
                       defaults = c("go_sets", "kegg_sets", "c2_msig", "kinsub")) 
 {
   if (is.null(gset_nms)) {
@@ -1203,6 +1204,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL,
   }
 
   if (is.null(species)) {
+    message("Assume 'human' at 'species = NULL'.")
     species <- "human"
   }
 
@@ -1223,6 +1225,12 @@ load_dbs <- function (gset_nms = NULL, species = NULL,
     suppressWarnings(data(package = "proteoQ", list = filelist, 
                           envir = environment()))
     gsets <- lapply(filelist, function (x) try(get(x), silent = TRUE))
+    gsets <- gsets[!sapply(gsets, inherits, "try-error")] 
+    
+    if (id == "entrez") {
+      gsets <- lapply(gsets, lapply, as.integer)
+    }
+    
     gsets <- do.call(`c`, gsets)
 
     if (length(gsets)) {
@@ -1263,7 +1271,9 @@ load_dbs <- function (gset_nms = NULL, species = NULL,
     warning("Zero entries in `gsets`.")
   }
 
-  assign("gsets", gsets, envir = .GlobalEnv)
+  gsets <- lapply(gsets, unique)
+
+  gsets
 } 
 
 

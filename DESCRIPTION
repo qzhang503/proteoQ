@@ -39,6 +39,7 @@ Imports:
     fastmatch,
     forcats,
     ggplot2,
+    ggrepel,
     grid,
     gridExtra,
     gtable,

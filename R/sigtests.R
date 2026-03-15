@@ -555,19 +555,20 @@ sigTest <- function(df, id, label_scheme_sub,
   dots         <- dots[purrr::map_lgl(dots, is_formula)]
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
+    # need the assignment; otherwise when `load`, the object is named `dots`
     pepSig_formulas <- dots
-    save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
+    save(pepSig_formulas, 
+         file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
     rm(list = "pepSig_formulas")
   } 
   else if (id %in% c("prot_acc", "gene")) {
-    if (length(dots)) {
-      prnSig_formulas <- dots
-    } 
-    else {
-      prnSig_formulas <- dots <- concat_fml_dots()
+    if (!length(dots)) {
+      dots <- concat_fml_dots()
     }
     
-    save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
+    prnSig_formulas <- dots
+    save(prnSig_formulas, 
+         file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
     rm(list = "prnSig_formulas")
   }	
   
@@ -692,15 +693,18 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
     dfRc <- dplyr::bind_cols(dfRc)
     dfIc <- dplyr::bind_cols(dfIc)
     
-    if (sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
-      ybars <- rowMeans(dfIc, na.rm = TRUE)
-      
-      for (i in seq_along(dfI)) {
-        dfI[nas, i] <- b[[i]]
-      }
-      
-      dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
+    # No all NA rows
+    if (!sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
+      return(list(log2R = dfR, Intensity = dfI))
     }
+    
+    ybars <- rowMeans(dfIc, na.rm = TRUE)
+    
+    for (i in seq_along(dfI)) {
+      dfI[nas, i] <- b[[i]]
+    }
+    
+    dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
     
     # Lower bounds
     min_log2_fold <- -log2(max_fold)

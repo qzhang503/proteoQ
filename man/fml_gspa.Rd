@@ -9,7 +9,7 @@ fml_gspa(
   fml_nm,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
-  gsscore_cutoff = 10,
+  gsscore_cutoff = 5,
   gslogFC_cutoff = log2(1.2),
   gspval_cutoff = 0.01,
   min_size = 10L,

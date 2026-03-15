@@ -228,7 +228,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     stop("Empty metadata not allowed.")
 
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
-  gsets <- load_dbs(gset_nms = gset_nms, species = species)
+  gsets <- load_dbs(gset_nms = gset_nms, species = species, id = id)
   
   if (!length(gsets))
     stop("Empty gene sets not allowed.")

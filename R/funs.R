@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 #
 # $global.R
@@ -69,9 +70,9 @@
 # prnGSPA
 # gspaTest
 # fml_gspa
+# hgspa_summary_mean
+# hgspa_summary_limma
 # ok_min_size
-# gspa_summary_mean
-# gspa_summary_limma
 # lm_gspa
 # prep_gspa
 # map_essential
@@ -619,6 +620,7 @@
 # summ_venn
 # plot_venn
 # gsVolcano
+# plot_gspa_volcano
 # plot_ibaq
 # pepVol
 # prnVol

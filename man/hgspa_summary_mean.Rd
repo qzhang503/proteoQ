@@ -8,7 +8,7 @@ hgspa_summary_mean(
   dfs,
   min_size = 10L,
   min_delta = 5L,
-  gsscore_cutoff = 10,
+  gsscore_cutoff = 5,
   gspval_cutoff = 0.01,
   gslogFC_cutoff = log2(1.2),
   id = "gene",

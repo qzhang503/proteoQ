@@ -7,6 +7,7 @@
 load_dbs(
   gset_nms = NULL,
   species = NULL,
+  id = "entrez",
   defaults = c("go_sets", "kegg_sets", "c2_msig", "kinsub")
 )
 }
@@ -25,12 +26,14 @@ custom data bases, follow the same format of list as \code{GO} or
 
 \item{species}{Character string; the name of a species.}
 
+\item{id}{An identifier of gene IDs in the gene sets. The default is
+"entrez".}
+
 \item{defaults}{Default gene set names.}
 }
 \description{
-A function loads a set of precompiled gene sets of 
-\href{http://current.geneontology.org/products/pages/downloads.html}{GO}
-and
+A function loads a set of precompiled gene sets of
+\href{http://current.geneontology.org/products/pages/downloads.html}{GO} and
 \href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
 }
 \examples{

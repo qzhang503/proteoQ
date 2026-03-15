@@ -8,7 +8,7 @@ lm_gspa(
   df,
   min_size = 10L,
   min_delta = 4L,
-  gsscore_cutoff = 10,
+  gsscore_cutoff = 5,
   gspval_cutoff = 0.01,
   gslogFC_cutoff = 1.2,
   id = "gene",

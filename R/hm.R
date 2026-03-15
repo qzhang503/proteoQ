@@ -42,6 +42,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 
 #' Makes heat maps
 #' 
+#' @param n_color The number of colors. 
 #' @inheritParams prnHM
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -56,6 +57,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    type_int = "N_I", row_entries_must = NULL, 
+                   group_renorm_by = NULL, group_fct_int = NULL, n_color = 500L, 
                    
                    x = NULL, 
                    p = NULL, 
@@ -117,7 +119,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   
   id <- rlang::as_string(rlang::enexpr(id))
   col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
+  col_order  <- rlang::enexpr(col_order)
   col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
   
   dots <- rlang::enexprs(...)
@@ -134,15 +136,13 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
 
   clustering_distance_rows <- if (is.null(dots$clustering_distance_rows)) {
     "euclidean"
-  }
-  else {
+  } else {
     dots$clustering_distance_rows
   }
 
   clustering_distance_cols <- if (is.null(dots$clustering_distance_cols)) {
     "euclidean"
-  }
-  else {
+  } else {
     dots$clustering_distance_cols
   }
 
@@ -153,12 +153,11 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
             use `hc_method_rows` and `hc_method_cols` instead.")    
   }
 
-  n_color <- 500
-  
   if (is.null(dots$breaks)) {
-    color_breaks <- c(seq(xmin, -xmargin, length.out = n_color/2)[1:(n_color/2-1)],
-                      seq(-xmargin, xmargin, length.out = 3),
-                      seq(xmargin, xmax, length.out = n_color/2)[2:(n_color/2)])
+    color_breaks <- c(
+      seq(xmin, -xmargin, length.out = n_color/2)[1:(n_color/2-1)],
+      seq(-xmargin, xmargin, length.out = 3),
+      seq(xmargin, xmax, length.out = n_color/2)[2:(n_color/2)])
     
     color_breaks <- unique(color_breaks[color_breaks >= xmin])
   } 
@@ -187,25 +186,23 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   sample_ids <- label_scheme_sub$Sample_ID
   
-  ###
-  # may check "NA" and replace with NA
-  ###
-  
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
   
   df <- df %>%
     dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>%
-    dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],
-                                                 na.rm = TRUE)))
+    dplyr::mutate(
+      Mean_log10Int = 
+        log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],na.rm = TRUE)))
   
+  # does this more upstream later...
   if (!"count_nna" %in% names(df)) {
     count_nna <- df |>
       dplyr::select(dplyr::matches("N_log2_R[0-9]{3}[NC]{0,1}")) |>
       dplyr::select(-dplyr::matches("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$")) |>
       dplyr::select(-dplyr::matches("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$")) |>
       is.na() |>
-      magrittr::not() %>% 
+      magrittr::not() |>
       rowSums()
     
     df$count_nna <- count_nna
@@ -257,17 +254,19 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   }
   
   dfR <- df %>%
-    dplyr::select(matches(NorZ_ratios)) %>%
+    dplyr::select(dplyr::matches(NorZ_ratios)) %>%
     setNames(label_scheme[["Sample_ID"]]) %>%
     dplyr::select(any_of(sample_ids)) %>%
     # enforce exact order
-    dplyr::select(all_of(sample_ids))
+    dplyr::select(dplyr::all_of(sample_ids))
   
   # Add pep_start and pep_end
   add_pep_range <- dots[["add_pep_range"]]
 
-  if (data_type == "peptide" && "pep_start" %in% names(df) && 
-      "pep_end" %in% names(df) && isTRUE(add_pep_range)) {
+  if (data_type == "peptide" && 
+      "pep_start" %in% names(df) && 
+      "pep_end" %in% names(df) && 
+      isTRUE(add_pep_range)) {
     pep_ids <- paste0(rownames(df), " (", df$pep_start, ":", df$pep_end, ")")
     rownames(df) <- df[[id]] <- pep_ids
   } else {
@@ -275,7 +274,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   }
   
   df <- df |>
-    dplyr::select(-matches("log2_R[0-9]{3}")) |>
+    dplyr::select(-dplyr::matches("log2_R[0-9]{3}")) |>
     dplyr::bind_cols(dfR) |>
     dplyr::filter(!is.na(.data[[id]])) %>% 
     `rownames<-`(.[[id]])
@@ -285,8 +284,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       nms <- names(row_entries_must)
       nm1 <- nms[[1]]
       nm2 <- nms[[2]]
-      key_col <- nm1
-      row_ids <- row_entries_must[[key_col]]
+      key_col  <- nm1
+      row_ids  <- row_entries_must[[key_col]]
       missings <- !row_ids %in% df[[key_col]]
       
       if (any(missings)) {
@@ -325,45 +324,44 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
 
   annotation_col <- if (is.null(annot_cols)) {
     NA
-  }
-  else {
+  } else {
     colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
   }
 
-  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols))) {
+  if ((!is.null(annot_colnames)) && 
+      (length(annot_colnames) == length(annot_cols))) {
     colnames(annotation_col) <- annot_colnames
   }
 
   annotation_row <- if (is.null(annot_rows)) {
     NA
-  }
-  else {
+  } else {
     dplyr::select(df, annot_rows)
   }
 
   annotation_colors <- if (is.null(dots$annotation_colors)) {
     setHMColor(annotation_col)
-  }
-  else if (suppressWarnings(is.na(dots$annotation_colors))) {
+  } else if (suppressWarnings(is.na(dots$annotation_colors))) {
     NA
-  }
-  else {
+  } else {
     eval(dots$annotation_colors, envir = rlang::caller_env())
   }
 
   if (complete_cases) {
     df_hm <- dplyr::filter(df, complete.cases(.[, names(.) %in% sample_ids]))
-  } 
-  else {
+  } else {
     df_hm <- df
   }
 
-  df_hm <- df_hm %>%
-    { rownames(.) <- .[[id]]; . } %>%
-    { if (rm_allna) .[rowSums(!is.na(.[, intersect(names(.), sample_ids)])) > 0L, ] 
-      else . } # %>% 
-    # dplyr::select(any_of(sample_ids))
-
+  rownames(df_hm) <- df_hm[[id]]
+  
+  if (rm_allna) {
+    df_hm <- local({
+      cols <- intersect(names(df_hm), sample_ids)
+      df_hm[rowSums(!is.na(df_hm[, cols])) > 0L, ]
+    })
+  }
+  
   if (!nrow(df_hm)) {
     stop("Zero data rows after removing all-NA rows.")
   }
@@ -397,16 +395,18 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     plot_sids <- sample_ids
   }
 
+  # [x] df_log2r before row and column clustering for pheatmap 
+  #   clustering info passed in `dots`
+  # [x] df_lgr and df_int for other utilities that do not use clustering info
   df_log2r <- df_lgr <- df_hm[, plot_sids, drop = FALSE]
   
-  df_int <- df_hm %>%
-    dplyr::select(tidyr::matches(paste0("^", type_int, "[0-9]{3} \\(")))
-  names(df_int) <- sub("^N_I[0-9]{3} \\((.*)\\)$", "\\1", names(df_int))
+  df_int <- df_hm |>
+    dplyr::select(dplyr::matches(paste0("^", type_int, "[0-9]{3}[NC]{0,1} \\(")))
+  names(df_int) <- sub("^N_I[0-9]{3}[NC]{0,1} \\((.*)\\)$", "\\1", names(df_int))
   df_int <- df_int[, plot_sids, drop = FALSE]
 
   if (cluster_rows) {
-    d <- 
-      stats::dist(df_log2r, method = clustering_distance_rows, p = p_dist_rows)
+    d <- stats::dist(df_lgr, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
 
     h <- tryCatch(
@@ -417,20 +417,26 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       warning("Row clustering cannot be performed.")
       h <- FALSE
     } else {
-      df_int <- df_int[h$order, ]
-      df_lgr <- df_lgr[h$order, ]
+      h_ord <- h$order
+      df_int <- df_int[h_ord, ]
+      df_lgr <- df_lgr[h_ord, ]
+      
+      if (FALSE && !is.null(annot_rows)) {
+        annotation_row <- annotation_row[h_ord, ]
+      }
+      
+      rm(list = "h_ord")
     }
 
     dots$cluster_rows <- h
-  } 
-  else {
+  } else {
     dots$cluster_rows <- FALSE
     h <- FALSE
   }
   
   if (cluster_cols) {
-    d_cols <- 
-      stats::dist(t(df_log2r), method = clustering_distance_cols, p = p_dist_cols)
+    d_cols <- stats::dist(
+      t(df_lgr), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
 
     h_cols <- tryCatch(
@@ -442,8 +448,17 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       warning("Column clustering cannot be performed.")
       h_cols <- FALSE
     } else {
-      df_int <- df_int[, h_cols$order, drop = FALSE]
-      df_lgr <- df_lgr[, h_cols$order, drop = FALSE]
+      h_cols_ord <- h_cols$order
+      df_int <- df_int[, h_cols_ord, drop = FALSE]
+      df_lgr <- df_lgr[, h_cols_ord, drop = FALSE]
+      
+      plot_sids <- colnames(df_lgr)
+      
+      if (FALSE && !is.null(annot_cols)) {
+        annotation_col <- annotation_col[h_cols_ord, ]
+      }
+      
+      rm(list = "h_cols_ord")
     }
     
     dots$cluster_cols <- h_cols
@@ -453,19 +468,64 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     h_cols <- FALSE
   }
   
-  filename <- gg_imgname(filename)
-  
+  if (isTRUE(group_renorm_by %in% names(label_scheme_sub)) && 
+      length(group_renorm_by) == 1L) {
+    tempdata <- local({
+      grps <- label_scheme_sub[[group_renorm_by]]
+      ugrps <- unique(grps)
+      
+      if (!is.null(group_fct_int)) {
+        if (length(group_fct_int) == length(ugrps)) {
+          nms_grp <- names(group_fct_int)
+          ord <- match(ugrps, nms_grp)
+          
+          if (length(bads <- nms_grp[is.na(ord)])) {
+            warning("Group names not found in 'group_fct_int': ", 
+                    paste(bads, collapse = ", "))
+            ok_scale_int <- FALSE
+          } else {
+            group_fct_int <- group_fct_int[ord]
+            ok_scale_int <- TRUE
+          }
+        } else {
+          warning("Mismatches in the length of 'group_fct_int' and the number ", 
+                  "of unique groups under column", group_renorm_by)
+          ok_scale_int <- FALSE
+        }
+      }
+      
+      for (i in seq_along(ugrps)) {
+        cols <- grps == ugrps[[i]]
+        dfx  <- df_lgr[, cols, drop = FALSE]
+        df_lgr[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+        
+        if (ok_scale_int) {
+          dfy <- df_int[, cols, drop = FALSE] * group_fct_int[[i]]
+          df_int[, cols] <- dfy
+          # df_int[, cols] <- dfy / rowMeans(dfy, na.rm = TRUE)
+        }
+      }
+      
+      list (df_lgr, df_int)
+    })
+    
+    df_lgr <- tempdata[[1]]
+    df_int <- tempdata[[2]]
+    rm(list = "tempdata")
+  }
+
   ### 
-  df_lgr <- df_lgr |>
+  df_lgr_long <- df_lgr |>
     tibble::rownames_to_column(id) |>
     tidyr::pivot_longer(-!!id, names_to = "sample", values_to = "log2Ratio")
-  df_int <- df_int |>
+  df_int_long <- df_int |>
     tibble::rownames_to_column(id) |>
     tidyr::pivot_longer(-!!id, names_to = "sample", values_to = "intensity")
   
-  if (identical(df_lgr[[id]], df_int[[id]]) && 
-      identical(df_lgr[["sample"]], df_int[["sample"]])) {
-    df_both <- dplyr::bind_cols(df_lgr, df_int[, "intensity", drop = FALSE])
+  if (identical(df_lgr_long[[id]], df_int_long[[id]]) && 
+      identical(df_lgr_long[["sample"]], df_int_long[["sample"]])) {
+    df_both <- 
+      dplyr::bind_cols(df_lgr_long, df_int_long[, "intensity", drop = FALSE])
   }
   readr::write_tsv(df_both, file.path(filepath, paste0(fn_prefix, "_XY.txt")))
 
@@ -474,12 +534,16 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   
   n_smps <- length(sample_ids)
   n_ids  <- length(unique(df[[id]]))
-  
-  if (n_ids <= 200 || id %in% c("pep_seq", "pep_seq_mod")) {
+
+  if (n_ids <= 200L || id %in% c("pep_seq", "pep_seq_mod")) {
     width  <- dots[["width"]]
     height <- dots[["height"]]
-    if (is.null(width)) width <- n_smps * .3 + 2
-    if (is.null(height)) height <- .25 * n_ids
+    if (is.null(dots[["width"]])) width <- n_smps * .3 + 2 # dots[["width"]] <- 
+    if (is.null(dots[["height"]])) height <- .3 * n_ids # dots[["height"]] <- 
+    
+    df_both$log10Int <- log10(df_both$intensity)
+    min_int <- min(df_both$log10Int, na.rm = TRUE)
+    max_int <- max(df_both$log10Int, na.rm = TRUE)
     
     p_dot <- ggplot(
       df_both,
@@ -488,8 +552,13 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
         y = forcats::fct_rev(factor(.data[[id]], levels = unique(.data[[id]])))
       )
     ) +
-      geom_point(aes(size = log10(intensity), color = log2Ratio)) +
-      scale_size_continuous(name = "intensity") +
+      geom_point(aes(size = log10Int, color = log2Ratio)) +
+      scale_size_continuous(
+        name = "log10Int",
+        limits = c(min_int, max_int), 
+        range = c(1, 10), 
+        breaks = scales::pretty_breaks(n = 5)
+      ) +
       scale_color_gradient2(
         low = "#2166AC",
         mid = "white",
@@ -505,7 +574,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1), 
-        axis.text.y = element_text(size = 12), 
+        axis.text.y = element_text(size = 14), 
       )
     
     p_ok <- tryCatch(
@@ -526,18 +595,16 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   ###
   
   # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row`
-  dots <- dots[!names(dots) %in% 
-                 c("mat", "filename", "annotation_col", "annotation_row", 
-                   "clustering_distance_rows", "clustering_distance_cols", 
-                   "clustering_method", "color", "annotation_colors", "breaks")]
+  dots <- dots[
+    !names(dots) %in% 
+      c("mat", "filename", "annotation_col", "annotation_row", 
+        "clustering_distance_rows", "clustering_distance_cols", 
+        "clustering_method", "color", "annotation_colors", "breaks")]
 
   # setHMlims after hclust
-  df_log2r <- setHMlims(df_log2r, xmin, xmax)
-  
-  # references under expt_smry::Sample_ID may be included
   p <- my_pheatmap(
-    mat = df_log2r,
-    filename = file.path(filepath, filename),
+    mat = setHMlims(df_log2r, xmin, xmax),
+    filename = file.path(filepath, gg_imgname(filename)),
     annotation_col = annotation_col,
     annotation_row = annotation_row, 
     color = mypalette,
@@ -546,7 +613,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     !!!dots
   )
   
-  # subtrees
+  ### Subtrees
   cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
@@ -555,8 +622,9 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
-        readr::write_tsv(file.path(filepath, "Subtrees", fn_prefix, 
-                                   paste0(fn_prefix, " n-", cutree_rows, "_subtrees.txt")))
+        readr::write_tsv(
+          file.path(filepath, "Subtrees", fn_prefix, 
+                    paste0(fn_prefix, " n-", cutree_rows, "_subtrees.txt")))
       
       Cluster <- Cluster %>%
         `rownames<-`(NULL) %>% 
@@ -672,9 +740,9 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
             fontsize_row = fontsize_row,
             height = height, 
             annotation_colors = annotation_colors,
-            filename = file.path(filepath, "Subtrees", fn_prefix, 
-                                 paste0("Subtree_", cutree_rows, "-", cluster_id, ".",
-                                        fn_suffix))
+            filename = file.path(
+              filepath, "Subtrees", fn_prefix, 
+              paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
           )
         )
 
@@ -696,8 +764,9 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
 #'@import purrr
 #'@export
 pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
-                   scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                   rm_allna = TRUE, row_entries_must = NULL, 
+                   scale_log2r = TRUE, complete_cases = FALSE, 
+                   impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
+                   group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
@@ -752,6 +821,8 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    hc_method_cols = hc_method_cols, 
                                    type_int = "N_I", 
                                    row_entries_must = row_entries_must, 
+                                   group_renorm_by = group_renorm_by, 
+                                   group_fct_int = group_fct_int, 
 
                                    x = x, 
                                    p = p, 
@@ -800,8 +871,12 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'  will be used. The default is FALSE.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
 #'  missing values will be used. The default is FALSE.
-#'@param row_entries_must Row entries that must be present in the output heatmap for
-#'  padding purposes across datasets.
+#'@param row_entries_must Row entries that must be present in the output heatmap
+#'  for padding purposes across datasets.
+#'@param group_renorm_by A metadata column key for re-normalization data within
+#'  each groups.
+#'@param group_fct_int Used in conjunction with \code{group_renorm_by}; a
+#'  vector for intensity scaling by group. 
 #'@param annot_rows A character vector of column keys that can be found from
 #'  input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
 #'  the selected keys will be used to color-code peptides or proteins on the
@@ -854,62 +929,63 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'  together with the powder of \code{p_dist_rows} and/or \code{p_dist_cols}
 #'
 #'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
-#'and a reduced working example in data normalization \cr
+#'  and a reduced working example in data normalization \cr
 #'
-#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
-#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
-#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
-#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
-#'\code{\link{purgePep}} for extended examples in data purging \cr
-#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
-#'histogram visualization. \cr \code{\link{extract_raws}} and
-#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
 #'
-#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
-#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
-#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
-#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
-#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
 #'
-#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
-#'missing value imputation \cr
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
 #'
-#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
-#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
-#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
-#'analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
-#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
-#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
-#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
-#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
-#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
-#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
-#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
-#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
-#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
-#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
-#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
-#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
-#'and visualization \cr
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
 #'
-#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
-#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
-#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'  ontology}} \cr
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
 #'  signatures} \cr
-#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'
-#'\emph{Column keys in PSM, peptide and protein outputs} \cr
-#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnHM_.R
 #'
@@ -918,8 +994,9 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
-                   scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                   rm_allna = TRUE, row_entries_must = NULL, 
+                   scale_log2r = TRUE, complete_cases = FALSE, 
+                   impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
+                   group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
@@ -983,7 +1060,8 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    hc_method_cols = hc_method_cols, 
                                    type_int = "N_I", 
                                    row_entries_must = row_entries_must,
-                                   
+                                   group_renorm_by = group_renorm_by, 
+                                   group_fct_int = group_fct_int, 
                                    x = x, 
                                    p = p, 
                                    method = method, 

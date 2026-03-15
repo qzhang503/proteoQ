@@ -10,7 +10,7 @@ ok_min_size(
   min_delta = 4L,
   max_low_n = 3L,
   gspval_cutoff = 1,
-  gsscore_cutoff = 10,
+  gsscore_cutoff = 5,
   gslogFC_cutoff = log2(1.2),
   id = "gene",
   id_gspa = "entrez",

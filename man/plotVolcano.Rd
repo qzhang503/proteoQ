@@ -18,6 +18,7 @@ plotVolcano(
   show_sig = "none",
   fml_nms = NULL,
   gset_nms = "go_sets",
+  gset_ids = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -113,6 +114,9 @@ also: \code{\link{prepGO}} for the preparation of custom \code{GO};
 \code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
 custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
+
+\item{gset_ids}{A subset of gene set IDs for visualization. If not
+\code{NULL}, the entries from \code{gset_nms} will be overruled.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At

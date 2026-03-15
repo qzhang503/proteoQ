@@ -395,7 +395,7 @@ prnGSPA <- function (
 #'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% is_greater_than not 
-gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez", 
+gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez", 
                      label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, 
                      impute_na = FALSE,filepath = NULL, filename = NULL, 
@@ -439,8 +439,12 @@ gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez",
   id   <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   fmls <- dots[grepl("^\\s*~", dots)]
+  
+  if (!length(fmls)) {
+    stop("Formula(s) of contrasts not defined.")
+  }
+  
   dots <- dots[!names(dots) %in% names(fmls)]
-
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
   filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
   arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
@@ -455,12 +459,14 @@ gspaTest <- function(df = NULL, id = "entrez", id_gspa = "entrez",
     stop("No data available after row filtration.")
   }
 
-  if (!length(fmls)) {
-    stop("Formula(s) of contrasts not available.")
+  if (id_gspa == "entrez" && 
+      "entrez" %in% names(df) 
+      && !is.integer(df[["entrez"]])) {
+    df[["entrez"]] <- as.integer(df[["entrez"]])
   }
 
   species <- unique(df$species) %>% .[!is.na(.)] %>% as.character()
-  gsets   <- load_dbs(gset_nms = gset_nms, species = species)
+  gsets   <- load_dbs(gset_nms = gset_nms, species = species, id = id_gspa)
   
   fml_nms <- names(df) %>% 
     .[grepl("pVal\\s*\\(", .)] %>% 
@@ -608,16 +614,18 @@ fml_gspa <- function (fml, fml_nm,
 
     rm(list = "nms")
   }
+  
+  sym_id_gspa <- rlang::sym(id_gspa)
 
   df <- df |>
     dplyr::mutate(p_val = -log10(p_val)) |>
     dplyr::mutate(valence = ifelse(log2Ratio >= 0, "pos", "neg"), 
                   valence = factor(valence, levels = c("neg", "pos"))) |>
-    tidyr::complete(entrez, contrast, valence)
+    tidyr::complete(!!sym_id_gspa, contrast, valence)
   
   # do not re-`arrange` df, df_sub for limma after this point
   df <- df |> 
-    dplyr::arrange(entrez, contrast, valence)
+    dplyr::arrange(!!sym_id_gspa, contrast, valence)
   
   gsets <- gsets[!grepl("molecular_function$", names(gsets))]
   gsets <- gsets[!grepl("cellular_component$", names(gsets))]
@@ -684,19 +692,32 @@ fml_gspa <- function (fml, fml_nm,
   }
   
   res <- res |>
-    dplyr::select(dplyr::one_of(c("term", "contrast", "log2Ratio", "score")))
+    dplyr::select(
+      dplyr::one_of(c("term", "contrast", "log2Ratio", "score", "pass")))
+  
+  if (FALSE) {
+    rex <- res |>
+      dplyr::filter(!pass)
+    res <- res |>
+      dplyr::filter(pass)
+  }
 
-  uids <- unique(df$entrez)
+  uids <- unique(df[[id_gspa]])
+  
+  if (id_gspa == "entrez" && !is.integer(uids)) {
+    uids <- as.integer(uids)
+  }
+  
   sig_sets <- purrr::imap_dfr(gsets, ~ tibble::tibble(id = .x, term = .y)) |>
     dplyr::filter(id %in% uids) |>
     dplyr::select(c("term", "id"))
-  
-  res <- sig_sets |>
+  sig_setx <- sig_sets |>
     dplyr::group_by(term) %>% 
-    # the number of entries matched to input `df`
-    dplyr::summarise(size = dplyr::n()) |>
-    dplyr::right_join(res, by = "term")
-  
+    dplyr::summarise(size = dplyr::n())
+  res <- res |>
+    dplyr::left_join(sig_setx, by = "term")
+  rm(list = "sig_setx")
+
   res_greedy <- greedysetcover(sig_sets) %T>% 
     write.table(file.path(filepath, fml_nm, 
                           paste0(fn_prefix, "_resgreedy.txt")), 
@@ -706,11 +727,13 @@ fml_gspa <- function (fml, fml_nm,
     dplyr::summarise(ess_size = dplyr::n()) %>% 
     dplyr::filter(ess_size >= min_greedy_size)
   
-  tempdata <- res_greedy %>% 
-    dplyr::right_join(res, by = "term") %>% 
-    dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 
-    dplyr::select(term, is_essential, size, ess_size, 
-                  contrast, score, log2Ratio) %T>% 
+  tempdata <- res_greedy |>
+    dplyr::right_join(res, by = "term") |>
+    dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) |>
+    dplyr::select(
+      dplyr::one_of(c("term", "is_essential", "size", "ess_size", "pass", 
+                      "contrast", "score", "log2Ratio"))
+    ) %T>% 
     write.table(file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), 
                 sep = "\t", col.names = TRUE, 
                 row.names = FALSE, quote = FALSE) %>% 
@@ -719,9 +742,9 @@ fml_gspa <- function (fml, fml_nm,
     dplyr::select(-contrast, -score, -log2Ratio) %T>% 
     write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmeta.txt")), 
                 sep = "\t", col.names = TRUE, 
-                row.names = FALSE, quote = FALSE) %>% 
-    dplyr::select(term, ess_size)
-  
+                row.names = FALSE, quote = FALSE) |>
+    dplyr::select(dplyr::one_of("term", "ess_size"))
+
   sig_sets <- tempdata %>% 
     dplyr::right_join(sig_sets, by = "term")
 
@@ -745,7 +768,7 @@ hgspa_summary_mean <- function (dfs, min_size = 10L, min_delta = 5L,
 {
   if (FALSE) {
     res <- ok_min_size(
-      dfs[[8]], 
+      dfs[[1]], 
       min_size = min_size, 
       min_delta = min_delta, 
       gspval_cutoff = gspval_cutoff, 
@@ -990,7 +1013,7 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
     dplyr::mutate(contrast = factor(contrast, levels = levels(df$contrast))) |>
     dplyr::arrange(contrast)
 
-  ans |> dplyr::filter(pass)
+  # ans |> dplyr::filter(pass)
 }
 
 
@@ -1407,9 +1430,10 @@ gspaHM <- function(scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE
   fmls <- dots %>% .[grepl("~", .)]
   dots <- dots %>% .[! names(.) %in% names(fmls)]
   
-  if (!length(fmls))
+  if (!length(fmls)) {
     stop("No formula(s) of contrasts available.")
-  
+  }
+
   fml_nms <- names(fmls)
   
   if (length(fml_nms)) {

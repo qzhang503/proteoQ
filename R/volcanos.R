@@ -9,11 +9,18 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                         adjP = FALSE, topn_labels = 20, anal_type = "Volcano", 
                         gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
                         topn_gsets = Inf, show_sig = "none", fml_nms = NULL, 
-                        gset_nms = "go_sets", scale_log2r = TRUE, 
-                        complete_cases = FALSE, impute_na = FALSE, 
+                        gset_nms = "go_sets", gset_ids = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, 
+                        impute_na = FALSE, 
                         filepath = NULL, filename = NULL, theme = NULL, 
                         highlights = NULL, grids = NULL, ...) 
 {
+  if (!requireNamespace("ggrepel", quietly = TRUE)) {
+    stop("\n================================================================", 
+         "\nNeed package \"ggrepel\" for this function to work.",
+         "\n================================================================")
+  }
+  
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, adjP), 
                    rlang::is_logical, logical(1L)))
   
@@ -88,8 +95,23 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
     .[!is.na(.)] %>% 
     as.character()
   
-  if (length(species) && !is.null(gset_nms)) {
-    load_dbs(gset_nms = gset_nms, species = species)
+  if (!length(species)) {
+    stop("Species information not found from input data.")
+  }
+  
+  if (is.null(gset_nms)) {
+    # stop("'gset_nms' cannot be NULL.")
+    gsets <- NULL
+  } else {
+    gsets <- load_dbs(gset_nms = gset_nms, species = species, id = id_gspa)
+  }
+
+  if (!is.null(gset_ids)) {
+    gsets <-gsets[grepl(gset_ids, names(gsets))]
+    
+    if (!length(gsets)) {
+      stop("No matched 'gset_ids' from the current gene sets.")
+    }
   }
 
   proteoq_volcano_theme <- theme_bw() +
@@ -140,7 +162,9 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                  topn_labels = topn_labels, 
                  anal_type = anal_type, 
                  show_sig = show_sig, 
-                 gset_nms = gset_nms, 
+                 # gset_nms = gset_nms, 
+                 gsets = gsets, 
+                 gset_ids = gset_ids, # an indictor of using custom entries
                  scale_log2r = scale_log2r, 
                  complete_cases = complete_cases, 
                  impute_na = impute_na, 
@@ -179,7 +203,8 @@ pval_complete_cases <- function (df)
 byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gsets, 
                            df, df2, col_ind, id, id_gspa = "entrez", 
                            filepath, filename, adjP, 
-                           topn_labels, anal_type, show_sig, gset_nms, 
+                           topn_labels, anal_type, show_sig, 
+                           gsets = NULL, gset_ids = NULL, 
                            scale_log2r, complete_cases, impute_na, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
@@ -197,7 +222,7 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
   byfile_plotVolcano(df = df, df2 = df2, id = !!id, id_gspa = id_gspa, 
                      fml_nm = fml_nm, filepath = filepath, filename = filename, 
                      adjP = adjP, topn_labels = topn_labels, 
-                     anal_type = anal_type, gset_nms = gset_nms, 
+                     anal_type = anal_type, gsets = gsets, gset_ids = gset_ids, 
                      scale_log2r = scale_log2r, 
                      impute_na = impute_na)(gspval_cutoff = gspval_cutoff, 
                                             gslogFC_cutoff = gslogFC_cutoff, 
@@ -221,7 +246,8 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                                id_gspa = "entrez", fml_nm = NULL, 
                                filepath = NULL, filename = NULL, 
                                adjP = FALSE, topn_labels = 20, 
-                               anal_type = "Volcano", gset_nms = "go_sets", 
+                               anal_type = "Volcano", gsets = NULL, 
+                               gset_ids = NULL, 
                                scale_log2r = TRUE, impute_na = FALSE, 
                                # highlights = NULL, 
                                theme = NULL, ...) 
@@ -254,18 +280,15 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   } else if (anal_type == "mapGSPA") 
     function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
              show_sig = "none", theme = theme, ...) {
-      
       if (is.null(fml_nm)) {
         stop("`fml_nm` is required for `mapGSPA` volcano plots.")
       }
 
       filepath_fml <- file.path(filepath, fml_nm)
-      
-      in_names <- list.files(path = filepath_fml, 
-                             pattern = "_GSPA_[ONZ].*\\.txt$")
+      in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
       
       if (!length(in_names)) {
-        warning("No inputs under ", filepath_fml)
+        warning("No GSPA inputs under ", filepath_fml)
         return(NULL)
       }
       
@@ -305,13 +328,14 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
         }
       }
       
-      # plot data ---------------------------
+      ## plot data
       purrr::walk(df2, gsVolcano, 
                   df = df, 
                   id = !!id, 
                   contrast_groups = contrast_groups, 
                   gsea_key = "term", 
                   gsets = gsets,
+                  gset_ids = gset_ids, 
                   id_gspa = id_gspa, 
                   theme = theme, 
                   fml_nm = fml_nm, 
@@ -439,9 +463,10 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     if (!is.list(highlights)) 
       highlights <- list(highlights)
     
-    if (length(highlights) > 1L)
+    if (length(highlights) > 1L) {
       stop("Single expression for `highlights`.")
-    
+    }
+
     rows <- eval(highlights[[1]], dfw_sub)
     dfw_high <- dfw_sub[rows, ]
   }
@@ -731,7 +756,7 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
   dev.off()
 }
 
-#' Volcano plots of protein \code{log2FC} under given gene sets
+#' Helper of volcano plots of protein \code{log2FC} under given gene sets
 #'
 #' @param gsea_key Character string; the column key indicating the terms of gene sets.
 #' @param gsets The gene sets.
@@ -743,8 +768,8 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
 #' @import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL, 
-                      gsea_key = "term", gsets = NULL, id_gspa = "entrez", 
-                      theme = NULL, fml_nm = NULL, 
+                      gsea_key = "term", gsets = NULL, gset_ids = NULL, 
+                      id_gspa = "entrez", theme = NULL, fml_nm = NULL, 
                       filepath = NULL, filename = NULL, adjP = FALSE, 
                       topn_labels = 20, show_sig = "none", 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), 
@@ -865,6 +890,25 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
     error = function(e) NA
   )
   
+  # filtered by ...
+  if (is.null(gset_ids)) {
+    if ("pass" %in% names(gsea_res)) {
+      gsea_res <- gsea_res |>
+        dplyr::filter(pass)
+    }
+  } else {
+    rows <- gset_ids |> 
+      lapply(grep, gsea_res$term) |>
+      unlist(recursive = FALSE, use.names = FALSE) |>
+      unique()
+    gsea_res <- gsea_res[rows, ]
+  }
+  
+  if (!nrow(gsea_res)) {
+    warning("No GSPA data remained after filtration.")
+    return(NULL)
+  }
+
   message("Secondary file loaded: ", file.path(filepath, fml_nm, df2))
   
   lang_dots     <- dots[unlist(lapply(dots, is.language))]
@@ -898,13 +942,9 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   gsea_res <- gsea_res |>
     dplyr::mutate(score = round(score, digits = 1L), 
                   # q_val = format(p_val, scientific = TRUE, digits = 2L), 
-                  log2Ratio = round(log2Ratio, digits = 2L), )
-  
-  if (TRUE) {
-    gsea_res <- gsea_res |>
-      dplyr::rename(log2Ratio_gs = log2Ratio)
-  }
-  
+                  log2Ratio = round(log2Ratio, digits = 2L), ) |>
+    dplyr::rename(log2Ratio_gs = log2Ratio)
+
   if (length(terms)) {
     dfw <- do.call(
       rbind,
@@ -921,251 +961,266 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
         valence = ifelse(log2Ratio > 0, "pos", "neg")) |>
       dplyr::filter(!is.na(pVal))
     
-    lapply(terms, function(gt) {
-      # some results may be based on gene sets from an older database, 
-      # which become missing terms in the current
-      gsets_sub <- gsets[names(gsets) == gt]
-      
-      print(names(gsets_sub))
-
-      if (!length(gsets_sub)) {
-        return(NULL)
-      }
-
-      fn <- gsub(":", "~", gsub("/", "or", names(gsets_sub)[[1]]), fixed = TRUE)
-      
-      res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] |>
-        data.frame(check.names = FALSE)
-      
-      dfw_sub <- dfw[as.character(dfw[[id_gspa]]) %in% gsets_sub[[1]], ]
-      
-      if (!nrow(dfw_sub)) {
-        return(NULL) 
-      }
-
-      if (is.null(dots$xmax)) {
-        xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
-                             max(dfw_sub$log2Ratio, na.rm = TRUE)))
-      } 
-      else {
-        xmax <- eval(dots$xmax)
-        stopifnot(xmax > 0)
-      }
-      
-      if (is.null(dots$xmin)) {
-        xmin <- -xmax
-      } 
-      else {
-        xmin <- eval(dots$xmin)
-        stopifnot(xmin < 0)
-      }
-      
-      if (is.null(dots$ymax)) {
-        ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
-      } 
-      else {
-        ymax <- eval(dots$ymax)
-        stopifnot(ymax > 0)
-      }
-      
-      if (is.null(dots$ymin)) {
-        ymin <- 0
-      } 
-      else {
-        ymin <- eval(dots$ymin)
-        stopifnot(ymin < ymax)
-      }	
-      
-      # ensure the same levels between "Levels" and "newLevels"
-      Levels <- levels(dfw_sub$Contrast)
-      
-      dfw_sub <- dfw_sub %>%
-        dplyr::arrange(Contrast, pVal) %>%
-        dplyr::group_by(Contrast) %>%
-        dplyr::mutate(Index = row_number()) %>%
-        data.frame(check.names = FALSE) %>% 
-        dplyr::mutate(Contrast = as.character(Contrast)) %>% 
-        dplyr::left_join(., res_sub, by = c("Contrast" = "contrast")) %>%
-        dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
-        dplyr::arrange(Contrast) %>%
-        # dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>%
-        # dplyr::mutate(p_val = as.numeric(p_val)) %>%
-        # dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
-        # dplyr::mutate(q_val = as.numeric(q_val)) %>%
-        # dplyr::mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
-        # dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
-        dplyr::mutate(newContrast = Contrast)
-      
-      # some contrasts may have no data in dfw_sub
-      if (length(u_contrs <- unique(dfw_sub$newContrast)) < length(Levels)) {
-        Levels <- Levels[Levels %in% u_contrs]
-      }
-      
-      if (show_sig != "none") {
-        if (grepl("^p", show_sig)) {
-          dfw_sub <- dfw_sub %>%
-            dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
-        } 
-        else if (grepl("^q", show_sig)) {
-          dfw_sub <- dfw_sub %>%
-            dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
-        }
-      }
-      
-      newLevels <- unique(dfw_sub$newContrast)
-      
-      dfw_sub <- dfw_sub |>
-        dplyr::mutate(newContrast = factor(newContrast, levels = newLevels)) |>
-        dplyr::arrange(newContrast)
-      
-      dfw_sub_top20 <- dfw_sub |>
-        dplyr::group_by(newContrast) |>
-        dplyr::top_n(n = -topn_labels, wt = pVal)
-      
-      ### need to be id
-      dt <- purrr::map(newLevels, function (x) {
-        dfw_sub_top20 |>
-          dplyr::filter(newContrast == x) |>
-          data.frame(check.names = FALSE) |>
-          dplyr::select(c("Index", id)) |>
-          to_csv_() %>%
-          {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .}
-      }) %>%
-        do.call(rbind, .) %>%
-        data.frame(newContrast = newLevels, 
-                   Contrast = Levels, 
-                   Gene = ., 
-                   stringsAsFactors = FALSE) |>
-        dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) |>
-        dplyr::mutate(newContrast = factor(newContrast, levels = newLevels))
-      
-      dfw_greater <- dfw_sub |> 
-        dplyr::filter(pVal < yco & log2Ratio > log2(xco))
-      dfw_less <- dfw_sub |>
-        dplyr::filter(pVal < yco & log2Ratio < -log2(xco))
-      
-      dt_pos <- if (nrow(dfw_greater) > nrow(dfw_less)) -xmax*.85 else xmax*.6
-
-      myPalette <- c("#377EB8", "#E41A1C")
-      
-      nrow <- if(is.null(dots$nrow))
-        if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
-      else {
-        dots$nrow
-      }
-
-      # Avoid double-plot of dots
-      dfw_sub[["uid"]] <- paste0(dfw_sub[[id]], dfw_sub[["newContrast"]])
-      dfw_greater[["uid"]] <- paste0(dfw_greater[[id]], dfw_greater[["newContrast"]])
-      dfw_less[["uid"]] <- paste0(dfw_less[[id]], dfw_less[["newContrast"]])
-      
-      dfw_sub <- dfw_sub |> 
-        dplyr::filter(
-          !.data[["uid"]] %in% c(dfw_greater[["uid"]], dfw_less[["uid"]]))
-      
-      p <- ggplot() +
-        geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                   size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
-                   alpha = .2, stroke = .5)
-      p <- p +
-        geom_point(
-          data = dfw_greater, 
-          mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
-          fill = myPalette[2], color = "white", shape = 21, 
-          alpha = .6, stroke = .5) +
-        geom_point(
-          data = dfw_less, 
-          mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
-          fill = myPalette[1], color = "white", shape = 21, 
-          alpha = .6, stroke = .5)
-      p <- p +
-        geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
-        geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
-        geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth =.5) +
-        geom_hline(yintercept = -log10(pval_cutoff), 
-                   linetype = "longdash", linewidth = .5, color = "#fc9272") +
-        geom_vline(xintercept = -logFC_cutoff, 
-                   linetype = "longdash", linewidth = .5, color = "#fc9272") +
-        geom_vline(xintercept = logFC_cutoff, 
-                   linetype = "longdash", linewidth =.5, color = "#fc9272") +
-        labs(title = names(gsets_sub), x = x_label, y = y_label) +
-        scale_x_continuous(limits = c(xmin, xmax)) +
-        scale_y_continuous(limits = c(ymin, ymax)) +
-        theme
-      ###
-      
-      if (FALSE) {
-        p <- ggplot() +
-          geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                     size = 3, colour = "#252525", shape = 20, alpha = .5) +
-          geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                     size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-          geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-                     size = 3, color = myPalette[1], shape = 20, alpha = .8) +
-          geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
-          geom_vline(xintercept = -log2(xco), linetype = "longdash", linewidth = .5) +
-          geom_vline(xintercept = log2(xco), linetype = "longdash", linewidth =.5) +
-          geom_hline(yintercept = -log10(pval_cutoff), 
-                     linetype = "longdash", linewidth = .5, color = "#fc9272") +
-          geom_vline(xintercept = -logFC_cutoff, 
-                     linetype = "longdash", linewidth = .5, color = "#fc9272") +
-          geom_vline(xintercept = logFC_cutoff, 
-                     linetype = "longdash", linewidth =.5, color = "#fc9272") +
-          labs(title = names(gsets_sub), x = x_label, y = y_label) +
-          scale_x_continuous(limits = c(xmin, xmax)) +
-          scale_y_continuous(limits = c(ymin, ymax)) +
-          theme
-      }
-
-      p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
-      
-      if (nrow(dfw_sub_top20)) {
-        p <- p + geom_text(data = dfw_sub_top20, 
-                           mapping = aes(x = log2Ratio, y = -log10(pVal),
-                                         label = Index, color = Index), 
-                           size = 2, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05) +
-          geom_table(data = dt, aes(table = Gene), x = dt_pos, y = ymax/2)
-      }
-      
-      if (nchar(fn) > 50) {
-        fn <- str_sub(fn, 1, 50)
-      }
-
-      width <- if (is.null(dots$width)) {
-        if (nrow > 1L) {
-          6 * length(unique(dfw_sub$newContrast))/nrow + 1
-        }
-        else {
-          6 * length(unique(dfw$Contrast)) / nrow
-        }
-      } 
-      else {
-        dots$width
-      }
-      
-      height <- if (is.null(dots$height)) 6 * nrow else dots$height
-      
-      ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
-      
-      # WikiPathways contains % in the pathway name and not compatible...
-      # fn <- gsub("\\%", "_", fn)
-      rlang::eval_tidy(
-        rlang::quo(
-          ggsave(filename = file.path(filepath, fml_nm, custom_prefix, 
-                                      paste0(fn, ".", fn_suffix)),
-                 plot = p, 
-                 width = width, 
-                 height = height, 
-                 !!!ggsave_dots)
-        )
-      )
-      
-      write.table(dfw_sub, 
-                  file = file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".txt")), 
-                  sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
-      
-    })
+    lapply(terms, 
+           plot_gspa_volcano, 
+           gsets = gsets, gsea_res = gsea_res, dfw = dfw, 
+           id_gspa = id_gspa, show_sig = show_sig, 
+           topn_labels = topn_labels, xco = xco, yco = yco, 
+           pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+           filepath = filepath, fml_nm = fml_nm, 
+           custom_prefix = custom_prefix, fn_suffix = fn_suffix, 
+           x_label = x_label, y_label = y_label, theme = theme, 
+           dots = dots)
   }
+}
+
+
+#' Volcano plots of protein \code{log2FC} under given gene sets
+#'
+#' @param gsets The gene sets.
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams prnGSPAMap
+#' @inheritParams fml_gspa
+#' @inheritParams fullVolcano
+#' @import dplyr ggplot2
+#' @importFrom magrittr %>% %T>% %$% %<>% 
+plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw, 
+                               id = "gene", id_gspa = "entrez", 
+                               show_sig = "none", topn_labels = 20L, 
+                               xco = 1.2, yco = .05, 
+                               pval_cutoff = .05, logFC_cutoff = log2(1.2), 
+                               x_label = NULL, y_label = NULL, theme = NULL, 
+                               myPalette = c("#377EB8", "#E41A1C"), 
+                               filepath, fml_nm, 
+                               custom_prefix, fn_suffix, dots)
+{
+  # some results may be based on gene sets from an older database, 
+  # which become missing terms in the current
+  gsets_sub <- gsets[names(gsets) == gt]
+  
+  print(nm_gset <- names(gsets_sub))
+  
+  n_gsets <- length(gsets_sub)
+  
+  if (!n_gsets) {
+    message("No data found for gene set: ", gt)
+    return(NULL)
+  }
+  
+  if (n_gsets > 1L) {
+    warning("Multiple gene sets matched; use the first one.")
+    gsets_sub <- gsets_sub[[1]]
+    nm_gset <- nm_gset[[1]]
+  } else {
+    gsets_sub <- gsets_sub[[1]]
+  }
+  
+  fn <- gsub(":", "~", gsub("/", "or", nm_gset), fixed = TRUE)
+  
+  res_sub <- gsea_res[as.character(gsea_res$term) == gt, ] |>
+    data.frame(check.names = FALSE)
+  
+  dfw_sub <- dfw[as.character(dfw[[id_gspa]]) %in% gsets_sub, ]
+  
+  if (!nrow(dfw_sub)) {
+    return(NULL) 
+  }
+  
+  if (is.null(dots$xmax)) {
+    xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
+                         max(dfw_sub$log2Ratio, na.rm = TRUE)))
+  } else {
+    xmax <- eval(dots$xmax)
+    stopifnot(xmax > 0)
+  }
+  
+  if (is.null(dots$xmin)) {
+    xmin <- -xmax
+  } else {
+    xmin <- eval(dots$xmin)
+    stopifnot(xmin < 0)
+  }
+  
+  if (is.null(dots$ymax)) {
+    ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
+  } else {
+    ymax <- eval(dots$ymax)
+    stopifnot(ymax > 0)
+  }
+  
+  if (is.null(dots$ymin)) {
+    ymin <- 0
+  } else {
+    ymin <- eval(dots$ymin)
+    stopifnot(ymin < ymax)
+  }
+  
+  # ensure the same levels between "Levels" and "newLevels"
+  Levels <- levels(dfw_sub$Contrast)
+  
+  dfw_sub <- dfw_sub %>%
+    dplyr::arrange(Contrast, pVal) %>%
+    dplyr::group_by(Contrast) %>%
+    dplyr::mutate(Index = row_number()) %>%
+    data.frame(check.names = FALSE) %>% 
+    dplyr::mutate(Contrast = as.character(Contrast)) %>% 
+    dplyr::left_join(res_sub, by = c("Contrast" = "contrast")) %>%
+    dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
+    dplyr::arrange(Contrast) %>%
+    # dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>%
+    # dplyr::mutate(p_val = as.numeric(p_val)) %>%
+    # dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
+    # dplyr::mutate(q_val = as.numeric(q_val)) %>%
+    # dplyr::mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
+    # dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
+    dplyr::mutate(newContrast = Contrast)
+  
+  # some contrasts may have no data in dfw_sub
+  if (length(u_contrs <- unique(dfw_sub$newContrast)) < length(Levels)) {
+    Levels <- Levels[Levels %in% u_contrs]
+  }
+  
+  if (show_sig != "none") {
+    if (grepl("^p", show_sig)) {
+      dfw_sub <- dfw_sub %>%
+        dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
+    } else if (grepl("^q", show_sig)) {
+      dfw_sub <- dfw_sub %>%
+        dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
+    }
+  }
+  
+  newLevels <- unique(dfw_sub$newContrast)
+  lg2xco    <- log2(xco)
+  
+  dfw_sub <- dfw_sub |>
+    dplyr::mutate(newContrast = factor(newContrast, levels = newLevels)) |>
+    dplyr::arrange(newContrast)
+  
+  dfw_sub_top20 <- dfw_sub |>
+    dplyr::group_by(newContrast) |>
+    dplyr::top_n(n = -topn_labels, wt = pVal) |> 
+    dplyr::filter(pVal <= yco, abs(log2Ratio) >= lg2xco)
+  
+  dt <- purrr::map(newLevels, function (x) {
+    dfw_sub_top20 |>
+      dplyr::filter(newContrast == x) |>
+      data.frame(check.names = FALSE) |>
+      dplyr::select(c("Index", id)) |>
+      to_csv_() %>%
+      {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .}
+  }) %>%
+    do.call(rbind, .) %>%
+    data.frame(newContrast = newLevels, 
+               Contrast = Levels, 
+               Gene = ., 
+               stringsAsFactors = FALSE) |>
+    dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) |>
+    dplyr::mutate(newContrast = factor(newContrast, levels = newLevels))
+  
+  dfw_greater <- dfw_sub |> 
+    dplyr::filter(pVal < yco & log2Ratio > lg2xco)
+  dfw_less <- dfw_sub |>
+    dplyr::filter(pVal < yco & log2Ratio < -lg2xco)
+  
+  dt_pos <- if (nrow(dfw_greater) > nrow(dfw_less)) -xmax*.85 else xmax*.6
+  
+  nrow <- if(is.null(dots$nrow))
+    if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
+  else {
+    dots$nrow
+  }
+  
+  nrow <- if(is.null(dots$nrow))
+    if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
+  else {
+    dots$nrow
+  }
+  
+  # Avoid double-plot of dots
+  dfw_sub[["uid"]] <- paste0(dfw_sub[[id]], dfw_sub[["newContrast"]])
+  dfw_greater[["uid"]] <- paste0(dfw_greater[[id]], dfw_greater[["newContrast"]])
+  dfw_less[["uid"]] <- paste0(dfw_less[[id]], dfw_less[["newContrast"]])
+  
+  dfw_sub <- dfw_sub |> 
+    dplyr::filter(
+      !.data[["uid"]] %in% c(dfw_greater[["uid"]], dfw_less[["uid"]]))
+  
+  p <- ggplot() +
+    geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+               size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
+               alpha = .2, stroke = .5)
+  p <- p +
+    geom_point(
+      data = dfw_greater, 
+      mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+      fill = myPalette[2], color = "white", shape = 21, 
+      alpha = .6, stroke = .5) +
+    geom_point(
+      data = dfw_less, 
+      mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+      fill = myPalette[1], color = "white", shape = 21, 
+      alpha = .6, stroke = .5)
+  p <- p +
+    geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
+    geom_vline(xintercept = -lg2xco, linetype = "longdash", linewidth = .5) +
+    geom_vline(xintercept = lg2xco, linetype = "longdash", linewidth =.5) +
+    geom_hline(yintercept = -log10(pval_cutoff), 
+               linetype = "longdash", linewidth = .5, color = "#fc9272") +
+    geom_vline(xintercept = -logFC_cutoff, 
+               linetype = "longdash", linewidth = .5, color = "#fc9272") +
+    geom_vline(xintercept = logFC_cutoff, 
+               linetype = "longdash", linewidth =.5, color = "#fc9272") +
+    labs(title = nm_gset, x = x_label, y = y_label) +
+    scale_x_continuous(limits = c(xmin, xmax)) +
+    scale_y_continuous(limits = c(ymin, ymax)) +
+    theme
+  
+  p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
+  
+  if (nrow(dfw_sub_top20)) {
+    p <- p + geom_text(data = dfw_sub_top20, 
+                       mapping = aes(x = log2Ratio, y = -log10(pVal),
+                                     label = Index, color = Index), 
+                       size = 2, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05) +
+      geom_table(data = dt, aes(table = Gene), x = dt_pos, y = ymax/2)
+  }
+  
+  if (nchar(fn) > 50) {
+    fn <- str_sub(fn, 1, 50)
+  }
+  
+  width <- if (is.null(dots$width)) {
+    if (nrow > 1L) {
+      6 * length(unique(dfw_sub$newContrast))/nrow + 1
+    } else {
+      6 * length(unique(dfw$Contrast)) / nrow
+    }
+  } else {
+    dots$width
+  }
+  
+  height <- if (is.null(dots$height)) 6 * nrow else dots$height
+  
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+  
+  # WikiPathways contains % in the pathway name and not compatible...
+  # fn <- gsub("\\%", "_", fn)
+  rlang::eval_tidy(
+    rlang::quo(
+      ggsave(filename = file.path(filepath, fml_nm, custom_prefix, 
+                                  paste0(fn, ".", fn_suffix)),
+             plot = p, 
+             width = width, 
+             height = height, 
+             !!!ggsave_dots)
+    )
+  )
+  
+  write.table(dfw_sub, 
+              file = file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".txt")), 
+              sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
 }
 
 
@@ -1179,7 +1234,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
 #' @inheritParams normPSM
 #' @inheritParams info_anal
 #' @import dplyr purrr ggplot2 ggrepel
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @importFrom magrittr %>% %T>%
 #' @export
 plot_ibaq <- function(outname = NULL, highlights = NULL, group_pep_by = "gene", 
                       col_group = NULL, 
@@ -1196,6 +1251,12 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, group_pep_by = "gene",
                       show_subcelluar = TRUE, 
                       ...) 
 {
+  if (!requireNamespace("ggrepel", quietly = TRUE)) {
+    stop("\n================================================================", 
+         "\nNeed package \"ggrepel\" for this function to work.",
+         "\n================================================================")
+  }
+  
   dots <- rlang::enexprs(...)
   
   col_group <- rlang::enexpr(col_group)
@@ -1331,7 +1392,7 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, group_pep_by = "gene",
     ) 
   
   p <- p +
-    geom_text_repel(
+    ggrepel::geom_text_repel(
       data = dfx_high,
       aes(label = gene, color = label_group),
       size = 3,
@@ -1569,7 +1630,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@import purrr dplyr
 #'@export
 pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
-                        id_gspa = "pep_seq_mod", 
+                        gset_ids = NULL, id_gspa = "pep_seq_mod", 
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
@@ -1629,6 +1690,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
+                                   gset_ids = gset_ids, 
                                    adjP = adjP, 
                                    topn_labels = topn_labels, 
                                    gspval_cutoff = gspval_cutoff, 
@@ -1651,6 +1713,8 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'@inheritParams prnHist
 #'@inheritParams plot_prnTrend
 #'@inheritParams anal_prnTrend
+#'@param gset_ids A subset of gene set IDs for visualization. If not
+#'  \code{NULL}, the entries from \code{gset_nms} will be overruled.
 #'@param filename Use system default for each gene set.
 #'@param show_sig Character string indicating the type of significance values to
 #'  be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
@@ -1695,70 +1759,71 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'  \code{nrow}, the number of rows in a plot.
 #'
 #'@import dplyr ggplot2
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@example inst/extdata/examples/prnVol_.R
 #'
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{prnGSPAMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
+#'\code{\link{purgePep}} for extended examples in data purging \cr
+#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+#'histogram visualization. \cr \code{\link{extract_raws}} and
+#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'
+#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'missing value imputation \cr
+#'
+#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'analysis by protein significance pVals \cr \code{\link{prnGSPAMap}} for
+#'mapping GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for
+#'heat map and network visualization of GSPA results \cr \code{\link{prnGSVA}}
+#'for gene set variance analysis \cr \code{\link{prnGSEA}} for data preparation
+#'for online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+#'and visualization \cr
+#'
+#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
+#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'
+#'\emph{Column keys in PSM, peptide and protein outputs} \cr
+#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'
 #'@export
 prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
-                        id_gspa = "entrez",
+                        gset_ids = NULL, id_gspa = "entrez",
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
@@ -1787,8 +1852,6 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   if (is.na(id)) {
     id <- "gene"
   }
-  
-  # id <- match_call_arg(normPSM, group_pep_by)
   
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)
@@ -1820,6 +1883,7 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
+                                   gset_ids = gset_ids, 
                                    adjP = adjP, 
                                    topn_labels = topn_labels, 
                                    gspval_cutoff = gspval_cutoff, 

@@ -20,7 +20,8 @@ byfml_volcano(
   topn_labels,
   anal_type,
   show_sig,
-  gset_nms,
+  gsets = NULL,
+  gset_ids = NULL,
   scale_log2r,
   complete_cases,
   impute_na,
@@ -114,17 +115,10 @@ be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 
-\item{gset_nms}{Character string or vector containing the shorthanded name(s),
-full file path(s), or both, to gene sets for enrichment analysis. For
-species among \code{"human", "mouse", "rat"}, the default of
-\code{c("go_sets", "c2_msig", "kinsub")} will utilize terms from gene
-ontology (\code{GO}), molecular signatures (\code{MSig}) and
-kinase-substrate network (\code{PSP Kinase-Substrate}). Custom \code{GO},
-\code{MSig} and other data bases at given species are also supported. See
-also: \code{\link{prepGO}} for the preparation of custom \code{GO};
-\code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
-custom data bases, follow the same format of list as \code{GO} or
-\code{MSig}.}
+\item{gsets}{The gene sets.}
+
+\item{gset_ids}{A subset of gene set IDs for visualization. If not
+\code{NULL}, the entries from \code{gset_nms} will be overruled.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At

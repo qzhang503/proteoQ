@@ -27,6 +27,9 @@ plotHM(
   hc_method_cols = "complete",
   type_int = "N_I",
   row_entries_must = NULL,
+  group_renorm_by = NULL,
+  group_fct_int = NULL,
+  n_color = 500L,
   x = NULL,
   p = NULL,
   method = NULL,
@@ -120,8 +123,16 @@ measures of row \code{\link[stats]{dist}} at \code{clustering_distance_rows
 \item{hc_method_cols}{A character string; similar to \code{hc_method_rows} but
 for column data.}
 
-\item{row_entries_must}{Row entries that must be present in the output heatmap for
-padding purposes across datasets.}
+\item{row_entries_must}{Row entries that must be present in the output heatmap
+for padding purposes across datasets.}
+
+\item{group_renorm_by}{A metadata column key for re-normalization data within
+each groups.}
+
+\item{group_fct_int}{Used in conjunction with \code{group_renorm_by}; a
+vector for intensity scaling by group.}
+
+\item{n_color}{The number of colors.}
 
 \item{x}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}

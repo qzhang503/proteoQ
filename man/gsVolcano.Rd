@@ -2,7 +2,7 @@
 % Please edit documentation in R/volcanos.R
 \name{gsVolcano}
 \alias{gsVolcano}
-\title{Volcano plots of protein \code{log2FC} under given gene sets}
+\title{Helper of volcano plots of protein \code{log2FC} under given gene sets}
 \usage{
 gsVolcano(
   df2 = NULL,
@@ -11,6 +11,7 @@ gsVolcano(
   contrast_groups = NULL,
   gsea_key = "term",
   gsets = NULL,
+  gset_ids = NULL,
   id_gspa = "entrez",
   theme = NULL,
   fml_nm = NULL,
@@ -51,6 +52,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{gsea_key}{Character string; the column key indicating the terms of gene sets.}
 
 \item{gsets}{The gene sets.}
+
+\item{gset_ids}{A subset of gene set IDs for visualization. If not
+\code{NULL}, the entries from \code{gset_nms} will be overruled.}
 
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
@@ -125,5 +129,5 @@ the maximum \code{y}. \cr \code{x_label}, the label on \code{x}. \cr
 \code{y_label}, the label on \code{y}.}
 }
 \description{
-Volcano plots of protein \code{log2FC} under given gene sets
+Helper of volcano plots of protein \code{log2FC} under given gene sets
 }
