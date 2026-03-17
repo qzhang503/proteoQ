@@ -695,13 +695,6 @@ fml_gspa <- function (fml, fml_nm,
     dplyr::select(
       dplyr::one_of(c("term", "contrast", "log2Ratio", "score", "pass")))
   
-  if (FALSE) {
-    rex <- res |>
-      dplyr::filter(!pass)
-    res <- res |>
-      dplyr::filter(pass)
-  }
-
   uids <- unique(df[[id_gspa]])
   
   if (id_gspa == "entrez" && !is.integer(uids)) {
@@ -766,19 +759,6 @@ hgspa_summary_mean <- function (dfs, min_size = 10L, min_delta = 5L,
                                 gslogFC_cutoff = log2(1.2), id = "gene", 
                                 id_gspa = "entrez")
 {
-  if (FALSE) {
-    res <- ok_min_size(
-      dfs[[1]], 
-      min_size = min_size, 
-      min_delta = min_delta, 
-      gspval_cutoff = gspval_cutoff, 
-      gsscore_cutoff = gsscore_cutoff, 
-      gslogFC_cutoff = gslogFC_cutoff, 
-      id = id, 
-      id_gspa = id_gspa
-    )
-  }
-
   n_cores <- parallel::detectCores() - 1L
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
@@ -816,18 +796,6 @@ hgspa_summary_limma <- function (dfs, min_size = 10L, min_delta = 5L,
                                  gslogFC_cutoff = log2(1.2), id = "gene", 
                                  id_gspa = "entrez")
 {
-  if (FALSE) {
-    res <- lm_gspa(
-      dfs[[8]], 
-      min_size = min_size, 
-      min_delta = min_delta, 
-      gsscore_cutoff = gsscore_cutoff, 
-      gspval_cutoff = gspval_cutoff, 
-      gslogFC_cutoff = gslogFC_cutoff
-    )
-  }
-  
-  
   n_cores <- parallel::detectCores() - 1L
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   

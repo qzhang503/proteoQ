@@ -287,7 +287,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     
     ans2 <- impute_baseline_ints(
       dfsR = dfs_log2r, dfsI = dfs_int, ys_base = ys_base, 
-      sample_ids = label_scheme_sub[["Sample_ID"]])
+      sample_ids = label_scheme_sub[["Sample_ID"]], impute_low_qualities = TRUE)
     
     dfs_log2r <- lapply(ans2, `[[`, "log2R")
     dfs_int   <- lapply(ans2, `[[`, "Intensity")
@@ -511,9 +511,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   }
 
   purrr::walk2(df2, custom_prefix, ~ {
-    n <- gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x) %>% 
-      as.numeric()
-    
+    n <- as.numeric(gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x))
     out_nm <- paste0(.y, fn_prefix, "_nclust", n, ".", fn_suffix)
     src_path <- file.path(filepath, .x)
 
@@ -601,6 +599,17 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     if (is.null(nrow)) nrow <- 2
     if (is.null(color)) color <- "#f0f0f0"
     if (is.null(alpha)) alpha <- .25
+    
+    if (is.null(ncol)) {
+      if (is.null(nrow)) {
+        ncol <- 4L
+        nrow <- ceiling(n / ncol)
+      } else {
+        ncol <- ceiling(n / nrow)
+      }
+    } else {
+      nrow <- ceiling(n / ncol)
+    }
     
     dots$ymin <- NULL
     dots$ymax <- NULL

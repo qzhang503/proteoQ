@@ -335,13 +335,17 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     rm(list = "ans")
 
     mapply(function (x, y) {
-      stopifnot(identical(rownames(x), rownames(y)))
-      stopifnot(identical(colnames(x), colnames(y)))
+      if (!identical(rownames(x), rownames(y))) {
+        stop("Developer: check for mismatched row names.")
+      }
+      
+      if (!identical(colnames(x), colnames(y))) {
+        stop("Developer: check for mismatched column names.")
+      }
     }, dfsR, dfsI)
 
     ans2 <- impute_baseline_ints(
-      dfsR = dfsR, dfsI = dfsI, ys_base = ys_base, 
-      sample_ids = sids)
+      dfsR = dfsR, dfsI = dfsI, ys_base = ys_base, sample_ids = sids)
     
     dfR <- dplyr::bind_cols(lapply(ans2, `[[`, "log2R"))
     dfR <- dfR[, sids, drop = FALSE]
@@ -481,14 +485,6 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   
   bads <- df_nms[!df_nms[[id]] %in% rownames(res_lm), ] |>
     tibble::column_to_rownames(var = id)
-  
-  if (FALSE) {
-    df_op <- res_lm %>% 
-      tibble::rownames_to_column(id) %>%
-      dplyr::right_join(df_nms, by = id) %>%
-      `rownames<-`(NULL) %>% 
-      tibble::column_to_rownames(var = id)
-  }
   
   df_op <- dplyr::bind_rows(res_lm, bads)
   
@@ -680,7 +676,7 @@ sigTest <- function(df, id, label_scheme_sub,
 #' @param sample_ids The sample IDs for joining data at the original order.
 #' @param max_fold The maximum fold change allowed.
 #' @importFrom magrittr %>%
-impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids, 
+impute_baseline_ints_v0 <- function (dfsR, dfsI, ys_base, sample_ids, 
                                   max_fold = 100)
 {
   grps <- names(dfsR)
@@ -693,27 +689,105 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
     dfRc <- dplyr::bind_cols(dfRc)
     dfIc <- dplyr::bind_cols(dfIc)
     
-    # No all NA rows
+    n_grps <- length(grps)
+    n_grpC <- n_grps - 1L
+    
+    # No all-NA rows for imputation
     if (!sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
       return(list(log2R = dfR, Intensity = dfI))
     }
     
     ybars <- rowMeans(dfIc, na.rm = TRUE)
+    ybars[is.nan(ybars)] <- NA_real_
     
     for (i in seq_along(dfI)) {
       dfI[nas, i] <- b[[i]]
     }
-    
+
     dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
     
     # Lower bounds
     min_log2_fold <- -log2(max_fold)
     dfR_emp[dfR_emp <= min_log2_fold] <- min_log2_fold
     dfR[nas, ] <- dfR_emp
-    
+
     list(log2R = dfR, Intensity = dfI)
   }, dfsR, dfsI, grps, ys_base, 
   SIMPLIFY = FALSE)
+  
+  ans
+}
+
+#' Alternative imputation baseline intensities.
+#'
+#' The values of log2Ratios are derived accordingly
+#'
+#' @param dfsR List of log2Ratio data frames. Data are grouped according to the
+#'   formulas in \link{prnSig}.
+#' @param dfsI The corresponding intensity data frames.
+#' @param ys_base The baseline intensities. The length is equal to the number of
+#'   columns in \code{dfR}.
+#' @param sample_ids The sample IDs for joining data at the original order.
+#' @param max_fold The maximum fold change allowed.
+#' @param impute_low_qualities Logical; impute low-quality data entries or not.
+#' @param replace_lows_by A replacement value of log2Ratios at
+#'   \code{impute_low_qualities = TRUE}.
+#' @importFrom magrittr %>%
+impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids, 
+                                  max_fold = 100, impute_low_qualities = FALSE,
+                                  replace_lows_by = 0.0)
+{
+  grps <- names(dfsR)
+  
+  ans  <- mapply(function (dfR, dfI, g, b) {
+    # No all-NA rows for imputation
+    if (!sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
+      return(list(log2R = dfR, Intensity = dfI))
+    }
+    
+    # Complementary columns
+    oks  <- !grps %in% g
+    dfRc <- dfsR[oks]
+    dfIc <- dfsI[oks]
+    rm(list = "oks")
+    
+    # At least one group with >= 3 values from the complementary
+    okc <- lapply(dfRc, function (x) {
+      rowSums(!is.na(x), na.rm = TRUE) >= 3L
+    }) |>
+      purrr::reduce(`|`)
+    
+    okc_a <- nas & okc
+    okc_b <- nas & !okc
+    
+    for (i in seq_along(dfI)) {
+      dfI[okc_a, i] <- b[[i]]
+    }
+    
+    ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
+    ybars_c[is.nan(ybars_c)] <- NA_real_
+    dfR[okc_a, ] <- log2(dfI[okc_a, ] / ybars_c[okc_a])
+    
+    # Set lower bounds
+    min_log2_fold <- -log2(max_fold)
+    dfR[okc_a, ][dfR[okc_a, ] < min_log2_fold] <- min_log2_fold
+
+    list(log2R = dfR, Intensity = dfI, ybars_c = ybars_c, bads = okc_b)
+  }, dfsR, dfsI, grps, ys_base, 
+  SIMPLIFY = FALSE)
+  
+  # if is `bad` in one group -> is bad entirely
+  if (impute_low_qualities) {
+    bads <- which(purrr::reduce(lapply(ans, `[[`, "bads"), `|`))
+    ybars_c <- rowMeans(sapply(ans, `[[`, "ybars_c"), na.rm = TRUE)
+    
+    ans <- lapply(ans, function(item) {
+      item$log2R[bads, ] <- replace_lows_by
+      item$Intensity[bads, ] <- ybars_c[bads]
+      
+      item
+    })
+  }
   
   ans
 }
