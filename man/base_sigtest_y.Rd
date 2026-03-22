@@ -10,7 +10,8 @@ base_sigtest_y(
   elements = NULL,
   key_col = NULL,
   label_scheme_sub_sub,
-  perc_baseline_intensity = 0.01,
+  perc_baseline_intensity = 1e-04,
+  abs_baselne_intensity = 10^5.5,
   seed = NULL
 )
 }
@@ -28,6 +29,9 @@ base_sigtest_y(
 \item{perc_baseline_intensity}{An estimated percentage of baseline intensity
 in relative to the measured intensities. The setting will be modified to an
 absolute value in a later version.}
+
+\item{abs_baselne_intensity}{The absolute level of intensity for uses at
+\code{impute_group_na = TRUE}.}
 
 \item{seed}{A seed for reproducible random number generations.}
 

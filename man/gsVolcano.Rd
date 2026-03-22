@@ -20,6 +20,7 @@ gsVolcano(
   adjP = FALSE,
   topn_labels = 20,
   show_sig = "none",
+  show_passed_only = TRUE,
   gspval_cutoff = 1e-06,
   gslogFC_cutoff = log2(1.2),
   topn_gsets = Inf,
@@ -49,7 +50,8 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{contrast_groups}{The contrast groups defined under a formula at \code{fml_nm}.}
 
-\item{gsea_key}{Character string; the column key indicating the terms of gene sets.}
+\item{gsea_key}{Character string; the column key indicating the terms of gene
+sets.}
 
 \item{gsets}{The gene sets.}
 
@@ -83,14 +85,17 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
-\item{show_sig}{Character string indicating the type of significance values to
-be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
+\item{show_sig}{Character string indicating the type of significance values
+to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 
+\item{show_passed_only}{Logical; if TRUE, only visualize pathways that have
+passed a significant threshold.}
+
 \item{gspval_cutoff}{Numeric value or vector for uses with
-\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals} less
-significant than the threshold will be excluded from volcano plot
+\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals}
+less significant than the threshold will be excluded from volcano plot
 visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
@@ -103,17 +108,17 @@ matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
-\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered by
- increasing \code{pVal} for visualization. The default is to use all
- available entries.
+\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered
+  by increasing \code{pVal} for visualization. The default is to use all
+  available entries.
 
- Note that it is users' responsibility to ensure that the custom gene sets
- contain terms that can be found from the one or multiple preceding analyses
- of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
- include \emph{all} of the data bases that have been applied to
- \code{\link{prnGSPA}} and in that way no terms will be missed for
- visualization. See also \code{\link{prnGSPA}} for examples of custom data
- bases.}
+  Note that it is users' responsibility to ensure that the custom gene sets
+  contain terms that can be found from the one or multiple preceding analyses
+  of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
+  include \emph{all} of the data bases that have been applied to
+  \code{\link{prnGSPA}} and in that way no terms will be missed for
+  visualization. See also \code{\link{prnGSPA}} for examples of custom data
+  bases.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

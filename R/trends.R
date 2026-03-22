@@ -205,7 +205,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
   }
-
+  
   if (!impute_group_na) {
     complete_cases <- 
       to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
@@ -214,7 +214,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   }
-
+  
   id <- rlang::as_string(rlang::enexpr(id))
   col_group <- rlang::as_string(rlang::enexpr(col_group))
   col_order <- rlang::as_string(rlang::enexpr(col_order))
@@ -224,7 +224,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
   arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
   dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
-
+  
   ## Preparation
   tempdata <- df |>
     filters_in_call(!!!filter_dots) |>
@@ -233,13 +233,13 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
            sub_grp = label_scheme_sub[["Sample_ID"]], 
            anal_type = anal_type, 
            rm_allna = TRUE)
-  df_log2r <- tempdata[["log2R"]]
-  df_int   <- tempdata[["Intensity"]]
+  dfR <- tempdata[["log2R"]]
+  dfI   <- tempdata[["Intensity"]]
   rm(list = "tempdata")
   
   label_scheme_sub <- label_scheme_sub |>
-    dplyr::filter(Sample_ID %in% colnames(df_log2r))
-
+    dplyr::filter(Sample_ID %in% colnames(dfR))
+  
   if (all(nas <- is.na(ords <- label_scheme_sub[[col_order]]))) {
     stop("Specify the order of data groups under column '", col_order, "'.")
   } else if (any(nas)) {
@@ -253,15 +253,15 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
     label_scheme_sub <- label_scheme_sub[!nas, ]
   }
-
+  
   message("Summary of data groups and orders: \n")
   print(tibble::tibble(
     !!col_group := label_scheme_sub[[col_group]], 
     !!col_order := label_scheme_sub[[col_order]],))
   rm(list = c("nas", "grps", "ords"))
-
+  
   ## Data aggregation by groups
-  mts   <- match(colnames(df_log2r), label_scheme_sub[["Sample_ID"]])
+  mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
   grps  <- label_scheme_sub[[col_group]][mts]
   ugrps <- unique(grps)
   ugrps <- ugrps[!is.na(ugrps)]
@@ -270,45 +270,63 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
     dplyr::arrange(.data[[col_order]]) |>
     dplyr::pull(.data[[col_group]])
+  sids <- label_scheme_sub[["Sample_ID"]]
   
   if (impute_group_na) {
     ans <- base_sigtest_y(
-      dfR = df_log2r, dfI = df_int, elements = ugrps, key_col = col_group, 
+      dfR = dfR, dfI = dfI, elements = ugrps, key_col = col_group, 
       label_scheme_sub_sub = label_scheme_sub, seed = 1234L)
-    dfs_log2r <- ans[["log2R"]]
-    dfs_int <- ans[["Intensity"]]
+    dfsR <- ans[["log2R"]]
+    dfsI <- ans[["Intensity"]]
     ys_base <- ans[["baseline"]]
     rm(list = "ans")
     
     mapply(function (x, y) {
       stopifnot(identical(rownames(x), rownames(y)))
       stopifnot(identical(colnames(x), colnames(y)))
-    }, dfs_log2r, dfs_int)
+    }, dfsR, dfsI)
     
     ans2 <- impute_baseline_ints(
-      dfsR = dfs_log2r, dfsI = dfs_int, ys_base = ys_base, 
-      sample_ids = label_scheme_sub[["Sample_ID"]], impute_low_qualities = TRUE)
-    
-    dfs_log2r <- lapply(ans2, `[[`, "log2R")
-    dfs_int   <- lapply(ans2, `[[`, "Intensity")
+      dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
+      ys_base = ys_base, sample_ids = sids, impute_low_qualities = TRUE)
+    dfR <- ans2[["log2R"]]
+    dfI   <- ans2[["Intensity"]]
     rm(list = "ans2")
     
-    df_mean_log2r <- do.call(cbind, lapply(dfs_log2r, rowMeans, na.rm = TRUE))
-    df_mean_int <- do.call(cbind, lapply(dfs_int, rowMeans, na.rm = TRUE))
-  } else {
-    dfs_log2r  <- lapply(ugrps, function (g) {
-      rowMeans(df_log2r[, which(grps == g), drop = FALSE], na.rm = TRUE)
+    # Separate data by groups
+    ans3 <- lapply(ugrps, function (x) {
+      sids_sub <- label_scheme_sub |>
+        dplyr::filter(.data[[col_group]] %in% x) |>
+        dplyr::pull(Sample_ID)
+      
+      oks <- sids %in% sids_sub
+      dfR_sub <- dfR[, oks, drop = FALSE]
+      dfI_sub <- dfI[, oks, drop = FALSE]
+      
+      list(log2R = dfR_sub, Intensity = dfI_sub)
     })
-    df_mean_log2r <- do.call(cbind, dfs_log2r)
+    names(ans3) <- ugrps
+    dfsR <- lapply(ans3, `[[`, "log2R")
+    dfsI <- lapply(ans3, `[[`, "Intensity")
+    n_samples <-lengths(dfsR)
+    rm(list = "ans3")
+
+    df_mean_log2r <- do.call(cbind, lapply(dfsR, rowMeans, na.rm = TRUE))
+    df_mean_int <- do.call(cbind, lapply(dfsI, rowMeans, na.rm = TRUE))
+  } else {
+    dfsR  <- lapply(ugrps, function (g) {
+      rowMeans(dfR[, which(grps == g), drop = FALSE], na.rm = TRUE)
+    })
+    df_mean_log2r <- do.call(cbind, dfsR)
     colnames(df_mean_log2r) <- ugrps
     
-    dfs_int  <- lapply(ugrps, function (g) {
-      rowMeans(df_int[, which(grps == g), drop = FALSE], na.rm = TRUE)
+    dfsI  <- lapply(ugrps, function (g) {
+      rowMeans(dfI[, which(grps == g), drop = FALSE], na.rm = TRUE)
     })
-    df_mean_int <- do.call(cbind, dfs_int)
+    df_mean_int <- do.call(cbind, dfsI)
     colnames(df_mean_int) <- ugrps
   }
-
+  
   df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
   df_mean_int   <- data.frame(df_mean_int[, fcts, drop = FALSE])
   
@@ -321,7 +339,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   ## Analysis
   fn_suffix <- tools::file_ext(basename(filename))
   fn_prefix <- tools::file_path_sans_ext(filename)
-
+  
   if (is.null(n_clust)) {
     n_clust <- local({
       gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
@@ -345,13 +363,13 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   dots <- ans_dots[["dots"]]
   n_clust <- ans_dots[["n_clust"]]
   rm(list = "ans_dots")
-
+  
   res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
                    id = id, df_mean_log2r = df_mean_log2r)
   
   df_mean_log2r <- df_mean_log2r |>
     tibble::rownames_to_column(id)
-
+  
   out <- vector("list", length(n_clust))
   for (i in seq_along(n_clust)) {
     out[[i]] <- df_mean_log2r |>
@@ -373,11 +391,11 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   }
   
   saveRDS(
-    list(log2R = df_log2r, Intensity = df_int, group = grps), 
+    list(log2R = dfR, Intensity = dfI, group = grps), 
     file.path(filepath, 
               paste0(sub("_nclust\\d+\\.txt", "", filename[[1]]), ".rds"))
-    )
-
+  )
+  
   invisible(out)
 }
 
@@ -403,8 +421,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   dots <- rlang::enexprs(...)
 
   # find input df2 ---------------------------
-  ins <- 
-    list.files(path = filepath, pattern = "Trend_[ONZ]_.*nclust\\d+.*\\.txt$")
+  # pat <- "Trend_[ONZ]_.*nclust\\d+.*\\.txt$"
+  pat <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
+  ins <- list.files(path = filepath, pattern = pat)
   
   if (!length(ins)) {
     stop("No inputs under ", filepath)

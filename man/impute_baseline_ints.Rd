@@ -2,11 +2,13 @@
 % Please edit documentation in R/sigtests.R
 \name{impute_baseline_ints}
 \alias{impute_baseline_ints}
-\title{Alternative imputation baseline intensities.}
+\title{Imputation baseline intensities.}
 \usage{
 impute_baseline_ints(
   dfsR,
   dfsI,
+  dfR,
+  dfI,
   ys_base,
   sample_ids,
   max_fold = 100,
@@ -19,6 +21,10 @@ impute_baseline_ints(
 formulas in \link{prnSig}.}
 
 \item{dfsI}{The corresponding intensity data frames.}
+
+\item{dfR}{The grand log2Ratio data.}
+
+\item{dfI}{The grand intensity data.}
 
 \item{ys_base}{The baseline intensities. The length is equal to the number of
 columns in \code{dfR}.}

@@ -8,7 +8,8 @@
 plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez", 
                         adjP = FALSE, topn_labels = 20, anal_type = "Volcano", 
                         gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
-                        topn_gsets = Inf, show_sig = "none", fml_nms = NULL, 
+                        topn_gsets = Inf, show_sig = "none", 
+                        show_passed_only = TRUE, fml_nms = NULL, 
                         gset_nms = "go_sets", gset_ids = NULL, 
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, 
@@ -162,6 +163,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                  topn_labels = topn_labels, 
                  anal_type = anal_type, 
                  show_sig = show_sig, 
+                 show_passed_only = show_passed_only, 
                  # gset_nms = gset_nms, 
                  gsets = gsets, 
                  gset_ids = gset_ids, # an indictor of using custom entries
@@ -204,6 +206,7 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            df, df2, col_ind, id, id_gspa = "entrez", 
                            filepath, filename, adjP, 
                            topn_labels, anal_type, show_sig, 
+                           show_passed_only = TRUE, 
                            gsets = NULL, gset_ids = NULL, 
                            scale_log2r, complete_cases, impute_na, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
@@ -228,6 +231,7 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                                             gslogFC_cutoff = gslogFC_cutoff, 
                                             topn_gsets = topn_gsets, 
                                             show_sig = show_sig, 
+                                            show_passed_only = show_passed_only, 
                                             highlights = highlights, 
                                             grids = grids, 
                                             theme = theme, ...)
@@ -279,7 +283,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
     }
   } else if (anal_type == "mapGSPA") 
     function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
-             show_sig = "none", theme = theme, ...) {
+             show_sig = "none", show_passed_only = TRUE, theme = theme, ...) {
       if (is.null(fml_nm)) {
         stop("`fml_nm` is required for `mapGSPA` volcano plots.")
       }
@@ -344,6 +348,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                   adjP = adjP, 
                   topn_labels = topn_labels, 
                   show_sig = show_sig, 
+                  show_passed_only = show_passed_only, 
                   gspval_cutoff = gspval_cutoff, 
                   gslogFC_cutoff = gslogFC_cutoff, 
                   topn_gsets = topn_gsets, 
@@ -758,20 +763,24 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
 
 #' Helper of volcano plots of protein \code{log2FC} under given gene sets
 #'
-#' @param gsea_key Character string; the column key indicating the terms of gene sets.
+#' @param gsea_key Character string; the column key indicating the terms of gene
+#'   sets.
 #' @param gsets The gene sets.
+#' @param show_passed_only Logical; if TRUE, only visualize pathways that have
+#'   passed a significant threshold.
 #' @inheritParams info_anal
 #' @inheritParams prnVol
 #' @inheritParams prnGSPAMap
 #' @inheritParams fml_gspa
 #' @inheritParams fullVolcano
 #' @import dplyr ggplot2
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @importFrom magrittr %>% %T>% %$% %<>%
 gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, gset_ids = NULL, 
                       id_gspa = "entrez", theme = NULL, fml_nm = NULL, 
                       filepath = NULL, filename = NULL, adjP = FALSE, 
                       topn_labels = 20, show_sig = "none", 
+                      show_passed_only = TRUE, 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), 
                       topn_gsets = Inf, ...) 
 {
@@ -893,8 +902,10 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   # filtered by ...
   if (is.null(gset_ids)) {
     if ("pass" %in% names(gsea_res)) {
-      gsea_res <- gsea_res |>
-        dplyr::filter(pass)
+      if (show_passed_only) {
+        gsea_res <- gsea_res |>
+          dplyr::filter(pass)
+      }
     }
   } else {
     rows <- gset_ids |> 
@@ -1635,7 +1646,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
                         adjP = FALSE, topn_labels = 20, 
-                        show_sig = "none", 
+                        show_sig = "none", show_passed_only = TRUE, 
                         gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
                         topn_gsets = Inf, theme = NULL, ...) 
 {
@@ -1703,132 +1714,137 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 }
 
 
-#'Volcano plots of protein \code{log2FC} under gene sets.
+#' Volcano plots of protein \code{log2FC} under gene sets.
 #'
-#'\code{prnGSPAMap} visualizes the volcano plots of protein subgroups under the
-#'same gene sets.
+#' \code{prnGSPAMap} visualizes the volcano plots of protein subgroups under the
+#' same gene sets.
 #'
-#'@inheritParams prnGSPA
-#'@inheritParams prnVol
-#'@inheritParams prnHist
-#'@inheritParams plot_prnTrend
-#'@inheritParams anal_prnTrend
-#'@param gset_ids A subset of gene set IDs for visualization. If not
-#'  \code{NULL}, the entries from \code{gset_nms} will be overruled.
-#'@param filename Use system default for each gene set.
-#'@param show_sig Character string indicating the type of significance values to
-#'  be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
-#'  Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
-#'  \code{qVal} will be shown, respectively, in the facet grid of the plots.
-#'@param gspval_cutoff Numeric value or vector for uses with
-#'  \code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals} less
-#'  significant than the threshold will be excluded from volcano plot
-#'  visualization. The default significance is 0.05 for all formulas matched to
-#'  or specified in argument \code{fml_nms}. Formula-specific threshold is
-#'  allowed by supplying a vector of cut-off values.
-#'@param gslogFC_cutoff Numeric value or vector for uses with
-#'  \code{\link{prnGSPAMap}}. \code{Gene sets} with absolute enrichment
-#'  \code{log2FC} less than the threshold will be excluded from volcano plot
-#'  visualization. The default magnitude is \code{log2(1.2) } for all formulas
-#'  matched to or specified in argument \code{fml_nms}. Formula-specific
-#'  threshold is allowed by supplying a vector of absolute values in
-#'  \code{log2FC}.
-#'@param topn_gsets Numeric value or vector; top entries in gene sets ordered by
-#'  increasing \code{pVal} for visualization. The default is to use all
-#'  available entries.
+#' @inheritParams prnGSPA
+#' @inheritParams prnVol
+#' @inheritParams prnHist
+#' @inheritParams plot_prnTrend
+#' @inheritParams anal_prnTrend
+#' @param gset_ids A subset of gene set IDs for visualization. If not
+#'   \code{NULL}, the entries from \code{gset_nms} will be overruled.
+#' @param filename Use system default for each gene set.
+#' @param show_sig Character string indicating the type of significance values
+#'   to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
+#'   Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
+#'   \code{qVal} will be shown, respectively, in the facet grid of the plots.
+#' @param show_passed_only Logical; if TRUE, only visualize pathways that have
+#'   passed a significant threshold.
+#' @param gspval_cutoff Numeric value or vector for uses with
+#'   \code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals}
+#'   less significant than the threshold will be excluded from volcano plot
+#'   visualization. The default significance is 0.05 for all formulas matched to
+#'   or specified in argument \code{fml_nms}. Formula-specific threshold is
+#'   allowed by supplying a vector of cut-off values.
+#' @param gslogFC_cutoff Numeric value or vector for uses with
+#'   \code{\link{prnGSPAMap}}. \code{Gene sets} with absolute enrichment
+#'   \code{log2FC} less than the threshold will be excluded from volcano plot
+#'   visualization. The default magnitude is \code{log2(1.2) } for all formulas
+#'   matched to or specified in argument \code{fml_nms}. Formula-specific
+#'   threshold is allowed by supplying a vector of absolute values in
+#'   \code{log2FC}.
+#' @param topn_gsets Numeric value or vector; top entries in gene sets ordered
+#'   by increasing \code{pVal} for visualization. The default is to use all
+#'   available entries.
 #'
-#'  Note that it is users' responsibility to ensure that the custom gene sets
-#'  contain terms that can be found from the one or multiple preceding analyses
-#'  of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
-#'  include \emph{all} of the data bases that have been applied to
-#'  \code{\link{prnGSPA}} and in that way no terms will be missed for
-#'  visualization. See also \code{\link{prnGSPA}} for examples of custom data
-#'  bases.
-#'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  against data in a primary file linked to \code{df}. See also
-#'  \code{\link{normPSM}} for the format of \code{filter_} statements and the
-#'  association between \code{filter_} and \code{df}. \cr \cr \code{filter2_}:
-#'  Variable argument statements for the row filtration against data in
-#'  secondary file(s) linked to \code{df2}. See also \code{\link{prnGSPAHM}} for
-#'  the format of \code{filter2_}, \code{normPSM} for the association between
-#'  \code{filter_} and \code{df}. \cr \cr Additional parameters for plotting:
-#'  \cr \code{xco}, the cut-off lines of fold changes at position \code{x}; the
-#'  default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the cut-off line of
-#'  \code{pVal} at position \code{y}; the default is \eqn{0.05}. \cr
-#'  \code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
-#'  \code{nrow}, the number of rows in a plot.
+#'   Note that it is users' responsibility to ensure that the custom gene sets
+#'   contain terms that can be found from the one or multiple preceding analyses
+#'   of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
+#'   include \emph{all} of the data bases that have been applied to
+#'   \code{\link{prnGSPA}} and in that way no terms will be missed for
+#'   visualization. See also \code{\link{prnGSPA}} for examples of custom data
+#'   bases.
+#' @param ... \code{filter_}: Variable argument statements for the row
+#'   filtration against data in a primary file linked to \code{df}. See also
+#'   \code{\link{normPSM}} for the format of \code{filter_} statements and the
+#'   association between \code{filter_} and \code{df}. \cr \cr \code{filter2_}:
+#'   Variable argument statements for the row filtration against data in
+#'   secondary file(s) linked to \code{df2}. See also \code{\link{prnGSPAHM}}
+#'   for the format of \code{filter2_}, \code{normPSM} for the association
+#'   between \code{filter_} and \code{df}. \cr \cr Additional parameters for
+#'   plotting: \cr \code{xco}, the cut-off lines of fold changes at position
+#'   \code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
+#'   cut-off line of \code{pVal} at position \code{y}; the default is
+#'   \eqn{0.05}. \cr \code{width}, the width of plot; \cr \code{height}, the
+#'   height of plot. \cr \code{nrow}, the number of rows in a plot.
 #'
-#'@import dplyr ggplot2
-#'@importFrom magrittr %>% %T>% %$% %<>%
+#' @import dplyr ggplot2
+#' @importFrom magrittr %>% %T>% %$% %<>%
 #'
-#'@example inst/extdata/examples/prnVol_.R
+#' @example inst/extdata/examples/prnVol_.R
 #'
-#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
-#'and a reduced working example in data normalization \cr
+#' @seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata
+#'   preparation and a reduced working example in data normalization \cr
 #'
-#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
-#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
-#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
-#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
-#'\code{\link{purgePep}} for extended examples in data purging \cr
-#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
-#'histogram visualization. \cr \code{\link{extract_raws}} and
-#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'   \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples
+#'   in PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples
+#'   in PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'   examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'   examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'   extended examples in peptide to protein summarization \cr
+#'   \code{\link{standPrn}} for extended examples in protein data normalization.
+#'   \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'   in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'   extended examples in histogram visualization. \cr
+#'   \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for
+#'   extracting MS file names \cr
 #'
-#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
-#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
-#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
-#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
-#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'   \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'   \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'   \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'   \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'   \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'   \cr
 #'
-#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
-#'missing value imputation \cr
+#'   \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'   missing value imputation \cr
 #'
-#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
-#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
-#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
-#'analysis by protein significance pVals \cr \code{\link{prnGSPAMap}} for
-#'mapping GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for
-#'heat map and network visualization of GSPA results \cr \code{\link{prnGSVA}}
-#'for gene set variance analysis \cr \code{\link{prnGSEA}} for data preparation
-#'for online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
-#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
-#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
-#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
-#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
-#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
-#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
-#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
-#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
-#'and visualization \cr
+#'   \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'   significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'   volcano plot visualization \cr \code{\link{prnGSPA}} for gene set
+#'   enrichment analysis by protein significance pVals \cr
+#'   \code{\link{prnGSPAMap}} for mapping GSPA to volcano plot visualization \cr
+#'   \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA
+#'   results \cr \code{\link{prnGSVA}} for gene set variance analysis \cr
+#'   \code{\link{prnGSEA}} for data preparation for online GSEA. \cr
+#'   \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'   \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr
+#'   \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr
+#'   \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'   \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'   \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'   correlation plots \cr \code{\link{anal_prnTrend}} and
+#'   \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'   \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'   \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'   \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'   \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
 #'
-#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
-#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
-#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'   \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'   UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'   among RefSeq accessions, gene names and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'  ontology}} \cr
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
 #'  signatures} \cr
-#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'   \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'
-#'\emph{Column keys in PSM, peptide and protein outputs} \cr
-#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'   \emph{Column keys in PSM, peptide and protein outputs} \cr
+#'   system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'   system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'   system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@export
+#' @export
 prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                         gset_ids = NULL, id_gspa = "entrez",
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
                         adjP = FALSE, topn_labels = 20L, 
-                        show_sig = "none", 
+                        show_sig = "none", show_passed_only = TRUE, 
                         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1.2), 
                         topn_gsets = .Machine$integer.max, theme = NULL, ...) 
 {
@@ -1890,6 +1906,7 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                                    gslogFC_cutoff = gslogFC_cutoff, 
                                    topn_gsets = topn_gsets, 
                                    show_sig = show_sig,
+                                   show_passed_only = show_passed_only,
                                    gset_nms = gset_nms, 
                                    theme = theme, 
                                    ...)

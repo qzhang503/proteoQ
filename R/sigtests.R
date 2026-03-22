@@ -254,7 +254,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 model_onechannel <- function (dfR = NULL, dfI = NULL, 
                               id, formula, label_scheme_sub, 
                               complete_cases = FALSE, impute_group_na = TRUE, 
-                              perc_baseline_intensity = .001, 
+                              perc_baseline_intensity = 1E-4,
+                              abs_baselne_intensity = 10^5.5, 
                               method = "limma", padj_method = "BH", 
                               var_cutoff = 1E-3, pval_cutoff = 1.00, 
                               logFC_cutoff = log2(1), ...) 
@@ -328,6 +329,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     ans <- base_sigtest_y(
       dfR = dfR, dfI = dfI, elements = elements, key_col = key_col, 
       perc_baseline_intensity = perc_baseline_intensity, 
+      abs_baselne_intensity = abs_baselne_intensity, 
       label_scheme_sub_sub = label_scheme_sub_sub, seed = 1234L)
     dfsR <- ans[["log2R"]]
     dfsI <- ans[["Intensity"]]
@@ -345,12 +347,11 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     }, dfsR, dfsI)
 
     ans2 <- impute_baseline_ints(
-      dfsR = dfsR, dfsI = dfsI, ys_base = ys_base, sample_ids = sids)
+      dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
+      ys_base = ys_base, sample_ids = sids)
     
-    dfR <- dplyr::bind_cols(lapply(ans2, `[[`, "log2R"))
-    dfR <- dfR[, sids, drop = FALSE]
-    dfI <- dplyr::bind_cols(lapply(ans2, `[[`, "Intensity"))
-    dfI <- dfI[, sids, drop = FALSE]
+    dfI <- ans2[["Intensity"]]
+    dfR <- ans2[["log2R"]]
     rm(list = "ans2")
   }
 
@@ -526,7 +527,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, impute_group_na = TRUE, 
-                    perc_baseline_intensity = .01, 
+                    perc_baseline_intensity = 1E-4, 
+                    abs_baselne_intensity = 10^5.5, 
                     rm_allna = FALSE, method_replace_na = "none", 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
@@ -614,6 +616,7 @@ sigTest <- function(df, id, label_scheme_sub,
     label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
     impute_group_na = impute_group_na, 
     perc_baseline_intensity = perc_baseline_intensity, 
+    abs_baselne_intensity = abs_baselne_intensity, 
     method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
     pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
     !!!non_fml_dots))
@@ -664,67 +667,15 @@ sigTest <- function(df, id, label_scheme_sub,
 }
 
 
-#' Impute baseline intensities.
+#' Imputation baseline intensities.
 #'
 #' The values of log2Ratios are derived accordingly
 #'
 #' @param dfsR List of log2Ratio data frames. Data are grouped according to the
 #'   formulas in \link{prnSig}.
 #' @param dfsI The corresponding intensity data frames.
-#' @param ys_base The baseline intensities. The length is equal to the number of
-#'   columns in \code{dfR}.
-#' @param sample_ids The sample IDs for joining data at the original order.
-#' @param max_fold The maximum fold change allowed.
-#' @importFrom magrittr %>%
-impute_baseline_ints_v0 <- function (dfsR, dfsI, ys_base, sample_ids, 
-                                  max_fold = 100)
-{
-  grps <- names(dfsR)
-
-  ans  <- mapply(function (dfR, dfI, g, b) {
-    # Complementary columns
-    oks  <- !grps %in% g
-    dfRc <- dfsR[oks]
-    dfIc <- dfsI[oks]
-    dfRc <- dplyr::bind_cols(dfRc)
-    dfIc <- dplyr::bind_cols(dfIc)
-    
-    n_grps <- length(grps)
-    n_grpC <- n_grps - 1L
-    
-    # No all-NA rows for imputation
-    if (!sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
-      return(list(log2R = dfR, Intensity = dfI))
-    }
-    
-    ybars <- rowMeans(dfIc, na.rm = TRUE)
-    ybars[is.nan(ybars)] <- NA_real_
-    
-    for (i in seq_along(dfI)) {
-      dfI[nas, i] <- b[[i]]
-    }
-
-    dfR[nas, ] <- dfR_emp <- log2(dfI[nas, ] / ybars[nas])
-    
-    # Lower bounds
-    min_log2_fold <- -log2(max_fold)
-    dfR_emp[dfR_emp <= min_log2_fold] <- min_log2_fold
-    dfR[nas, ] <- dfR_emp
-
-    list(log2R = dfR, Intensity = dfI)
-  }, dfsR, dfsI, grps, ys_base, 
-  SIMPLIFY = FALSE)
-  
-  ans
-}
-
-#' Alternative imputation baseline intensities.
-#'
-#' The values of log2Ratios are derived accordingly
-#'
-#' @param dfsR List of log2Ratio data frames. Data are grouped according to the
-#'   formulas in \link{prnSig}.
-#' @param dfsI The corresponding intensity data frames.
+#' @param dfR The grand log2Ratio data.
+#' @param dfI The grand intensity data.
 #' @param ys_base The baseline intensities. The length is equal to the number of
 #'   columns in \code{dfR}.
 #' @param sample_ids The sample IDs for joining data at the original order.
@@ -733,63 +684,90 @@ impute_baseline_ints_v0 <- function (dfsR, dfsI, ys_base, sample_ids,
 #' @param replace_lows_by A replacement value of log2Ratios at
 #'   \code{impute_low_qualities = TRUE}.
 #' @importFrom magrittr %>%
-impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids, 
+impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids, 
                                   max_fold = 100, impute_low_qualities = FALSE,
                                   replace_lows_by = 0.0)
 {
   grps <- names(dfsR)
-  
-  ans  <- mapply(function (dfR, dfI, g, b) {
-    # No all-NA rows for imputation
-    if (!sum(nas <- rowSums(is.na(dfR)) == ncol(dfR))) {
-      return(list(log2R = dfR, Intensity = dfI))
-    }
-    
+
+  if (FALSE) {
+    ymins <- apply(dfI, 1, function (x) {
+      if (all(is.na(x))) return(NA_real_)
+      min(x, na.rm = TRUE)
+    })
+  }
+
+  # Impute intensities
+  ans  <- mapply(function (dfRg, dfIg, g, b) {
     # Complementary columns
-    oks  <- !grps %in% g
-    dfRc <- dfsR[oks]
-    dfIc <- dfsI[oks]
-    rm(list = "oks")
-    
+    oths  <- !grps %in% g
+    dfRc <- dfsR[oths]
+    dfIc <- dfsI[oths]
+
     # At least one group with >= 3 values from the complementary
-    okc <- lapply(dfRc, function (x) {
+    okc <- lapply(dfIc, function (x) {
       rowSums(!is.na(x), na.rm = TRUE) >= 3L
     }) |>
       purrr::reduce(`|`)
     
+    nas <- rowSums(is.na(dfRg))
     okc_a <- nas & okc
     okc_b <- nas & !okc
     
-    for (i in seq_along(dfI)) {
-      dfI[okc_a, i] <- b[[i]]
-    }
-    
     ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
     ybars_c[is.nan(ybars_c)] <- NA_real_
-    dfR[okc_a, ] <- log2(dfI[okc_a, ] / ybars_c[okc_a])
+    ybars_c_sub <- ybars_c[okc_a]
     
-    # Set lower bounds
-    min_log2_fold <- -log2(max_fold)
-    dfR[okc_a, ][dfR[okc_a, ] < min_log2_fold] <- min_log2_fold
+    # No all-NA rows for imputation
+    if (!sum(nas == ncol(dfRg))) {
+      return(list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
+                  rows_a = okc_a, rows_b = okc_b, imp = FALSE))
+    }
 
-    list(log2R = dfR, Intensity = dfI, ybars_c = ybars_c, bads = okc_b)
+    # Update intensities
+    for (i in seq_along(dfIg)) {
+      dfIg[okc_a, i] <- pmin(b[[i]], ybars_c_sub)
+    }
+    
+    list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
+         rows_a = okc_a, rows_b = okc_b, imp = TRUE)
   }, dfsR, dfsI, grps, ys_base, 
   SIMPLIFY = FALSE)
-  
+
   # if is `bad` in one group -> is bad entirely
   if (impute_low_qualities) {
-    bads <- which(purrr::reduce(lapply(ans, `[[`, "bads"), `|`))
+    rows_b  <- which(purrr::reduce(lapply(ans, `[[`, "rows_b"), `|`))
+    # OK by using the mean of means
     ybars_c <- rowMeans(sapply(ans, `[[`, "ybars_c"), na.rm = TRUE)
     
-    ans <- lapply(ans, function(item) {
-      item$log2R[bads, ] <- replace_lows_by
-      item$Intensity[bads, ] <- ybars_c[bads]
+    ans <- lapply(ans, function(anx) {
+      anx$log2R[rows_b, ] <- replace_lows_by
+      anx$Intensity[rows_b, ] <- ybars_c[rows_b]
       
-      item
+      anx
     })
   }
   
-  ans
+  dfI <- dplyr::bind_cols(lapply(ans, `[[`, "Intensity"))
+  
+  ## Set lower bounds
+  # min_log2_fold <- -log2(max_fold)
+  # dfRg[okc_a, ][dfRg[okc_a, ] < min_log2_fold] <- min_log2_fold
+
+  dfR <- dplyr::bind_cols(lapply(ans, `[[`, "log2R"))
+  
+  ## Update log2Ratios: currently relative to rowMeans; no Gaussian fits
+  rows_a <- lapply(ans, `[[`, "rows_a") |>
+    purrr::reduce(`|`)
+  dfR[rows_a, ] <- log2(dfI[rows_a, ] / rowMeans(dfI[rows_a, ], na.rm = TRUE))
+  dfR[rows_a, ] <- lapply(dfR[rows_a, ], function(x) {
+    x[is.nan(x)] <- NA_real_
+    return(x)
+  })
+  dfR <- dfR[, sample_ids, drop = FALSE]
+  dfI <- dfI[, sample_ids, drop = FALSE]
+  
+  list(log2R = dfR, Intensity = dfI)
 }
 
 
@@ -806,16 +784,16 @@ impute_baseline_ints <- function (dfsR, dfsI, ys_base, sample_ids,
 #' @inheritParams prnSig
 #' @importFrom magrittr %>%
 base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL, 
-                           label_scheme_sub_sub, perc_baseline_intensity = .01, 
-                           seed = NULL) 
+                           label_scheme_sub_sub, perc_baseline_intensity = 1E-4, 
+                           abs_baselne_intensity = 10^5.5, seed = NULL) 
 {
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
   
   gl_min <- max(
     min(dfI, na.rm = TRUE), 
-    # quantile(dfI, .0001, na.rm = TRUE)
-    quantile(dfI, perc_baseline_intensity, na.rm = TRUE)
+    quantile(dfI, perc_baseline_intensity, na.rm = TRUE), 
+    abs_baselne_intensity
   )
   log10_gl_min <- log10(gl_min)
   
@@ -885,6 +863,7 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
+                    abs_baselne_intensity = 10^5.5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), padj_method = "BH", 
                     method_replace_na = c("none", "min"), 
@@ -963,6 +942,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
               pval_cutoff = pval_cutoff, 
               logFC_cutoff = logFC_cutoff, 
               perc_baseline_intensity = perc_baseline_intensity, 
+              abs_baselne_intensity = abs_baselne_intensity, 
               rm_allna = rm_allna, 
               ...)
 }
@@ -1000,6 +980,8 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@param perc_baseline_intensity An estimated percentage of baseline intensity
 #'  in relative to the measured intensities. The setting will be modified to an
 #'  absolute value in a later version.
+#'@param abs_baselne_intensity The absolute level of intensity for uses at
+#'  \code{impute_group_na = TRUE}.
 #'@param padj_method Character string; the method of multiple-test corrections
 #'  for uses with \link[stats]{p.adjust}. The default is "BH". See
 #'  ?p.adjust.methods for additional choices.
@@ -1103,6 +1085,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
+                    abs_baselne_intensity = 10^5.5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
@@ -1179,6 +1162,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE,
               pval_cutoff = pval_cutoff, 
               logFC_cutoff = logFC_cutoff, 
               perc_baseline_intensity = perc_baseline_intensity, 
+              abs_baselne_intensity = abs_baselne_intensity, 
               rm_allna = rm_allna, 
               ...)
 }

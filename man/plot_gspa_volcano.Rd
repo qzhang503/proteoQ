@@ -37,8 +37,8 @@ plot_gspa_volcano(
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
 
-\item{show_sig}{Character string indicating the type of significance values to
-be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
+\item{show_sig}{Character string indicating the type of significance values
+to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 

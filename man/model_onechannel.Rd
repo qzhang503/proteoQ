@@ -13,7 +13,8 @@ model_onechannel(
   label_scheme_sub,
   complete_cases = FALSE,
   impute_group_na = TRUE,
-  perc_baseline_intensity = 0.001,
+  perc_baseline_intensity = 1e-04,
+  abs_baselne_intensity = 10^5.5,
   method = "limma",
   padj_method = "BH",
   var_cutoff = 0.001,
@@ -43,6 +44,9 @@ exclusively NA under a sample group. The sample grouping is defined under
 \item{perc_baseline_intensity}{An estimated percentage of baseline intensity
 in relative to the measured intensities. The setting will be modified to an
 absolute value in a later version.}
+
+\item{abs_baselne_intensity}{The absolute level of intensity for uses at
+\code{impute_group_na = TRUE}.}
 
 \item{method}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}

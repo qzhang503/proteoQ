@@ -20,6 +20,7 @@ byfml_volcano(
   topn_labels,
   anal_type,
   show_sig,
+  show_passed_only = TRUE,
   gsets = NULL,
   gset_ids = NULL,
   scale_log2r,
@@ -35,8 +36,8 @@ byfml_volcano(
 \item{fml_nm}{A character string; the name of \code{fml}.}
 
 \item{gspval_cutoff}{Numeric value or vector for uses with
-\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals} less
-significant than the threshold will be excluded from volcano plot
+\code{\link{prnGSPAMap}}. \code{Gene sets} with enrichment \code{pVals}
+less significant than the threshold will be excluded from volcano plot
 visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
@@ -49,17 +50,17 @@ matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
-\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered by
- increasing \code{pVal} for visualization. The default is to use all
- available entries.
+\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered
+  by increasing \code{pVal} for visualization. The default is to use all
+  available entries.
 
- Note that it is users' responsibility to ensure that the custom gene sets
- contain terms that can be found from the one or multiple preceding analyses
- of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
- include \emph{all} of the data bases that have been applied to
- \code{\link{prnGSPA}} and in that way no terms will be missed for
- visualization. See also \code{\link{prnGSPA}} for examples of custom data
- bases.}
+  Note that it is users' responsibility to ensure that the custom gene sets
+  contain terms that can be found from the one or multiple preceding analyses
+  of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
+  include \emph{all} of the data bases that have been applied to
+  \code{\link{prnGSPA}} and in that way no terms will be missed for
+  visualization. See also \code{\link{prnGSPA}} for examples of custom data
+  bases.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
@@ -110,10 +111,13 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
-\item{show_sig}{Character string indicating the type of significance values to
-be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
+\item{show_sig}{Character string indicating the type of significance values
+to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
+
+\item{show_passed_only}{Logical; if TRUE, only visualize pathways that have
+passed a significant threshold.}
 
 \item{gsets}{The gene sets.}
 

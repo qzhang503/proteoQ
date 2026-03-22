@@ -12,7 +12,8 @@ sigTest(
   complete_cases = FALSE,
   impute_na = FALSE,
   impute_group_na = TRUE,
-  perc_baseline_intensity = 0.01,
+  perc_baseline_intensity = 1e-04,
+  abs_baselne_intensity = 10^5.5,
   rm_allna = FALSE,
   method_replace_na = "none",
   filepath,
@@ -62,6 +63,9 @@ exclusively NA under a sample group. The sample grouping is defined under
 \item{perc_baseline_intensity}{An estimated percentage of baseline intensity
 in relative to the measured intensities. The setting will be modified to an
 absolute value in a later version.}
+
+\item{abs_baselne_intensity}{The absolute level of intensity for uses at
+\code{impute_group_na = TRUE}.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
