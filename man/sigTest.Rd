@@ -13,7 +13,7 @@ sigTest(
   impute_na = FALSE,
   impute_group_na = TRUE,
   perc_baseline_intensity = 1e-04,
-  abs_baselne_intensity = 10^5.5,
+  abs_baselne_intensity = 10^5,
   rm_allna = FALSE,
   method_replace_na = "none",
   filepath,

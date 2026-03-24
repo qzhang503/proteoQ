@@ -11,7 +11,7 @@ base_sigtest_y(
   key_col = NULL,
   label_scheme_sub_sub,
   perc_baseline_intensity = 1e-04,
-  abs_baselne_intensity = 10^5.5,
+  abs_baselne_intensity = 10^5,
   seed = NULL
 )
 }

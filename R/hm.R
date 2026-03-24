@@ -473,9 +473,14 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     tempdata <- local({
       grps <- label_scheme_sub[[group_renorm_by]]
       ugrps <- unique(grps)
+      n_ugrps <- length(ugrps)
       
-      if (!is.null(group_fct_int)) {
-        if (length(group_fct_int) == length(ugrps)) {
+      if (is.null(group_fct_int)) {
+        group_fct_int <- rep_len(1L, n_ugrps)
+        ok_scale_int <- FALSE
+      }
+      else {
+        if (length(group_fct_int) == n_ugrps) {
           nms_grp <- names(group_fct_int)
           ord <- match(ugrps, nms_grp)
           
@@ -487,9 +492,11 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
             group_fct_int <- group_fct_int[ord]
             ok_scale_int <- TRUE
           }
-        } else {
+        }
+        else {
           warning("Mismatches in the length of 'group_fct_int' and the number ", 
                   "of unique groups under column", group_renorm_by)
+          group_fct_int <- rep_len(1L, n_ugrps)
           ok_scale_int <- FALSE
         }
       }

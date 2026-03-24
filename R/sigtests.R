@@ -255,7 +255,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
                               id, formula, label_scheme_sub, 
                               complete_cases = FALSE, impute_group_na = TRUE, 
                               perc_baseline_intensity = 1E-4,
-                              abs_baselne_intensity = 10^5.5, 
+                              abs_baselne_intensity = 10^5.0, 
                               method = "limma", padj_method = "BH", 
                               var_cutoff = 1E-3, pval_cutoff = 1.00, 
                               logFC_cutoff = log2(1), ...) 
@@ -301,7 +301,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   
   id <- rlang::as_string(rlang::enexpr(id))
   
-  # keep the name list as rows may drop in filtration
+  # Set aside the name list as rows may drop in filtration
   df_nms <- tibble::tibble(!!id := rownames(dfR))
   
   if (complete_cases) {
@@ -317,12 +317,13 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   if (!identical(colnames(dfI), colnames(dfR))) {
     stop("Developer: Check mismatches between Intensity and Ratio data.")
   }
+  
   if (!identical(nrow(dfI), nrow(dfR))) {
     stop("Developer: Check mismatches between Intensity and Ratio data.")
   }
 
   ###
-  # Haven't yet test within-group imputation at mixed effect modeling...
+  # Need to test the partial imputation at mixed effect modeling...
   ###
   
   if (impute_group_na && !is.null(dfI)) {
@@ -335,6 +336,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     dfsI <- ans[["Intensity"]]
     ys_base <- ans[["baseline"]]
     rm(list = "ans")
+    # lapply(ys_base, log10)
 
     mapply(function (x, y) {
       if (!identical(rownames(x), rownames(y))) {
@@ -356,9 +358,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   }
 
   local({
-    ncol <- ncol(dfR)
-    
-    if (ncol < 4L) 
+    if ((ncol <- ncol(dfR)) < 4L) 
       warning(formula, ": the total number of samples is ", ncol, ".\n", 
               "May need more samples for statistical tests.")
   })
@@ -372,11 +372,10 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     corfit <- duplicateCorrelation(dfR, design = design, block = design_random)
     
     fit <- suppressWarnings(
-      dfR %>%
-        lmFit(design = design, 
-              block = design_random, 
-              correlation = corfit$consensus) %>%
-        contrasts.fit(contr_mat) %>%
+      lmFit(dfR, design = design, 
+            block = design_random, 
+            correlation = corfit$consensus) |>
+        contrasts.fit(contr_mat) |>
         eBayes()
     )
   } 
@@ -391,13 +390,11 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   print(design)
   print(contr_mat)
   
-  # limma
-  log2rs <- fit$coefficients %>%
-    data.frame(check.names = FALSE) %>%
+  ## limma
+  log2rs <- data.frame(fit$coefficients, check.names = FALSE) %>%
     `names<-`(paste0("log2Ratio (", names(.), ")"))
   
-  pvals <- fit$p.value %>%
-    data.frame(check.names = FALSE) %>%
+  pvals <- data.frame(fit$p.value, check.names = FALSE) %>%
     `names<-`(paste0("pVal (", names(.), ")"))
   
   res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method)
@@ -489,7 +486,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   
   df_op <- dplyr::bind_rows(res_lm, bads)
   
-  df_op <- df_op %>%
+  df_op <- df_op |>
     dplyr::mutate(
       dplyr::across(
         dplyr::matches("^(pVal \\(|adjP \\()"),
@@ -497,7 +494,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       )
     )
   
-  df_op <- df_op %>%
+  df_op <- df_op |>
     dplyr::mutate(
       dplyr::across(
         dplyr::matches("^log2Ratio \\(", ),
@@ -505,7 +502,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       )
     )
   
-  df_op <- df_op %>%
+  df_op <- df_op |>
     dplyr::mutate(
       dplyr::across(
         dplyr::matches("^FC \\(", ),
@@ -528,7 +525,7 @@ sigTest <- function(df, id, label_scheme_sub,
                     scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, impute_group_na = TRUE, 
                     perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.5, 
+                    abs_baselne_intensity = 10^5.0, 
                     rm_allna = FALSE, method_replace_na = "none", 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
@@ -785,7 +782,7 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
 #' @importFrom magrittr %>%
 base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL, 
                            label_scheme_sub_sub, perc_baseline_intensity = 1E-4, 
-                           abs_baselne_intensity = 10^5.5, seed = NULL) 
+                           abs_baselne_intensity = 10^5.0, seed = NULL) 
 {
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
@@ -816,17 +813,27 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
   
   ## (1) Generate random, baseline intensities for each contrast group
   # var(log10_Int) ~ mean(log10_Int)
-  slope <- mapply(function (x, y) {
+  slopes <- mapply(function (x, y) {
     lx <- log10(x)
     ly <- log10(y)
     oks <- !(is.na(lx) | is.infinite(lx))
     coef(lm(lx[oks] ~ rowMeans(ly[oks, ], na.rm = TRUE)))[[2]]
-  }, lapply(dfsI, rowVars), dfsI) |>
-    mean()
-  ys_base <- lapply(n_samples, gen_randoms, mu = log10_gl_min, sigma = slope, 
-                    seed = seed)
-  ys_base <- lapply(ys_base, function (x) 10^x + gl_min)
+  }, lapply(dfsI, rowVars), dfsI)
   
+  set.seed(seed)
+  ys_base <- mapply(function (x, y) {
+    gen_randoms(x, mu = log10_gl_min, sigma = y)
+  }, n_samples, slopes, SIMPLIFY = FALSE)
+  
+  # ys_base <- lapply(ys_base, function (x) 10^pmax((x - .2), 2.0) + gl_min)
+  ys_base <- lapply(ys_base, function (x) 10^x + gl_min)
+  ys_base <- lapply(
+    ys_base, 
+    function (x) 
+      ifelse(x > 10^(log10_gl_min + .5), 
+             10^(log10_gl_min + .3 + rnorm(1, sd = .15)),
+             x))
+
   list(baseline = ys_base, log2R = dfsR, Intensity = dfsI)
 }
 
@@ -863,7 +870,7 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.5, 
+                    abs_baselne_intensity = 10^5.0, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), padj_method = "BH", 
                     method_replace_na = c("none", "min"), 
@@ -1085,7 +1092,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.5, 
+                    abs_baselne_intensity = 10^5.0, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 

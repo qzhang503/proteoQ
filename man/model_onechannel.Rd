@@ -14,7 +14,7 @@ model_onechannel(
   complete_cases = FALSE,
   impute_group_na = TRUE,
   perc_baseline_intensity = 1e-04,
-  abs_baselne_intensity = 10^5.5,
+  abs_baselne_intensity = 10^5,
   method = "limma",
   padj_method = "BH",
   var_cutoff = 0.001,
