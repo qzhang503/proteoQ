@@ -290,7 +290,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
       dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
       ys_base = ys_base, sample_ids = sids, impute_low_qualities = TRUE)
     dfR <- ans2[["log2R"]]
-    dfI   <- ans2[["Intensity"]]
+    dfI <- ans2[["Intensity"]]
     rm(list = "ans2")
     
     # Separate data by groups

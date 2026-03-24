@@ -697,7 +697,7 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
   # Impute intensities
   ans  <- mapply(function (dfRg, dfIg, g, b) {
     # Complementary columns
-    oths  <- !grps %in% g
+    oths <- !grps %in% g
     dfRc <- dfsR[oths]
     dfIc <- dfsI[oths]
 
@@ -707,16 +707,17 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
     }) |>
       purrr::reduce(`|`)
     
-    nas <- rowSums(is.na(dfRg))
-    okc_a <- nas & okc
-    okc_b <- nas & !okc
+    n_col <- ncol(dfRg)
+    all_nas <- rowSums(is.na(dfRg)) == n_col
+    okc_a <- all_nas & okc
+    okc_b <- all_nas & !okc
     
     ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
     ybars_c[is.nan(ybars_c)] <- NA_real_
     ybars_c_sub <- ybars_c[okc_a]
     
     # No all-NA rows for imputation
-    if (!sum(nas == ncol(dfRg))) {
+    if (!sum(all_nas)) {
       return(list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
                   rows_a = okc_a, rows_b = okc_b, imp = FALSE))
     }
