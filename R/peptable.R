@@ -4834,6 +4834,228 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 }
 
 
+#' Make DIANN protein table from peptide table.
+#'
+#' @inheritParams normPSM
+#' @param add_ibaq Logical; adds iBAQ value or not.
+#' @param type_int Character string; the type of intensities for iBAQ
+#'   calculations. The value is either \code{I} or \code{N_I}.
+#' @param ... Additional arguments.
+#' @export
+makeProtDIANN_from_Pep <- 
+  function (dat_dir = NULL, group_pep_by = "gene", use_unique_pep = TRUE, 
+            fasta = NULL, add_ibaq = TRUE, type_int = c("N_I", "I"), ...)
+{
+  on.exit(
+    if (exists(".saveCall", envir = environment()) && .saveCall) {
+      mget(names(formals()), envir = environment(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("makeProtDIANN")
+    }, add = TRUE)
+  
+  # ---
+  fmls <- formals()
+  type_int <- rlang::enexpr(type_int)
+  type_int <- if (length(type_int) > 1L) "I" else rlang::as_string(type_int)
+  oks <- eval(fmls[["type_int"]])
+  
+  if (!type_int %in% oks) {
+    stop("The `type_int` is not one of ", paste(oks, collapse = ", "))
+  }
+  
+  if (length(type_int) != 1L) {
+    stop("The length of `type_int` needs to be one.")
+  }
+  # ---
+  
+  dots <- rlang::enexprs(...)
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  if (!dir.exists(out_path <- file.path(dat_dir, "Protein"))) {
+    dir.create(out_path, showWarnings = FALSE)
+  }
+  
+  if (!file.exists(fn_meta <- file.path(dat_dir, "label_scheme_full.rda"))) {
+    stop("File not found: '", fn_meta, "'. \nRun 'load_expts' first.")
+  }
+  
+  if (!file.exists(fn_acc <- file.path(dat_dir, "acc_lookup.rda"))) {
+    stop("File not found: '", fn_acc, "'. Run 'makePepDIANN' first.")
+  }
+  
+  load(fn_meta)
+  load(fn_acc)
+  
+  if (!file.exists(fn_pep <- file.path(dat_dir, "report.pr_matrix.tsv"))) {
+    stop("File not found: '", fn_pep, "'. \nCopy the file to ", dat_dir, ".")
+  }
+  
+  df <- fn_pep |>
+    readr::read_tsv() |>
+    dplyr::rename(
+      genes = Genes, 
+      prot_acc = Protein.Group, 
+      prot_accs = Protein.Ids, 
+      prot_ids   = Protein.Names, 
+      pep_isunique = Proteotypic) |>
+    dplyr::mutate(
+      gene = gsub(";.*", "", genes), 
+      prot_acc = gsub(";.*", "", prot_acc), 
+      pep_isunique = as.logical(pep_isunique)) |>
+    reloc_col_before("gene", "genes")
+  
+  df <- rm_diann_empties(df, label_scheme_full)
+  df <- aggrLCMS_DIANN(df)
+  
+  if (use_unique_pep) {
+    df <- df |>
+      dplyr::filter(pep_isunique)
+  }
+
+  if (group_pep_by == "gene") {
+    if (!file.exists(fn_prot <- file.path(dat_dir, "report.gg_matrix.tsv"))) {
+      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+    }
+    
+    df_prot <- fn_prot |>
+      readr::read_tsv() |>
+      dplyr::rename(genes = Genes,) |>
+      dplyr::mutate(gene = gsub(";.*", "", genes)) |>
+      reloc_col_before("gene", "genes")
+  }
+  else if (group_pep_by == "prot_acc") {
+    if (!file.exists(fn_prot <- file.path(dat_dir, "report.pg_matrix.tsv"))) {
+      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+    }
+    
+    df_prot <- fn_prot |>
+      readr::read_tsv() |>
+      dplyr::rename(
+        prot_accs  = Protein.Group, 
+        prot_ids   = Protein.Names, 
+        genes      = Genes,
+        prot_desc  = First.Protein.Description, )
+    
+    df_prot <- df_prot |>
+      dplyr::mutate(
+        prot_acc = gsub(";.*", "", prot_accs), 
+        prot_id  = gsub(";.*", "", prot_ids), 
+        gene     = gsub(";.*", "", genes))
+    
+    df_prot <- df_prot |>
+      reloc_col_before("prot_acc", "prot_accs") |>
+      reloc_col_before("prot_id", "prot_ids") |>
+      reloc_col_before("gene", "genes")
+  }
+  
+  df_prot <- df_prot |> 
+    rm_diann_empties(label_scheme_full) |>
+    aggrLCMS_DIANN() |>
+    dplyr::select(-dplyr::matches("^I[0-9]{3}[NC]{0,1}"))
+
+  dfI <- dplyr::bind_cols(
+    df[, group_pep_by, drop = FALSE], 
+    df |> dplyr::select(dplyr::matches("^I000 \\("))
+  ) |>
+    dplyr::group_by_at(group_pep_by) |>
+    dplyr::summarise_all(sum, na.rm = TRUE)
+  
+  df <- df_prot |>
+    dplyr::filter(.data[[group_pep_by]] %in% dfI[[group_pep_by]]) |>
+    dplyr::left_join(dfI, by = group_pep_by)
+  
+  rm(list = c("df_prot", "dfI"))
+
+  # Move intensity columns to the last
+  cols <- dirname(colnames(df)) != "."
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  cols <- grepl("^I000 \\(", colnames(df))
+  dfr  <- dfy <- df[, cols, drop = FALSE]
+  dfrz <- dfrn <- dfr <- 
+    sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
+    log2() |>
+    dplyr::mutate_all(function (x) replace(x, is.infinite(x), NA_real_))
+  
+  colnames(dfy)  <- paste0("N_", colnames(dfy))
+  colnames(dfr)  <- gsub("^I", "log2_R", names(dfr))
+  colnames(dfrn) <- paste0("N_", colnames(dfr))
+  colnames(dfrz) <- paste0("Z_", colnames(dfr))
+  
+  dfy <- dfy |>
+    dplyr::mutate(
+      mean_lint = log10(rowMeans(dfy, na.rm = TRUE)), 
+      mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
+      mean_lint = round(mean_lint, digits = 2L))
+  
+  df <- dplyr::bind_cols(df, dfy, dfr, dfrn, dfrz) |>
+    reloc_col_after("mean_lint", "genes")
+  
+  # Annotation
+  # 'mts' can have NA since DIANN may report additional genes: e.g., 
+  #   common contaminant human "ALB" "CSN1S1" "CTSD" "HBA2" "HBB" "KRT1" ...   
+  #   when searching against mouse FASTA
+  mts <- match(df[[group_pep_by]], acc_lookup[[group_pep_by]])
+  df <- dplyr::bind_cols(
+    acc_lookup[mts, ], 
+    df[, -which(names(df) == group_pep_by)])
+  df <- df[!is.na(df[[group_pep_by]]), ]
+  
+  prot_n_pep <- readr::read_tsv(file.path(dat_dir, "Peptide", "prot_n_pep.txt"))
+  df <- df |>
+    dplyr::left_join(prot_n_pep, by = group_pep_by) |>
+    reloc_col_after("prot_n_pep", "prot_acc")
+  
+  # iBAQ
+  if (add_ibaq && is.null(fasta)) {
+    iwarning("No iBAQ calculation at 'fasta = NULL'.")
+    add_ibaq <- FALSE
+  }
+  
+  if (add_ibaq) {
+    pep_cts <- lapply(fasta, function (fa) {
+      peps <- mzion:::split_fastaseqs(
+        fasta = fa, enzyme = "trypsin_p", max_miss = 0L)
+      
+      lapply(peps, function (ps) {
+        ps <- ps[[2]]
+        lens <- nchar(ps)
+        sum(lens >= 7 & lens <= 40) # - 1L # "-MDGPTR"
+      })
+    }) |>
+      unlist()
+    
+    # df[["prot_acc"]] is unique too at group_pep_by = "gene"
+    df_ibaq <- sweep(df[, grepl(paste0("^", type_int, "[0-9]{3}"), names(df))], 
+                     1, pep_cts[match(df[["prot_acc"]], names(pep_cts))], "/")
+    colnames(df_ibaq) <- 
+      gsub(paste0("^", type_int, "000"), "iBAQ", colnames(df_ibaq))
+    df_ibaq <- dplyr::bind_cols(df[, group_pep_by, drop = FALSE], df_ibaq)
+    readr::write_tsv(df_ibaq, file.path(dat_dir, "iBAQ.txt"))
+    
+    if (FALSE && group_pep_by == "gene") {
+      n_tryptics <- pep_cts[match(df[["prot_acc"]], names(pep_cts))]
+      n_tryptics <- data.frame(prot_acc = names(n_tryptics), N. = n_tryptics)
+      n_tryptics <- n_tryptics |>
+        dplyr::left_join(acc_lookup[, c("prot_acc", "gene")], by = "prot_acc") |>
+        dplyr::select(-prot_acc) |>
+        dplyr::group_by(gene) |>
+        dplyr::summarise(N. = mean(N., na.rm = TRUE))
+      
+      # change names to gene
+    }
+  }
+  
+  ## Outputs
+  readr::write_tsv(df, file.path(out_path, "Protein.txt"))
+  
+  .saveCall <- TRUE
+  
+  invisible(df)
+}
+
 
 #' Aggregates DIANN data from multiple LCMS injections.
 #' 

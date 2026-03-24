@@ -327,6 +327,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   ###
   
   if (impute_group_na && !is.null(dfI)) {
+    dfI[dfI < 1] <- 1.0
+    
     ans <- base_sigtest_y(
       dfR = dfR, dfI = dfI, elements = elements, key_col = key_col, 
       perc_baseline_intensity = perc_baseline_intensity, 
@@ -818,7 +820,14 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
     lx <- log10(x)
     ly <- log10(y)
     oks <- !(is.na(lx) | is.infinite(lx))
-    coef(lm(lx[oks] ~ rowMeans(ly[oks, ], na.rm = TRUE)))[[2]]
+    lx <- lx[oks]
+    ly <- ly[oks, ]
+    ybar <- rowMeans(ly, na.rm = TRUE)
+    oks2 <- ybar >= log10(abs_baselne_intensity)
+    lx <- lx[oks2]
+    ybar <- ybar[oks2]
+    # plot(lx ~ ybar)
+    coef(lm(lx ~ ybar))[[2]]
   }, lapply(dfsI, rowVars), dfsI)
   
   set.seed(seed)
