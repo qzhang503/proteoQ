@@ -11,9 +11,9 @@ impute_baseline_ints(
   dfI,
   ys_base,
   sample_ids,
-  max_fold = 100,
   impute_low_qualities = FALSE,
-  replace_lows_by = 0
+  replace_lows_by = 0,
+  max_fold = 100
 )
 }
 \arguments{
@@ -31,13 +31,18 @@ columns in \code{dfR}.}
 
 \item{sample_ids}{The sample IDs for joining data at the original order.}
 
-\item{max_fold}{The maximum fold change allowed.}
-
-\item{impute_low_qualities}{Logical; impute low-quality data entries or not.}
+\item{impute_low_qualities}{Logical; impute low-quality data entries or not.
+If TRUE, the value of \code{replace_lows_by} will be applied.}
 
 \item{replace_lows_by}{A replacement value of log2Ratios at
 \code{impute_low_qualities = TRUE}.}
+
+\item{max_fold}{The maximum fold change allowed.}
 }
 \description{
-The values of log2Ratios are derived accordingly
+The values of log2Ratios are derived accordingly.
+}
+\details{
+Also used in trend analysis where the groups are flat without nest
+structures.
 }

@@ -42,6 +42,21 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3)
 }
 
 
+#' Helper to find contrast elements
+#' 
+#' @param contrs A vectors of contrast groups.
+find_contrast_elements <- function (contrs) 
+{
+  contrs %>%
+    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
+    gsub("[\\(\\)]", "", .) %>%
+    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
+    as.character() %>%
+    unique() %>% 
+    .[. != ""]
+}
+
+
 #' Prepare formulas
 #' 
 #' @inheritParams gspaTest
@@ -86,24 +101,23 @@ prepFml <- function(formula, label_scheme_sub, ...)
     new_levels <- c(new_levels[new_levels == base], 
                     new_levels[new_levels != base])
     label_scheme_sub <- label_scheme_sub %>%
-      dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
+      dplyr::mutate(
+        !!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
   } 
   else if (!grepl("\\[", fml_last)) { # formula = log2Ratio ~ Term
-    new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
+    new_levels <- levels(label_scheme_sub[[key_col]])
   }
   else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
     new_levels <- NULL
   }
   
-  if (!is.null(new_levels)) {
-    contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
-    elements <- new_levels
-  } 
-  else {
+  if (is.null(new_levels)) {
+    # Used for name displaying
     contrs <- gsub("\\\"", "", gsub(".*\\[(.*)\\].*", "\\1", fml_last)) |>
       str_split(",\\s*", simplify = TRUE) |>
       as.character()
     
+    # Used for real analysis; 
     # may have random terms at the end
     new_contrs <- gsub("\\\"", "", gsub("^.*\\[(.*)\\].*", "\\1", fml_last)) %>% 
       str_split(",\\s*", simplify = TRUE) %>% 
@@ -112,26 +126,28 @@ prepFml <- function(formula, label_scheme_sub, ...)
       gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
       gsub("[ <>]+", "", .)
     
-    new_elements <- new_contrs %>%
-      gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
-      gsub("[\\(\\)]", "", .) %>%
-      str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
-      as.character() %>%
-      unique() %>% 
-      .[. != ""]
+    # Nested: "(C_NP-A_NP)-(C_CP-A_CP)", "(C_NP-AZC_NP)-(C_CP-AZC_CP)"
+    # If no nested structures: return a list of character(0)
+    sub_contrs <- regmatches(
+      new_contrs, gregexpr("(?<=\\().*?(?=\\))", new_contrs, perl = TRUE))
     
+    new_elements <- find_contrast_elements(new_contrs)
+
     elements <- new_elements %>% 
       gsub(".plus.", "+", ., fixed = TRUE) %>% 
       gsub(".minus.", "-", ., fixed = TRUE)
     
-    message("\ncontrs: ", contrs %>% as.character, "\n")
-    message("new_contrs: ", new_contrs %>% as.character, "\n")
+    message("\ncontrs: ", as.character(contrs), "\n")
+    message("new_contrs: ", as.character(new_contrs), "\n")
     message("elements: ", paste(elements, collapse = ", "), "\n")
     message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
+  } else {
+    contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
+    elements <- new_levels
   }
   
-  label_scheme_sub_sub <- label_scheme_sub %>%
-    dplyr::filter(!!sym(key_col) %in% elements) %>%
+  label_scheme_sub_sub <- label_scheme_sub |>
+    dplyr::filter(!!sym(key_col) %in% elements) |>
     dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
   
   if (!nrow(label_scheme_sub_sub)) {
@@ -167,11 +183,16 @@ prepFml <- function(formula, label_scheme_sub, ...)
   
   message("random_vars: ", as.character(random_vars), "\n\n")
   
+  if (!any(lengths(sub_contrs))) {
+    sub_contrs <- NULL
+  }
+
   list(design = design, 
        contr_mat = contr_mat, 
        key_col = key_col, 
        random_vars = random_vars,
        elements = elements, 
+       sub_contrs = sub_contrs, 
        label_scheme_sub_sub = label_scheme_sub_sub)
 }
 
@@ -255,7 +276,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
                               id, formula, label_scheme_sub, 
                               complete_cases = FALSE, impute_group_na = TRUE, 
                               perc_baseline_intensity = 1E-4,
-                              abs_baselne_intensity = 10^5.0, 
+                              abs_baselne_intensity = 1E5, 
                               method = "limma", padj_method = "BH", 
                               var_cutoff = 1E-3, pval_cutoff = 1.00, 
                               logFC_cutoff = log2(1), ...) 
@@ -284,6 +305,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   design      <- fml_ops$design
   key_col     <- fml_ops$key_col
   random_vars <- fml_ops$random_vars
+  # NULL if no nested structure
+  sub_contrs  <- fml_ops$sub_contrs
   label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
   
   local({
@@ -327,18 +350,17 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   ###
   
   if (impute_group_na && !is.null(dfI)) {
-    dfI[dfI < 1] <- 1.0
+    dfI[dfI < 1.0] <- 1.0
     
-    ans <- base_sigtest_y(
+    ans_base_y <- base_sigtest_y(
       dfR = dfR, dfI = dfI, elements = elements, key_col = key_col, 
       perc_baseline_intensity = perc_baseline_intensity, 
       abs_baselne_intensity = abs_baselne_intensity, 
       label_scheme_sub_sub = label_scheme_sub_sub, seed = 1234L)
-    dfsR <- ans[["log2R"]]
-    dfsI <- ans[["Intensity"]]
-    ys_base <- ans[["baseline"]]
-    rm(list = "ans")
-    # lapply(ys_base, log10)
+    dfsR <- ans_base_y[["log2R"]]
+    dfsI <- ans_base_y[["Intensity"]]
+    ys_base <- ans_base_y[["baseline"]]
+    rm(list = "ans_base_y")
 
     mapply(function (x, y) {
       if (!identical(rownames(x), rownames(y))) {
@@ -350,13 +372,57 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       }
     }, dfsR, dfsI)
 
-    ans2 <- impute_baseline_ints(
-      dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
-      ys_base = ys_base, sample_ids = sids)
+    if (is.null(sub_contrs)) {
+      ans2 <- impute_baseline_ints(
+        dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
+        ys_base = ys_base, sample_ids = sids)
+      
+      dfI <- ans2[["Intensity"]]
+      dfR <- ans2[["log2R"]]
+
+      rm(list = "ans2")
+      
+      dfI <- dfI[, sids, drop = FALSE]
+      dfR <- dfR[, sids, drop = FALSE]
+    }
+    else {
+      u_contrs  <- unique(unlist(sub_contrs, recursive = FALSE))
+      pairs_sub <- lapply(u_contrs, find_contrast_elements)
+      sids_sub  <- lapply(pairs_sub, function (x) {
+        label_scheme_sub_sub |>
+          dplyr::filter(.data[[key_col]] %in% x) |>
+          dplyr::pull("Sample_ID")
+      })
+      
+      for (i in seq_along(pairs_sub)) {
+        pairi <- pairs_sub[[i]]
+        sidsi <- sids_sub[[i]]
+        
+        ans2 <- impute_baseline_ints(
+          dfsR = dfsR[pairi], 
+          dfsI = dfsI[pairi], 
+          dfR  = dfR[, sidsi, drop = FALSE], 
+          dfI  = dfI[, sidsi, drop = FALSE], 
+          ys_base = ys_base[pairi], 
+          sample_ids = sidsi)
+        dfI[, sidsi] <- ans2[["Intensity"]]
+        dfR[, sidsi] <- ans2[["log2R"]]
+        
+        tempi <- sep_data_by_group(
+          elements = elements, dfR = dfR, dfI = dfI, sids = sids,
+          key_col = key_col, label_scheme = label_scheme_sub_sub)
+        dfsI <- lapply(tempi, `[[`, "Intensity")
+        dfsR <- lapply(tempi, `[[`, "log2R")
+      }
+      
+      rm(list = c("ans2", "tempi", "pairi", "sidsi", "sids_sub", "pairs_sub", 
+                  "u_contrs"))
+      
+      dfI <- dfI[, sids, drop = FALSE]
+      dfR <- dfR[, sids, drop = FALSE]
+    }
+
     
-    dfI <- ans2[["Intensity"]]
-    dfR <- ans2[["log2R"]]
-    rm(list = "ans2")
   }
 
   local({
@@ -527,7 +593,7 @@ sigTest <- function(df, id, label_scheme_sub,
                     scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, impute_group_na = TRUE, 
                     perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.0, 
+                    abs_baselne_intensity = 1E5, 
                     rm_allna = FALSE, method_replace_na = "none", 
                     filepath, filename, 
                     method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
@@ -666,9 +732,59 @@ sigTest <- function(df, id, label_scheme_sub,
 }
 
 
+#' Helper of \link{impute_baseline_int}.
+#'
+#' @param dfRg The data frame of log2Ratios belongs to the group \code{g}.
+#' @param dfIg The data frame of intensities belongs to the group \code{g}.
+#' @param g The current group.
+#' @param b The current baseline intensities. Each value corresponds to one
+#'   sample.
+#' @param dfsR All data frames of log2Ratios.
+#' @param dfsI All data frames of intensities.
+#' @param grps All groups
+himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
+  # Complementary columns
+  oths <- !grps %in% g
+  dfRc <- dfsR[oths]
+  dfIc <- dfsI[oths]
+  
+  # At least one group with >= 3 values from the complementary
+  okc <- lapply(dfIc, function (x) {
+    rowSums(!is.na(x), na.rm = TRUE) >= 3L
+  }) |>
+    purrr::reduce(`|`)
+  
+  n_col <- ncol(dfRg)
+  all_nas <- rowSums(is.na(dfRg)) == n_col
+  okc_a <- all_nas & okc
+  okc_b <- all_nas & !okc
+  
+  ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
+  ybars_c[is.nan(ybars_c)] <- NA_real_
+  ybars_c_sub <- ybars_c[okc_a]
+  
+  # No all-NA rows for imputation
+  if (!sum(all_nas)) {
+    return(list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
+                rows_a = okc_a, rows_b = okc_b, imp = FALSE))
+  }
+  
+  # Update intensities
+  for (i in seq_along(dfIg)) {
+    dfIg[okc_a, i] <- pmin(b[[i]], ybars_c_sub)
+  }
+  
+  list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
+       rows_a = okc_a, rows_b = okc_b, imp = TRUE)
+}
+
+
 #' Imputation baseline intensities.
 #'
-#' The values of log2Ratios are derived accordingly
+#' The values of log2Ratios are derived accordingly.
+#'
+#' Also used in trend analysis where the groups are flat without nest
+#' structures.
 #'
 #' @param dfsR List of log2Ratio data frames. Data are grouped according to the
 #'   formulas in \link{prnSig}.
@@ -680,12 +796,13 @@ sigTest <- function(df, id, label_scheme_sub,
 #' @param sample_ids The sample IDs for joining data at the original order.
 #' @param max_fold The maximum fold change allowed.
 #' @param impute_low_qualities Logical; impute low-quality data entries or not.
+#'   If TRUE, the value of \code{replace_lows_by} will be applied.
 #' @param replace_lows_by A replacement value of log2Ratios at
 #'   \code{impute_low_qualities = TRUE}.
 #' @importFrom magrittr %>%
-impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids, 
-                                  max_fold = 100, impute_low_qualities = FALSE,
-                                  replace_lows_by = 0.0)
+impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
+                                  impute_low_qualities = FALSE,
+                                  replace_lows_by = 0.0, max_fold = 100)
 {
   grps <- names(dfsR)
 
@@ -697,42 +814,13 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
   }
 
   # Impute intensities
-  ans  <- mapply(function (dfRg, dfIg, g, b) {
-    # Complementary columns
-    oths <- !grps %in% g
-    dfRc <- dfsR[oths]
-    dfIc <- dfsI[oths]
-
-    # At least one group with >= 3 values from the complementary
-    okc <- lapply(dfIc, function (x) {
-      rowSums(!is.na(x), na.rm = TRUE) >= 3L
-    }) |>
-      purrr::reduce(`|`)
-    
-    n_col <- ncol(dfRg)
-    all_nas <- rowSums(is.na(dfRg)) == n_col
-    okc_a <- all_nas & okc
-    okc_b <- all_nas & !okc
-    
-    ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
-    ybars_c[is.nan(ybars_c)] <- NA_real_
-    ybars_c_sub <- ybars_c[okc_a]
-    
-    # No all-NA rows for imputation
-    if (!sum(all_nas)) {
-      return(list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
-                  rows_a = okc_a, rows_b = okc_b, imp = FALSE))
-    }
-
-    # Update intensities
-    for (i in seq_along(dfIg)) {
-      dfIg[okc_a, i] <- pmin(b[[i]], ybars_c_sub)
-    }
-    
-    list(log2R = dfRg, Intensity = dfIg, ybars_c = ybars_c, 
-         rows_a = okc_a, rows_b = okc_b, imp = TRUE)
-  }, dfsR, dfsI, grps, ys_base, 
-  SIMPLIFY = FALSE)
+  ans <- mapply(
+    himpute_baseline, 
+    dfRg = dfsR, dfIg = dfsI, g = grps, b = ys_base,
+    MoreArgs = list(
+      dfsR = dfsR, dfsI = dfsI, grps = grps
+    ), 
+    SIMPLIFY = FALSE)
 
   # if is `bad` in one group -> is bad entirely
   if (impute_low_qualities) {
@@ -743,19 +831,25 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
     ans <- lapply(ans, function(anx) {
       anx$log2R[rows_b, ] <- replace_lows_by
       anx$Intensity[rows_b, ] <- ybars_c[rows_b]
-      
       anx
     })
   }
   
+  ## Update intensities
   dfI <- dplyr::bind_cols(lapply(ans, `[[`, "Intensity"))
+  dfR <- dplyr::bind_cols(lapply(ans, `[[`, "log2R"))
+  
+  dfI <- dfI[, sample_ids, drop = FALSE]
+  dfR <- dfR[, sample_ids, drop = FALSE]
+  
+  if (!identical(names(dfR), names(dfI))) {
+    stop("Developer: check mismatched sample IDs.")
+  }
   
   ## Set lower bounds
   # min_log2_fold <- -log2(max_fold)
   # dfRg[okc_a, ][dfRg[okc_a, ] < min_log2_fold] <- min_log2_fold
 
-  dfR <- dplyr::bind_cols(lapply(ans, `[[`, "log2R"))
-  
   ## Update log2Ratios: currently relative to rowMeans; no Gaussian fits
   rows_a <- lapply(ans, `[[`, "rows_a") |>
     purrr::reduce(`|`)
@@ -764,10 +858,13 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
     x[is.nan(x)] <- NA_real_
     return(x)
   })
-  dfR <- dfR[, sample_ids, drop = FALSE]
-  dfI <- dfI[, sample_ids, drop = FALSE]
-  
-  list(log2R = dfR, Intensity = dfI)
+
+  ## Outputs
+  # dfR need to be recalculated with nested structures
+  list(log2R = dfR, 
+       Intensity = dfI, 
+       rows_a = which(rows_a), 
+       rows_b = which(!rows_a))
 }
 
 
@@ -785,8 +882,10 @@ impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
 #' @importFrom magrittr %>%
 base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL, 
                            label_scheme_sub_sub, perc_baseline_intensity = 1E-4, 
-                           abs_baselne_intensity = 10^5.0, seed = NULL) 
+                           abs_baselne_intensity = 1E5, seed = NULL) 
 {
+  
+  
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
   
@@ -816,26 +915,19 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
   
   ## (1) Generate random, baseline intensities for each contrast group
   # var(log10_Int) ~ mean(log10_Int)
-  slopes <- mapply(function (x, y) {
-    lx <- log10(x)
-    ly <- log10(y)
-    oks <- !(is.na(lx) | is.infinite(lx))
-    lx <- lx[oks]
-    ly <- ly[oks, ]
-    ybar <- rowMeans(ly, na.rm = TRUE)
-    oks2 <- ybar >= log10(abs_baselne_intensity)
-    lx <- lx[oks2]
-    ybar <- ybar[oks2]
-    # plot(lx ~ ybar)
-    coef(lm(lx ~ ybar))[[2]]
+  slopes <- mapply(function(x, y) {
+    slope <- tryCatch(
+      find_baseline_slope(x, y),
+      error = function(e) NA_real_
+    )
   }, lapply(dfsI, rowVars), dfsI)
-  
+  slopes[is.na(slopes)] <- 1.8
+
   set.seed(seed)
   ys_base <- mapply(function (x, y) {
     gen_randoms(x, mu = log10_gl_min, sigma = y)
   }, n_samples, slopes, SIMPLIFY = FALSE)
   
-  # ys_base <- lapply(ys_base, function (x) 10^pmax((x - .2), 2.0) + gl_min)
   ys_base <- lapply(ys_base, function (x) 10^x + gl_min)
   ys_base <- lapply(
     ys_base, 
@@ -843,8 +935,58 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
       ifelse(x > 10^(log10_gl_min + .5), 
              10^(log10_gl_min + .3 + rnorm(1, sd = .15)),
              x))
+  names(ys_base) <- names(dfsI)
 
   list(baseline = ys_base, log2R = dfsR, Intensity = dfsI)
+}
+
+
+#' Helper: separate data by contrast groups.
+#' 
+#' @param elements Elements of contrasts.
+#' @param dfR Data frame of log2Ratios.
+#' @param dfI Data frame of intensities.
+#' @param sids Sample IDs.
+#' @param key_col The name of a key column.
+#' @param label_scheme Metadata.
+sep_data_by_group <- function (elements, dfR, dfI, sids, key_col, label_scheme)
+{
+  ans <- lapply(elements, function (x) {
+    sids_sub <- label_scheme |>
+      dplyr::filter(.data[[key_col]] %in% x) |>
+      dplyr::pull(Sample_ID)
+    
+    oks <- sids %in% sids_sub
+    dfR_sub <- dfR[, oks, drop = FALSE]
+    dfI_sub <- dfI[, oks, drop = FALSE]
+    
+    list(log2R = dfR_sub, Intensity = dfI_sub)
+  })
+  names(ans) <- elements
+  
+  ans
+}
+
+#' Helper of \link{base_sigtest_y}.
+#'
+#' Finds the slope for the imputation of baseline intensities.
+#'
+#' @param x A vector of row variances of intensities from each entry, e.g.,
+#'   protein.
+#' @param y A data frame of intensities. Each column correspondes to a sample.
+#' @inheritParams prnSig
+find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5) {
+  lx <- log10(x)
+  ly <- log10(y)
+  oks <- !(is.na(lx) | is.infinite(lx))
+  lx <- lx[oks]
+  ly <- ly[oks, ]
+  ybar <- rowMeans(ly, na.rm = TRUE)
+  oks2 <- ybar >= log10(abs_baselne_intensity)
+  lx <- lx[oks2]
+  ybar <- ybar[oks2]
+  # plot(lx ~ ybar)
+  coef(lm(lx ~ ybar))[[2]]
 }
 
 
@@ -880,7 +1022,7 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' @export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.0, 
+                    abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), padj_method = "BH", 
                     method_replace_na = c("none", "min"), 
@@ -1102,7 +1244,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
-                    abs_baselne_intensity = 10^5.0, 
+                    abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
                     method = c("limma", "lm"), 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
