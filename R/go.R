@@ -23,34 +23,36 @@ create_db_path <- function (db_path)
 }
 
 
-#' Helper to save `obo` without header
+#' Helper to save obo without header
 #' 
 #' @param fn_obo filename according to \code{obo_url}
 #' @inheritParams prepGO
 proc_obo <- function(db_path, fn_obo, 
-                     type = c("biological_process", "cellular_component", "molecular_function")) 
+                     type = c("biological_process", "cellular_component", 
+                              "molecular_function")) 
 {
   filepath <- file.path(db_path, "cache", fn_obo)
   
-  if (!file.exists(filepath)) 
-    stop("File not found ", filepath, ".", call. = FALSE)
+  if (!file.exists(filepath)) {
+    stop("File not found ", filepath, ".")
+  }
 
   suppressWarnings(df <- readLines(filepath))
   first_row <- grep("\\[Term\\]", df)[1]
-  last_row <- grep("\\[Typedef\\]", df)[1] - 2
+  last_row <- grep("\\[Typedef\\]", df)[1] - 2L
   df <- df[first_row:last_row]
   
   go_ids <- df %>% .[grepl("^id:\\s{1}", .)] %>% gsub("^id:\\s{1}", "", .)
   go_nms <- df %>% .[grepl("^name:\\s{1}", .)] %>% gsub("^name:\\s{1}", "", .)
   go_type <- df %>% .[grepl("^namespace:\\s{1}", .)] %>% gsub("^namespace:\\s{1}", "", .)
   
-  df <- tibble::tibble(go_id = go_ids, go_name = go_nms, go_space = go_type) %>% 
+  df <- tibble::tibble(go_id = go_ids, go_name = go_nms, go_space = go_type) |>
     dplyr::filter(go_space %in% type) %>% 
     dplyr::select(-go_space) 
 }
 
 
-#' Helper to save `gaf` without header
+#' Helper to save gaf without header
 #' 
 #' @param fn_gaf filename according to \code{gaf_url}
 #' @inheritParams prepGO
@@ -85,6 +87,166 @@ proc_gaf <- function(db_path, fn_gaf)
 }
 
 
+#' Helper to save rpt
+#' 
+#' @param filename A file name.
+#' @param db_path A file path.
+proc_rpt <- function(db_path = "~/proteoQ/dbs/gene_homology", 
+                     filename = "HOM_AllOrganism.rpt")
+{
+  dl_gene_homo(db_path = db_path, overwrite = FALSE) 
+  
+  file_txt <- "gene_homology.tsv"
+  path_txt <- file.path(db_path, file_txt)
+  tempdir  <- file.path(db_path, "cache")
+  filepath <- file.path(tempdir, filename)
+  if (!file.exists(filepath)) stop("File not found ", filepath, ".")
+  
+  if (file.exists(path_txt)) {
+    df <- readr::read_tsv(path_txt)
+  } else {
+    df <- filepath |>
+      readr::read_tsv() |>
+      dplyr::rename(
+        "key" = "DB Class Key",
+        "species" = "Common Organism Name", 
+        "gene" = "Symbol", 
+        "entrez" = "EntrezGene ID", 
+        "tax_id" = "NCBI Taxon ID", 
+        "genome_loc" = "Genetic Location", 
+        "genome_coord" = "Genome Coordinates (mouse: GRCm39 human: GRCh38)", 
+        "mouse_mgi" = "Mouse MGI ID", 
+        "hgnc" = "HGNC ID", 
+        "omim_gene" = "OMIM Gene ID", 
+        "prot_desc" = "Name", 
+        "synonyms" = "Synonyms") |>
+      dplyr::mutate(species = gsub(", laboratory$", "", species))
+    readr::write_tsv(df, path_txt)
+  }
+
+  df <- df |>
+    dplyr::select(dplyr::one_of("key", "species", "gene", "entrez")) |>
+    dplyr::distinct(key, species, .keep_all = TRUE)
+
+  df <- df |>
+    tidyr::pivot_wider(
+      names_from = species,
+      values_from = c(gene, entrez),
+    ) |> 
+    dplyr::select(-dplyr::one_of(c("key"))) |>
+    dplyr::select(-dplyr::matches("zebrafish"))
+
+  obj_nm <- "gene_homo_slim"
+  assign(obj_nm, df) # for save object with the desired name
+  
+  readr::write_tsv(gene_homo_slim, file.path(db_path, paste0(obj_nm, ".tsv")))
+  save(gene_homo_slim, file = file.path(db_path, paste0(obj_nm, ".rda")))
+}
+
+
+#' Helper to save ReMap
+#' 
+#' @param filename A file name.
+#' @param db_path A file path.
+proc_remap <- function(db_path = "~/proteoQ/dbs/remap", 
+                       filename = "remap2022_nr_macs2_mm39_v1_0.bed.gz") 
+{
+  filepath <- file.path(db_path, "cache", filename)
+  if (!file.exists(filepath)) stop("File not found ", filepath, ".")
+  
+  con <- gzfile(path.expand(filepath))
+  df <- readLines(con)
+  
+  hdr_line <- c("chrom", "chrom_start", "chrom_end", "gene_type", "score", 
+                "strand", "thick_start", "thick_end", "rgb") |>
+    paste(collapse = "\t")
+  df <- c(hdr_line, df)
+  
+  out_nm <- gsub("\\.bed\\.gz$", ".txt", filename)
+  writeLines(df, file.path(db_path, out_nm))
+  try(close(con))
+  
+  # re-formatting
+  df <- readr::read_tsv(file.path(db_path, out_nm))
+  data.table::setDT(df) 
+  df[, c("gene", "type") := data.table::tstrsplit(gene_type, ":", fixed = TRUE)]
+  df[, gene_type := NULL]
+  readr::write_tsv(df, file.path(db_path, "remap_mm39.tsv"))
+  
+  unlink(file.path(db_path, out_nm))
+  
+  df <- readr::read_tsv(file.path(db_path, "remap_mm39.tsv")) |>
+    dplyr::filter(score >= 15)
+  length(unique(df$gene)) # 648; 266, score >=5; 139, score > 10; 93, score > 15
+  length(unique(df$type)) # T-cell, CD8
+  
+  # BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+  # BiocManager::install("TxDb.Mmusculus.UCSC.mm39.refGene")
+  # BiocManager::install("org.Mm.eg.db")
+  
+  # library(ChIPseeker)
+  # library(TxDb.Mmusculus.UCSC.mm39.refGene)
+  # library(org.Mm.eg.db)
+  
+  txdb_mm39 <- 
+    TxDb.Mmusculus.UCSC.mm39.refGene::TxDb.Mmusculus.UCSC.mm39.refGene
+  
+  df_range <- df |>
+    GenomicRanges::makeGRangesFromDataFrame(
+      keep.extra.columns = TRUE, 
+      seqnames.field = "chrom",
+      start.field = "chrom_start",
+      end.field = "chrom_end",
+      strand.field = "strand"
+    )
+  
+  df_anno <- df_range |>
+    ChIPseeker::annotatePeak(
+      tssRegion = c(-1000, 1000), 
+      TxDb = txdb_mm39, 
+      annoDb = "org.Mm.eg.db") |>
+    as.data.frame() |>
+    dplyr::select(
+      -c("strand", "thick_start", "thick_end", "rgb", "type", "gene", 
+         "width", "geneChr", "score")) |>
+    dplyr::select(
+      -c("geneId", "geneLength", "geneStart", "geneEnd", "transcriptId", 
+         "ENSEMBL", "GENENAME")) |>
+    dplyr::rename(
+      chrom = "seqnames", 
+      chrom_start = "start", 
+      chrom_end = "end", )
+  
+  data.table::setDT(df_anno)
+  
+  df_promoters <- df_anno[grep("Promoter", annotation)] |>
+    dplyr::filter(!is.na("SYMBOL"))
+  data.table::setDT(setDT(df_promoters))
+  
+  df_promoters <- df_promoters[, .(
+    SYMBOL = paste(unique(SYMBOL), collapse = ", "),
+    annotation = first(annotation),
+    distanceToTSS = mean(distanceToTSS)
+  ), by = .(chrom, chrom_start, chrom_end)]
+
+  data.table::setDT(setDT(df))
+  
+  res <- merge(df, df_promoters, 
+               by = c("chrom", "chrom_start", "chrom_end"), 
+               all.x = TRUE)
+  nas <- is.na(res[["SYMBOL"]])
+  res <- res[!nas, ]
+  
+  if (FALSE) {
+    df_foxp3 <- res |>
+      dplyr::filter(grepl("T-cell", type, ignore.case = TRUE)) |>
+      dplyr::filter(gene == "FOXP3")
+  }
+  
+  readr::write_tsv(res, file.path(db_path, "remap2022_annot.tsv"))
+}
+
+
 #' Helper to map `SYMBOL` to `ENTREZID` 
 #' 
 #' @param keys Identifier such as gene names.
@@ -92,14 +254,15 @@ proc_gaf <- function(db_path, fn_gaf)
 #' @param to the type of target IDs
 #' @inheritParams prepGO
 #' @import dplyr purrr 
-annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to = "ENTREZID") 
+annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", 
+                          to = "ENTREZID") 
 {
-  if (all(is.null(keys))) stop("Argument `keys` cannot be NULL", call. = FALSE)
+  if (all(is.null(keys))) stop("Argument `keys` cannot be NULL")
 
   pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
   
   if (!requireNamespace(pkg_nm, quietly = TRUE)) {
-    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.", call. = FALSE)
+    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.")
   }
 
   x <- tryCatch(
@@ -108,7 +271,7 @@ annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to 
   )
   
   if (!is.object(x)) {
-    if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
+    if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?")
   }
 
   accessions <- purrr::quietly(AnnotationDbi::select)(
@@ -139,59 +302,27 @@ get_full_entrez <- function(species, from = "egUNIPROT")
 }
 
 
-#' Helper to find human orthologs
+#' Helper to download gene homology data.
 #' 
 #' @inheritParams prepMSig
-#' @examples \donttest{res <- find_human_orthologs(mouse)}
-find_human_orthologs <- function(species, ortho_mart) 
+dl_gene_homo <- function(url = NULL, 
+                         db_path = "~/proteoQ/dbs/gene_homology", 
+                         overwrite = FALSE) 
 {
-  if (species == "human") {
-    stop("Ortholog `species` needs to be different to `human`.")
+  if (is.null(url)) {
+    url <- 
+      "https://www.informatics.jax.org/downloads/reports/HOM_AllOrganism.rpt"
   }
   
-  out_nm <- paste0("ortho_hs", sp_lookup(species))
+  fn <- gsub("^.*/(.*)$", "\\1", url)
+  tempdir <- file.path(db_path, "cache")
+  dir.create(tempdir, showWarnings = FALSE, recursive = TRUE)
 
-  data(package = "proteoQ", mart_hs, envir = environment())
-  
-  if (FALSE) {
-    mart_hs <- biomaRt::useEnsembl(
-      biomart = "genes",
-      dataset = "hsapiens_gene_ensembl"
-    )
+  if ((!file.exists(file.path(tempdir, fn))) | overwrite)  {
+    download.file(url, file.path(tempdir, fn), mode = "wb")
   }
   
-  
-  if (species == "mouse") {
-    data(package = "proteoQ", mart_mm, envir = environment())
-    
-    if (FALSE) {
-      mart_mm <- biomaRt::useEnsembl(
-        biomart = "genes",
-        dataset = "mmusculus_gene_ensembl"
-      )
-    }
-
-    martL <- mart_mm
-  } 
-  else if (species == "rat") {
-    data(package = "proteoQ", mart_rn, envir = environment())
-    martL <- mart_rn
-  } 
-  else {
-    martL <- biomaRt::useMart(biomart = 'ENSEMBL_MART_ENSEMBL', dataset = ortho_mart)
-  }
-  
-  res <- biomaRt::getLDS(
-    attributes = c("entrezgene_id"),
-    filters = "entrezgene_id", 
-    values = get_full_entrez(species = "human", from = "egUNIPROT"), 
-    mart = mart_hs,
-    attributesL = c("entrezgene_id"), 
-    martL = martL
-  ) %>% 
-    `colnames<-`(c("human", species)) 
-  
-  invisible(res)
+  return(fn)
 }
 
 
@@ -213,29 +344,35 @@ sp_lookup_go <- function(species)
 #' @inheritParams prepMSig
 find_abbr_species <- function(species = "human", abbr_species = NULL) 
 {
-  species <- rlang::as_string(rlang::enexpr(species))
+  # `species` is never NULL, but still to be safe
+  species <- rlang::enexpr(species)
+  if (!is.null(species)) {
+    species <- rlang::as_string(species)
+  }
+
   abbr_species <- rlang::enexpr(abbr_species)
-  
-  if (is.null(abbr_species) || species %in% c("human", "mouse", "rat")) {
-    abbr_species <- switch(species, 
-           human = "Hs",
-           mouse = "Mm",
-           rat = "Rn",
-           stop("`species` not in one of `human`, `mouse` or `rat`.", 
-                "\nThus users need to provide a two-letter abbreviation of `abbr_species`, ", 
-                "\ni.e., `abbr_species = Ce` for later uses with `org.Ce.eg.db` annotation.", 
-                call. = FALSE)
-    )
-  } 
-  else {
+  if (!is.null(abbr_species)) {
     abbr_species <- rlang::as_string(abbr_species)
-    
-    if (stringr::str_length(abbr_species) != 2) {
-      warning("The number of characters is typically `2` for `abbr_species`.", call. = FALSE)
+  }
+
+  if (is.null(abbr_species) || species %in% c("human", "mouse", "rat")) {
+    abbr_species <- switch(
+      species, 
+      human = "Hs",
+      mouse = "Mm",
+      rat = "Rn",
+      stop("`species` not in one of `human`, `mouse` or `rat`.", 
+           "\nProvide a two-letter abbreviation of `abbr_species`, ", 
+           "\ni.e., `abbr_species = Mm` for uses with `org.Mm.eg.db`.")
+    )
+  } else {
+    # abbr_species <- rlang::as_string(abbr_species)
+    if (stringr::str_length(abbr_species) != 2L) {
+      warning("The number of characters is typically `2` for `abbr_species`.")
     }
     
     if (abbr_species != stringr::str_to_title(abbr_species)) {
-      warning("An `abbr_species` is typically in Title case, i.e., `Xx`.", call. = FALSE)
+      warning("An `abbr_species` is typically in Title case, i.e., `Xx`.")
     }    
   }
 
@@ -252,13 +389,13 @@ set_db_outname <- function(filename = NULL, species = "human", signature)
   filename <- rlang::enexpr(filename)
   
   if (is.null(filename)) {
-    abbr_species_lwr <- switch(species, 
-                               human = "hs", 
-                               mouse = "mm", 
-                               rat = "rn", 
-                               stop("`species` not in one of `human`, `mouse` or `rat`.", 
-                                    "\nThus users need to provide a `filename`.", 
-                                    call. = FALSE))
+    abbr_species_lwr <- switch(
+      species, 
+      human = "hs", 
+      mouse = "mm", 
+      rat = "rn", 
+      stop("`species` not in one of `human`, `mouse` or `rat`.", 
+           "\nThus users need to provide a `filename`."))
     
     filename <- paste0(signature, "_", abbr_species_lwr, ".rds")
   } 
@@ -266,24 +403,27 @@ set_db_outname <- function(filename = NULL, species = "human", signature)
     filename <- rlang::as_string(filename)
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
     fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-    if (fn_prefix == fn_suffix) stop("No '.' to separate a basename and an extension.", call. = FALSE)
-    if (fn_suffix != "rds") stop("File extension must be `.rds`.", call. = FALSE)
+    if (fn_prefix == fn_suffix) 
+      stop("No '.' to separate a basename and an extension.")
+    if (fn_suffix != "rds") 
+      stop("File extension must be `.rds`.")
     filename <- paste0(fn_prefix, ".rds")
   }
 }
 
 
-#' Helper to download `gmt`
+#' Helper to download \code{gmt}
 #' 
 #' @inheritParams prepMSig
-dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt", 
+dl_msig <- function(msig_url = 
+                      "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.1.Hs/c2.all.v2026.1.Hs.entrez.gmt", 
                     db_path = "~/proteoQ/dbs/msig", overwrite = FALSE) 
 {
   if (!grepl("\\.entrez\\.gmt$", msig_url)) {
     warning("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.")
   }
   
-  fn_msig <- msig_url %>% gsub("^.*/(.*)$", "\\1", .)
+  fn_msig <- gsub("^.*/(.*)$", "\\1", msig_url)
   
   if ((!file.exists(file.path(db_path, "cache", fn_msig))) | overwrite)  {
     download.file(msig_url, file.path(db_path, "cache", fn_msig), mode = "wb")
@@ -294,10 +434,13 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
 
 
 #' Helper to save \code{gmt}
-#' 
+#'
 #' @param fn_gmt filename of downloaded gmt results.
+#' @param save_rda Logical; if TRUE, save an \code{rda} object for package
+#'   \code{proteoQ}.
 #' @inheritParams prepMSig
-proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filename) 
+proc_gmt <- function(species = "human", abbr_species = "hu", ortho_mart, 
+                     fn_gmt, db_path, filename, save_rda = TRUE) 
 {
   filepath <- file.path(db_path, "cache", fn_gmt)
   
@@ -305,91 +448,56 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
     stop("File not found ", filepath, ".")
   }
 
-  df <- suppressWarnings(readr::read_tsv(filepath, col_names = FALSE)) %>% 
-    `names_pos<-`(1, "term")
-  
+  df <- suppressWarnings(readr::read_tsv(filepath, col_names = FALSE))
+  names(df)[[1]] <- "term"
+
   cols_entrez <- which(unlist(lapply(df, is.numeric)))
   
-  df <- df[, c(1, cols_entrez)] |>
+  df <- df[, c(1, cols_entrez), drop = FALSE] |>
     tidyr::pivot_longer(
       cols = -term,
       values_to = "entrez",
       values_drop_na = TRUE
     ) |>
-    dplyr::select(-name)
-  
-  if (species != "human") {
-    warning("Temporarily bypass biomaRt ortholog look-ups and please specify ", 
-            "the correct msig_url for sepecies other than human.")
+    dplyr::select(-dplyr::one_of("name"))
 
-    if (FALSE) {
-      orthos <- find_human_orthologs(species, ortho_mart) %>% 
-        `names<-`(c("from", "to")) # from: mouse or rat entrez -> to: human entrez
-      
-      df <- df %>% 
-        dplyr::left_join(orthos, by = c("entrez" = "from")) %>% 
-        dplyr::filter(!is.na(to))  %>% 
-        dplyr::select(-entrez) %>% 
-        dplyr::rename(entrez = to)
-    }
+  if (species != "human") {
+    data(package = "proteoQ", gene_homo_slim, envir = environment())
+    
+    gene_homo_slim <- gene_homo_slim |>
+      dplyr::select(dplyr::matches(paste0("_human|_", species)))
+    
+    df <- df %>% 
+      dplyr::left_join(gene_homo_slim, by = c("entrez" = "entrez_human")) |>
+      dplyr::filter(!is.na(!!rlang::sym(paste0("entrez_", species))))
+    
+    df <- df |>
+      dplyr::select(
+        dplyr::one_of(c("term", 
+                        paste0("gene_", species), 
+                        paste0("entrez_", species)))
+      )
+    
+    names(df) <- sub(paste0("_", species), "", names(df))
+    
+    df <- df |>
+      dplyr::mutate(entrez = as.integer(entrez))
   }
   
-  gsets <- df %>% 
-    split(., .$term, drop = TRUE) %>% 
-    lapply(`[[`, 2) %>% 
-    `names<-`(paste(tolower(abbr_species), names(.), sep = "_"))
-  
+  gsets <- split(df, df$term, drop = FALSE) |>
+    lapply(`[[`, "entrez")
+  names(gsets) <- paste(tolower(abbr_species), names(gsets), sep = "_")
   saveRDS(gsets, file.path(db_path, filename))
   
+  if (save_rda) {
+    nm_obj <- paste0("c2_msig_", tolower(abbr_species))
+    assign(nm_obj, gsets)
+    save(list = nm_obj, file = file.path(db_path, paste0(nm_obj, ".rda")))
+  }
+
   invisible(file.path(db_path, filename))
 }
 
-
-if (FALSE) {
-  mart_hs <- biomaRt::useEnsembl("genes", "hsapiens_gene_ensembl")
-  all_human_ensembl <- biomaRt::getBM(attributes = c("ensembl_gene_id"), mart = mart_hs)
-  
-  # Human Ensembl -> Mouse Ensembl -> Mouse Gene
-  # one Human Ensembl can be mapped to multiple Mouse Ensembl
-  res_homolog <- biomaRt::getBM(
-    attributes = c(
-      "ensembl_gene_id",                        # human Ensembl ID
-      "mmusculus_homolog_ensembl_gene",         # mouse Ensembl ID
-      "mmusculus_homolog_associated_gene_name", # mouse gene symbol
-      "mmusculus_homolog_orthology_type"
-    ),
-    filters = "ensembl_gene_id",                # filter on human Ensembl IDs, not Entrez
-    values = all_human_ensembl,  # all human Ensembl IDs
-    mart = mart_hs
-  )
-  
-  # ensembl_gene_id mmusculus_homolog_ensembl_gene mmusculus_homolog_associated_gene_name
-  # 1 ENSG00000000003             ENSMUSG00000067377                                 Tspan6
-  # 2 ENSG00000000005             ENSMUSG00000031250                                   Tnmd
-  res_homolog <- res_homolog |>
-    dplyr::filter(mmusculus_homolog_orthology_type == "ortholog_one2one") |>
-    dplyr::select(-"mmusculus_homolog_orthology_type")
-  
-  # Human Enseml -> Human Entrez => Human Gene
-  # One Human Ensembl can be mapped to multiple Entrez IDs
-  # 
-  # ensembl_gene_id entrezgene_id hgnc_symbol
-  # 1 ENSG00000121410             1        A1BG
-  # 2 ENSG00000156006            10        NAT2
-  res_entrez <- biomaRt::getBM(
-    attributes = c(
-      "ensembl_gene_id",
-      "entrezgene_id",
-      "hgnc_symbol"
-    ),
-    filters = "entrezgene_id",
-    values = get_full_entrez(species = "human", from = "egUNIPROT"), 
-    mart = mart_hs
-  )
-  
-  # Not unique: mmusculus_homolog_associated_gene_name, entrezgene_id
-  res <- dplyr::left_join(res_homolog, res_entrez, by = "ensembl_gene_id")
-}
 
 #'Download and prepare gene ontology
 #'
@@ -486,9 +594,11 @@ if (FALSE) {
 #' }
 #' 
 #'@export
-prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_url = NULL, 
+prepGO <- function(species = "human", abbr_species = NULL, 
+                   gaf_url = NULL, obo_url = NULL, 
                    db_path = "~/proteoQ/dbs/go", 
-                   type = c("biological_process", "cellular_component", "molecular_function"), 
+                   type = c("biological_process", "cellular_component", 
+                            "molecular_function"), 
                    filename = NULL, overwrite = FALSE) 
 {
   old_opts <- options()
@@ -496,12 +606,12 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   on.exit(options(old_opts), add = TRUE)
   
   if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"AnnotationDbi\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"AnnotationDbi\")", 
-         "\n====================================================================")
+         "\n=================================================================")
   }
 
   species <- rlang::as_string(rlang::enexpr(species))
@@ -509,11 +619,12 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   db_path <- create_db_path(db_path)
 
   if (is.null(gaf_url)) {
-    gaf_url <- switch(species, 
-                      human = c("goa_human.gaf.gz" = "http://current.geneontology.org/annotations/goa_human.gaf.gz"), 
-                      mouse = c("goa_mouse.gaf.gz" = "http://current.geneontology.org/annotations/mgi.gaf.gz"), 
-                      rat = c("goa_rat.gaf.gz" = "http://current.geneontology.org/annotations/rgd.gaf.gz"), 
-                      stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of GAF files."))
+    gaf_url <- switch(
+      species, 
+      human = c("goa_human.gaf.gz" = "http://current.geneontology.org/annotations/goa_human.gaf.gz"), 
+      mouse = c("goa_mouse.gaf.gz" = "http://current.geneontology.org/annotations/mgi.gaf.gz"), 
+      rat = c("goa_rat.gaf.gz" = "http://current.geneontology.org/annotations/rgd.gaf.gz"), 
+      stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of GAF files."))
     fn_gaf <- names(gaf_url)
   } 
   else {
@@ -536,7 +647,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   }
   
   if (is.null(obo_url)) {
-    obo_url <- c("go-basic.obo" = "http://purl.obolibrary.org/obo/go/go-basic.obo")
+    obo_url <- 
+      c("go-basic.obo" = "http://purl.obolibrary.org/obo/go/go-basic.obo")
     fn_obo <- names(obo_url)
   } 
   else {
@@ -576,6 +688,12 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
     `names<-`(paste(tolower(abbr_species), names(.), sep = "_"))
   
   saveRDS(gsets, file.path(db_path, filename))
+  
+  if (TRUE) {
+    nm_obj <- paste0("go_sets_", tolower(abbr_species))
+    assign(nm_obj, gsets)
+    save(list = nm_obj, file = file.path(db_path, paste0(nm_obj, ".rda")))
+  }
   
   invisible(file.path(db_path, filename))
 }
@@ -688,26 +806,26 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
                                          rat = "rnorvegicus_gene_ensembl", 
                                          human = "to_itself",
                                          "unknown"), 
-                     db_path = "~/proteoQ/dbs/msig", filename = NULL, overwrite = FALSE) 
+                     db_path = "~/proteoQ/dbs/msig", filename = NULL, 
+                     overwrite = FALSE) 
 {
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
   if (!requireNamespace("biomaRt", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"biomaRt\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"biomaRt\")", 
-         "\n====================================================================")
+         "\n=================================================================")
   }
-
+  
+  path_url <- "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.1.Hs/"
   msig_url <- if (is.null(msig_url)) {
-    # "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
-    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.5.1/c2.all.v7.5.1.entrez.gmt"
-  }
-  else {
+    paste0(path_url, "c2.all.v2026.1.Hs.entrez.gmt")
+  } else {
     rlang::as_string(rlang::enexpr(msig_url))
   }
   

@@ -211,13 +211,14 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            scale_log2r, complete_cases, impute_na, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
-  id <- rlang::as_string(rlang::enexpr(id))
+  id  <- rlang::as_string(rlang::enexpr(id))
+  pat <- paste0("^", fml_nm, "\\.")
   
-  df <- df %>%
-    dplyr::select(grep(paste0("^", fml_nm, "\\."), names(.))) %>%
-    `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
-    dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) 
-  
+  df <- df |>
+    dplyr::select(dplyr::matches(pat)) |>
+    dplyr::rename_with(\(x) gsub(pat, "", x)) |>
+    dplyr::bind_cols(df[, !col_ind, drop = FALSE], x = _)
+
   if (complete_cases) {
     df <- pval_complete_cases(df)
   }
@@ -461,6 +462,11 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     dplyr::mutate(Index = dplyr::row_number()) |>
     data.frame (check.names = FALSE)
   
+  if (!nrow(dfw_sub)) {
+    warning("No data for visualizaiton.")
+    return(NULL)
+  }
+  
   if(is.null(highlights)) {
     dfw_high <- dfw_sub[0, ]
   }
@@ -476,17 +482,11 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     dfw_high <- dfw_sub[rows, ]
   }
   
-  if (nrow(dfw_high)) {
-    warning("Overruled `topn_labels` by `highlights`.")
-    dfw_sub_top20 <- dfw_high
-  } 
-  else {
-    dfw_sub_top20 <- dfw_sub |>
-      dplyr::group_by(Contrast) |>
-      dplyr::top_n(n = -topn_labels, wt = pVal) |>
-      data.frame (check.names = FALSE)
-  }
-  
+  dfw_sub_top20 <- if (nrow(dfw_high)) { dfw_high } else { dfw_sub } |>
+    dplyr::group_by(Contrast) |>
+    dplyr::top_n(n = -topn_labels, wt = pVal) |>
+    data.frame (check.names = FALSE)
+
   # data table for labels
   dt <- split(dfw_sub_top20, dfw_sub_top20[["Contrast"]])
   dt <- dt |>
@@ -527,8 +527,12 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
   else {
     xmax <- eval(dots$xmax)
   }
-  stopifnot(xmax > 0)
   
+  if (xmax <= 0) {
+    warning("No data for visualizaiton.")
+    return(NULL)
+  }
+
   if (is.null(dots$xmin)) { xmin <- -xmax } else { xmin <- eval(dots$xmin) }
   stopifnot(xmin < 0)
   
@@ -609,7 +613,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     labs(title = title, x = x_label, y = y_label) +
     theme
   
-  if (nrow(dfw_sub_top20)) {
+  if (nrow(dfw_sub_top20) & topn_labels) {
     p <- p + 
       geom_text(
         data = dfw_sub_top20, 

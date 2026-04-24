@@ -4,20 +4,40 @@
 #' @param range_colRatios The range of columns.
 #' @return A data frame.
 #' @examples \donttest{locate_outliers(df, 2:3)}
-locate_outliers <- function (df, range_colRatios) 
+locate_outliers <- function (df, range_colRatios = NULL) 
 {
   for(col_index in range_colRatios) {
     n <- colSums(!is.na(df[col_index]))
     
-    if (n > 25) {
+    if (n > 25L) {
       df[, col_index] <- Rosner_outliers(df[, col_index])
     } 
-    else if (n > 2) {
+    else if (n > 2L) {
       df[, col_index] <- Dixon_outliers(df[, col_index])
     }
   }
   
   invisible(df)
+}
+
+
+#' Locate outliers from a vector.
+#' 
+#' @param x A numeric vector.
+#' @param k The number of suspected outliers.
+#' @param p The level of type-I error.
+locate_vec_outlier <- function (x, p = .05, k = 1L)
+{
+  n <- sum(!is.na(x))
+  
+  if (n > 25L) {
+    x <- Rosner_outliers(x = x, k = k, alpha = p)
+  } 
+  else if (n > 2L) {
+    x <- Dixon_outliers(x = x, p = p)
+  }
+  
+  x
 }
 
 
@@ -587,18 +607,23 @@ q_table <- function (p, probs, quants)
 #' Outlier removals with Dixon's method
 #' 
 #' @param x A numeric vector.
-#' @param p P-value cut-off.
+#' @param p A p-value cut-off.
+#' @examples
+#' \donttest{
+#' library(proteoQ)
+#' x <- c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
+#' x <- c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
+#' x <- c(0.0000000, 0.0000000, 0.0000000, 0.2080097)
+#' x <- c(NA, NA, NA, 0.2080097)
+#' 
+#' Dixon_outliers(x)
+#' }
 Dixon_outliers <- function(x, p = .05) 
 {
-  # x = c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
-  # x = c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
-  # x = c(0.0000000, 0.0000000, 0.0000000, 0.2080097)
-  # x = c(NA, NA, NA, 0.2080097)
-  
   x2 <- x[!is.na(x)]
   
   if (length(x2) > 2L && length(unique(x2)) > 1L) {
-    out <- dixon_test(as.numeric(x), type = 0)
+    out <- dixon_test(x, type = 0)
     
     while(out$p.value < p) {
       if (out$alternative == "high") {
@@ -610,14 +635,14 @@ Dixon_outliers <- function(x, p = .05)
       x2 <- x[!is.na(x)]
       
       if (length(x2) > 2L && length(unique(x2)) > 1L) {
-        out <- dixon_test(as.numeric(x), type = 0)
+        out <- dixon_test(x, type = 0)
       } else {
         out$p.value <- 1
       }
     }
   }
   
-  invisible(x)
+  x
 }
 
 
@@ -651,7 +676,7 @@ Grubbs_outliers <- function(x, type = 10)
     }
   }
   
-  invisible(x)
+  x
 }
 
 
@@ -870,21 +895,693 @@ p_grubbs <- function (q, n, type = 10)
 
 #' Outlier removals with Rosner's method
 #' 
-#' @param x A matrix or data.frame.
-Rosner_outliers <- function(x) 
+#' @param x A numeric vector.
+#' @param k The number of suspected outliers.
+#' @param alpha The level of type-I error.
+#' @param warn Logical; show warning message or not.
+Rosner_outliers <- function(x, k = 1L, alpha = 5E-2, warn = FALSE) 
 {
-  if (length(unique(x)) < 5) 
+  if (length(unique(x)) < 10L) {
     return(x)
+  }
+
+  # may get warnings with NA being an outlier
+  gofOutlier_obj <- 
+    EnvStats::rosnerTest(x = x, k = k, alpha = alpha, warn = warn)
   
-  # up to 9-number outliers; may get warnings with NA being an outlier
-  suppressWarnings(gofOutlier_obj <- EnvStats::rosnerTest(as.numeric(x), 9))
-  
-  if (gofOutlier_obj$n.outliers > 0) {
+  if (gofOutlier_obj$n.outliers) {
     Index <- with(gofOutlier_obj$all.stat, Obs.Num[Outlier == TRUE])
-    x[Index] <- NA
+    x[Index] <- NA_real_
   }
   
-  invisible(x)
+  x
+}
+
+
+#' Check the existence of an outlier.
+#'
+#' @param x A numeric vector.
+#' @param y A second vector, e.g., p-values.
+#' @param p A type-I error tolerance.
+#' @param min_n The minimal number of values in \code{x} for consideration.
+#' @param p_co A y (e.g., pVals from \link{pepSig}) cutoff for assessing the
+#'   significance of \code{x}. Only effective when \code{!is.null(y)}.
+check_outliers <- function(x, y = NULL, p = 5E-2, min_n = 3L, p_co = 1E-2) 
+{
+  oks <- !is.na(x)
+  x2  <- x[oks]
+  y2  <- y[oks]
+  n2  <- length(x2)
+  ux2 <- unique(x2)
+  un2 <- length(ux2)
+
+  if (un2 < 2L || n2 < min_n) {
+    return(0L)
+  }
+
+  pos <- if (n2 <= 30L) {
+    check_dixon_outliers(x = x2, y = y2, p = p, p_co = p_co)
+  } else {
+    check_rosner_outliers(x = x2, y = y2, k = 1L, p = p, p_co = p_co)
+  }
+  
+  if (pos) {
+    pos <- which(!is.na(x))[pos]
+  }
+  
+  pos
+}
+
+
+#' Check the existence of an outlier using Dixon's method.
+#' 
+#' @param p A type-I error tolerance.
+check_dixon_outliers <- function (x, y = NULL, p = 5E-2, p_co = 1E-2)
+{
+  ans <- proteoQ:::dixon_test(x)
+  okp <- ans$p.value < p
+  
+  if (!okp) {
+    return(0L)
+  }
+  
+  alt <- ans$alternative
+  
+  if (alt == "high") {
+    m <- which.max(x)
+  } else if (alt == "low") {
+    m <- which.min(x)
+  } else {
+    return(0L)
+  }
+
+  if (is.null(y)) {
+    return(m)
+  }
+  
+  if (y[[m]] <= p_co) {
+    return(m)
+  } else {
+    return(0L)
+  }
+  
+  m
+}
+
+
+#' Check the existence of an outlier using Rosner's method.
+#' 
+#' @param p A p-value cut-off.
+#' @param k An allowance of the number of outliers.
+check_rosner_outliers <- function (x, y = NULL, k = 1L, p = 5E-2, p_co = 1E-2)
+{
+  ans <- EnvStats::rosnerTest(x = x, k = 1L, alpha = p)
+  olr <- ans[["all.stats"]][["Outlier"]]
+  
+  if (!olr) {
+    return(0L)
+  }
+  
+  m <- ans[["all.stats"]][["Obs.Num"]]
+  
+  if (is.null(y)) {
+    return(m)
+  }
+  
+  if (y[m] <= p_co) {
+    return(m)
+  }
+  
+  0L
+}
+
+
+#' Find if a protein contains peptide outliers under a contrast.
+#'
+#' @param dat_dir A working directory.
+#' @param p A significance level for assessing outliers.
+#' @param min_n The minimal number of peptides under a protein for
+#'   consideration.
+#' @param contr_pairs Contrast pairs. If \code{NULL}, all contrasts under a
+#'   formula will be included. To specify a subset of contrasts: 
+#'   contr_pairs = list(C1 = c("X-Y", "X-Z"), C2 = c("A-B", "C-B"))
+#' @param p_type The type of p-values in one of \code{adjP, pVal}.
+#' @param p_contrast The cut-off in significant pVals from \link{proteoQ}. The
+#'   type of pVals is either original or BH-adjusted, indicated by
+#'   \code{p_type}.
+#' @param cols_pep The attribute columns of a peptide table to be included.
+#' @inheritParams prnSig
+#' @inheritParams anal_prnTrend
+#' @inheritParams normPSM
+#' @inheritParams check_outliers
+#' @export
+anal_pepOutlier <- function (
+    dat_dir = NULL, col_select = NULL, col_group = NULL, col_order = NULL, 
+    p_outlier = 5E-2, min_n = 3L, p_contrast = 1E-2, p_type = "adjP", 
+    cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
+    contr_pairs = NULL, group_renorm_by = NULL, scale_log2r = TRUE, 
+    df = NULL, filepath = NULL, filename = NULL, ...) 
+{
+  on.exit(
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+      c(rlang::enexprs(...)) |>
+      save_call(paste0("anal", "_pepOutlier")), add = TRUE)
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  old_opts <- options()
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
+  on.exit(options(old_opts), add = TRUE)
+  
+  check_dots(c("df2", "anal_type"), ...)
+  
+  dir.create(file.path(dat_dir, "Peptide", "Outlier/log"), 
+             recursive = TRUE, showWarnings = FALSE)
+  
+  group_psm_by <- tryCatch(
+    match_call_arg(normPSM, group_psm_by), 
+    error = function(e) NA)
+  
+  if (is.na(group_psm_by)) {
+    group_psm_by <- tryCatch(
+      match_call_arg(makePepDIANN, group_psm_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(group_psm_by)) {
+    group_psm_by <- "pep_seq_mod"
+  }
+  
+  group_pep_by <- tryCatch(
+    match_call_arg(normPSM, group_pep_by), 
+    error = function(e) NA)
+  
+  if (is.na(group_pep_by)) {
+    group_pep_by <- tryCatch(
+      match_call_arg(makePepDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(group_pep_by)) {
+    group_pep_by <- "gene"
+  }
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  col_select  <- rlang::enexpr(col_select)
+  col_group   <- rlang::enexpr(col_group)
+  col_order   <- rlang::enexpr(col_order)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  if (!is.null(group_renorm_by)) {
+    group_renorm_by <- rlang::as_string(rlang::enexpr(group_renorm_by))
+  }
+
+  reload_expts()
+  
+  info_anal(id = !!group_psm_by, 
+            col_select = !!col_select, 
+            col_group = !!col_group, 
+            col_order = !!col_order,
+            scale_log2r = TRUE, 
+            complete_cases = FALSE, 
+            impute_na = FALSE,
+            impute_group_na = FALSE, 
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
+            anal_type = "Outlier")(
+              p_outlier = p_outlier, 
+              min_n = min_n, 
+              p_contrast = p_contrast, 
+              p_type = p_type, 
+              contr_pairs = contr_pairs, 
+              group_renorm_by = group_renorm_by, 
+              cols_pep = cols_pep, 
+              group_pep_by = group_pep_by, 
+              # group_psm_by = group_psm_by, 
+              ...)
+}
+
+
+#' Outlier analysis of peptide data.
+#' 
+#' @inheritParams anal_prnTrend
+#' @inheritParams normPSM
+#' @export
+analOutlier <- function (
+    df, dat_dir = NULL, id = "pep_seq_mod", group_pep_by = "gene", 
+    # group_psm_by = "pep_seq_mod", 
+    col_select = NULL, col_group = NULL, col_order = NULL, 
+    label_scheme_sub = NULL, 
+    p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP", 
+    cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
+    contr_pairs = NULL, impute_group_na = FALSE, group_renorm_by = NULL, 
+    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+    filepath, filename = "Peptide_Outlier_Z.tsv", anal_type = "Outlier", ...)
+{
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  fn_suffix <- tools::file_ext(filename)
+  fn_combi  <- "pepoutliers_combined.tsv"
+
+  ## (1) Find contrast outliers and save the first-pass outputs
+  dfs_contr <- find_pepoutliers(
+    dat_dir = dat_dir, col_select = col_select, col_group = col_group, 
+    group_psm_by = id, group_pep_by = group_pep_by, 
+    fml_nms = names(contr_pairs), contr_pairs = contr_pairs, 
+    p_outlier = p_outlier, min_n = min_n, p_contrast = p_contrast, 
+    p_type = p_type, cols_pep = cols_pep)
+  
+  # fml_nms <- names(dfs_contr)
+  # contrs <- lapply(dfs_contr, colnames)
+
+  df <- df |>
+    dplyr::filter(!is.na(.data[[group_pep_by]])) |>
+    dplyr::filter(prot_n_pep >= min_n)
+  
+  if (all(c("pep_start", "pep_end") %in% names(df))) {
+    df <- df |>
+      dplyr::arrange(across(all_of(c(group_pep_by, "pep_start", "pep_end"))))
+  } else {
+    df <- df |>
+      dplyr::arrange(across(all_of(c(group_pep_by, id))))
+  }
+
+  peps <- split(df[[id]], df[[group_pep_by]])
+  
+  ## (2) Remove outliers by each pep_seq_mod within a sample group 
+  #  (2.1) Renormalize data within each group -> Aggregate to mean statistics 
+  if (is.null(group_renorm_by) || isFALSE(group_renorm_by)) {
+    warning("Provide a 'group_renorm_by' key for defining ", 
+            "the scope of subset-data normalization.")
+  }
+  
+  ans_grp <- prepTrend(
+    df = df, id = id, col_group = col_group, col_order = col_order, 
+    label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
+    scale_log2r = scale_log2r, complete_cases = complete_cases, 
+    impute_na = impute_na, anal_type = anal_type, p_outlier = p_outlier, 
+    group_renorm_by = group_renorm_by, int_to_long = FALSE, ...)
+
+  df_mean_log2r <- ans_grp$df_mean_log2r
+  dfN <- ans_grp$dfN
+
+  ## (3) Find genes contain at least one peptide outlier within the same 
+  #      group of samples using aggregated data (df_mean_log2r)
+  # 0: no outlier; > 0: index -> detected pep_seq_mod under a gene
+  # p_co = -2: ignore one-hit-wonders
+  df_olr <- mapply(function(xs, ys) {
+    mapply(check_outliers, 
+           xs, ys, 
+           MoreArgs = list(p = p_outlier, min_n = min_n, p_co = -2), 
+           SIMPLIFY = TRUE, USE.NAMES = TRUE)
+  }, 
+  split(df_mean_log2r, df[[group_pep_by]]), 
+  split(data.frame(-dfN), df[[group_pep_by]]), 
+  SIMPLIFY = FALSE, USE.NAMES = TRUE)
+  
+  df_olr <- do.call(rbind, df_olr)
+
+  if (FALSE) {
+    # Peptide_Outlier_Z.txt
+    readr::write_tsv(
+      dplyr::bind_cols(!!group_pep_by := rownames(df_olr), df_olr), 
+      file.path(filepath, filename))
+    
+    # Convert from indexes to pep_seq_mod values
+    df_olr2 <- vector("list", nrow(df_olr))
+    for (i in seq_along(df_olr2)) {
+      df_olr2[[i]] <- map_olr_pep(xs = df_olr[i, ], ys = peps[[i]])
+    }
+    df_olr2 <- do.call(rbind, df_olr2)
+    colnames(df_olr2) <- colnames(df_olr)
+    rownames(df_olr2) <- rownames(df_olr)
+    df_olr2 <- dplyr::bind_cols(!!group_pep_by := rownames(df_olr2), df_olr2)
+    
+    # Peptide_Outlier_Z_seqrpl.txt
+    readr::write_tsv(
+      df_olr2, file.path(filepath, paste0(fn_prefix, "_seqrpl.", fn_suffix)))
+  }
+
+  ## (4) Combine 'df_contr' and the reference 'df_olr' by contrasts
+  df_olr <- df_olr[match(rownames(dfs_contr[[1]]), rownames(df_olr)), ]
+  
+  ans <- mapply(
+    combine_olr_by_fml, 
+    df_contr = dfs_contr, 
+    fml_nm = names(dfs_contr), 
+    MoreArgs = list(
+      df_olr = df_olr, 
+      group_pep_by = group_pep_by, 
+      filepath = filepath, 
+      filename = fn_combi
+    ), 
+    SIMPLIFY = FALSE, USE.NAMES = FALSE)
+
+  ans <- do.call(cbind, ans)
+
+  # "pepoutliers_combined.tsv"
+  readr::write_tsv(dplyr::bind_cols(!!group_pep_by := rownames(ans), ans), 
+                   file.path(filepath, fn_combi))
+  
+  ans
+}
+
+
+#' Helper: combined contrast and group outliers by formula.
+#'
+#' @param df_contr A data frame of outliers by contrast, e.g. \code{A-C, B-C}.
+#' @param df_olr A reference data frame of outliers by groups, e.g., \code{A, B,
+#'   C}.
+#' @param filepath An output file path.
+#' @param filename An output file name.
+#' @inheritParams analOutlier
+combine_olr_by_fml <- function (
+    df_contr, fml_nm, df_olr = NULL, group_pep_by = "gene", filepath = NULL, 
+    filename = NULL)
+{
+  ans <- vector("list", ncol(df_contr))
+  
+  for (i in seq_len(ncol(df_contr))) {
+    ans[[i]] <- combine_olr_by_contr(
+      # Use data.frame format to keep the contrast name
+      df_contri = df_contr[, i, drop = FALSE], 
+      fml_nm = fml_nm, 
+      df_olr = df_olr, 
+      group_pep_by = group_pep_by, 
+      filepath = filepath, 
+      filename = paste0(fml_nm, "@", filename))
+  }
+  
+  ans <- do.call(cbind, ans)
+  colnames(ans) <- paste0(fml_nm, ".", colnames(ans))
+  
+  ans
+}
+
+
+#' Helper: combined contrast and group outliers by contrast.
+#'
+#' @param df_contri A single-column data frame of outliers by contrast, e.g.
+#'   \code{A-C}.
+#' @param df_olr A reference data frame of outliers by groups, e.g., \code{A, B,
+#'   C}.
+#' @param fml_nm A formula name.
+#' @param filepath An output file path.
+#' @param filename An output file name.
+#' @inheritParams analOutlier
+combine_olr_by_contr <- function (
+    df_contri, fml_nm, df_olr, group_pep_by = "gene", filepath = NULL, 
+    filename = NULL)
+{
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  fn_suffix <- tools::file_ext(filename)
+  contr <- colnames(df_contri)
+  
+  # Arranged by the master order by 'df_olr'
+  elements  <- stringr::str_split(contr, "-") |>
+    unlist(recursive = FALSE) |>
+    unique()
+  elements <- elements[match(colnames(df_olr), elements)]
+  elements <- elements[!is.na(elements)]
+  
+  oks_contr <- df_contri > 0L
+  df_olr_sub <- df_olr[, elements, drop = FALSE]
+  oks_olr <- rowSums(df_olr_sub > 0L) > 0L
+  
+  rows <- oks_contr & oks_olr
+  df_contri[!rows, ] <- 0L
+  df_contri[df_contri > 0L] <- 1L
+  df_olr_sub[!rows, ] <- 0L
+  df_olr_sub[df_olr_sub > 0L] <- 1L
+  
+  out <- dplyr::bind_cols(df_contri, df_olr_sub)
+  readr::write_tsv(
+    dplyr::bind_cols(!!group_pep_by := rownames(out), out), 
+    file.path(filepath, paste0(contr, "@", fn_prefix, ".", fn_suffix)))
+  
+  df_contri
+}
+
+
+#' Map outlier indexes to peptide sequences.
+#'
+#' @param xs A vector of outlier indexes.
+#' @param ys A vector of peptide sequences.
+map_olr_pep <- function (xs, ys) 
+{
+  out <- vector("character", length(xs))
+  oks <- xs > 0L
+  pos <- xs[oks]
+
+  out[oks] <- ys[pos]
+
+  out
+}
+
+
+#' Helper to find if a protein contains peptide outliers under a contrast.
+#'
+#' @param dat_dir A working directory.
+#' @param p_outlier A significance level for assessing outliers.
+#' @param min_n The minimal number of peptides under a protein for
+#'   consideration.
+#' @param fml_nms Formula names. If \code{NULL}, all formulas from \link{pepSig}
+#'   will be included.
+#' @param contr_pairs Contrast pairs. If \code{NULL}, all contrasts under a
+#'   formula will be included.
+#' @param p_contrast The cut-off in significant pVals from \link{pepSig}. The
+#'   type of pVals is either original or BH-adjusted, indicated by
+#'   \code{p_type}.
+#' @param p_type The type of p-values from \link{pepSig} in one of \code{adjP,
+#'   pVal}.
+#' @param cols_pep The attribute columns of a peptide table to be included.
+#' @param out_name An output file name for being saved as an R object.
+#' @inheritParams prnSig
+#' @inheritParams check_outliers
+find_pepoutliers <- function (
+    dat_dir = NULL, col_select = "Select", col_group = "Group", 
+    group_psm_by = "pep_seq_mod", group_pep_by = "gene", 
+    fml_nms = NULL, contr_pairs = NULL, 
+    p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP", 
+    cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
+    out_name = "pepoutliers_btw_contrasts.tsv")
+{
+  fn_prefix <- tools::file_path_sans_ext(out_name)
+  fn_suffix <- tools::file_ext(out_name)
+  modu_path <- file.path(dat_dir, "Peptide", "Outlier")
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  if (is.null(col_select)) {
+    col_select <- "Select"
+  }
+  
+  if (is.null(col_group)) {
+    col_group <- "Group"
+  }
+  
+  if (file.exists(fn_meta <- file.path(dat_dir, "label_scheme.rda"))) {
+    load(file = fn_meta)
+  } else {
+    stop("Metadata not found: ", fn_meta)
+  }
+  
+  if (file.exists(fn_fml <- file.path(dat_dir, "Calls/prnSig_formulas.rda"))) {
+    load(file = fn_fml)
+  } else {
+    stop("Parameter file not found: ", fn_fml)
+  }
+  
+  label_scheme_sub <- label_scheme |> dplyr::filter(!is.na(!!col_select))
+  
+  if (is.null(fml_nms)) {
+    fml_nms <- names(prnSig_formulas)
+    
+    contr_pairs <- lapply(
+      prnSig_formulas, prepFml, label_scheme_sub = label_scheme_sub
+    ) |>
+      lapply(`[[`, "contrs")
+  } else {
+    prnSig_formulas <- prnSig_formulas[names(prnSig_formulas) %in% fml_nms]
+  }
+  
+  if (!length(fn_fml)) {
+    stop("No matched formula.")
+  }
+  
+  ## (1) Mutual exclusion of genes
+  fn_pep <- file.path(dat_dir, "Peptide", "Model", "Peptide_pVals.txt")
+  fn_prn <- file.path(dat_dir, "Protein", "Model", "Protein_pVals.txt")
+  
+  if (!file.exists(fn_pep)) {
+    stop("File not found: ", fn_pep)
+  }
+  
+  if (!file.exists(fn_prn)) {
+    stop("File not found ", fn_prn)
+  }
+  
+  df_pep <- fn_pep |>
+    readr::read_tsv() |> 
+    dplyr::filter(!is.na(.data[[group_pep_by]])) |>
+    dplyr::filter(prot_n_pep >= min_n)
+
+  df_prn <- fn_prn |>
+    readr::read_tsv() |>
+    dplyr::filter(.data[[group_pep_by]] %in% unique(df_pep[[group_pep_by]]))
+  
+  df_pep <- df_pep |>
+    dplyr::filter(.data[[group_pep_by]] %in% df_prn[[group_pep_by]])
+  
+  df_pep_log2r <- dplyr::bind_cols(
+    df_pep |> 
+      dplyr::select(dplyr::one_of(c(group_pep_by, group_psm_by, cols_pep))),
+    df_pep[, grepl(paste0("log2Ratio \\(|", p_type, " \\("), names(df_pep))])
+
+  if (all(c("pep_start", "pep_end") %in% names(df_pep_log2r))) {
+    df_pep_log2r <- df_pep_log2r |>
+      dplyr::arrange(across(all_of(c(group_pep_by, "pep_start", "pep_end"))))
+  } else {
+    df_pep_log2r <- df_pep_log2r |>
+      dplyr::arrange(across(all_of(c(group_pep_by, id))))
+  }
+  
+  ## (2) Find between-contrast peptide outliers
+  # Outputs: pepoutliers_btw_contrasts_seqrpl.tsv; pepoutliers_btw_contrasts.tsv
+  df <- mapply(
+    find_pepoutliers_by_fml, 
+    formula = prnSig_formulas, 
+    fml_nm = names(prnSig_formulas), 
+    contr_pairs = contr_pairs, 
+    MoreArgs = list(
+      df = df_pep_log2r, 
+      group_pep_by = group_pep_by, 
+      group_psm_by = group_psm_by, 
+      label_scheme_sub = label_scheme_sub, 
+      p_outlier = p_outlier, 
+      min_n = min_n, 
+      p_type = p_type, 
+      p_contrast = p_contrast
+    ), SIMPLIFY = FALSE, USE.NAMES = TRUE)
+
+  tempdata <- lapply(df, function(dfi) {
+    dfx <- do.call(cbind, lapply(dfi, attr, "pep"))
+    fml_nm <- attr(dfi, "fml_nm")
+    contrs <- names(dfi)
+    list(df = dfx, fml_nm = fml_nm, contrs = contrs)
+  })
+  df_attr <- lapply(tempdata, `[[`, "df")
+  df_attr <- do.call(cbind, df_attr)
+  rm(list = "tempdata")
+
+  ## (3) Outputs; delayed cbind of df
+  df <- lapply(df, as.data.frame, check.names = FALSE)
+  df <- df[sapply(df, function (x) nrow(x) > 0L)]
+
+  local({
+    dfx <- do.call(cbind, df)
+    readr::write_tsv(
+      dplyr::bind_cols(!!group_pep_by := rownames(dfx), dfx), 
+      file.path(modu_path, out_name))
+  })
+  
+  readr::write_tsv(
+    dplyr::bind_cols(!!group_pep_by := rownames(df_attr), df_attr), 
+    file.path(modu_path, paste0(fn_prefix, "_seqrpl.", fn_suffix)))
+
+  invisible(df)
+}
+
+
+#' Helper to find if a protein contains peptide outliers under a formula.
+#'
+#' @param formula For example, a formula defined in \link{pepSig}.
+#' @param fml_nm A formula name.
+#' @param df A data frame.
+#' @param label_scheme_sub Metadata.
+#' @param min_n The minimal number of peptides under a protein for
+#'   consideration.
+#' @param p_type The type of p-values in once of \code{adjP, pVal}.
+#' @param cols_pep The attribute columns of a peptide table to be included.
+#' @inheritParams find_pepoutliers
+find_pepoutliers_by_fml <- function (
+    formula = NULL, fml_nm = NULL, contr_pairs = NULL, df = NULL, 
+    group_psm_by = "pep_seq_mod", group_pep_by = "gene", label_scheme_sub, 
+    p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP")
+{
+  fml_ops <- prepFml(formula = formula, label_scheme_sub = label_scheme_sub)
+  contrs  <- colnames(fml_ops[["contr_mat"]])
+
+  if (!is.null(contr_pairs)) {
+    contrs <- contrs[contrs %in% contr_pairs]
+    
+    if (!length(contrs)) {
+      warning("No contrast found from: ", paste(contr_pairs, collapse = ", "), 
+              " under ", fml_nm, " at ", formula, ".")
+      return(NULL)
+    }
+  }
+  
+  ans <- lapply(
+    contrs, 
+    find_pepoutliers_by_contr, 
+    fml_nm = fml_nm, 
+    df = df, 
+    group_pep_by = group_pep_by, 
+    group_psm_by = group_psm_by, 
+    p_outlier = p_outlier, 
+    min_n = min_n, 
+    p_type = p_type, 
+    p_contrast = p_contrast)
+  
+  names(ans) <- contrs
+  attr(ans, "fml_nm") <- fml_nm
+
+  ans
+}
+
+
+#' Helper to find if a protein contains peptide outliers under a formula and
+#' then a contrast.
+#' 
+#' @param contr For example, a contrast defined in \link{pepSig}.
+#' @inheritParams find_pepoutliers_by_fml
+find_pepoutliers_by_contr <- function (
+    contr = NULL, fml_nm = NULL, df = NULL, 
+    group_psm_by = "pep_seq_mod", group_pep_by = "gene", 
+    p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP")
+{
+  if (stringr::str_count(contr, "-") > 1L) {
+    warning("No outlier assessment for nested structures.")
+    return(NULL)
+  }
+  
+  contr <- gsub("[()[:space:]]", "", contr)
+  
+  col_log2r <- paste0(fml_nm, ".log2Ratio (", contr, ")")
+  col_pval  <- 
+    paste0(fml_nm, if (p_type == "adjP") ".adjP (" else ".pVal (", contr, ")")
+
+  ans <- mapply(
+    check_outliers, 
+    split(df[[col_log2r]], df[[group_pep_by]]), 
+    split(df[[col_pval]], df[[group_pep_by]]), 
+    MoreArgs = list(
+      p = p_outlier, min_n = min_n, p_co = p_contrast
+    ), SIMPLIFY = TRUE, USE.NAMES = TRUE)
+  
+  peps <- split(df[[group_psm_by]], df[[group_pep_by]])
+  ansp <- mapply(map_olr_pep, ans, peps, SIMPLIFY = TRUE)
+  attr(ans, "pep") <- ansp
+
+  ans
 }
 
 

@@ -197,7 +197,7 @@ addApexRTs <- function (df, file_ms1, path_ms1, from = 115, step = 1E-5,
   # dfx <- df[df$uid %in% bads, ]
   
   ## (1) subset the  MS1 trace space by PSM results
-  trs <- qs::qread(file.path(path_ms1, file_ms1))
+  trs <- qs2::qs_read(file.path(path_ms1, file_ms1))
   tss <- trs$ret_time
   xss <- trs$msx_moverzs
   yss <- trs$msx_ints
@@ -452,7 +452,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   }
   
   if (file.exists(fi_datatype <- file.path(path_ms1, "data_type.rds"))) {
-    data_type <- qs::qread(fi_datatype)
+    data_type <- qs2::qs_read(fi_datatype)
   }
   else {
     warning("File not found: ", fi_datatype, ". Assume Thermo's data.")
@@ -544,7 +544,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
   pri_sps <- as.integer(names(which.max(table(mbr_sps))))
   
   if (file.exists(parfile <- file.path(temp_dir, "pars_rt.rds"))) {
-    fwhm_co <- qs::qread(parfile)$fwhm_co
+    fwhm_co <- qs2::qs_read(parfile)$fwhm_co
   }
   else {
     warning("Parameter file not found: ", parfile)
@@ -667,7 +667,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
           yco = yco, fwhm_co = fwhm_co), 
         SIMPLIFY = FALSE, USE.NAMES = FALSE)
     }
-    # ans_mbr <- qs::qread(file.path(dat_dir, "ans_mbr.rds"))
+    # ans_mbr <- qs2::qs_read(file.path(dat_dir, "ans_mbr.rds"))
 
     # xsmat is not changed
     ysmat <- lapply(ans_mbr, `[[`, "y")
@@ -688,7 +688,7 @@ hpepLFQ <- function (filelist, basenames, set_idxes, injn_idxes,
     rownames(fsmat) <- NULL
     rownames(nsmat) <- NULL
     rownames(mmat)  <- NULL
-    # qs::qsave(ans_mbr, file.path(dat_dir, "ans_mbr.rds"), preset = "fast")
+    # qs2::qs_save(ans_mbr, file.path(dat_dir, "ans_mbr.rds"), preset = "fast")
     # rm(list = "ans_mbr")
   }
   else {
@@ -2301,7 +2301,7 @@ saddMBR <- function (base_name, ms1files, row_id = 1L,
   # check again if multiple fractions under a set of TMTset1_LCMSinj1_Peptide_N
   # need to compile retention times, moverzs and intensities across fractions...
   
-  ms1full <- dplyr::bind_rows(lapply(ms1files, qs::qread))
+  ms1full <- dplyr::bind_rows(lapply(ms1files, qs2::qs_read))
   tss <- unname(ms1full$ret_time)
   xss <- ms1full$msx_moverzs
   yss <- ms1full$msx_ints

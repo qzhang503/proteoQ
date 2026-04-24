@@ -6,10 +6,11 @@
 \usage{
 plotTrend(
   id,
-  col_group,
-  col_order,
+  col_group = NULL,
+  col_order = NULL,
   label_scheme_sub,
-  n_clust,
+  n_clust = NULL,
+  panel_ids = NULL,
   scale_log2r,
   complete_cases,
   impute_na,
@@ -42,6 +43,8 @@ for selected samples.}
 \item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
 \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 available cluster IDs will be used.}
+
+\item{panel_ids}{Panel IDs for plotting.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with

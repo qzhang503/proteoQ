@@ -4,10 +4,16 @@
 \alias{Rosner_outliers}
 \title{Outlier removals with Rosner's method}
 \usage{
-Rosner_outliers(x)
+Rosner_outliers(x, k = 1L, alpha = 0.05, warn = FALSE)
 }
 \arguments{
-\item{x}{A matrix or data.frame.}
+\item{x}{A numeric vector.}
+
+\item{k}{The number of suspected outliers.}
+
+\item{alpha}{The level of type-I error.}
+
+\item{warn}{Logical; show warning message or not.}
 }
 \description{
 Outlier removals with Rosner's method

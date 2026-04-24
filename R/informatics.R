@@ -34,7 +34,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                        anal_type = c("Corrplot", "Heatmap", "Histogram", 
                                      "MA", "MDS", "Model","NMF", "Trend")) 
 {
-  scipen <- if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 999 else 0
+  scipen <- if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 999L else 0L
   
   old_opts <- options()
   
@@ -262,8 +262,9 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     
     ## ifelse handles scale_log2r = NA
     # fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
-    fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
-    fn_suffix <- if (anal_type %in% c("Model", "KinSub")) "txt" else "png"
+    if (impute_na) fn_prefix <- paste0(fn_prefix, "_impNA")
+    fn_suffix <- 
+      if (anal_type %in% c("Model", "Outlier", "KinSub")) "txt" else "png"
   } else {
     if (length(filename) > 1L) {
       stop("Do not provide multiple file names.")
@@ -283,9 +284,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
         s_type <- if (is.na(scale_log2r)) "O" else if (scale_log2r) "Z" else "N"
         paste0(fn_prefix, "_", s_type)
       })
-      
-      # fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
-      fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
+      fn_prefix <- if (impute_na) paste0(fn_prefix, "_impNA")
     }
   }
   
@@ -293,7 +292,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                     "Histogram", "Corrplot",
                     "Model", "Volcano", "Trend", "NMF", "NMF_meta", 
                     "GSPA", "mapGSPA",
-                    "GSVA", "GSEA", "String", "LDA", 
+                    "GSVA", "GSEA", "String", "LDA", "Outlier", 
                     "KinSub")
   
   use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", 
@@ -442,7 +441,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Heatmap") {
-    function(xmin = -1, xmax = 1, xmargin = 0.1,
+    function(xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
              annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL,
              p_dist_rows = 2, p_dist_cols = 2,
              hc_method_rows = "complete", hc_method_cols = "complete", 
@@ -475,6 +474,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
              xmin = xmin,
              xmax = xmax,
              xmargin = xmargin,
+             dot_plot = dot_plot, 
              p_dist_rows = p_dist_rows,
              p_dist_cols = p_dist_cols,
              hc_method_rows = hc_method_rows,
@@ -621,7 +621,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Trend") {
-    function(choice = "cmeans", n_clust = NULL, ...) {
+    function(choice = "cmeans", n_clust = NULL, p_outlier = .05, ...) {
       analTrend(df = df,
                 id = !!id,
                 col_group = !!col_group,
@@ -633,20 +633,55 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                 complete_cases = complete_cases,
                 impute_na = impute_na,
                 impute_group_na = impute_group_na, 
+                p_outlier = p_outlier, 
                 filepath = filepath,
-                filename = paste0(fn_prefix %>% paste0(., "_nclust", n_clust), ".txt"),
+                filename = paste0(fn_prefix, "_nclust", n_clust, ".txt"),
                 anal_type = anal_type,
                 ...)
     }
   } 
+  else if (anal_type == "Outlier") {
+    function(p_outlier = .05, min_n = 5L, p_contrast = .01, p_type = "adjP", 
+             contr_pairs = NULL, 
+             cols_pep = 
+               c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
+             group_pep_by = "gene", # group_psm_by = "pep_seq_mod", 
+             group_renorm_by = NULL, ...) {
+      analOutlier(df = df,
+                  id = id, # group_psm_by
+                  dat_dir = dat_dir, 
+                  col_select = rlang::as_string(col_select), 
+                  col_group = rlang::as_string(col_group),
+                  col_order = rlang::as_string(col_order),
+                  label_scheme_sub = label_scheme_sub,
+                  p_outlier = p_outlier, 
+                  min_n = min_n, 
+                  p_contrast = p_contrast, 
+                  p_type = p_type, 
+                  cols_pep = cols_pep, 
+                  scale_log2r = scale_log2r,
+                  complete_cases = complete_cases,
+                  impute_na = impute_na,
+                  impute_group_na = impute_group_na, 
+                  filepath = filepath,
+                  filename = paste0(fn_prefix, ".", fn_suffix),
+                  anal_type = anal_type,
+                  contr_pairs = contr_pairs, 
+                  group_renorm_by = group_renorm_by, 
+                  group_pep_by = group_pep_by, 
+                  # group_psm_by = group_psm_by, 
+                  ...)
+    }
+  } 
   else if (anal_type == "Trend_line") {
-    function(n_clust = NULL, theme = NULL, ...) {
+    function(n_clust = NULL, panel_ids = NULL, theme = NULL, ...) {
       plotTrend(df2 = df2,
                 id = !!id,
                 col_group = !!col_group,
                 col_order = !!col_order,
                 label_scheme_sub = label_scheme_sub,
                 n_clust = n_clust,
+                panel_ids = panel_ids,
                 scale_log2r = scale_log2r,
                 complete_cases = complete_cases,
                 impute_na = impute_na,
@@ -914,13 +949,17 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
 {
   dat_dir <- get_gl_dat_dir()
   
-  err_msg2 <- paste0("not found. \n", 
-                     "Run functions of PSM, peptide and protein normalization first.")
-  err_msg3 <- paste0("not found. \n", 
-                     "Impute NA values with ", 
-                     "`pepImp()` or `prnImp()` or set `impute_na = FALSE`.")
-  err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
-  err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
+  err_msg2 <- 
+    paste0("not found. \n", 
+           "Run functions of PSM, peptide and protein normalization first.")
+  err_msg3 <- 
+    paste0("not found. \n", 
+           "Impute NA values with ", 
+           "`pepImp()` or `prnImp()` or set `impute_na = FALSE`.")
+  err_msg4 <- 
+    "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
+  err_msg5 <- 
+    "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
 
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))
   id <- rlang::as_string(rlang::enexpr(id))
@@ -939,14 +978,14 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
       fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
       fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
     } else {
-      stop("Unknown `id`.", call. = FALSE)
+      stop("Unknown `id`.")
     }
 
     if (anal_type %in% c("Histogram")) { # never impute_na and no pVals
       if (file.exists(fn_raw)) 
         src_path <- fn_raw
       else 
-        stop(paste(fn_raw, err_msg2), call. = FALSE)
+        stop(paste(fn_raw, err_msg2))
 
       if (id %in% c("pep_seq", "pep_seq_mod")) 
         message("Primary column keys in `Peptide/Peptide.txt` ", 
@@ -959,12 +998,12 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
         if (file.exists(fn_imp)) 
           src_path <- fn_imp
         else 
-          stop(paste(fn_imp, err_msg3), call. = FALSE)
+          stop(paste(fn_imp, err_msg3))
       } else {
         if (file.exists(fn_raw)) 
           src_path <- fn_raw
         else 
-          stop(paste(fn_raw, err_msg2), call. = FALSE)
+          stop(paste(fn_raw, err_msg2))
       }
 
       if (id %in% c("pep_seq", "pep_seq_mod")) 
@@ -978,12 +1017,12 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
         if (file.exists(fn_imp_p)) 
           src_path <- fn_imp_p
         else 
-          stop(paste(fn_imp_p, err_msg4), call. = FALSE)
+          stop(paste(fn_imp_p, err_msg4))
       } else {
         if (file.exists(fn_p)) 
           src_path <- fn_p
         else 
-          stop(paste(fn_p, err_msg5), call. = FALSE)
+          stop(paste(fn_p, err_msg5))
       }
 
       if (id %in% c("pep_seq", "pep_seq_mod")) 
@@ -993,7 +1032,7 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
         message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` ", 
                 "for `filter_` varargs.")
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", 
-                                "NMF", "NMF_meta",
+                                "Outlier", "NMF", "NMF_meta",
                                 "GSVA", "Corrplot", "String", "LDA", 
                                 "KinSub")) { # optional impute_na and possible pVals
       if (impute_na) {
@@ -1002,14 +1041,14 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
         else if (file.exists(fn_imp)) 
           src_path <- fn_imp
         else 
-          stop(paste(fn_imp, err_msg3), call. = FALSE)
+          stop(paste(fn_imp, err_msg3))
       } else {
         if (file.exists(fn_p)) 
           src_path <- fn_p
         else if (file.exists(fn_raw)) 
           src_path <- fn_raw
         else 
-          stop(paste(fn_raw, err_msg2), call. = FALSE)
+          stop(paste(fn_raw, err_msg2))
       }
 
       if (id %in% c("pep_seq", "pep_seq_mod")) 
@@ -1023,7 +1062,7 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
     df <- rlang::as_string(df)
 
     if (anal_type == "Model") 
-      stop("Use default file name.", call. = FALSE)
+      stop("Use default file name.")
 
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       src_path <- file.path(dat_dir, "Peptide/Model", df)
@@ -1038,13 +1077,14 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
     }
   }
 
-  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
-                          comment.char = "#"), error = function(e) NA)
+  df <- tryCatch(
+    read.csv(src_path, check.names = FALSE, header = TRUE, 
+             sep = "\t",comment.char = "#"), error = function(e) NA)
 
   if (is.null(dim(df))) 
-    stop(src_path, " not found.", call. = FALSE)
+    stop(src_path, " not found.")
 
-  df <- df %>% reorderCols2()
+  df <- reorderCols2(df)
 
   message(paste("Primary file loaded:", src_path))
 

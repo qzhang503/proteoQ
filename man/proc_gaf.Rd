@@ -2,7 +2,7 @@
 % Please edit documentation in R/go.R
 \name{proc_gaf}
 \alias{proc_gaf}
-\title{Helper to save `gaf` without header}
+\title{Helper to save gaf without header}
 \usage{
 proc_gaf(db_path, fn_gaf)
 }
@@ -13,5 +13,5 @@ is \code{"~/proteoQ/dbs/go"}.}
 \item{fn_gaf}{filename according to \code{gaf_url}}
 }
 \description{
-Helper to save `gaf` without header
+Helper to save gaf without header
 }

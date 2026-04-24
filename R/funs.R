@@ -29,8 +29,11 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 #
@@ -42,9 +45,11 @@
 # create_db_path
 # proc_obo
 # proc_gaf
+# proc_rpt
+# proc_remap
 # annot_from_to
 # get_full_entrez
-# find_human_orthologs
+# dl_gene_homo
 # sp_lookup_go
 # find_abbr_species
 # set_db_outname
@@ -95,6 +100,8 @@
 # $hm.R
 # my_pheatmap
 # plotHM
+# plot_sub_hms
+# make_dotplot_hm
 # pepHM
 # prnHM
 #
@@ -204,6 +211,7 @@
 #
 # $outliers.R
 # locate_outliers
+# locate_vec_outlier
 # dixon_test
 # q_dixon
 # p_dixon
@@ -215,6 +223,17 @@
 #           f
 # p_grubbs
 # Rosner_outliers
+# check_outliers
+# check_dixon_outliers
+# check_rosner_outliers
+# anal_pepOutlier
+# analOutlier
+# combine_olr_by_fml
+# combine_olr_by_contr
+# map_olr_pep
+# find_pepoutliers
+# find_pepoutliers_by_fml
+# find_pepoutliers_by_contr
 #
 # $pca.R
 # plotPCA
@@ -419,13 +438,17 @@
 # $sigtests.R
 # rowVars
 # filterData
+# find_contrast_elements
 # prepFml
 # my_padj
 # lm_summary
 # model_onechannel
 # sigTest
+# himpute_baseline
 # impute_baseline_ints
 # base_sigtest_y
+# sep_data_by_group
+# find_baseline_slope
 # gen_randoms
 # pepSig
 # prnSig
@@ -453,7 +476,10 @@
 # find_trend_m
 # makeTrendRes
 # analTrend
+# prepTrend
+# make_renorm_data
 # plotTrend
+# plotTrend_sub
 # anal_prnTrend
 # plot_prnTrend
 #

@@ -2876,7 +2876,7 @@ psm_mcleanup <- function(file = NULL, rm_outliers = FALSE,
         dplyr::select(-c("RM")) %>%
         `colnames<-`(gsub("I", "X", names(.))) %>%
         dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), 
-                         ~ replace(.x, is.infinite(.x), NA)) %>%
+                         ~ replace(.x, is.infinite(.x), NA_real_)) %>%
         dplyr::bind_cols(df[, c("psm_index", group_psm_by)], .) %>%
         split(., .[[group_psm_by]], drop = TRUE)
       
@@ -2885,7 +2885,7 @@ psm_mcleanup <- function(file = NULL, rm_outliers = FALSE,
       dfw_split <- do.call("rbind", 
                            lapply(dfw_split, locate_outliers, range_colRatios)) %>%
         dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), 
-                         ~ replace(.x, is.infinite(.x), NA)) %>%
+                         ~ replace(.x, is.infinite(.x), NA_real_)) %>%
         tidyr::unite(pep_seq_i, !!group_psm_by, psm_index, sep = ":") %>%
         dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), 
                          ~ replace(.x, !is.na(.x), 1))
@@ -5113,7 +5113,7 @@ PSM2Pep <- function(method_psm_pep =
   ## for RT alignments
   if (ok_lfq) {
     if (file.exists(fi_datatype <- file.path(path_ms1, "data_type.rds"))) {
-      data_type <- qs::qread(fi_datatype)
+      data_type <- qs2::qs_read(fi_datatype)
     }
     else {
       warning("File not found: ", fi_datatype, ". Assume Thermo's data.")
@@ -5142,8 +5142,7 @@ PSM2Pep <- function(method_psm_pep =
       dat_dir = dat_dir, path_ms1 = path_ms1, 
       rt_size = 240, rt_margin = 480, max_rt_delta = 240, 
       max_n_apexes = max_n_apexes, data_type = data_type)
-    qs::qsave(
-      dfs, file.path(dat_dir, "PSM", "cache", "ApexRTs.rds"), preset = "fast")
+    qs2::qs_save(dfs, file.path(dat_dir, "PSM", "cache", "ApexRTs.rds"))
     
     ## (2) nullify RT outliers and low Y values (by each TMTset[i]LCMSinj[j])
     dfs <- lapply( # may set y_tol = 0
@@ -5192,8 +5191,8 @@ PSM2Pep <- function(method_psm_pep =
     #  not really matter and arbitrary since LFQ occurs within `mergePep`
     dfs <- hrm_lowIntPSMs(
       dfs = dfs, key = "pep_seq_modz", yfrac = .02, max_n_apexes = 1L)
-    # qs::qsave(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"), preset = "fast")
-    # dfs <- qs::qread(file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"))
+    # qs2::qs_save(dfs, file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"))
+    # dfs <- qs2::qs_read(file.path(dat_dir, "dfs_hrm_lowIntPSMs.rds"))
   }
   else {
     trace_files <- ms1full_files <- NULL
@@ -5448,7 +5447,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   nmat <- mats[["n"]] # not to be filtered by large "n"s: many MS1s without MS2s
   err0 <- mats[["err"]]
   qfw0 <- mats[["qfwhm"]]
-  qs::qsave(
+  qs2::qs_save(
     list(fwhm_co = qfw0, sderr = err0), file.path(temp_dir, "pars_rt.rds"))
   
   if (FALSE) {
@@ -5478,7 +5477,7 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
   tmat <- fitMS1RT(tmat, sta = NULL)
   fits <- attr(tmat, "fits", exact = TRUE)
   names(fits) <- names(dfs)
-  qs::qsave(fits, file.path(temp_dir, "fits_rt.rds"), preset = "fast")
+  qs2::qs_save(fits, file.path(temp_dir, "fits_rt.rds"))
   
   ## (3.2) post-alignment removals of single-apex retention-time outliers
   #  `rm_2RToutliers` nullify the lower intensity entry at which.min(ys)
@@ -5517,11 +5516,11 @@ alignPSMApexs <- function (dfs, ms1full_files = NULL, path_ms1 = NULL,
     
     for (j in seq_along(ms1_fis <- ms1full_files[[i]])) {
       fj  <- ms1_fis[[j]]
-      dft <- qs::qread(file.path(path_ms1, fj))
+      dft <- qs2::qs_read(file.path(path_ms1, fj))
       rtx <- dft$ret_time
       dx  <- predict.lm(fit, newdata = data.frame(rts = rtx))
       dft$ret_time <- rtx - dx
-      qs::qsave(dft, file.path(path_ms1, paste0("calib", fj)), preset = "fast")
+      qs2::qs_save(dft, file.path(path_ms1, paste0("calib", fj)))
     }
   }
   
@@ -8168,7 +8167,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       df <- df |>
         add_diann_pepseqmod(use_lowercase_aa)
       
-      qs::qsave(df, file.path(dat_dir, "diann_report.qs"))
+      qs2::qs_save(df, file.path(dat_dir, "diann_report.qs"))
     })
   } else if (!tmt_plex) {
     message("For DIANN workflows, ", 
@@ -8544,7 +8543,7 @@ join_mgfs <- function (dat_dir = NULL, mgf_path = NULL,
   else
     message("Cached MGF results found: ", mgf_file)
   
-  mgfs <- mzion::map_raw_n_scan(qs::qread(mgf_file), mgf_path)
+  mgfs <- mzion::map_raw_n_scan(qs2::qs_read(mgf_file), mgf_path)
   mgfs[["raw_file"]] <- gsub("\\.raw$", "", mgfs[["raw_file"]], ignore.case = TRUE)
   mgfs <- split(mgfs, mgfs[["raw_file"]])
   mgf_raws <- names(mgfs)

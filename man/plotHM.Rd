@@ -2,7 +2,7 @@
 % Please edit documentation in R/hm.R
 \name{plotHM}
 \alias{plotHM}
-\title{Makes heat maps}
+\title{Makes heat maps.}
 \usage{
 plotHM(
   df,
@@ -11,6 +11,7 @@ plotHM(
   col_order,
   col_benchmark,
   label_scheme_sub,
+  dot_plot = TRUE,
   filepath,
   filename,
   scale_log2r,
@@ -73,6 +74,8 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{dot_plot}{Logical; Plot dot-plot or not.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -187,5 +190,5 @@ column data \cr \code{clustering_distance_rows = "minkowski"} allowed
 together with the powder of \code{p_dist_rows} and/or \code{p_dist_cols}}
 }
 \description{
-Makes heat maps
+Makes heat maps.
 }

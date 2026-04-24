@@ -40,7 +40,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 }
 
 
-#' Makes heat maps
+#' Makes heat maps.
 #' 
 #' @param n_color The number of colors. 
 #' @inheritParams prnHM
@@ -49,7 +49,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotHM <- function(df, id, col_select, col_order, col_benchmark, 
-                   label_scheme_sub, 
+                   label_scheme_sub, dot_plot = TRUE, 
                    filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_rows = annot_rows, 
@@ -160,21 +160,17 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       seq(xmargin, xmax, length.out = n_color/2)[2:(n_color/2)])
     
     color_breaks <- unique(color_breaks[color_breaks >= xmin])
-  } 
-  else if (is.na(dots$breaks)) {
+  } else if (is.na(dots$breaks)) {
     color_breaks <- NA
-  } 
-  else {
+  } else {
     color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
   mypalette <- if (is.null(dots$color)) {
     grDevices::colorRampPalette(c("#1f78b4", "white", "#e31a1c"))(n_color)
-  }
-  else if (is.na(dots$color)) {
+  } else if (is.na(dots$color)) {
     grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
-  }
-  else {
+  } else {
     eval(dots$color, envir = rlang::caller_env())
   }
 
@@ -194,19 +190,6 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     dplyr::mutate(
       Mean_log10Int = 
         log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],na.rm = TRUE)))
-  
-  # does this more upstream later...
-  if (!"count_nna" %in% names(df)) {
-    count_nna <- df |>
-      dplyr::select(dplyr::matches("N_log2_R[0-9]{3}[NC]{0,1}")) |>
-      dplyr::select(-dplyr::matches("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$")) |>
-      dplyr::select(-dplyr::matches("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$")) |>
-      is.na() |>
-      magrittr::not() |>
-      rowSums()
-    
-    df$count_nna <- count_nna
-  }
   
   df <- df %>%
     dplyr::filter(!duplicated(!!rlang::sym(id)),
@@ -228,8 +211,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   
   if (data_type == "protein" && !is.null(row_entries_must)) {
     df <- local({
-      key_col <- names(row_entries_must)
-      row_ids <- row_entries_must[[key_col]]
+      key_col  <- names(row_entries_must)
+      row_ids  <- row_entries_must[[key_col]]
       missings <- !row_ids %in% df[[key_col]]
       
       if (any(missings)) {
@@ -253,10 +236,10 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     stop("Zero data rows available after data filtration.")
   }
   
-  dfR <- df %>%
-    dplyr::select(dplyr::matches(NorZ_ratios)) %>%
-    setNames(label_scheme[["Sample_ID"]]) %>%
-    dplyr::select(any_of(sample_ids)) %>%
+  dfR <- df |>
+    dplyr::select(dplyr::matches(NorZ_ratios)) |>
+    setNames(label_scheme[["Sample_ID"]]) |>
+    dplyr::select(any_of(sample_ids)) |>
     # enforce exact order
     dplyr::select(dplyr::all_of(sample_ids))
   
@@ -374,10 +357,10 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   if ((!cluster_cols) && (!is.null(col_order)) && 
       length(unique(label_scheme_sub[[col_order]])) > 1L) {
     
-    plot_orders <- label_scheme_sub %>%
-      dplyr::select(Sample_ID, !!col_order) %>%
-      dplyr::filter(!is.na(!!col_order)) %>%
-      unique() %>%
+    plot_orders <- label_scheme_sub |>
+      dplyr::select(Sample_ID, !!col_order) |>
+      dplyr::filter(!is.na(!!col_order)) |>
+      unique() |>
       dplyr::arrange(!!col_order)
     
     if (nrow(plot_orders) != length(sample_ids)) {
@@ -395,7 +378,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     plot_sids <- sample_ids
   }
 
-  # [x] df_log2r before row and column clustering for pheatmap 
+  # [x] df_log2r before row and column clustering and used for pheatmap 
   #   clustering info passed in `dots`
   # [x] df_lgr and df_int for other utilities that do not use clustering info
   df_log2r <- df_lgr <- df_hm[, plot_sids, drop = FALSE]
@@ -421,10 +404,6 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       df_int <- df_int[h_ord, ]
       df_lgr <- df_lgr[h_ord, ]
       
-      if (FALSE && !is.null(annot_rows)) {
-        annotation_row <- annotation_row[h_ord, ]
-      }
-      
       rm(list = "h_ord")
     }
 
@@ -444,7 +423,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       error = function(e) 1
     )
     
-    if ((class(h_cols) != "hclust") && (h_cols == 1)) {
+    if ((class(h_cols) != "hclust") && (h_cols == 1L)) {
       warning("Column clustering cannot be performed.")
       h_cols <- FALSE
     } else {
@@ -454,74 +433,286 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       
       plot_sids <- colnames(df_lgr)
       
-      if (FALSE && !is.null(annot_cols)) {
-        annotation_col <- annotation_col[h_cols_ord, ]
-      }
-      
       rm(list = "h_cols_ord")
     }
     
     dots$cluster_cols <- h_cols
-  } 
-  else {
+  } else {
     dots$cluster_cols <- FALSE
     h_cols <- FALSE
   }
   
-  if (isTRUE(group_renorm_by %in% names(label_scheme_sub)) && 
-      length(group_renorm_by) == 1L) {
-    tempdata <- local({
-      grps <- label_scheme_sub[[group_renorm_by]]
-      ugrps <- unique(grps)
-      n_ugrps <- length(ugrps)
-      
-      if (is.null(group_fct_int)) {
-        group_fct_int <- rep_len(1L, n_ugrps)
-        ok_scale_int <- FALSE
-      }
-      else {
-        if (length(group_fct_int) == n_ugrps) {
-          nms_grp <- names(group_fct_int)
-          ord <- match(ugrps, nms_grp)
-          
-          if (length(bads <- nms_grp[is.na(ord)])) {
-            warning("Group names not found in 'group_fct_int': ", 
-                    paste(bads, collapse = ", "))
-            ok_scale_int <- FALSE
-          } else {
-            group_fct_int <- group_fct_int[ord]
-            ok_scale_int <- TRUE
-          }
-        }
-        else {
-          warning("Mismatches in the length of 'group_fct_int' and the number ", 
-                  "of unique groups under column", group_renorm_by)
-          group_fct_int <- rep_len(1L, n_ugrps)
-          ok_scale_int <- FALSE
-        }
-      }
-      
-      for (i in seq_along(ugrps)) {
-        cols <- grps == ugrps[[i]]
-        dfx  <- df_lgr[, cols, drop = FALSE]
-        df_lgr[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
-        
-        if (ok_scale_int) {
-          dfy <- df_int[, cols, drop = FALSE] * group_fct_int[[i]]
-          df_int[, cols] <- dfy
-          # df_int[, cols] <- dfy / rowMeans(dfy, na.rm = TRUE)
-        }
-      }
-      
-      list (df_lgr, df_int)
-    })
-    
-    df_lgr <- tempdata[[1]]
-    df_int <- tempdata[[2]]
-    rm(list = "tempdata")
+  tempdata <- make_renorm_data(
+    df_lgr = df_lgr, df_log2r = df_log2r, df_int = df_int, 
+    group_renorm_by = group_renorm_by, group_fct_int = group_fct_int, 
+    label_scheme_sub = label_scheme_sub)
+  df_lgr   <- tempdata[["x1"]]
+  df_int   <- tempdata[["y1"]]
+  df_log2r <- tempdata[["x2"]]
+  ok_group_renorm <- tempdata[["ok_group_renorm"]]
+  rm(list = "tempdata")
+
+  ## Dot plots
+  if (dot_plot) {
+    make_dotplot_hm(
+      df = df_hm, df_lgr = df_lgr, df_int = df_int, id = id, 
+      plot_sids = plot_sids, sample_ids = sample_ids, 
+      xmin = xmin, xmax = xmax, 
+      filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
+      dots = dots)
   }
 
-  ### 
+  # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row`
+  dots <- dots[
+    !names(dots) %in% 
+      c("mat", "filename", "annotation_col", "annotation_row", 
+        "clustering_distance_rows", "clustering_distance_cols", 
+        "clustering_method", "color", "annotation_colors", "breaks")]
+  
+  # setHMlims after hclust
+  p <- my_pheatmap(
+    mat = setHMlims(df_log2r, xmin, xmax),
+    filename = file.path(filepath, gg_imgname(filename)),
+    annotation_col = annotation_col,
+    annotation_row = annotation_row, 
+    color = mypalette,
+    annotation_colors = annotation_colors,
+    breaks = color_breaks,
+    !!!dots
+  )
+
+  ### Subtrees
+  plot_sub_hms(
+    df = df, id = id, label_scheme_sub = label_scheme_sub, 
+    cluster_rows = cluster_rows, cluster_cols = cluster_cols, 
+    clustering_distance_rows = clustering_distance_rows, 
+    clustering_distance_cols = clustering_distance_cols, 
+    p_dist_rows = p_dist_rows, hc_method_rows = hc_method_rows, 
+    p_dist_cols = p_dist_cols, hc_method_cols = hc_method_cols, 
+    h_cols = h_cols, 
+    p = p, 
+    
+    annotation_col = annotation_col,
+    annotation_row = annotation_row, 
+    mypalette = mypalette,
+    color_breaks = color_breaks,
+    annotation_colors = annotation_colors, 
+    
+    filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
+    sample_ids = sample_ids, complete_cases = complete_cases, 
+    ok_group_renorm = ok_group_renorm, dots = dots)
+}
+
+
+#' Plot subtrees of heat maps.
+#' @param df A data frame of both intensities and log2Ratios.
+#' @param label_scheme_sub A subset of metadata.
+#' @param cluster_rows Logical; cluster rows or not.
+#' @param cluster_cols Logical; cluster columns or not.
+#' @param clustering_distance_rows A method for clustering rows by distances.
+#' @param clustering_distance_cols A method for clustering columns by distances.
+#' @param h_cols The column hierarchy from the full data.
+#' @param p A plot object from the full data.
+#' @param mypalette A color palette.
+#' @param color_breaks Color breaks.
+#' @param annotation_colors Annotation colors.
+#' @param fn_prefix The prefix of an output file.
+#' @param fn_suffix The suffix of an output file.
+#' @param sample_ids Sample_ids from metadata.
+#' @param ok_group_renorm Logical; OK to renormalize samples with groups or not.
+#' @param dots Additional arguments.
+#' @inheritParams plotHM
+plot_sub_hms <- function (df, id = "gene", label_scheme_sub, 
+                          cluster_rows = TRUE, cluster_cols = TRUE, 
+                          clustering_distance_rows, clustering_distance_cols, 
+                          p_dist_rows, p_dist_cols, 
+                          hc_method_rows, hc_method_cols, 
+                          h_cols, 
+                          p, 
+                          
+                          annotation_col = TRUE,annotation_row = FALSE, 
+                          mypalette, color_breaks, annotation_colors, 
+
+                          filepath, fn_prefix, fn_suffix, 
+                          sample_ids, complete_cases = FALSE, 
+                          ok_group_renorm = TRUE, dots) 
+{
+  cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
+  df <- df |> dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
+  
+  if ((!is.null(cutree_rows)) && cluster_rows) {
+    if (is.numeric(cutree_rows) && (nrow(df) >= cutree_rows)) {
+      Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
+        dplyr::mutate(!!id := rownames(.)) %>%
+        dplyr::left_join(df, by = id) %T>% 
+        readr::write_tsv(
+          file.path(filepath, "Subtrees", fn_prefix, 
+                    paste0(fn_prefix, " n-", cutree_rows, "_subtrees.txt")))
+      
+      Cluster <- Cluster %>%
+        `rownames<-`(NULL) %>% 
+        tibble::column_to_rownames(var = id)
+      
+      for (cluster_id in unique(Cluster$Cluster)) {
+        df_sub <- 
+          Cluster[Cluster$Cluster == cluster_id, names(Cluster) %in% sample_ids]
+        
+        if (complete_cases) {
+          df_sub <- df_sub %>%
+            tibble::rownames_to_column(id) %>%
+            dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>%
+            `rownames<-`(NULL) %>% 
+            tibble::column_to_rownames(id)
+        }
+        
+        if (cluster_rows) {
+          nrow <- nrow(df_sub)
+          d_sub <- stats::dist(
+            df_sub, 
+            method = clustering_distance_rows, 
+            p = p_dist_rows)
+          
+          max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
+          
+          if ((!length(d_sub)) || is.infinite(max_d_row)) {
+            h_sub <- FALSE
+          }
+          else {
+            d_sub[is.na(d_sub)] <- .5 * max_d_row
+            
+            if (nrow <= 2L) {
+              h_sub <- FALSE
+            } 
+            else {
+              h_sub <- tryCatch(
+                hclust(d_sub, hc_method_rows),
+                error = function(e) 1L
+              )
+              
+              if (class(h_sub) != "hclust" && h_sub == 1L) {
+                warning("No row clustering for subtree: ", cluster_id)
+                h_sub <- FALSE
+              }
+            }
+          }
+        }
+        
+        if (cluster_cols) {
+          t_df_sub <- t(df_sub)
+          
+          nrow_trans <- nrow(t_df_sub)
+          d_sub_col <- stats::dist(t_df_sub, 
+                                   method = clustering_distance_cols, 
+                                   p = p_dist_cols)
+          
+          max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
+          
+          if (!length(d_sub_col)) 
+            next
+          
+          if (is.infinite(max_d_col)) {
+            v_sub <- FALSE
+          } 
+          else {
+            d_sub_col[is.na(d_sub_col)] <- .5 * max_d_col
+            
+            if (nrow_trans <= 2L) {
+              v_sub <- FALSE
+            } 
+            else {
+              v_sub <- tryCatch(
+                hclust(d_sub_col, hc_method_cols),
+                error = function(e) 1
+              )
+              
+              if ((class(v_sub) != "hclust") && (v_sub == 1)) {
+                warning("No column clustering for subtree: ", cluster_id)
+                v_sub <- FALSE
+              }
+            }  
+          }
+        }
+        
+        if (nrow <= 150L) {
+          cellheight <- 5
+          fontsize_row <- 5
+          show_rownames <- TRUE
+          height <- NA
+        } 
+        else {
+          cellheight <- NA
+          fontsize_row <- NA
+          show_rownames <- FALSE
+          height <- NA
+        }
+        
+        ###
+        if (ok_group_renorm) {
+          df_sub <- local({
+            grps <- label_scheme_sub[[group_renorm_by]]
+            ugrps <- unique(grps)
+            n_ugrps <- length(ugrps)
+            
+            for (i in seq_along(ugrps)) {
+              cols <- grps == ugrps[[i]]
+              dfx  <- df_sub[, cols, drop = FALSE]
+              df_sub[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+            }
+            
+            df_sub
+          })
+        }
+        ###
+        
+        try(
+          pheatmap(
+            mat = df_sub,
+            main = paste("Cluster", cluster_id),
+            cluster_rows = h_sub,
+            # cluster_cols = v_sub, 
+            cluster_cols = h_cols, # use whole-tree hierarchy
+            show_rownames = show_rownames,
+            show_colnames = TRUE,
+            annotation_col = annotation_col,
+            annotation_row = annotation_row, 
+            color = mypalette,
+            breaks = color_breaks,
+            cellwidth = 14,
+            cellheight = cellheight,
+            fontsize_row = fontsize_row,
+            height = height, 
+            annotation_colors = annotation_colors,
+            filename = file.path(
+              filepath, "Subtrees", fn_prefix, 
+              paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
+          )
+        )
+        
+        rm(list = c("d_sub", "h_sub"))
+      }
+    }
+  }
+}
+
+
+#' Makes heat maps as dot plots.
+#' 
+#' @param df A data frame of both intensities and log2Ratios.
+#' @param df_lgr A data frame of log2Ratios.
+#' @param df_int A data frame of intensities.
+#' @param plot_sids Ordered sample IDs for plotting.
+#' @param sample_ids Sample_ids from metadata.
+#' @param fn_prefix The prefix of output file name.
+#' @param fn_suffix The suffix of output file name.
+#' @param xmin The minimum X value.
+#' @param xmax The maximum X value.
+#' @param dots Additional arguments.
+#' @inheritParams plotHM
+make_dotplot_hm <- function (df, df_lgr, df_int, 
+                             id = "gene", plot_sids, sample_ids, 
+                             xmin = -2, xmax = -xmin, 
+                             filepath, fn_prefix, fn_suffix, dots)
+{
   df_lgr_long <- df_lgr |>
     tibble::rownames_to_column(id) |>
     tidyr::pivot_longer(-!!id, names_to = "sample", values_to = "log2Ratio")
@@ -535,18 +726,17 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       dplyr::bind_cols(df_lgr_long, df_int_long[, "intensity", drop = FALSE])
   }
   readr::write_tsv(df_both, file.path(filepath, paste0(fn_prefix, "_XY.txt")))
-
+  
   df_both <- df_both |>
     dplyr::mutate(sample = factor(sample, levels = plot_sids))
-  
   n_smps <- length(sample_ids)
   n_ids  <- length(unique(df[[id]]))
-
+  
   if (n_ids <= 200L || id %in% c("pep_seq", "pep_seq_mod")) {
     width  <- dots[["width"]]
     height <- dots[["height"]]
-    if (is.null(dots[["width"]])) width <- n_smps * .3 + 2 # dots[["width"]] <- 
-    if (is.null(dots[["height"]])) height <- .3 * n_ids # dots[["height"]] <- 
+    if (is.null(dots[["width"]])) width <- n_smps * .3 + 2
+    if (is.null(dots[["height"]])) height <- .3 * n_ids
     
     df_both$log10Int <- log10(df_both$intensity)
     min_int <- min(df_both$log10Int, na.rm = TRUE)
@@ -599,164 +789,6 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   } else {
     warning("Too many entries for a X-Y dot plot.")
   }
-  ###
-  
-  # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row`
-  dots <- dots[
-    !names(dots) %in% 
-      c("mat", "filename", "annotation_col", "annotation_row", 
-        "clustering_distance_rows", "clustering_distance_cols", 
-        "clustering_method", "color", "annotation_colors", "breaks")]
-
-  # setHMlims after hclust
-  p <- my_pheatmap(
-    mat = setHMlims(df_log2r, xmin, xmax),
-    filename = file.path(filepath, gg_imgname(filename)),
-    annotation_col = annotation_col,
-    annotation_row = annotation_row, 
-    color = mypalette,
-    annotation_colors = annotation_colors,
-    breaks = color_breaks,
-    !!!dots
-  )
-  
-  ### Subtrees
-  cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
-  df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
-  
-  if ((!is.null(cutree_rows)) && cluster_rows) {
-    if (is.numeric(cutree_rows) && (nrow(df) >= cutree_rows)) {
-      Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
-        dplyr::mutate(!!id := rownames(.)) %>%
-        dplyr::left_join(df, by = id) %T>% 
-        readr::write_tsv(
-          file.path(filepath, "Subtrees", fn_prefix, 
-                    paste0(fn_prefix, " n-", cutree_rows, "_subtrees.txt")))
-      
-      Cluster <- Cluster %>%
-        `rownames<-`(NULL) %>% 
-        tibble::column_to_rownames(var = id)
-      
-      for (cluster_id in unique(Cluster$Cluster)) {
-        df_sub <- 
-          Cluster[Cluster$Cluster == cluster_id, names(Cluster) %in% sample_ids]
-        
-        if (complete_cases) {
-          df_sub <- df_sub %>%
-            tibble::rownames_to_column(id) %>%
-            dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>%
-            `rownames<-`(NULL) %>% 
-            tibble::column_to_rownames(id)
-        }
-
-        if (cluster_rows) {
-          nrow <- nrow(df_sub)
-          d_sub <- stats::dist(df_sub, 
-                               method = clustering_distance_rows, 
-                               p = p_dist_rows)
-          
-          max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
-          
-          if ((!length(d_sub)) || is.infinite(max_d_row)) {
-            h_sub <- FALSE
-          }
-          else {
-            d_sub[is.na(d_sub)] <- .5 * max_d_row
-            
-            if (nrow <= 2L) {
-              h_sub <- FALSE
-            } 
-            else {
-              h_sub <- tryCatch(
-                hclust(d_sub, hc_method_rows),
-                error = function(e) 1L
-              )
-              
-              if (class(h_sub) != "hclust" && h_sub == 1L) {
-                warning("No row clustering for subtree: ", cluster_id)
-                h_sub <- FALSE
-              }
-            }
-          }
-        }
-        
-        if (cluster_cols) {
-          t_df_sub <- t(df_sub)
-          
-          nrow_trans <- nrow(t_df_sub)
-          d_sub_col <- stats::dist(t_df_sub, 
-                                   method = clustering_distance_cols, 
-                                   p = p_dist_cols)
-          
-          max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
-          
-          if (!length(d_sub_col)) 
-            next
-          
-          if (is.infinite(max_d_col)) {
-            v_sub <- FALSE
-          } 
-          else {
-            d_sub_col[is.na(d_sub_col)] <- .5 * max_d_col
-  
-            if (nrow_trans <= 2L) {
-              v_sub <- FALSE
-            } 
-            else {
-              v_sub <- tryCatch(
-                hclust(d_sub_col, hc_method_cols),
-                error = function(e) 1
-              )
-              
-              if ((class(v_sub) != "hclust") && (v_sub == 1)) {
-                warning("No column clustering for subtree: ", cluster_id)
-                v_sub <- FALSE
-              }
-            }  
-          }
-        }
-        
-        if (nrow <= 150L) {
-          cellheight <- 5
-          fontsize_row <- 5
-          show_rownames <- TRUE
-          height <- NA
-        } 
-        else {
-          cellheight <- NA
-          fontsize_row <- NA
-          show_rownames <- FALSE
-          height <- NA
-        }
-        
-        try(
-          pheatmap(
-            mat = df_sub,
-            main = paste("Cluster", cluster_id),
-            cluster_rows = h_sub,
-            # cluster_cols = v_sub, 
-            cluster_cols = h_cols, # use whole-tree hierarchy
-            show_rownames = show_rownames,
-            show_colnames = TRUE,
-            annotation_col = annotation_col,
-            annotation_row = annotation_row, 
-            color = mypalette,
-            breaks = color_breaks,
-            cellwidth = 14,
-            cellheight = cellheight,
-            fontsize_row = fontsize_row,
-            height = height, 
-            annotation_colors = annotation_colors,
-            filename = file.path(
-              filepath, "Subtrees", fn_prefix, 
-              paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
-          )
-        )
-
-        rm(list = c("d_sub", "h_sub"))
-      }
-    }
-  }
 }
 
 
@@ -776,7 +808,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    
@@ -819,6 +851,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
             impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
             anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
+                                   dot_plot = dot_plot, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
                                    annot_rows = annot_rows, 
@@ -891,6 +924,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'@param xmin  Numeric; the minimum x at a log2 scale. The default is -1.
 #'@param xmax  Numeric; the maximum  x at a log2 scale. The default is 1.
 #'@param xmargin  Numeric; the margin in heat scales. The default is 0.1.
+#'@param dot_plot Logical; Plot dot-plot or not.
 #'@param p_dist_rows Numeric; the power of the Minkowski distance in the
 #'  measures of row \code{\link[stats]{dist}} at \code{clustering_distance_rows
 #'  = "minkowski"}. The default is 2.
@@ -1006,7 +1040,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    
@@ -1058,6 +1092,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
             anal_type = "Heatmap")(xmin = xmin, 
                                    xmax = xmax, 
                                    xmargin = xmargin, 
+                                   dot_plot = dot_plot, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
                                    annot_rows = annot_rows, 

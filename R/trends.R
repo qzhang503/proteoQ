@@ -198,10 +198,20 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, 
                        choice, n_clust, impute_group_na = TRUE, 
-                       scale_log2r = TRue, complete_cases = FALSE, 
-                       impute_na = FALSE, 
+                       scale_log2r = TRUE, complete_cases = FALSE, 
+                       impute_na = FALSE, p_outlier = .05, 
                        filepath, filename, anal_type, ...) 
 {
+  id <- rlang::as_string(rlang::enexpr(id))
+  col_group <- rlang::as_string(rlang::enexpr(col_group))
+  col_order <- rlang::as_string(rlang::enexpr(col_order))
+  
+  dots <- rlang::enexprs(...)
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
+  
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
   }
@@ -215,127 +225,26 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   }
   
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_group <- rlang::as_string(rlang::enexpr(col_group))
-  col_order <- rlang::as_string(rlang::enexpr(col_order))
-  
-  dots <- rlang::enexprs(...)
-  lang_dots    <- dots[unlist(lapply(dots, is.language))]
-  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
-  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
-  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
-  
-  ## Preparation
-  tempdata <- df |>
-    filters_in_call(!!!filter_dots) |>
-    arrangers_in_call(!!!arrange_dots) |>
-    prepDM(id = !!id, scale_log2r = scale_log2r, 
-           sub_grp = label_scheme_sub[["Sample_ID"]], 
-           anal_type = anal_type, 
-           rm_allna = TRUE)
-  dfR <- tempdata[["log2R"]]
-  dfI   <- tempdata[["Intensity"]]
-  rm(list = "tempdata")
-  
-  label_scheme_sub <- label_scheme_sub |>
-    dplyr::filter(Sample_ID %in% colnames(dfR))
-  
-  if (all(nas <- is.na(ords <- label_scheme_sub[[col_order]]))) {
-    stop("Specify the order of data groups under column '", col_order, "'.")
-  } else if (any(nas)) {
-    message("NA entries removed under '", col_order, "' removed:\n")
-    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
-    label_scheme_sub <- label_scheme_sub[!nas, ]
-  }
-  
-  if (any(nas <- is.na(grps <- label_scheme_sub[[col_group]]))) {
-    message("NA entries removed under '", col_group, "' removed:\n")
-    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
-    label_scheme_sub <- label_scheme_sub[!nas, ]
-  }
-  
-  message("Summary of data groups and orders: \n")
-  print(tibble::tibble(
-    !!col_group := label_scheme_sub[[col_group]], 
-    !!col_order := label_scheme_sub[[col_order]],))
-  rm(list = c("nas", "grps", "ords"))
-  
   ## Data aggregation by groups
-  mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
-  grps  <- label_scheme_sub[[col_group]][mts]
-  ugrps <- unique(grps)
-  ugrps <- ugrps[!is.na(ugrps)]
-  
-  fcts <- label_scheme_sub |>
-    dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
-    dplyr::arrange(.data[[col_order]]) |>
-    dplyr::pull(.data[[col_group]])
-  sids <- label_scheme_sub[["Sample_ID"]]
-  
-  if (impute_group_na) {
-    ans <- base_sigtest_y(
-      dfR = dfR, dfI = dfI, elements = ugrps, key_col = col_group, 
-      label_scheme_sub_sub = label_scheme_sub, seed = 1234L)
-    dfsR <- ans[["log2R"]]
-    dfsI <- ans[["Intensity"]]
-    ys_base <- ans[["baseline"]]
-    rm(list = "ans")
-    
-    mapply(function (x, y) {
-      stopifnot(identical(rownames(x), rownames(y)))
-      stopifnot(identical(colnames(x), colnames(y)))
-    }, dfsR, dfsI)
-    
-    ans2 <- impute_baseline_ints(
-      dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
-      ys_base = ys_base, sample_ids = sids, impute_low_qualities = TRUE)
-    dfR <- ans2[["log2R"]]
-    dfI <- ans2[["Intensity"]]
-    rm(list = "ans2")
-    
-    # Separate data by groups
-    ans3 <- lapply(ugrps, function (x) {
-      sids_sub <- label_scheme_sub |>
-        dplyr::filter(.data[[col_group]] %in% x) |>
-        dplyr::pull(Sample_ID)
-      
-      oks <- sids %in% sids_sub
-      dfR_sub <- dfR[, oks, drop = FALSE]
-      dfI_sub <- dfI[, oks, drop = FALSE]
-      
-      list(log2R = dfR_sub, Intensity = dfI_sub)
-    })
-    names(ans3) <- ugrps
-    dfsR <- lapply(ans3, `[[`, "log2R")
-    dfsI <- lapply(ans3, `[[`, "Intensity")
-    n_samples <-lengths(dfsR)
-    rm(list = "ans3")
+  res <- prepTrend(
+    df = df, id = id, col_group = col_group, col_order = col_order, 
+    label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
+    scale_log2r = scale_log2r, complete_cases = complete_cases, 
+    impute_na = impute_na, anal_type = anal_type, 
+    p_outlier = p_outlier, group_renorm_by = FALSE, ...)
+  df_mean_log2r <- res$df_mean_log2r
+  df_mean_int <- res$df_mean_int
+  dfR <- res$dfR
+  dfI <- res$dfI
+  sids <- res$sids
+  grps <- res$grps
+  ugrps <- res$ugrps
+  n_samples <- res$n_samples
+  label_scheme_sub <- res$label_scheme_sub
+  fcts <- res$fcts
+  dots <- res$dots
+  rm(list = "res")
 
-    df_mean_log2r <- do.call(cbind, lapply(dfsR, rowMeans, na.rm = TRUE))
-    df_mean_int <- do.call(cbind, lapply(dfsI, rowMeans, na.rm = TRUE))
-  } else {
-    dfsR  <- lapply(ugrps, function (g) {
-      rowMeans(dfR[, which(grps == g), drop = FALSE], na.rm = TRUE)
-    })
-    df_mean_log2r <- do.call(cbind, dfsR)
-    colnames(df_mean_log2r) <- ugrps
-    
-    dfsI  <- lapply(ugrps, function (g) {
-      rowMeans(dfI[, which(grps == g), drop = FALSE], na.rm = TRUE)
-    })
-    df_mean_int <- do.call(cbind, dfsI)
-    colnames(df_mean_int) <- ugrps
-  }
-  
-  df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
-  df_mean_int   <- data.frame(df_mean_int[, fcts, drop = FALSE])
-  
-  df_mean_int <- log10(df_mean_int) |>
-    tibble::rownames_to_column(id)
-  df_mean_int <- df_mean_int |>
-    tidyr::pivot_longer(-!!id, names_to = "group", values_to = "Log10Int") |>
-    tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
-  
   ## Analysis
   fn_suffix <- tools::file_ext(basename(filename))
   fn_prefix <- tools::file_path_sans_ext(filename)
@@ -392,16 +301,263 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
   
   saveRDS(
     list(log2R = dfR, Intensity = dfI, group = grps), 
-    file.path(filepath, 
-              paste0(sub("_nclust\\d+\\.txt", "", filename[[1]]), ".rds"))
+    file.path(
+      filepath, paste0(sub("_nclust\\d+\\.txt", "", filename[[1]]), ".rds"))
   )
   
   invisible(out)
 }
 
 
+#' Prepare data for trend analysis.
+#' 
+#' @param parallel Parallel processing or not.
+#' @param int_to_long Logical; if TRUE, pivot intensities to a long form.
+#' @inheritParams analTrend
+prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL, 
+                       label_scheme_sub = NULL, impute_group_na = TRUE, 
+                       scale_log2r = TRUE, complete_cases = FALSE, 
+                       impute_na = FALSE, anal_type = "Trend", 
+                       p_outlier = 0.05, group_renorm_by = NULL, 
+                       int_to_long = TRUE, ...)
+{
+  dots <- rlang::enexprs(...)
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
+
+  ## Preparation
+  tempdata <- df |>
+    filters_in_call(!!!filter_dots) |>
+    arrangers_in_call(!!!arrange_dots) |>
+    prepDM(id = !!id, scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub[["Sample_ID"]], 
+           anal_type = anal_type, 
+           rm_allna = TRUE)
+  dfR <- tempdata[["log2R"]]
+  dfI <- tempdata[["Intensity"]]
+  rm(list = "tempdata")
+
+  label_scheme_sub <- label_scheme_sub |>
+    dplyr::filter(Sample_ID %in% colnames(dfR))
+
+  tempdata <- make_renorm_data(
+    df_lgr = dfR, df_log2r = NULL, df_int = dfI, 
+    group_renorm_by = group_renorm_by, label_scheme_sub = label_scheme_sub, 
+    group_fct_int = NULL)
+  dfR <- tempdata[["x1"]]
+  dfI <- tempdata[["y1"]]
+  ok_group_renorm <- tempdata[["ok_group_renorm"]]
+  rm(list = "tempdata")
+  
+  if (all(nas <- is.na(ords <- label_scheme_sub[[col_order]]))) {
+    stop("Specify the order of data groups under column '", col_order, "'.")
+  } else if (any(nas)) {
+    message("NA entries removed under '", col_order, "' removed:\n")
+    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
+    label_scheme_sub <- label_scheme_sub[!nas, ]
+  }
+  
+  if (any(nas <- is.na(grps <- label_scheme_sub[[col_group]]))) {
+    message("NA entries removed under '", col_group, "' removed:\n")
+    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
+    label_scheme_sub <- label_scheme_sub[!nas, ]
+  }
+  
+  message("Summary of data groups and orders: \n")
+  print(tibble::tibble(
+    !!col_group := label_scheme_sub[[col_group]], 
+    !!col_order := label_scheme_sub[[col_order]],))
+  rm(list = c("nas", "grps", "ords"))
+  
+  ## Data aggregation by groups
+  mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
+  grps  <- label_scheme_sub[[col_group]][mts]
+  ugrps <- unique(grps)
+  ugrps <- ugrps[!is.na(ugrps)]
+  
+  fcts <- label_scheme_sub |>
+    dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
+    dplyr::arrange(.data[[col_order]]) |>
+    dplyr::pull(.data[[col_group]])
+  sids <- label_scheme_sub[["Sample_ID"]]
+  
+  dfN <- local({
+    ans <- sep_data_by_group(
+      elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
+      label_scheme = label_scheme_sub)
+    dfsI <- lapply(ans, `[[`, "Intensity")
+    n_nas <- lapply(dfsI, function (x) rowSums(!is.na(x)))
+    do.call(cbind, n_nas)
+  })
+
+  if (impute_group_na) {
+    ans1 <- base_sigtest_y(
+      dfR = dfR, dfI = dfI, elements = ugrps, key_col = col_group, 
+      label_scheme_sub_sub = label_scheme_sub, seed = 1234L)
+    dfsR <- ans1[["log2R"]]
+    dfsI <- ans1[["Intensity"]]
+    ys_base <- ans1[["baseline"]]
+    rm(list = "ans1")
+    
+    mapply(function (x, y) {
+      stopifnot(identical(rownames(x), rownames(y)))
+      stopifnot(identical(colnames(x), colnames(y)))
+    }, dfsR, dfsI)
+    
+    # Update dfR and dfI with baseline imputation
+    ans2 <- impute_baseline_ints(
+      dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
+      ys_base = ys_base, sample_ids = sids, impute_low_qualities = TRUE)
+    dfR <- ans2[["log2R"]]
+    dfI <- ans2[["Intensity"]]
+    rm(list = c("ans2", "dfsR", "dfsI", "ys_base"))
+  }
+  
+  # Group-separate data based on updated dfR and dfI
+  ans <- sep_data_by_group(
+    elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
+    label_scheme = label_scheme_sub)
+  dfsR <- lapply(ans, `[[`, "log2R")
+  dfsI <- lapply(ans, `[[`, "Intensity")
+  n_samples <-lengths(dfsR)
+  rm(list = "ans")
+  
+  if (!identical(names(dfsR), ugrps)) {
+    stop("Developer: mismatched group IDs.")
+  }
+  
+  n_cores <- parallel::detectCores() - 1L
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  
+  parallel::clusterExport(
+    cl,
+    c("locate_vec_outlier"), 
+    envir = environment(proteoQ:::locate_vec_outlier))
+
+  if (p_outlier < 1.0) {
+    for (i in seq_along(dfsR)) {
+      ans <- parallel::parLapply(
+        cl, 
+        apply(dfsR[[i]], 1, identity, simplify = FALSE), # Row-split
+        locate_vec_outlier, 
+        p = p_outlier, k = 1L
+      ) |>
+        dplyr::bind_rows()
+
+      # Update outliers
+      nas <- is.na(ans)
+      dfsI[[i]][nas] <- NA_real_
+      dfsR[[i]][nas] <- NA_real_
+    }
+    rm(list = "ans")
+  }
+  parallel::stopCluster(cl)
+  
+  df_mean_log2r <- do.call(cbind, lapply(dfsR, rowMeans, na.rm = TRUE))
+  df_mean_int   <- do.call(cbind, lapply(dfsI, rowMeans, na.rm = TRUE))
+  df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
+  df_mean_int   <- data.frame(df_mean_int[, fcts, drop = FALSE])
+  nans <- sapply(df_mean_log2r, is.nan)
+  df_mean_log2r[nans] <- NA_real_
+  df_mean_int[nans] <- NA_real_
+  rm(list = "nans")
+  
+  df_mean_int <- log10(df_mean_int) |>
+    tibble::rownames_to_column(id)
+  
+  if (int_to_long) {
+    df_mean_int <- df_mean_int |>
+      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "Log10Int") |>
+      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+  }
+
+  list(
+    df_mean_log2r = df_mean_log2r, df_mean_int = df_mean_int, 
+    dfR = dfR, dfI = dfI, dfN = dfN, grps = grps, ugrps = ugrps, 
+    sids = sids, n_samples = n_samples, fcts = fcts, 
+    label_scheme_sub = label_scheme_sub, dots = dots)
+}
+
+
+#' Renormalize data by group.
+#' 
+#' For defined scope of data.
+#' 
+#' @param df_lgr A data frame of log2Ratios.
+#' @param df_log2r A data frame of log2Ratios with clustering difference made
+#'   for heat map visualization.
+#' @param df_int A data frame of intensities.
+#' @param label_scheme_sub Metadata.
+#' @inheritParams prnHM
+make_renorm_data <- function (
+    df_lgr = NULL, df_log2r = NULL, df_int = NULL, group_renorm_by = NULL, 
+    group_fct_int = NULL, label_scheme_sub = NULL)
+{
+  ok_group_renorm <- isTRUE(group_renorm_by %in% names(label_scheme_sub)) && 
+    length(group_renorm_by) == 1L
+  
+  if (!ok_group_renorm) {
+    return(
+      list(x1 = df_lgr, y1 = df_int, x2 = df_log2r, ok_group_renorm = FALSE))
+  }
+  
+  grps    <- label_scheme_sub[[group_renorm_by]]
+  ugrps   <- unique(grps)
+  n_ugrps <- length(ugrps)
+  
+  if (is.null(group_fct_int)) {
+    group_fct_int <- rep_len(1L, n_ugrps)
+    ok_scale_int <- FALSE
+  } else {
+    if (length(group_fct_int) == n_ugrps) {
+      nms_grp <- names(group_fct_int)
+      ord <- match(ugrps, nms_grp)
+      
+      if (length(bads <- nms_grp[is.na(ord)])) {
+        warning("Group names not found in 'group_fct_int': ", 
+                paste(bads, collapse = ", "))
+        ok_scale_int <- FALSE
+      } else {
+        group_fct_int <- group_fct_int[ord]
+        ok_scale_int <- TRUE
+      }
+    } else {
+      warning("Mismatches in the length of 'group_fct_int' and the number ", 
+              "of unique groups under column", group_renorm_by)
+      group_fct_int <- rep_len(1L, n_ugrps)
+      ok_scale_int <- FALSE
+    }
+  }
+  
+  for (i in seq_along(ugrps)) {
+    cols <- grps == ugrps[[i]]
+    
+    if (!is.null(df_lgr)) {
+      dfx  <- df_lgr[, cols, drop = FALSE]
+      df_lgr[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+    }
+    
+    if (!is.null(df_log2r)) {
+      dfx  <- df_log2r[, cols, drop = FALSE]
+      df_log2r[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+    }
+    
+    if (ok_scale_int && !is.null(df_int)) {
+      dfy <- df_int[, cols, drop = FALSE] * group_fct_int[[i]]
+      df_int[, cols] <- dfy
+      df_int[, cols] <- dfy / rowMeans(dfy, na.rm = TRUE)
+    }
+  }
+  
+  list(x1 = df_lgr, y1 = df_int, x2 = df_log2r, ok_group_renorm = TRUE)
+}
+
+
 #' Plots trends
-#'
+#' 
+#' @param panel_ids Panel IDs for plotting.
 #' @inheritParams plot_prnTrend
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -409,7 +565,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, 
+plotTrend <- function(id, col_group = NULL, col_order = NULL, label_scheme_sub, 
+                      n_clust = NULL, panel_ids = NULL, 
                       scale_log2r, complete_cases, impute_na, 
                       df2 = NULL, filepath, filename, theme, ...) 
 {
@@ -420,8 +577,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-  # find input df2 ---------------------------
-  # pat <- "Trend_[ONZ]_.*nclust\\d+.*\\.txt$"
+  ## find input df2
   pat <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
   ins <- list.files(path = filepath, pattern = pat)
   
@@ -457,11 +613,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     	    as.numeric() %>% 
     	    `names<-`(ins)
     	  
-    	  n_clust2 <- n_clust %>% .[. %in% possibles]
-    	  
-    	  df2 <- possibles %>% 
-    	    .[. %in% n_clust2] %>% 
-    	    names(.)	    
+    	  n_clust2 <- n_clust[n_clust %in% possibles]
+    	  df2 <- names(possibles[possibles %in% n_clust2])	    
   	  })
   	  
   	  if (!length(df2)) {
@@ -473,7 +626,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   } 
   else {
     local({
-      non_exists <- df2 %>% .[! . %in% ins]
+      non_exists <- df2[!df2 %in% ins]
       
       if (length(non_exists)) {
         stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
@@ -496,7 +649,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-  # plot data ---------------------------
+  ## plot data
   proteoq_trend_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
     axis.ticks.x  = element_blank(), 
@@ -509,7 +662,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     panel.grid.minor.x = element_blank(),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+    # panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+    panel.background = element_rect(fill = "#f5f5f5", colour = NA), 
     
     strip.text.x = element_text(size = 24, colour = "black", angle = 0),
     strip.text.y = element_text(size = 24, colour = "black", angle = 90),
@@ -529,142 +683,183 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     theme <- proteoq_trend_theme
   }
 
-  purrr::walk2(df2, custom_prefix, ~ {
-    n <- as.numeric(gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x))
-    out_nm <- paste0(.y, fn_prefix, "_nclust", n, ".", fn_suffix)
-    src_path <- file.path(filepath, .x)
+  mapply(
+    plotTrend_sub, 
+    df2 = df2, custom_prefix = custom_prefix, 
+    MoreArgs = list(
+      fn_prefix = fn_prefix, 
+      fn_suffix = fn_suffix, 
+      df = df, 
+      id = id, 
+      complete_cases = complete_cases, 
+      panel_ids = panel_ids, 
+      filepath = filepath, 
+      label_scheme_sub = label_scheme_sub, 
+      theme = theme, 
+      dots = dots)
+  )
+}
 
-    df <- tryCatch(
-      readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
-      error = function(e) NA)
 
-    if (!is.null(dim(df)))
-      message(paste("File loaded:", src_path))
-    else
-      stop(paste("Non-exist file or directory:", src_path))
+#' Plots trends at a given \code{n_clust}.
+#' 
+#' @param custom_prefix A custom filename prefix.
+#' @param fn_prefix A file name prefix.
+#' @param fn_suffix A file name suffix.
+#' @param filepath An output file path. 
+#' @param df A data frame.
+#' @param label_scheme_sub A metadata subset.
+#' @param dots Variable arguments.
+#' @inheritParams plotTrend
+#' @importFrom magrittr %>% %T>% 
+#' @import dplyr ggplot2 RColorBrewer
+plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id, 
+                           complete_cases = FALSE, panel_ids = NULL, 
+                           filepath = NULL, label_scheme_sub = NULL, 
+                           theme = NULL, dots = NULL)
+{
+  n <- as.numeric(gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", df2))
+  out_nm <- paste0(custom_prefix, fn_prefix, "_nclust", n, ".", fn_suffix)
+  src_path <- file.path(filepath, df2)
+  
+  df <- tryCatch(
+    readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
+    error = function(e) NA)
 
-    col_group <- df[["col_group"]][1]
-    col_order <- df[["col_order"]][1]
+  if (!is.null(dim(df)))
+    message(paste("File loaded:", src_path))
+  else
+    stop(paste("Non-exist file or directory:", src_path))
+  
+  df <- df |>
+    dplyr::mutate(cluster = as.integer(cluster))
+  
+  if (!is.null(panel_ids)) {
+    df <- df |>
+      dplyr::filter(cluster %in% panel_ids)
+    df <- df |>
+      dplyr::mutate(cluster = factor(cluster, levels = panel_ids))
+  } else {
+    df <- df |>
+      dplyr::mutate(cluster = factor(cluster))
+  }
+  
+  col_group <- df[["col_group"]][1]
+  col_order <- df[["col_order"]][1]
+  
+  levs <- label_scheme_sub |>
+    dplyr::arrange(!!rlang::sym(col_order)) |>
+    dplyr::select(!!rlang::sym(col_group)) |>
+    unique() |>
+    unlist()
+  
+  local({
+    levs_df  <- levels(df$group)
+    mis_levs <- levs_df[!levs_df %in% levs]
     
-    Levels <- label_scheme_sub %>% 
-      dplyr::arrange(!!rlang::sym(col_order)) %>% 
-      dplyr::select(!!rlang::sym(col_group)) %>% 
-      unique() %>% 
-      unlist()
-    
-    local({
-      levs_df <- levels(df$group)
-      mis_levs <- levs_df %>% .[! . %in% Levels]
-
-      if (length(mis_levs)) {
-        if (length(mis_levs) > 12) 
-          mis_levs <- c(mis_levs[1:12], "...")
-        
-        stop("\n--- Mismatches in data levels ---\n\n", 
-                "Levels in `", .x, "`:\n",
-             paste(mis_levs, collapse = ", "), 
-             "\n\n", 
-             "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
-             paste(Levels, collapse = ", "), "\n\n", 
-             "??? Check for consistency in the setting of `anal_prnTrend(col_group = ...)` ", 
-             "and `plot_prnTrend(col_group = ...)` for file `", 
-             .x, "`.")
-      }
-    })
-    
-    if (length(dots)) {
-      if (any(grepl("^filter_", names(dots)))) {
-        stop("Primary `filter_` depreciated; use secondary `filter2_`.")
-      }
+    if (length(mis_levs)) {
+      if (length(mis_levs) > 12L) 
+        mis_levs <- c(mis_levs[1:12], "...")
+      
+      stop("\n--- Mismatches in data levels ---\n\n", 
+           "Levels in `", df2, "`:\n",
+           paste(mis_levs, collapse = ", "), 
+           "\n\n", 
+           "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
+           paste(levs, collapse = ", "), "\n\n", 
+           "??? Check for consistency in the setting of `anal_prnTrend(col_group = ...)` ", 
+           "and `plot_prnTrend(col_group = ...)` for file `", 
+           df2, "`.")
     }
-
-    filter2_dots <- dots %>% 
-      .[purrr::map_lgl(., is.language)] %>% 
-      .[grepl("^filter2_", names(.))]
-    
-    arrange2_dots <- dots %>% 
-      .[purrr::map_lgl(., is.language)] %>% 
-      .[grepl("^arrange2_", names(.))]
-    
-    dots <- dots %>% 
-      .[! . %in% c(filter2_dots, arrange2_dots)]
-    
-    df <- df %>% 
-      dplyr::filter(group %in% Levels) %>% 
-      filters_in_call(!!!filter2_dots) %>% 
-      arrangers_in_call(!!!arrange2_dots) %>% 
-      dplyr::mutate(group = factor(group, levels = Levels))
-    
-    rm(list = c("filter2_dots", "arrange2_dots"))
-
-    if (complete_cases) {
-      df <- df[complete.cases(df), ]
+  })
+  
+  if (length(dots)) {
+    if (any(grepl("^filter_", names(dots)))) {
+      stop("Primary `filter_` depreciated; use secondary `filter2_`.")
     }
+  }
+  
+  lang_dots     <- dots[unlist(lapply(dots, is.language))]
+  filter2_dots  <- lang_dots[grepl("^filter2_", names(lang_dots))]
+  arrange2_dots <- lang_dots[grepl("^arrange2_", names(lang_dots))]
+  dots          <- dots[!dots %in% c(filter2_dots, arrange2_dots)]
 
-    ymin <- eval(dots$ymin, envir = rlang::caller_env())
-    ymax <- eval(dots$ymax, envir = rlang::caller_env())
-    ybreaks <- eval(dots$ybreaks, envir = rlang::caller_env())
-    ncol <- dots$ncol
-    nrow <- dots$nrow
-    width <- dots$width
-    height <- dots$height
-    color <- dots$color
-    alpha <- dots$alpha
-    
-    if (is.null(ymin)) ymin <- -2
-    if (is.null(ymax)) ymax <- 2
-    if (is.null(ybreaks)) ybreaks <- 1
-    if (is.null(ncol)) ncol <- 1
-    if (is.null(nrow)) nrow <- 2
-    if (is.null(color)) color <- "#f0f0f0"
-    if (is.null(alpha)) alpha <- .25
-    
-    if (is.null(ncol)) {
-      if (is.null(nrow)) {
-        ncol <- 4L
-        nrow <- ceiling(n / ncol)
-      } else {
-        ncol <- ceiling(n / nrow)
-      }
-    } else {
+  df <- df |>
+    dplyr::filter(group %in% levs) |>
+    filters_in_call(!!!filter2_dots) |>
+    arrangers_in_call(!!!arrange2_dots) |>
+    dplyr::mutate(group = factor(group, levels = levs))
+  
+  # rm(list = c("filter2_dots", "arrange2_dots"))
+  
+  if (complete_cases) {
+    df <- df[complete.cases(df), ]
+  }
+  
+  ymin    <- eval(dots$ymin, envir = rlang::caller_env())
+  ymax    <- eval(dots$ymax, envir = rlang::caller_env())
+  ybreaks <- eval(dots$ybreaks, envir = rlang::caller_env())
+  ncol    <- dots$ncol
+  nrow    <- dots$nrow
+  width   <- dots$width
+  height  <- dots$height
+  color   <- dots$color
+  alpha   <- dots$alpha
+  
+  if (is.null(ymin)) ymin <- -2
+  if (is.null(ymax)) ymax <- -ymin
+  if (is.null(ybreaks)) ybreaks <- 1
+  if (is.null(ncol)) ncol <- 1
+  if (is.null(nrow)) nrow <- 2
+  # if (is.null(color)) color <- "#f0f0f0"
+  if (is.null(color)) color <- "#2c7fb8"
+  if (is.null(alpha)) alpha <- .25
+  
+  if (is.null(ncol)) {
+    if (is.null(nrow)) {
+      ncol <- 4L
       nrow <- ceiling(n / ncol)
+    } else {
+      ncol <- ceiling(n / nrow)
     }
-    
-    dots$ymin <- NULL
-    dots$ymax <- NULL
-    dots$ybreaks <- NULL
-    dots$ncol <- NULL
-    dots$nrow <- NULL
-    dots$color <- NULL
-    dots$alpha <- NULL
-    
-    x_label <- expression("Ratio ("*log[2]*")")
-    
-    n_clust <- length(unique(df$cluster))
-    if (is.null(width)) width <- n_clust * 8 / nrow + 2
-    if (is.null(height)) height <- 8 * nrow
-
-    dots$width <- NULL
-    dots$height <- NULL
-
-    p <- ggplot(data = df,
-                mapping = aes(x = group, y = log2FC, group = !!rlang::sym(id))) +
-      geom_line(colour = color, alpha = alpha) + 
-      scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
-      labs(title = "", x = "", y = x_label) +
-      theme
-    
-    p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
-    
-    ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
-    
-    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(out_nm)),
-                      plot = p, 
-                      width = width, 
-                      height = height, 
-                      !!!ggsave_dots)) %>% 
-      rlang::eval_tidy()
-  }, complete_cases = complete_cases)
+  } else {
+    nrow <- ceiling(n / ncol)
+  }
+  
+  dots$ymin <- NULL
+  dots$ymax <- NULL
+  dots$ybreaks <- NULL
+  dots$ncol <- NULL
+  dots$nrow <- NULL
+  dots$color <- NULL
+  dots$alpha <- NULL
+  
+  x_label <- expression("Ratio ("*log[2]*")")
+  
+  n_clust <- length(unique(df$cluster))
+  if (is.null(width)) width <- n_clust * 8 / nrow + 2
+  if (is.null(height)) height <- 8 * nrow
+  
+  dots$width <- NULL
+  dots$height <- NULL
+  
+  p <- ggplot(data = df,
+              mapping = aes(x = group, y = log2FC, group = !!rlang::sym(id))) +
+    geom_line(colour = color, alpha = alpha) + 
+    scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
+    labs(title = "", x = "", y = x_label) +
+    theme
+  
+  p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
+  
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+  
+  rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(out_nm)),
+                    plot = p, 
+                    width = width, 
+                    height = height, 
+                    !!!ggsave_dots)) |>
+    rlang::eval_tidy()
 }
 
 
@@ -688,6 +883,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  argument \code{centers} in \code{\link[e1071]{cmeans}}.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
+#'@param p_outlier Type-I error in outlier assessment. Set p = 1.0 to skip
+#'  outlier removals.
 #'@param filepath Use system default.
 #'@param type The type of data: either \code{Protein} or \code{Peptide}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -705,70 +902,69 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  automatically.
 #'@return Classified \code{log2FC}.
 #'@import dplyr ggplot2
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@example inst/extdata/examples/prnTrend_.R
 #'
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
-#'  analysis and visualization \cr \code{\link{cluego}} for the visualization of
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} via
-#'  \code{Cytoscape/ClueGO} \cr \code{\link{anal_pepNMF}},
-#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
-#'  analysis and visualization \cr
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
+#'\code{\link{purgePep}} for extended examples in data purging \cr
+#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+#'histogram visualization. \cr \code{\link{extract_raws}} and
+#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'
+#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'missing value imputation \cr
+#'
+#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+#'trend analysis and visualization \cr \code{\link{cluego}} for the
+#'visualization of \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}}
+#'via \code{Cytoscape/ClueGO} \cr \code{\link{anal_pepNMF}},
+#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+#'and visualization \cr
+#'
+#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
+#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'
+#'\emph{Column keys in PSM, peptide and protein outputs} \cr
+#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
@@ -776,6 +972,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
                            n_clust = NULL, type = "protein", 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, impute_group_na = TRUE, 
+                           p_outlier = .05, 
                            df = NULL, filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
@@ -871,6 +1068,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
             filename = !!filename,
             anal_type = "Trend")(choice = choice, 
                                  n_clust = n_clust, 
+                                 p_outlier = p_outlier, 
                                  ...)
 }
 
@@ -900,6 +1098,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{Protein_Trend_Z_nclust6.txt} etc. See also \code{\link{prnHist}} for
 #'  the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 #'  of \code{df} and \code{df2}.
+#'@param panel_ids A subset of panel IDs for visualization.
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with
 #'  \code{_N[...].txt} in name will be taken. An error will be thrown if no
@@ -908,6 +1107,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
 #'  \code{_impNA} in name will be taken. An error will be thrown if no files are
 #'  matched under given conditions.
+#'@param p_outlier A type-I error in outlier assessment.
 #'@param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 #'  available cluster IDs will be used.
@@ -928,65 +1128,67 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'
 #'@example inst/extdata/examples/prnTrend_.R
 #'
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
+#'\code{\link{purgePep}} for extended examples in data purging \cr
+#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+#'histogram visualization. \cr \code{\link{extract_raws}} and
+#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'
+#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'missing value imputation \cr
+#'
+#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+#'and visualization \cr
+#'
+#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology}} \cr
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'  signatures} \cr
+#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'
+#'\emph{Column keys in PSM, peptide and protein outputs} \cr
+#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
+                           panel_ids = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
                            df2 = NULL, filename = NULL, theme = NULL, ...) 
@@ -1034,6 +1236,7 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
             filepath = NULL, 
             filename = !!filename,
             anal_type = "Trend_line")(n_clust = n_clust, 
+                                      panel_ids = panel_ids, 
                                       theme = theme, ...)
 }
 

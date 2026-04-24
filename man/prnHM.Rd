@@ -25,6 +25,7 @@ pepHM(
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
+  dot_plot = TRUE,
   hc_method_rows = "complete",
   hc_method_cols = "complete",
   p_dist_rows = 2,
@@ -60,6 +61,7 @@ prnHM(
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
+  dot_plot = TRUE,
   hc_method_rows = "complete",
   hc_method_cols = "complete",
   p_dist_rows = 2,
@@ -153,6 +155,8 @@ side of the indicated plot. The default is NULL without row annotation.}
 \item{xmax}{Numeric; the maximum  x at a log2 scale. The default is 1.}
 
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
+
+\item{dot_plot}{Logical; Plot dot-plot or not.}
 
 \item{hc_method_rows}{A character string; the same agglomeration method for
 \code{\link[stats]{hclust}} of data rows. The default is \code{complete}.}

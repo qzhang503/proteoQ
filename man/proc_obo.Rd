@@ -2,7 +2,7 @@
 % Please edit documentation in R/go.R
 \name{proc_obo}
 \alias{proc_obo}
-\title{Helper to save `obo` without header}
+\title{Helper to save obo without header}
 \usage{
 proc_obo(
   db_path,
@@ -23,5 +23,5 @@ c("biological_process", "cellular_component")}, terms of
 \code{molecular_function} will be excluded.}
 }
 \description{
-Helper to save `obo` without header
+Helper to save obo without header
 }

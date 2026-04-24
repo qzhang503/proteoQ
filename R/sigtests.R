@@ -192,6 +192,8 @@ prepFml <- function(formula, label_scheme_sub, ...)
        key_col = key_col, 
        random_vars = random_vars,
        elements = elements, 
+       contrs = contrs, 
+       new_contrs = new_contrs, 
        sub_contrs = sub_contrs, 
        label_scheme_sub_sub = label_scheme_sub_sub)
 }
@@ -233,10 +235,9 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 {
   nms <- rownames(pvals)
   
-  pass_pvals <- purrr::map(pvals, ~ .x <= pval_cutoff)
-  pass_fcs <- purrr::map(log2rs, ~ abs(.x) >= log2(logFC_cutoff))
-  
-  pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
+  pass_pvals <- lapply(pvals, `<=`, pval_cutoff)
+  pass_fcs   <- lapply(log2rs, function (x) abs(x) >= log2(logFC_cutoff))
+  pass_both  <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
     purrr::map(~ ifelse(!.x, NA, .x))
   
   res_padj <- pvals %>%
@@ -253,9 +254,9 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
     tibble::column_to_rownames()
   
   log2rs <- log2rs %>%
-    to_linfc() %>%
-    `colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
-    dplyr::bind_cols(log2rs, .) %>%
+    # to_linfc() %>%
+    # `colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
+    # dplyr::bind_cols(log2rs, .) %>%
     dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2L) %>%
     `rownames<-`(nms)
   
@@ -376,10 +377,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       ans2 <- impute_baseline_ints(
         dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
         ys_base = ys_base, sample_ids = sids)
-      
       dfI <- ans2[["Intensity"]]
       dfR <- ans2[["log2R"]]
-
       rm(list = "ans2")
       
       dfI <- dfI[, sids, drop = FALSE]
@@ -554,29 +553,30 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   
   df_op <- dplyr::bind_rows(res_lm, bads)
   
-  df_op <- df_op |>
-    dplyr::mutate(
-      dplyr::across(
-        dplyr::matches("^(pVal \\(|adjP \\()"),
-        function (x) tidyr::replace_na(as.numeric(x), 1)
-      )
-    )
-  
-  df_op <- df_op |>
-    dplyr::mutate(
-      dplyr::across(
-        dplyr::matches("^log2Ratio \\(", ),
-        function (x) tidyr::replace_na(x, 0.0)
-      )
-    )
-  
-  df_op <- df_op |>
-    dplyr::mutate(
-      dplyr::across(
-        dplyr::matches("^FC \\(", ),
-        function (x) tidyr::replace_na(x, 1.0)
-      )
-    )
+  if (replace_na_vals <- FALSE) {
+    df_op <- df_op |>
+      dplyr::mutate(
+        dplyr::across(
+          dplyr::matches("^(pVal \\(|adjP \\()"),
+          function (x) tidyr::replace_na(as.numeric(x), 1)
+        ))
+    
+    df_op <- df_op |>
+      dplyr::mutate(
+        dplyr::across(
+          dplyr::matches("^log2Ratio \\(", ),
+          function (x) tidyr::replace_na(x, 0.0)
+        ))
+    
+    df_op <- df_op |>
+      dplyr::mutate(
+        dplyr::across(
+          dplyr::matches("^FC \\(", ),
+          function (x) tidyr::replace_na(x, 1.0)
+        ))
+  }
+
+  df_op
 }
 
 
@@ -690,7 +690,8 @@ sigTest <- function(df, id, label_scheme_sub,
   # record the `scale_log2r` status; otherwise, need to indicate it in a way
   # for example, `_N` or `_Z` in file names
   local({
-    dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
+    dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, 
+               showWarnings = FALSE)	  
     
     type <- if (data_type == "Peptide")
       "pep"
@@ -714,7 +715,7 @@ sigTest <- function(df, id, label_scheme_sub,
     dplyr::mutate(!!id := forcats::fct_na_value_to_level(!!rlang::sym(id))) %>% 
     dplyr::right_join(df, ., by = id) 
   
-  df_op2 <- df_op %>%
+  tempdata <- df_op %>%
     dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
                      scientific = TRUE, digits = 2L) %>%
     dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
@@ -724,7 +725,7 @@ sigTest <- function(df, id, label_scheme_sub,
 
   wb <- createWorkbook("proteoQ")
   addWorksheet(wb, sheetName = "Results")
-  openxlsx::writeData(wb, sheet = "Results", df_op2)
+  openxlsx::writeData(wb, sheet = "Results", tempdata)
   saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
                overwrite = TRUE) 
   
@@ -800,9 +801,9 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
 #' @param replace_lows_by A replacement value of log2Ratios at
 #'   \code{impute_low_qualities = TRUE}.
 #' @importFrom magrittr %>%
-impute_baseline_ints <- function (dfsR, dfsI, dfR, dfI, ys_base, sample_ids,
-                                  impute_low_qualities = FALSE,
-                                  replace_lows_by = 0.0, max_fold = 100)
+impute_baseline_ints <- function (
+    dfsR, dfsI, dfR, dfI, ys_base, sample_ids,impute_low_qualities = FALSE,
+    replace_lows_by = 0.0, max_fold = 100)
 {
   grps <- names(dfsR)
 
@@ -884,8 +885,6 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
                            label_scheme_sub_sub, perc_baseline_intensity = 1E-4, 
                            abs_baselne_intensity = 1E5, seed = NULL) 
 {
-  
-  
   sids <- colnames(dfR)
   rnms <- rownames(dfR)
   
@@ -896,18 +895,9 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
   )
   log10_gl_min <- log10(gl_min)
   
-  ans <- lapply(elements, function (x) {
-    sids_sub <- label_scheme_sub_sub |>
-      dplyr::filter(.data[[key_col]] %in% x) |>
-      dplyr::pull(Sample_ID)
-    
-    oks <- sids %in% sids_sub
-    dfR_sub <- dfR[, oks, drop = FALSE]
-    dfI_sub <- dfI[, oks, drop = FALSE]
-    
-    list(log2R = dfR_sub, Intensity = dfI_sub)
-  })
-  names(ans) <- elements
+  ans <- sep_data_by_group(
+    elements = elements, dfR = dfR, dfI = dfI, sids = sids, 
+    key_col = key_col, label_scheme = label_scheme_sub_sub)
   dfsR <- lapply(ans, `[[`, "log2R")
   dfsI <- lapply(ans, `[[`, "Intensity")
   n_samples <-lengths(dfsR)
@@ -986,6 +976,25 @@ find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5) {
   lx <- lx[oks2]
   ybar <- ybar[oks2]
   # plot(lx ~ ybar)
+  if (FALSE) {
+    ggplot(data.frame(x = lx, y = ybar), aes(x = x, y = y)) + 
+      geom_point(size = .1) + 
+      geom_smooth(method = "lm", se = FALSE, color = "#feb24c") +
+      scale_y_continuous(limits = c(5, 10)) +
+      scale_x_continuous(limits = c(6, 18)) +
+      annotate("text", 
+               x = Inf, y = -Inf, 
+               label = paste0("rho == ", 
+                              round(cor(lx, ybar, use = "complete.obs"), 3)),
+               parse = TRUE, 
+               hjust = 1.1, vjust = -0.5) +
+      labs(title = NULL, 
+           x = expression("Within-group variance ("*log[10]*")"), 
+           y = expression("Intensity ("*log[10]*")")) +
+      theme_bw()
+    
+    ggsave("~/intensity_variance_plot.png", width = 4, height = 4)
+  }
   coef(lm(lx ~ ybar))[[2]]
 }
 

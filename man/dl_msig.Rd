@@ -2,11 +2,11 @@
 % Please edit documentation in R/go.R
 \name{dl_msig}
 \alias{dl_msig}
-\title{Helper to download `gmt`}
+\title{Helper to download \code{gmt}}
 \usage{
 dl_msig(
   msig_url =
-    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.1.Hs/c2.all.v2026.1.Hs.entrez.gmt",
   db_path = "~/proteoQ/dbs/msig",
   overwrite = FALSE
 )
@@ -26,5 +26,5 @@ is \code{"~/proteoQ/dbs/msig"}.}
 default is FALSE.}
 }
 \description{
-Helper to download `gmt`
+Helper to download \code{gmt}
 }

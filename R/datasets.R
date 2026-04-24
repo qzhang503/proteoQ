@@ -1,8 +1,21 @@
+#' Gene homology across human, mouse and rat.
+#'
+#' A dataset containing human, moue and rat gene symbols.
+#'
+#' @format A list at a length of 21929
+#' \describe{
+#'   \item{hs_...}{human entries}
+#' }
+#' @source \url{https://www.informatics.jax.org/downloads/reports/index.html#homology}
+"gene_homo_slim"
+
+
 #' Entrez IDs of human molecular signatures.
 #'
-#' A dataset containing human entrez IDs by the gene sets of molecular signatures.
+#' A dataset containing human entrez IDs by the gene sets of molecular
+#' signatures.
 #'
-#' @format A list at a length of 5501 
+#' @format A list at a length of 5501
 #' \describe{
 #'   \item{hs_...}{human entries}
 #' }

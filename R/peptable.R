@@ -4607,6 +4607,20 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 
   # Collapse charge states (requires columns 'I000')
   df <- groupMZPepZ2(df)
+  
+  # Add counts of non-NA values
+  pat_int <- "^I[0-9]{3}[NC]{0,1}"
+  count_nna <- df |>
+    dplyr::select(dplyr::matches(pat_int)) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Ref\\.[0-9]+\\)$"))) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Empty\\.[0-9]+\\)$")))
+  df$count_nna <- rowSums(!is.na(count_nna))
+  
+  # Move intensity columns to the last
+  cols <- dirname(colnames(df)) != "."
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  cols <- grepl("^I000 \\(", colnames(df))
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
 
   # Add intensity and log2Ratio fields
   cols <- grepl("^I000 \\(", colnames(df))
@@ -4671,7 +4685,6 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
         save_call("makeProtDIANN")
     }, add = TRUE)
   
-  # ---
   fmls <- formals()
   type_int <- rlang::enexpr(type_int)
   type_int <- if (length(type_int) > 1L) "I" else rlang::as_string(type_int)
@@ -4684,7 +4697,6 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   if (length(type_int) != 1L) {
     stop("The length of `type_int` needs to be one.")
   }
-  # ---
   
   dots <- rlang::enexprs(...)
   
@@ -4746,9 +4758,19 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   df <- rm_diann_empties(df, label_scheme_full)
   df <- aggrLCMS_DIANN(df)
   
+  pat_int <- "^I[0-9]{3}[NC]{0,1}"
+  count_nna <- df |>
+    dplyr::select(dplyr::matches(pat_int)) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Ref\\.[0-9]+\\)$"))) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Empty\\.[0-9]+\\)$")))
+  df$count_nna <- rowSums(!is.na(count_nna))
+  
   # Move intensity columns to the last
   cols <- dirname(colnames(df)) != "."
   df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  cols <- grepl("^I000 \\(", colnames(df))
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  
   cols <- grepl("^I000 \\(", colnames(df))
   dfr  <- dfy <- df[, cols, drop = FALSE]
   dfrz <- dfrn <- dfr <- 

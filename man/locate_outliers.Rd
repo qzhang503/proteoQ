@@ -4,7 +4,7 @@
 \alias{locate_outliers}
 \title{Locates the positions of outliers}
 \usage{
-locate_outliers(df, range_colRatios)
+locate_outliers(df, range_colRatios = NULL)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}

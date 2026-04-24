@@ -4,7 +4,15 @@
 \alias{proc_gmt}
 \title{Helper to save \code{gmt}}
 \usage{
-proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
+proc_gmt(
+  species = "human",
+  abbr_species = "hu",
+  ortho_mart,
+  fn_gmt,
+  db_path,
+  filename,
+  save_rda = TRUE
+)
 }
 \arguments{
 \item{species}{Character string; the name of a species for the
@@ -45,6 +53,9 @@ is \code{"~/proteoQ/dbs/msig"}.}
 default, the name will be determined automatically at a given
 \code{species}; i.e., \code{msig_hs.rds} for \code{human} data. The file is
 saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
+
+\item{save_rda}{Logical; if TRUE, save an \code{rda} object for package
+\code{proteoQ}.}
 }
 \description{
 Helper to save \code{gmt}

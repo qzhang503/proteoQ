@@ -5,7 +5,7 @@
 \alias{c2_msig_hs}
 \title{Entrez IDs of human molecular signatures.}
 \format{
-A list at a length of 5501 
+A list at a length of 5501
 \describe{
   \item{hs_...}{human entries}
 }
@@ -17,6 +17,7 @@ A list at a length of 5501
 c2_msig_hs
 }
 \description{
-A dataset containing human entrez IDs by the gene sets of molecular signatures.
+A dataset containing human entrez IDs by the gene sets of molecular
+signatures.
 }
 \keyword{datasets}

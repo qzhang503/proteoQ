@@ -14,8 +14,9 @@
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #' @import dplyr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL, 
-                   type = "ratio", anal_type = NULL, rm_allna = FALSE) 
+prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, 
+                   sub_grp = NULL, type = "ratio", anal_type = NULL, 
+                   rm_allna = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
@@ -23,22 +24,22 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
   if (!nrow(df)) {
     stop("Zero row of data after subsetting.")
   }
-
+  
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (anal_type %in% c("ESGAGE", "GSVA")) {
     id <- "entrez"
   }
-
+  
   if ((anal_type %in% c("GSEA")) && (id != "gene")) {
     stop("Primary ID is not `gene`.")
   }
-
+  
   NorZ_ratios <- find_NorZ(scale_log2r)
-
+  
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
-
+  
   df <- df |>
     dplyr::ungroup() |>
     dplyr::filter(!duplicated(!!rlang::sym(id)),
@@ -48,7 +49,7 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
     stop("Zero row of data after the removals of duplicated or NA `", id, "`.")
   }
   
-  df <- df %>% 
+  df <- df |>
     dplyr::ungroup() %>% 
     { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
       else . } %>% 
@@ -57,8 +58,8 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
   if (!nrow(df)) {
     stop("All intensity are NA or 0 in the input data.")
   }
-
-  Levels <- sub_grp %>%
+  
+  levs <- sub_grp %>%
     as.character(.) %>%
     .[!grepl("^Empty\\.[0-9]+", .)]
   
@@ -67,12 +68,8 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
       dplyr::select(grep(NorZ_ratios, names(.)))
     colnames(dfR) <- gsub("^.* \\((.*)\\)$", "\\1", colnames(dfR))
     
-    # sids <- label_scheme$Sample_ID
-    # mts <- match(gsub("^.* \\((.*)\\)$", "\\1", colnames(dfR)), sids)
-    # colnames(dfR) <- sids[mts]
-
     dfR <- dfR[, names(dfR) %in% sub_grp, drop = FALSE]
-
+    
     # reference will drop with single reference
     non_trivials <- dfR %>% 
       dplyr::select(which(not_all_zero(.))) %>% 
@@ -84,12 +81,12 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
       warning("Samples with all NA entries being dropped: ", 
               paste(trivials, collapse = ", "))
     }
-
+    
     dfR <- dfR %>%
       dplyr::select(which(not_all_zero(.))) %>% 
-      dplyr::select(Levels[Levels %in% names(.)]) # ensure the same order  
+      dplyr::select(levs[levs %in% names(.)]) # ensure the same order  
   })
-
+  
   # dominated by log2R, no need to filter all-NA intensity rows
   dfI <- df %>%
     dplyr::select(grep("^N_I[0-9]{3}", names(.))) %>%
@@ -97,7 +94,7 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
     dplyr::select(which(names(.) %in% sub_grp)) %>%
     dplyr::select(which(not_all_zero(.))) %>%
     dplyr::select(which(names(.) %in% names(dfR))) %>%
-    dplyr::select(Levels[Levels %in% names(.)])
+    dplyr::select(levs[levs %in% names(.)])
   
   tempI <- dfI
   rownames(tempI) <- paste(rownames(tempI), "Intensity", sep = "@")

@@ -9,8 +9,19 @@ Dixon_outliers(x, p = 0.05)
 \arguments{
 \item{x}{A numeric vector.}
 
-\item{p}{P-value cut-off.}
+\item{p}{A p-value cut-off.}
 }
 \description{
 Outlier removals with Dixon's method
+}
+\examples{
+\donttest{
+library(proteoQ)
+x <- c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
+x <- c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
+x <- c(0.0000000, 0.0000000, 0.0000000, 0.2080097)
+x <- c(NA, NA, NA, 0.2080097)
+
+Dixon_outliers(x)
+}
 }
