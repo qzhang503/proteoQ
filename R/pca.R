@@ -9,7 +9,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      choice = "prcomp", type = "obs",
                      dimension = 2, folds = 1,
                      show_ids = TRUE, show_ellipses = FALSE,
-                     col_group = NULL,
+                     col_group = NULL, col_order = NULL, 
                      col_color = NULL, col_fill = NULL, col_shape = NULL,
                      col_size = NULL, col_alpha = NULL,
                      color_brewer = NULL, fill_brewer = NULL,
@@ -28,6 +28,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     stop("Empty metadata.")
 
   col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -131,6 +132,16 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       !!!anal_dots)
   
   df <- res$pca
+  
+  if (!(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))) {
+    df <- local({
+      df <- df |>
+        dplyr::arrange(!!col_order)
+      levs <- unique(df[[col_group]])
+      df <- df |>
+        dplyr::mutate(!!col_group := factor(!!col_group, levels = levs))
+    })
+  }
   
   # key `Label` used in `geom_lower_text()`
   df$Label <- if ("Sample_ID" %in% names(df)) 
@@ -591,11 +602,11 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #'
 #'@import purrr
 #'@export
-pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
-                    col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,
-                    color_brewer = NULL, fill_brewer = NULL,
-                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
-                    choice = c("prcomp"), 
+pepPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+                    col_color = NULL, col_fill = NULL, col_shape = NULL, 
+                    col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
+                    fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
+                    alpha_manual = NULL, choice = c("prcomp"), 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
@@ -627,6 +638,7 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -648,6 +660,7 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   info_anal(id = !!id,
             col_select = !!col_select, 
             col_group = !!col_group,
+            col_order = !!col_order, 
             col_color = !!col_color, 
             col_fill = !!col_fill,
             col_shape = !!col_shape, 
@@ -788,11 +801,11 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
-                    col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,
-                    color_brewer = NULL, fill_brewer = NULL,
-                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
-                    choice = c("prcomp"), 
+prnPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+                    col_color = NULL, col_fill = NULL, col_shape = NULL, 
+                    col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
+                    fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
+                    alpha_manual = NULL, choice = c("prcomp"), 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
@@ -824,6 +837,7 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -845,6 +859,7 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   info_anal(id = !!id,
             col_select = !!col_select, 
             col_group = !!col_group,
+            col_order = !!col_order, 
             col_color = !!col_color, 
             col_fill = !!col_fill,
             col_shape = !!col_shape, 

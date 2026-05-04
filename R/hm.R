@@ -310,6 +310,13 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   } else {
     colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
   }
+  
+  # Better use col_order
+  for (i in seq_along(ncol(annotation_col))) {
+    annot_i <- annotation_col[[i]]
+    annotation_col[[i]] <- factor(annot_i, levels = unique(annot_i))
+  }
+  rm(list = "annot_i")
 
   if ((!is.null(annot_colnames)) && 
       (length(annot_colnames) == length(annot_cols))) {

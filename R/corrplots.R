@@ -95,8 +95,8 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
     height <- width
   }
 
-  if (ncol(df) > 44L) {
-    stop("Maximum number of samples for correlation plots is 44.")
+  if (ncol(df) > 48L) {
+    stop("Maximum number of samples for correlation plots is 48.")
   }
 
   if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L) {

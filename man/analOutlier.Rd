@@ -15,6 +15,7 @@ analOutlier(
   label_scheme_sub = NULL,
   p_outlier = 0.05,
   min_n = 3L,
+  min_n_per_group = 3L,
   p_contrast = 0.01,
   p_type = "adjP",
   cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"),
@@ -71,6 +72,9 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{p_outlier}{Type-I error in outlier assessment. Set p = 1.0 to skip
 outlier removals.}
+
+\item{min_n_per_group}{The minimum number of data points per group for
+consideration of outlier assessment.}
 
 \item{impute_group_na}{Logical; if TRUE, impute (intensity) values that are
 exclusively NA under a sample group. The sample grouping is defined under

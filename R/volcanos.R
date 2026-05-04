@@ -436,15 +436,17 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     if (length(dfw) > 1L) {
       ncols <- unlist(lapply(dfw, ncol))
       
-      if (length(unique(ncols)) > 1L)
+      if (length(unique(ncols)) > 1L) {
         stop("Uneven number of columns detected. ", "Please report the bug.")
-      
+      }
+
       nms <- lapply(dfw, names)
       nms_1 <- nms[[1]]
       nms_all <- unique(unlist(nms))
       
-      if (length(nms_1) != length(nms_all))
+      if (length(nms_1) != length(nms_all)) {
         stop("Uneven column names detected. ", "Please report the bug.")
+      }
     }
   })
   
@@ -453,7 +455,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
       Contrast = factor(Contrast, levels = contrast_groups),
       valence = ifelse(.data[["log2Ratio"]] > 0, "pos", "neg")
     ) |>
-    dplyr::filter(!is.na(pVal))
+    dplyr::filter(!is.na(pVal)) |>
+    dplyr::mutate(Index = dplyr::row_number())
   
   dfw_sub <- dfw |>
     dplyr::filter((pVal < yco) & (abs(log2Ratio) > log2(xco))) |>
@@ -471,18 +474,24 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
     dfw_high <- dfw_sub[0, ]
   }
   else {
-    if (!is.list(highlights)) 
+    if (!is.list(highlights)) {
       highlights <- list(highlights)
-    
+    }
+
     if (length(highlights) > 1L) {
       stop("Single expression for `highlights`.")
     }
 
-    rows <- eval(highlights[[1]], dfw_sub)
-    dfw_high <- dfw_sub[rows, ]
+    # rows <- eval(highlights[[1]], dfw_sub)
+    # dfw_high <- dfw_sub[rows, ] # possible that no highlights in dfw_sub
+    rows <- eval(highlights[[1]], dfw)
+    dfw_high <- dfw[rows, ] |>
+      # highlighters may not be in the data
+      dplyr::filter(!is.na(.data[[id]]))
   }
   
-  dfw_sub_top20 <- if (nrow(dfw_high)) { dfw_high } else { dfw_sub } |>
+  dfw_sub_top20 <- if (nrow(dfw_high)) dfw_high else dfw_sub
+  dfw_sub_top20 <- dfw_sub_top20 |>
     dplyr::group_by(Contrast) |>
     dplyr::top_n(n = -topn_labels, wt = pVal) |>
     data.frame (check.names = FALSE)

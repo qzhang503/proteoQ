@@ -735,8 +735,10 @@ sigTest <- function(df, id, label_scheme_sub,
 
 #' Helper of \link{impute_baseline_int}.
 #'
-#' @param dfRg The data frame of log2Ratios belongs to the group \code{g}.
-#' @param dfIg The data frame of intensities belongs to the group \code{g}.
+#' @param dfRg The data frame of log2Ratios belongs to the current group
+#'   \code{g}.
+#' @param dfIg The data frame of intensities belongs to the current group
+#'   \code{g}.
 #' @param g The current group.
 #' @param b The current baseline intensities. Each value corresponds to one
 #'   sample.
@@ -748,6 +750,7 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
   oths <- !grps %in% g
   dfRc <- dfsR[oths]
   dfIc <- dfsI[oths]
+  rm(list = "oths")
   
   # At least one group with >= 3 values from the complementary
   okc <- lapply(dfIc, function (x) {
@@ -755,11 +758,13 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
   }) |>
     purrr::reduce(`|`)
   
-  n_col <- ncol(dfRg)
-  all_nas <- rowSums(is.na(dfRg)) == n_col
+  n_col <- ncol(dfIg)
+  all_nas <- rowSums(is.na(dfIg)) == n_col
   okc_a <- all_nas & okc
   okc_b <- all_nas & !okc
   
+  # For 'sigTest', info borrowed from sub universe defined by formulas;
+  # For 'analTrend', info borrows from the whole universe
   ybars_c <- rowMeans(sapply(dfIc, rowMeans, na.rm = TRUE), na.rm = TRUE)
   ybars_c[is.nan(ybars_c)] <- NA_real_
   ybars_c_sub <- ybars_c[okc_a]
@@ -770,7 +775,7 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
                 rows_a = okc_a, rows_b = okc_b, imp = FALSE))
   }
   
-  # Update intensities
+  # Update intensities; values remains all NA for 'okc_b' rows.
   for (i in seq_along(dfIg)) {
     dfIg[okc_a, i] <- pmin(b[[i]], ybars_c_sub)
   }
@@ -820,20 +825,21 @@ impute_baseline_ints <- function (
     dfRg = dfsR, dfIg = dfsI, g = grps, b = ys_base,
     MoreArgs = list(
       dfsR = dfsR, dfsI = dfsI, grps = grps
-    ), 
-    SIMPLIFY = FALSE)
+    ), SIMPLIFY = FALSE)
 
   # if is `bad` in one group -> is bad entirely
   if (impute_low_qualities) {
-    rows_b  <- which(purrr::reduce(lapply(ans, `[[`, "rows_b"), `|`))
-    # OK by using the mean of means
+    rows_bs <- lapply(ans, `[[`, "rows_b")
+    # OK using the mean of 'ybars_c' means (each used twice)
     ybars_c <- rowMeans(sapply(ans, `[[`, "ybars_c"), na.rm = TRUE)
     
-    ans <- lapply(ans, function(anx) {
-      anx$log2R[rows_b, ] <- replace_lows_by
-      anx$Intensity[rows_b, ] <- ybars_c[rows_b]
-      anx
-    })
+    for (i in seq_along(ans)) {
+      rows_bi <- which(rows_bs[[i]])
+      ans[[i]]$log2R[rows_bi, ] <- replace_lows_by
+      ans[[i]]$Intensity[rows_bi, ] <- ybars_c[rows_bi]
+    }
+    
+    rm(list = c("rows_bs", "ybars_c", "rows_bi"))
   }
   
   ## Update intensities

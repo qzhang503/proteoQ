@@ -2,7 +2,7 @@
 % Please edit documentation in R/trends.R
 \name{make_renorm_data}
 \alias{make_renorm_data}
-\title{Renormalize data by group.}
+\title{Re-normalize data locally by group.}
 \usage{
 make_renorm_data(
   df_lgr = NULL,
@@ -30,5 +30,5 @@ vector for intensity scaling by group.}
 \item{label_scheme_sub}{Metadata.}
 }
 \description{
-For defined scope of data.
+Re-normalize data locally by group.
 }

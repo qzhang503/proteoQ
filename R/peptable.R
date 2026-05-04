@@ -4512,20 +4512,10 @@ rm_diann_empties <- function (df, label_scheme_full)
   dfx  <- df[, cols, drop = FALSE]
   dfx  <- dfx[, mts, drop = FALSE]
   raws <- raws[mts]
-  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], dfx)
   
-  nms  <- colnames(df)
-  cols <- dirname(nms) != "."
-  colnames(df)[cols] <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
-  
-  rm(list = c("dfx", "mts"))
-  
-  # remove all-NA intensity rows
-  nas <- rowSums(is.na(df[, cols, drop = FALSE])) == sum(cols)
-  
-  if (sum(nas)) {
-    df <- df[!nas, ]
-  }
+  names(dfx) <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
+  oks <- rowSums(is.na(dfx)) < ncol(dfx)
+  df   <- dplyr::bind_cols(df[oks, !cols, drop = FALSE], dfx[oks, ])
   
   df
 }

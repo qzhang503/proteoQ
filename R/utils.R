@@ -59,10 +59,8 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE,
     stop("All intensity are NA or 0 in the input data.")
   }
   
-  levs <- sub_grp %>%
-    as.character(.) %>%
-    .[!grepl("^Empty\\.[0-9]+", .)]
-  
+  levs <- sub_grp[!grepl("^Empty\\.[0-9]+", sub_grp)]
+
   dfR <- local({
     dfR <- df %>%
       dplyr::select(grep(NorZ_ratios, names(.)))
@@ -89,8 +87,10 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE,
   
   # dominated by log2R, no need to filter all-NA intensity rows
   dfI <- df %>%
-    dplyr::select(grep("^N_I[0-9]{3}", names(.))) %>%
-    `colnames<-`(label_scheme$Sample_ID) %>%
+    dplyr::select(grep("^N_I[0-9]{3}", names(.))) 
+  # Do not assume the column order of dfI will match label_scheme$Sample_ID
+  colnames(dfI) <- gsub("^.* \\((.*)\\)$", "\\1", colnames(dfI))
+  dfI <- dfI %>%
     dplyr::select(which(names(.) %in% sub_grp)) %>%
     dplyr::select(which(not_all_zero(.))) %>%
     dplyr::select(which(names(.) %in% names(dfR))) %>%

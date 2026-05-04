@@ -14,5 +14,5 @@ locate_vec_outlier(x, p = 0.05, k = 1L)
 \item{k}{The number of suspected outliers.}
 }
 \description{
-Locate outliers from a vector.
+Do nothing at \code{n \le{2}}.
 }

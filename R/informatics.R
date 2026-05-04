@@ -284,7 +284,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
         s_type <- if (is.na(scale_log2r)) "O" else if (scale_log2r) "Z" else "N"
         paste0(fn_prefix, "_", s_type)
       })
-      fn_prefix <- if (impute_na) paste0(fn_prefix, "_impNA")
+      
+      if (impute_na) fn_prefix <- paste0(fn_prefix, "_impNA")
     }
   }
   
@@ -366,6 +367,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
               show_ids = show_ids,
               show_ellipses = show_ellipses,
               col_group = !!col_group,
+              col_order = !!col_order, 
               col_color = !!col_color,
               col_fill = !!col_fill,
               col_shape = !!col_shape,
@@ -402,6 +404,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
               show_ids = show_ids,
               show_ellipses = show_ellipses,
               col_group = !!col_group,
+              col_order = !!col_order, 
               col_color = !!col_color,
               col_fill = !!col_fill,
               col_shape = !!col_shape,
@@ -641,8 +644,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Outlier") {
-    function(p_outlier = .05, min_n = 5L, p_contrast = .01, p_type = "adjP", 
-             contr_pairs = NULL, 
+    function(p_outlier = .05, min_n = 3L, min_n_per_group = 3L, 
+             p_contrast = .01, p_type = "adjP", contr_pairs = NULL, 
              cols_pep = 
                c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
              group_pep_by = "gene", # group_psm_by = "pep_seq_mod", 
@@ -656,6 +659,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                   label_scheme_sub = label_scheme_sub,
                   p_outlier = p_outlier, 
                   min_n = min_n, 
+                  min_n_per_group = min_n_per_group, 
                   p_contrast = p_contrast, 
                   p_type = p_type, 
                   cols_pep = cols_pep, 

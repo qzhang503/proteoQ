@@ -11,6 +11,7 @@ anal_pepOutlier(
   col_order = NULL,
   p_outlier = 0.05,
   min_n = 3L,
+  min_n_per_group = 3L,
   p_contrast = 0.01,
   p_type = "adjP",
   cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"),
@@ -50,6 +51,9 @@ outlier removals.}
 
 \item{min_n}{The minimal number of peptides under a protein for
 consideration.}
+
+\item{min_n_per_group}{The minimum number of data points per group for
+consideration of outlier assessment.}
 
 \item{p_contrast}{The cut-off in significant pVals from \link{proteoQ}. The
 type of pVals is either original or BH-adjusted, indicated by

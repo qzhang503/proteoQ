@@ -7,9 +7,11 @@
 himpute_baseline(dfRg, dfIg, g, b, dfsR, dfsI, grps)
 }
 \arguments{
-\item{dfRg}{The data frame of log2Ratios belongs to the group \code{g}.}
+\item{dfRg}{The data frame of log2Ratios belongs to the current group
+\code{g}.}
 
-\item{dfIg}{The data frame of intensities belongs to the group \code{g}.}
+\item{dfIg}{The data frame of intensities belongs to the current group
+\code{g}.}
 
 \item{g}{The current group.}
 

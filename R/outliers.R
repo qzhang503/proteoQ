@@ -23,6 +23,8 @@ locate_outliers <- function (df, range_colRatios = NULL)
 
 #' Locate outliers from a vector.
 #' 
+#' Do nothing at \code{n \le{2}}.
+#' 
 #' @param x A numeric vector.
 #' @param k The number of suspected outliers.
 #' @param p The level of type-I error.
@@ -1030,6 +1032,8 @@ check_rosner_outliers <- function (x, y = NULL, k = 1L, p = 5E-2, p_co = 1E-2)
 #'   type of pVals is either original or BH-adjusted, indicated by
 #'   \code{p_type}.
 #' @param cols_pep The attribute columns of a peptide table to be included.
+#' @param min_n_per_group The minimum number of data points per group for
+#'   consideration of outlier assessment.
 #' @inheritParams prnSig
 #' @inheritParams anal_prnTrend
 #' @inheritParams normPSM
@@ -1037,7 +1041,8 @@ check_rosner_outliers <- function (x, y = NULL, k = 1L, p = 5E-2, p_co = 1E-2)
 #' @export
 anal_pepOutlier <- function (
     dat_dir = NULL, col_select = NULL, col_group = NULL, col_order = NULL, 
-    p_outlier = 5E-2, min_n = 3L, p_contrast = 1E-2, p_type = "adjP", 
+    p_outlier = 5E-2, min_n = 3L, min_n_per_group = 3L, 
+    p_contrast = 1E-2, p_type = "adjP", 
     cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
     contr_pairs = NULL, group_renorm_by = NULL, scale_log2r = TRUE, 
     df = NULL, filepath = NULL, filename = NULL, ...) 
@@ -1117,6 +1122,7 @@ anal_pepOutlier <- function (
             anal_type = "Outlier")(
               p_outlier = p_outlier, 
               min_n = min_n, 
+              min_n_per_group = min_n_per_group, 
               p_contrast = p_contrast, 
               p_type = p_type, 
               contr_pairs = contr_pairs, 
@@ -1129,7 +1135,9 @@ anal_pepOutlier <- function (
 
 
 #' Outlier analysis of peptide data.
-#' 
+#'
+#' @param min_n_per_group The minimum number of data points per group for
+#'   consideration of outlier assessment.
 #' @inheritParams anal_prnTrend
 #' @inheritParams normPSM
 #' @export
@@ -1138,7 +1146,8 @@ analOutlier <- function (
     # group_psm_by = "pep_seq_mod", 
     col_select = NULL, col_group = NULL, col_order = NULL, 
     label_scheme_sub = NULL, 
-    p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP", 
+    p_outlier = .05, min_n = 3L, min_n_per_group = 3L,
+    p_contrast = .01, p_type = "adjP", 
     cols_pep = c("pep_start", "pep_end", "pep_miss", "pep_phospho_locprob"), 
     contr_pairs = NULL, impute_group_na = FALSE, group_renorm_by = NULL, 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -1148,7 +1157,7 @@ analOutlier <- function (
   fn_suffix <- tools::file_ext(filename)
   fn_combi  <- "pepoutliers_combined.tsv"
 
-  ## (1) Find contrast outliers and save the first-pass outputs
+  ## (1) Find contrast outliers and save the results
   dfs_contr <- find_pepoutliers(
     dat_dir = dat_dir, col_select = col_select, col_group = col_group, 
     group_psm_by = id, group_pep_by = group_pep_by, 
@@ -1189,15 +1198,26 @@ analOutlier <- function (
 
   df_mean_log2r <- ans_grp$df_mean_log2r
   dfN <- ans_grp$dfN
+  dfR <- ans_grp$dfR
+  dfI <- ans_grp$dfI
+  grps <- ans_grp$grps
+  ugrps <- ans_grp$ugrps
+  sids <- ans_grp$sids
+  n_samples <- ans_grp$n_samples
+  fcts <- ans_grp$fcts 
+  label_scheme_sub <- ans_grp$label_scheme_sub
 
   ## (3) Find genes contain at least one peptide outlier within the same 
   #      group of samples using aggregated data (df_mean_log2r)
   # 0: no outlier; > 0: index -> detected pep_seq_mod under a gene
   # p_co = -2: ignore one-hit-wonders
-  df_olr <- mapply(function(xs, ys) {
+  df_olr <- mapply(function(xs, ns) {
     mapply(check_outliers, 
-           xs, ys, 
-           MoreArgs = list(p = p_outlier, min_n = min_n, p_co = -2), 
+           xs, ns, 
+           MoreArgs = list(
+             p = p_outlier, 
+             min_n = min_n, 
+             p_co = -min_n_per_group), 
            SIMPLIFY = TRUE, USE.NAMES = TRUE)
   }, 
   split(df_mean_log2r, df[[group_pep_by]]), 
@@ -1205,7 +1225,56 @@ analOutlier <- function (
   SIMPLIFY = FALSE, USE.NAMES = TRUE)
   
   df_olr <- do.call(rbind, df_olr)
+  
+  ## Handel min_n_per_group = 2
+  #  Between the two values, use the one that is closest to the group mean
+  if (FALSE) {
+    tempx <- split(df_mean_log2r, df[[group_pep_by]])
+    # global mean for each protein under each group
+    xbars <- lapply(tempx, colMeans, na.rm = TRUE)
+    xbars <- lapply(xbars, function (x) { x[is.nan(x)] <- NA_real_; x })
+    tempn <- split(data.frame(dfN), df[[group_pep_by]])
+    
+    # tempr <- split(dfR, df[[group_pep_by]])
+    # tempy <- split(dfI, df[[group_pep_by]])
 
+    temps <- sep_data_by_group(
+      elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
+      label_scheme = label_scheme_sub)
+    temps <- lapply(temps, `[[`, "log2R")
+    temps <- lapply(temps, function (x) { split(x, df[[group_pep_by]]) })
+    
+    idx <- 4826
+    ct <- tempn[[idx]] # group counts
+    xb <- xbars[[idx]] # reference means, vector
+    rs <- tempx[[idx]] # 
+    bads <- ct == 2L
+    data <- temps[[idx]]
+    # rs * !bads
+
+    i <- 2L # group
+    for (i in seq_along(ugrps)) {
+      bi <- bads[, i]
+      xi <- xb[[i]]
+      ri <- rs[, i]
+      nm <- ugrps[i]
+      da <- temps[[i]][[idx]] # original full data
+      
+      delta <- abs(da[bi, ] - xi)
+      delta[is.na(delta)] <- Inf
+      ps <- max.col(-delta, ties.method = "first")
+      
+      idx_matrix <- cbind(seq_along(ps), ps)
+      
+      # 2. Extract the values from your original matrix
+      min_values <- da[bi, ][idx_matrix]
+      
+      # 3. Handle the 'Inf' cases (optional)
+      # If a row was all NA, ps might point to 1, but the value is actually NA
+      min_values[is.infinite(delta[idx_matrix])] <- NA
+    }
+  }
+  
   if (FALSE) {
     # Peptide_Outlier_Z.txt
     readr::write_tsv(

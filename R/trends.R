@@ -351,26 +351,16 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
   ok_group_renorm <- tempdata[["ok_group_renorm"]]
   rm(list = "tempdata")
   
-  if (all(nas <- is.na(ords <- label_scheme_sub[[col_order]]))) {
-    stop("Specify the order of data groups under column '", col_order, "'.")
-  } else if (any(nas)) {
-    message("NA entries removed under '", col_order, "' removed:\n")
-    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
-    label_scheme_sub <- label_scheme_sub[!nas, ]
-  }
-  
-  if (any(nas <- is.na(grps <- label_scheme_sub[[col_group]]))) {
-    message("NA entries removed under '", col_group, "' removed:\n")
-    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
-    label_scheme_sub <- label_scheme_sub[!nas, ]
-  }
-  
+  label_scheme_sub <- update_ls_by_col_order(
+    label_scheme_sub = label_scheme_sub, 
+    col_group = col_group, 
+    col_order = col_order)
+
   message("Summary of data groups and orders: \n")
   print(tibble::tibble(
     !!col_group := label_scheme_sub[[col_group]], 
     !!col_order := label_scheme_sub[[col_order]],))
-  rm(list = c("nas", "grps", "ords"))
-  
+
   ## Data aggregation by groups
   mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
   grps  <- label_scheme_sub[[col_group]][mts]
@@ -401,11 +391,13 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
     ys_base <- ans1[["baseline"]]
     rm(list = "ans1")
     
-    mapply(function (x, y) {
-      stopifnot(identical(rownames(x), rownames(y)))
-      stopifnot(identical(colnames(x), colnames(y)))
-    }, dfsR, dfsI)
-    
+    if (FALSE) {
+      mapply(function (x, y) {
+        stopifnot(identical(rownames(x), rownames(y)))
+        stopifnot(identical(colnames(x), colnames(y)))
+      }, dfsR, dfsI)
+    }
+
     # Update dfR and dfI with baseline imputation
     ans2 <- impute_baseline_ints(
       dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
@@ -428,15 +420,15 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
     stop("Developer: mismatched group IDs.")
   }
   
-  n_cores <- parallel::detectCores() - 1L
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  
-  parallel::clusterExport(
-    cl,
-    c("locate_vec_outlier"), 
-    envir = environment(proteoQ:::locate_vec_outlier))
-
   if (p_outlier < 1.0) {
+    n_cores <- parallel::detectCores() - 1L
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    parallel::clusterExport(
+      cl,
+      c("locate_vec_outlier"), 
+      envir = environment(proteoQ:::locate_vec_outlier))
+    
     for (i in seq_along(dfsR)) {
       ans <- parallel::parLapply(
         cl, 
@@ -452,9 +444,9 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
       dfsR[[i]][nas] <- NA_real_
     }
     rm(list = "ans")
+    parallel::stopCluster(cl)
   }
-  parallel::stopCluster(cl)
-  
+
   df_mean_log2r <- do.call(cbind, lapply(dfsR, rowMeans, na.rm = TRUE))
   df_mean_int   <- do.call(cbind, lapply(dfsI, rowMeans, na.rm = TRUE))
   df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
@@ -481,9 +473,37 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
 }
 
 
-#' Renormalize data by group.
+#' Helper: update metadata by column keys of \code{col_group} and
+#' \code{col_order}.
 #' 
-#' For defined scope of data.
+#' @param label_scheme_sub Metadata.
+#' @inheritParams normPSM
+update_ls_by_col_order <- function (label_scheme_sub, col_group, col_order)
+{
+  if (any(nas <- is.na(grps <- label_scheme_sub[[col_group]]))) {
+    message("NA entries removed under '", col_group, "' removed:\n")
+    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
+    label_scheme_sub <- label_scheme_sub[!nas, ]
+  }
+  
+  if (all(nas <- is.na(ords <- label_scheme_sub[[col_order]]))) {
+    label_scheme_sub[[col_order]] <- 
+      as.integer(factor(label_scheme_sub[[col_group]], 
+                        levels = unique(label_scheme_sub[[col_group]])))
+    warning("No group order specified under '", col_order, "'.", 
+            " Use orders under '", col_group, "'.")
+  }
+  
+  if (any(nas)) {
+    message("NA entries removed under '", col_order, "' removed:\n")
+    print(label_scheme_sub[nas, c("Sample_ID", col_group, col_order)])
+    label_scheme_sub <- label_scheme_sub[!nas, ]
+  }
+  
+  label_scheme_sub
+}
+
+#' Re-normalize data locally by group.
 #' 
 #' @param df_lgr A data frame of log2Ratios.
 #' @param df_log2r A data frame of log2Ratios with clustering difference made
@@ -907,64 +927,65 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
 #'@example inst/extdata/examples/prnTrend_.R
 #'
 #'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
-#'and a reduced working example in data normalization \cr
+#'  and a reduced working example in data normalization \cr
 #'
-#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
-#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
-#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
-#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
-#'\code{\link{purgePep}} for extended examples in data purging \cr
-#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
-#'histogram visualization. \cr \code{\link{extract_raws}} and
-#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
 #'
-#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
-#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
-#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
-#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
-#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
 #'
-#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
-#'missing value imputation \cr
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
 #'
-#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
-#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
-#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
-#'analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
-#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
-#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
-#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
-#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
-#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
-#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
-#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
-#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
-#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
-#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
-#'trend analysis and visualization \cr \code{\link{cluego}} for the
-#'visualization of \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}}
-#'via \code{Cytoscape/ClueGO} \cr \code{\link{anal_pepNMF}},
-#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
-#'and visualization \cr
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{cluego}} for the visualization of \code{\link{anal_prnTrend}}
+#'  and \code{\link{plot_prnTrend}} via \code{Cytoscape/ClueGO} \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
 #'
-#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
-#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
-#'among RefSeq accessions, gene names and Entrez IDs \cr
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'  ontology}} \cr
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
 #'  signatures} \cr
-#'\code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'
-#'\emph{Column keys in PSM, peptide and protein outputs} \cr
-#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 

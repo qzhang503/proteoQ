@@ -8,6 +8,7 @@
 pepMDS(
   col_select = NULL,
   col_group = NULL,
+  col_order = NULL,
   col_color = NULL,
   col_fill = NULL,
   col_shape = NULL,
@@ -43,6 +44,7 @@ pepMDS(
 prnMDS(
   col_select = NULL,
   col_group = NULL,
+  col_order = NULL,
   col_color = NULL,
   col_fill = NULL,
   col_shape = NULL,
@@ -88,6 +90,12 @@ Samples corresponding to non-empty entries under \code{col_group} will be
 used for sample grouping in the indicated analysis. At the NULL default, the
 column key \code{Group} will be used. No data annotation by groups will be
 performed if the fields under the indicated group column is empty.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At

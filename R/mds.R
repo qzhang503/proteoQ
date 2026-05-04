@@ -38,7 +38,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      method = "euclidean", p = 2,
                      k = 3, dimension = 2, folds = 1, show_ids = FALSE, 
                      show_ellipses = FALSE,
-                     col_group = NULL,
+                     col_group = NULL, col_order = NULL, 
                      col_color = NULL, col_fill = NULL, col_shape = NULL, 
                      col_size = NULL,
                      col_alpha = NULL,
@@ -61,6 +61,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     stop("Empty metadata.")
   
   col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_fill <- rlang::enexpr(col_fill)
   col_color <- rlang::enexpr(col_color)
   col_shape <- rlang::enexpr(col_shape)
@@ -160,6 +161,16 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
+  
+  if (!(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))) {
+    df <- local({
+      df <- df |>
+        dplyr::arrange(!!col_order)
+      levs <- unique(df[[col_group]])
+      df <- df |>
+        dplyr::mutate(!!col_group := factor(!!col_group, levels = levs))
+    })
+  }
   
   # key `Label` used in `geom_lower_text()`
   df$Label <- if ("Sample_ID" %in% names(df)) 
@@ -836,12 +847,11 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type,
 #'
 #'@import purrr
 #'@export
-pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, 
-                    col_fill = NULL,
-                    col_shape = NULL, col_size = NULL, col_alpha = NULL,
-                    color_brewer = NULL, fill_brewer = NULL,
-                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
-                    choice = c("cmdscale", "isoMDS"), 
+pepMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+                    col_color = NULL, col_fill = NULL, col_shape = NULL, 
+                    col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
+                    fill_brewer = NULL,size_manual = NULL, shape_manual = NULL, 
+                    alpha_manual = NULL, choice = c("cmdscale", "isoMDS"), 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                     dist_co = log2(1), adjEucDist = FALSE, 
                     method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1,
@@ -876,6 +886,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 
   col_select <- rlang::enexpr(col_select)
   col_group  <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_color  <- rlang::enexpr(col_color)
   col_fill   <- rlang::enexpr(col_fill)
   col_shape  <- rlang::enexpr(col_shape)
@@ -900,6 +911,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   info_anal(id = !!id,
             col_select = !!col_select, 
             col_group = !!col_group,
+            col_order = !!col_order,
             col_color = !!col_color, 
             col_fill = !!col_fill,
             col_shape = !!col_shape, 
@@ -1099,12 +1111,11 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, 
-                    col_fill = NULL,
-                    col_shape = NULL, col_size = NULL, col_alpha = NULL,
-                    color_brewer = NULL, fill_brewer = NULL,
-                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
-                    choice = c("cmdscale", "isoMDS"), 
+prnMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+                    col_color = NULL, col_fill = NULL, col_shape = NULL, 
+                    col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
+                    fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
+                    alpha_manual = NULL, choice = c("cmdscale", "isoMDS"), 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                     dist_co = log2(1), adjEucDist = FALSE, 
                     method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1,
@@ -1139,6 +1150,7 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -1163,6 +1175,7 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   info_anal(id = !!id,
             col_select = !!col_select, 
             col_group = !!col_group,
+            col_order = !!col_order, 
             col_color = !!col_color, 
             col_fill = !!col_fill,
             col_shape = !!col_shape, 
