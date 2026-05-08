@@ -31,6 +31,7 @@ pepGSPAMap(
 prnGSPAMap(
   gset_nms = c("go_sets", "c2_msig", "kinsub"),
   gset_ids = NULL,
+  grids = NULL,
   id_gspa = "entrez",
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -166,6 +167,11 @@ plotting: \cr \code{xco}, the cut-off lines of fold changes at position
 cut-off line of \code{pVal} at position \code{y}; the default is
 \eqn{0.05}. \cr \code{width}, the width of plot; \cr \code{height}, the
 height of plot. \cr \code{nrow}, the number of rows in a plot.}
+
+\item{grids}{An integer or integer vector for subset visualization of
+contrasts within a group. For example with a group of three contrasts,
+\code{grids = 2:3} will hide the first grid from displaying. At the
+NULL default, all available grids will be shown.}
 }
 \description{
 \code{pepGSPAMap} visualizes the volcano plots of peptides under the

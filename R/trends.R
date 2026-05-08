@@ -555,19 +555,17 @@ make_renorm_data <- function (
     cols <- grps == ugrps[[i]]
     
     if (!is.null(df_lgr)) {
-      dfx  <- df_lgr[, cols, drop = FALSE]
-      df_lgr[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+      df_lgr[, cols] <- df_lgr[, cols, drop = FALSE] - 
+        rowMeans(df_lgr[, cols, drop = FALSE], na.rm = TRUE)
     }
     
     if (!is.null(df_log2r)) {
-      dfx  <- df_log2r[, cols, drop = FALSE]
-      df_log2r[, cols] <- dfx - rowMeans(dfx, na.rm = TRUE)
+      df_log2r[, cols] <- df_log2r[, cols, drop = FALSE] - 
+        rowMeans(df_log2r[, cols, drop = FALSE], na.rm = TRUE)
     }
     
     if (ok_scale_int && !is.null(df_int)) {
-      dfy <- df_int[, cols, drop = FALSE] * group_fct_int[[i]]
-      df_int[, cols] <- dfy
-      df_int[, cols] <- dfy / rowMeans(dfy, na.rm = TRUE)
+      df_int[, cols] <- df_int[, cols, drop = FALSE] * group_fct_int[[i]]
     }
   }
   

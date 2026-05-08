@@ -597,7 +597,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
              gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
              topn_gsets = Inf, show_sig = "none", show_passed_only = TRUE, 
-             gset_nms = "go_sets", gset_ids = NULL, 
+             gset_nms = "go_sets", gset_ids = NULL, grids = NULL, 
              theme = NULL, ...) {
       plotVolcano(df = df,
                   df2 = df2,
@@ -619,6 +619,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                   impute_na = impute_na,
                   filepath = filepath,
                   filename = paste0(fn_prefix, ".", fn_suffix),
+                  grids = grids, 
                   theme = theme,
                   ...)
     }

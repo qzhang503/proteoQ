@@ -228,14 +228,15 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                      adjP = adjP, topn_labels = topn_labels, 
                      anal_type = anal_type, gsets = gsets, gset_ids = gset_ids, 
                      scale_log2r = scale_log2r, 
-                     impute_na = impute_na)(gspval_cutoff = gspval_cutoff, 
-                                            gslogFC_cutoff = gslogFC_cutoff, 
-                                            topn_gsets = topn_gsets, 
-                                            show_sig = show_sig, 
-                                            show_passed_only = show_passed_only, 
-                                            highlights = highlights, 
-                                            grids = grids, 
-                                            theme = theme, ...)
+                     impute_na = impute_na)(
+                       gspval_cutoff = gspval_cutoff, 
+                       gslogFC_cutoff = gslogFC_cutoff, 
+                       topn_gsets = topn_gsets, 
+                       show_sig = show_sig, 
+                       show_passed_only = show_passed_only, 
+                       highlights = highlights, 
+                       grids = grids, 
+                       theme = theme, ...)
 }
 
 
@@ -264,11 +265,11 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   
   if (anal_type %in% c("Volcano")) {
     function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn_gsets = 0, 
-             show_sig = "none", theme = NULL, highlights = NULL, grids = NULL, 
+             show_sig = "none", highlights = NULL, theme = NULL, grids = NULL, 
              ...) {
       
-      rm(gspval_cutoff, gslogFC_cutoff, show_sig)
-      
+      rm(list = c("gspval_cutoff", "gslogFC_cutoff", "show_sig"))
+
       fullVolcano(df = df, 
                   id = !!id, 
                   contrast_groups = contrast_groups,
@@ -284,7 +285,8 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
     }
   } else if (anal_type == "mapGSPA") 
     function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
-             show_sig = "none", show_passed_only = TRUE, theme = theme, ...) {
+             show_sig = "none", show_passed_only = TRUE, theme = theme, 
+             grids = NULL, ...) {
       if (is.null(fml_nm)) {
         stop("`fml_nm` is required for `mapGSPA` volcano plots.")
       }
@@ -331,6 +333,10 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
         if (!length(df2)) {
           stop("File(s) not found under \"", filepath_fml, "\".")
         }
+      }
+      
+      if (!is.null(grids)) {
+        contrast_groups <- contrast_groups[grids]
       }
       
       ## plot data
@@ -1783,7 +1789,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'   cut-off line of \code{pVal} at position \code{y}; the default is
 #'   \eqn{0.05}. \cr \code{width}, the width of plot; \cr \code{height}, the
 #'   height of plot. \cr \code{nrow}, the number of rows in a plot.
-#'
+#' @inheritParams prnVol
 #' @import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>%
 #'
@@ -1852,7 +1858,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'
 #' @export
 prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
-                        gset_ids = NULL, id_gspa = "entrez",
+                        gset_ids = NULL, grids = NULL, id_gspa = "entrez",
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
@@ -1912,7 +1918,8 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
-                                   gset_ids = gset_ids, 
+                                   gset_ids = gset_ids,
+                                   grids = grids, 
                                    adjP = adjP, 
                                    topn_labels = topn_labels, 
                                    gspval_cutoff = gspval_cutoff, 

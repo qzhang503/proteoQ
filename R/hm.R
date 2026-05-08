@@ -239,7 +239,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   dfR <- df |>
     dplyr::select(dplyr::matches(NorZ_ratios)) |>
     setNames(label_scheme[["Sample_ID"]]) |>
-    dplyr::select(any_of(sample_ids)) |>
+    dplyr::select(dplyr::any_of(sample_ids)) |>
     # enforce exact order
     dplyr::select(dplyr::all_of(sample_ids))
   
