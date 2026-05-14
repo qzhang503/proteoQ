@@ -16,6 +16,8 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                         filepath = NULL, filename = NULL, theme = NULL, 
                         highlights = NULL, grids = NULL, ...) 
 {
+  options(warn = 1L)
+  
   if (!requireNamespace("ggrepel", quietly = TRUE)) {
     stop("\n================================================================", 
          "\nNeed package \"ggrepel\" for this function to work.",
@@ -803,6 +805,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), 
                       topn_gsets = Inf, ...) 
 {
+  options(warn = 1L)
+  
   id <- rlang::as_string(rlang::enexpr(id))
   
   dat_dir <- get_gl_dat_dir()
@@ -1660,7 +1664,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@import purrr dplyr
 #'@export
 pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
-                        gset_ids = NULL, id_gspa = "pep_seq_mod", 
+                        gset_ids = NULL, grids = NULL, id_gspa = "pep_seq_mod", 
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
@@ -1721,6 +1725,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
                                    gset_ids = gset_ids, 
+                                   grids = grids, 
                                    adjP = adjP, 
                                    topn_labels = topn_labels, 
                                    gspval_cutoff = gspval_cutoff, 
@@ -1894,11 +1899,28 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
                                           impute_na = impute_na)
   
-  df <- rlang::enexpr(df)
-  df2 <- rlang::enexpr(df2)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
+  df_ <- rlang::enexpr(df)
+  df2_ <- rlang::enexpr(df2)
+  filepath_ <- rlang::enexpr(filepath)
+  filename_ <- rlang::enexpr(filename)
+
+  if ((!is.null(df_)) && df_ != "df") {
+    df <- df_
+  }
   
+  if ((!is.null(df2_)) && df2_ != "df2") {
+    df2 <- df2_
+  }
+  
+  if ((!is.null(filepath_)) && filepath_ != "filepath") {
+    filepath <- rlang::as_string(filepath_)
+  }
+  
+  if ((!is.null(filename_)) && 
+      (filename_ != "filename" || filename_ != rlang::sym("filename")) ) {
+    filename <- rlang::as_string(filename_)
+  }
+
   show_sig <- rlang::as_string(rlang::enexpr(show_sig))
   
   stopifnot(show_sig %in% c("none", "pVal", "qVal"), 

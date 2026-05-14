@@ -6555,6 +6555,104 @@ add_diann_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE)
 }
 
 
+#' Compile the \code{pep_seq_mod} field to Spectranaut results.
+#'
+#' @param df A Spectranaut peptide table with complication of \code{pep_start}
+#'   etc.
+#' @inheritParams normPSM
+#' @import dplyr
+#' @importFrom magrittr %>% %T>% 
+add_spn_pepseqmod <- function(df = NULL, use_lowercase_aa = TRUE) 
+{
+  if (!use_lowercase_aa) {
+    return(df)
+  }
+  
+  # (1) all non-terminal modifications: EAVAM(UniMod:35)ESFAK
+  df <- df |>
+    dplyr::mutate(
+      pep_seq_mod = gsub("(^_|_$)", "", pep_seq_mod), 
+      pep_seq_mod = 
+        gsub("([A-Z]){1}\\[.*\\]", paste0("@", "\\1"), pep_seq_mod), 
+      ) |>
+    dplyr::mutate_at(
+      vars("pep_seq_mod"), function (x) purrr::map_chr(x, my_tolower, "@"))
+
+  # (2-1) add '_' to sequences of protein N-terminal acetylation: (UniMod:1)PEAK
+  nts <- 
+    (!is.na(df$pep_start)) & 
+    (df$pep_start == 1L | (df$pep_start == 2L & df$pep_res_before == "M"))
+  dfa <- df[nts, ]
+  dfb <- df[!nts, ]
+  
+  df  <- dfa |> # N-term sequences with acetylation
+    dplyr::mutate(
+      pep_seq_mod = 
+        gsub("^\\[Acetyl \\(Protein N-term\\)\\]", "", pep_seq_mod), 
+      pep_seq_mod = paste0("_", pep_seq_mod)) |>
+    dplyr::bind_rows(dfb)
+  
+  rm(list = c("nts", "dfa", "dfb"))
+  
+  # (2-2) add "_" to sequences from protein C-terminal amidation
+  if ("prot_len" %in% names(df)) {
+    rows <- (!is.na(df$pep_end)) & (df$pep_end == df$prot_len)
+  }
+  else {
+    rows <- (!is.na(df$pep_end)) & (df$pep_res_after == "-") # check again...
+  }
+  
+  dfa <- df[rows, ]
+  dfb <- df[!rows, ]
+  
+  # need to get UniMod:ID for C-term amidation...
+  df  <- dfa |>
+    dplyr::mutate(pep_seq_mod = gsub("\\(.*\\)$", "_", pep_seq_mod)) |>
+    dplyr::bind_rows(dfb)
+  
+  rm(list = c("rows", "dfa", "dfb"))
+  
+  
+  if (FALSE) {
+    # (3-1) "~" for "(Protein N-term)" other than acetylation
+    nts <- (!is.na(df$pep_start)) & (df$pep_start == 1L)
+    dfa <- df[nts, ]
+    dfb <- df[!nts, ]
+    
+    df  <- dfa |>
+      dplyr::mutate(pep_seq_mod = gsub("\\(.*\\)", "~", pep_seq_mod)) |>
+      dplyr::bind_rows(dfb)
+    
+    rm(list = c("nts", "dfa", "dfb"))
+    
+    # (3-2) "~" for "(Protein C-term)" other than amidation
+    if ("prot_len" %in% names(df)) {
+      rows <- (!is.na(df$pep_end)) & (df$pep_end == df$prot_len)
+    }
+    else {
+      rows <- (!is.na(df$pep_end)) & (df$pep_res_after == "-")
+    }
+    
+    dfa <- df[rows, ]
+    dfb <- df[!rows, ]
+    
+    df  <- dfa |>
+      dplyr::mutate(pep_seq_mod = gsub("\\(.*\\)$", "~", pep_seq_mod)) |>
+      dplyr::bind_rows(dfb)
+    
+    rm(list = c("rows", "dfa", "dfb"))
+  }
+  
+  # (4-1) "^" for peptide "(N-term)" modification
+  df <- df |>
+    dplyr::mutate(pep_seq_mod = gsub("^\\[.*\\]", "^", pep_seq_mod))
+  
+  # (4-2) "^" for peptide "(C-term)" modification
+  df <- df |>
+    dplyr::mutate(pep_seq_mod = gsub("\\[.*\\]$", "^", pep_seq_mod))
+}
+
+
 #' Pads columns to a placeholder data frame.
 #' 
 #' @param df The original data frame.

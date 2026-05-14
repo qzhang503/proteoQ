@@ -489,6 +489,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   )
 
   ### Subtrees
+  # group_renorm_by
   plot_sub_hms(
     df = df, id = id, label_scheme_sub = label_scheme_sub, 
     cluster_rows = cluster_rows, cluster_cols = cluster_cols, 
@@ -507,7 +508,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     
     filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
     sample_ids = sample_ids, complete_cases = complete_cases, 
-    ok_group_renorm = ok_group_renorm, dots = dots)
+    group_renorm_by = group_renorm_by, ok_group_renorm = ok_group_renorm, 
+    dots = dots)
 }
 
 
@@ -542,7 +544,8 @@ plot_sub_hms <- function (df, id = "gene", label_scheme_sub,
 
                           filepath, fn_prefix, fn_suffix, 
                           sample_ids, complete_cases = FALSE, 
-                          ok_group_renorm = TRUE, dots) 
+                          group_renorm_by = NULL, ok_group_renorm = TRUE, 
+                          dots) 
 {
   cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
   df <- df |> dplyr::mutate(!!id := as.character(!!rlang::sym(id)))

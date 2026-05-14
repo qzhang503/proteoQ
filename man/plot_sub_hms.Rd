@@ -28,6 +28,7 @@ plot_sub_hms(
   fn_suffix,
   sample_ids,
   complete_cases = FALSE,
+  group_renorm_by = NULL,
   ok_group_renorm = TRUE,
   dots
 )
@@ -88,6 +89,9 @@ of \code{id} in the \code{call}.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{group_renorm_by}{A metadata column key for re-normalization data within
+each groups.}
 
 \item{ok_group_renorm}{Logical; OK to renormalize samples with groups or not.}
 

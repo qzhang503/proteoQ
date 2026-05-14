@@ -1771,6 +1771,8 @@ annotPrn <- function (df, fasta, entrez)
     dplyr::select(-psm_index) |>
     # dplyr::ungroup() |>
     reloc_col_after("prot_mass", "prot_acc")
+  
+  df
 }
 
 
@@ -5289,5 +5291,6 @@ my_toupper <- function(x = "", ch = "@")
   
   gsub(ch, "", x)
 }
+
 
 
