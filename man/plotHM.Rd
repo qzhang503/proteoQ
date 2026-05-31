@@ -11,7 +11,7 @@ plotHM(
   col_order,
   col_benchmark,
   label_scheme_sub,
-  dot_plot = TRUE,
+  dot_plot = FALSE,
   filepath,
   filename,
   scale_log2r,

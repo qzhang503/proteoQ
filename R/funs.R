@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -294,6 +295,9 @@
 # rm_diann_empties
 # makePepDIANN
 # makeProtDIANN
+# rm_spn_empties
+# makePepSpn
+# makeProtSpn
 # aggrLCMS_DIANN
 #
 # $prntable.R
@@ -368,6 +372,7 @@
 # add_maxquant_pepseqmod
 # add_msfragger_pepseqmod
 # add_diann_pepseqmod
+# add_spn_pepseqmod
 # add_cols_at
 # replace_cols_at
 # reloc_col
@@ -477,6 +482,7 @@
 # makeTrendRes
 # analTrend
 # prepTrend
+# update_ls_by_col_order
 # make_renorm_data
 # plotTrend
 # plotTrend_sub

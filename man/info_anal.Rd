@@ -15,6 +15,8 @@ info_anal(
   col_shape = NULL,
   col_size = NULL,
   col_alpha = NULL,
+  col_subcellular = NULL,
+  col_subtype = NULL,
   color_brewer = NULL,
   fill_brewer = NULL,
   size_manual = NULL,

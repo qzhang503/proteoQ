@@ -639,6 +639,10 @@ fml_gspa <- function (fml, fml_nm,
       dplyr::group_by(contrast, valence)
   })
   
+  if (median(sapply(dfs, nrow)) <= 3L) {
+    warning("Perhaps wrong GO dataset. Make sure the species matches.")
+  }
+  
   if (length(gsets) >= 200L) {
     res <- switch(method, 
                   limma = hgspa_summary_limma(

@@ -812,7 +812,7 @@ rm_fully_empty_tmt_sets <- function (df, frac_smry = NULL, TMT_plex = 0L,
   n_af <- nrow(df)
   
   if (!n_af)
-    stop("Zero zero in metadata; probably forget to set \"TMT_Set\" for LFQ.")
+    stop("Zero row in metadata; probably forget to set \"TMT_Set\" for LFQ.")
   
   if (n_af < n_bf) {
     file <- file.path(dat_dir, frac_smry)
@@ -1144,8 +1144,7 @@ check_dups_at_lcms_and_sid <- function (df)
     print(dups[, c("LCMS_Injection", "Sample_ID")])
     
     stop("Probably non-unique RAW_File in the above combination of ", 
-         "LCMS_Injection and Sample_ID.", 
-         call. = FALSE)
+         "LCMS_Injection and Sample_ID.")
   }
   
   invisible(df)

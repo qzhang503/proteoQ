@@ -24,6 +24,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                        col_select = NULL, col_group = NULL, col_order = NULL,
                        col_color = NULL, col_fill = NULL, col_shape = NULL, 
                        col_size = NULL, col_alpha = NULL,
+                       col_subcellular = NULL, col_subtype = NULL, 
                        color_brewer = NULL, fill_brewer = NULL,
                        size_manual = NULL, shape_manual = NULL, 
                        alpha_manual = NULL, col_benchmark = NULL,
@@ -64,6 +65,9 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   col_size   <- rlang::enexpr(col_size)
   col_alpha  <- rlang::enexpr(col_alpha)
   col_benchmark <- rlang::enexpr(col_benchmark)
+  
+  col_subcellular <- rlang::enexpr(col_subcellular)
+  col_subtype <- rlang::enexpr(col_subtype)
   
   col_select <- if (is.null(col_select)) {
     rlang::expr(Select)
@@ -139,6 +143,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   if (col_size   == sid_expr) stop(err_msg1)
   if (col_alpha  == sid_expr) stop(err_msg1)
   if (col_benchmark == sid_expr) stop(err_msg1)
+  if ((!is.null(col_subcellular)) && col_subcellular == sid_expr) stop(err_msg1)
+  if ((!is.null(col_subtype)) && col_subtype == sid_expr) stop(err_msg1)
 
   color_brewer <- rlang::enexpr(color_brewer)
   fill_brewer  <- rlang::enexpr(fill_brewer)
@@ -236,7 +242,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))
   
   if (is.null(filepath)) {
-    filepath <- if (grepl("Trend", anal_type)) {
+    filepath <- if (grepl("Trend|Subcellular", anal_type)) {
       file.path(dat_dir, data_type, "Trend")
     } else if (grepl("NMF", anal_type)) {
       file.path(dat_dir, data_type, "NMF")
@@ -249,7 +255,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     dir.create(
       file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   } else {
-    stop("Use default `filepath`.")
+    stop("Use default 'filepath'.")
   }
   
   if (is.null(filename)) {
@@ -289,18 +295,19 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   }
   
-  use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", 
+  use_pri_data <- c("MDS", "PCA", "UMAP", "EucDist", "Heatmap", 
                     "Histogram", "Corrplot",
                     "Model", "Volcano", "Trend", "NMF", "NMF_meta", 
                     "GSPA", "mapGSPA",
                     "GSVA", "GSEA", "String", "LDA", "Outlier", 
                     "KinSub")
   
-  use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", 
+  use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "Subcellular_plot", 
                     "NMF_meta", "GSPA_hm", "mapGSPA")
   
   if (anal_type %in% use_pri_data) {
-    df <- find_pri_df(anal_type = !!anal_type, id = !!id, impute_na = impute_na)
+    df <- find_pri_df(anal_type = !!anal_type, df = !!df, id = !!id, 
+                      impute_na = impute_na)
     
     if (!is.null(dim(df))) {
       df <- rm_pval_whitespace(df)
@@ -310,7 +317,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   }
   
   if (anal_type %in% use_sec_data) {
-    df2 <- rlang::eval_bare(df2, env = current_env())
+    df2 <- rlang::eval_bare(df2, env = rlang::current_env())
     vararg_secmsg(id = !!id, anal_type = !!anal_type)
   } else {
     df2 <- NULL
@@ -427,6 +434,40 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
               ...)
     }
   } 
+  else if (anal_type == "UMAP") {
+    function(type = "obs", dimension = 2, folds = 1,
+             center_features = TRUE, scale_features = TRUE,
+             theme = NULL, ...) {
+      plotUMAP(df = df,
+              id = !!id,
+              label_scheme_sub = label_scheme_sub,
+              dimension = dimension,
+              folds = folds,
+              type = type,
+              col_group = !!col_group,
+              col_order = !!col_order, 
+              col_color = !!col_color,
+              col_fill = !!col_fill,
+              col_shape = !!col_shape,
+              col_size = !!col_size,
+              col_alpha = !!col_alpha,
+              color_brewer = !!color_brewer,
+              fill_brewer = !!fill_brewer,
+              size_manual = size_manual,
+              shape_manual = shape_manual,
+              alpha_manual = alpha_manual,
+              scale_log2r = scale_log2r,
+              complete_cases = complete_cases,
+              impute_na = impute_na,
+              filepath = filepath,
+              filename = paste0(fn_prefix, ".", fn_suffix),
+              center_features = center_features,
+              scale_features = scale_features,
+              theme = theme,
+              anal_type = anal_type,
+              ...)
+    }
+  } 
   else if (anal_type == "EucDist") {
     function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
       plotEucDist(df = df,
@@ -444,7 +485,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Heatmap") {
-    function(xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
+    function(xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
              annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL,
              p_dist_rows = 2, p_dist_cols = 2,
              hc_method_rows = "complete", hc_method_cols = "complete", 
@@ -519,7 +560,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   } 
   else if (anal_type == "Corrplot") {
     function(data_select = "logFC", 
-             cor_method = "pearson", digits = 2L, ...) {
+             cor_method = "pearson", digits = 2L, theme = NULL, ...) {
       plotCorr(df = df,
                id = !!id,
                anal_type = anal_type,
@@ -533,6 +574,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix),
                cor_method = cor_method, 
                digits = digits,
+               theme = theme, 
                ...)
     }
   } 
@@ -630,6 +672,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                 id = !!id,
                 col_group = !!col_group,
                 col_order = !!col_order,
+                col_subcellular = !!col_subcellular, 
+                col_subtype = !!col_subtype, 
                 label_scheme_sub = label_scheme_sub,
                 choice = choice,
                 n_clust = n_clust,
@@ -679,7 +723,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Trend_line") {
-    function(n_clust = NULL, panel_ids = NULL, theme = NULL, ...) {
+    function(n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
+             theme = NULL, ...) {
       plotTrend(df2 = df2,
                 id = !!id,
                 col_group = !!col_group,
@@ -687,6 +732,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                 label_scheme_sub = label_scheme_sub,
                 n_clust = n_clust,
                 panel_ids = panel_ids,
+                show_panel_ids = show_panel_ids, 
                 scale_log2r = scale_log2r,
                 complete_cases = complete_cases,
                 impute_na = impute_na,
@@ -694,6 +740,28 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                 filename = paste0(fn_prefix, ".", fn_suffix),
                 theme = theme,
                 ...)
+    }
+  } 
+  else if (anal_type == "Subcellular_plot") {
+    function(n_clust = NULL, panel_ids = NULL, levels_subcellular = NULL, 
+             levels_subtype = NULL, theme = NULL, ...) {
+      plotSubcellular(
+        df2 = df2,
+        id = !!id,
+        col_group = !!col_group,
+        col_order = !!col_order,
+        levels_subcellular = levels_subcellular, 
+        levels_subtype = levels_subtype, 
+        label_scheme_sub = label_scheme_sub,
+        n_clust = n_clust,
+        panel_ids = panel_ids,
+        scale_log2r = scale_log2r,
+        complete_cases = complete_cases,
+        impute_na = impute_na,
+        filepath = filepath,
+        filename = paste0(fn_prefix, ".", fn_suffix),
+        theme = theme,
+        ...)
     }
   } 
   else if (anal_type == "NMF") {
@@ -1036,8 +1104,8 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
       else if (id %in% c("prot_acc", "gene")) 
         message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` ", 
                 "for `filter_` varargs.")
-    } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", 
-                                "Outlier", "NMF", "NMF_meta",
+    } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "UMAP", "EucDist", 
+                                "Trend", "Outlier", "NMF", "NMF_meta",
                                 "GSVA", "Corrplot", "String", "LDA", 
                                 "KinSub")) { # optional impute_na and possible pVals
       if (impute_na) {

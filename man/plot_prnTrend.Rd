@@ -9,6 +9,7 @@ plot_prnTrend(
   col_order = NULL,
   n_clust = NULL,
   panel_ids = NULL,
+  show_panel_ids = TRUE,
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -37,6 +38,8 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 available cluster IDs will be used.}
 
 \item{panel_ids}{A subset of panel IDs for visualization.}
+
+\item{show_panel_ids}{Logical; show panel IDs or not.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with

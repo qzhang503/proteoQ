@@ -18,6 +18,7 @@ pepCorr_logFC(
   filename = NULL,
   cor_method = "pearson",
   digits = 2L,
+  theme = NULL,
   ...
 )
 
@@ -32,6 +33,7 @@ pepCorr_logInt(
   filename = NULL,
   cor_method = "pearson",
   digits = 2L,
+  theme = NULL,
   ...
 )
 
@@ -46,6 +48,7 @@ prnCorr_logFC(
   filename = NULL,
   cor_method = "pearson",
   digits = 2L,
+  theme = NULL,
   ...
 )
 
@@ -60,6 +63,7 @@ prnCorr_logInt(
   filename = NULL,
   cor_method = "pearson",
   digits = 2L,
+  theme = NULL,
   ...
 )
 }
@@ -114,6 +118,11 @@ is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
 
 \item{digits}{The number of decimal places in correlation values to be
 displayed.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

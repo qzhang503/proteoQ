@@ -23,7 +23,7 @@ locate_outliers <- function (df, range_colRatios = NULL)
 
 #' Locate outliers from a vector.
 #' 
-#' Do nothing at \code{n \le{2}}.
+#' Do nothing at \eqn{n \le 2}.
 #' 
 #' @param x A numeric vector.
 #' @param k The number of suspected outliers.

@@ -9,6 +9,8 @@ prepTrend(
   id = NULL,
   col_group = NULL,
   col_order = NULL,
+  col_subcellular = NULL,
+  col_subtype = NULL,
   label_scheme_sub = NULL,
   impute_group_na = TRUE,
   scale_log2r = TRUE,
@@ -46,6 +48,18 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{col_subcellular}{Only applied to subcellular data analysis. Character
+string to a column key in \code{expt_smry.xlsx} indicating subcellular
+fractions. No calculation of subcellular location score at the \code{NULL}
+default.
+
+Suggest the corresponding column key \code{Subcellular} in metadata.}
+
+\item{col_subtype}{Temporarily applied only to subcellular data analysis.
+Character string to a column key in \code{expt_smry.xlsx} indicating sample
+subtypes linked to subcellular fractions. This is needed, e.g., when each
+subcellular fraction contain multiple subtypes of control, treated etc.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
@@ -89,8 +103,6 @@ the format of \code{arrange_} statements. \cr \cr Additional arguments for
 \link[e1071]{cmeans}, \code{m} is according to Schwaemmle and Jensen if not
 provided; \cr \code{x} is disabled with input data being determined
 automatically.}
-
-\item{parallel}{Parallel processing or not.}
 }
 \description{
 Prepare data for trend analysis.

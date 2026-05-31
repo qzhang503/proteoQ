@@ -17,6 +17,7 @@ plot_corr_sub(
   width,
   height,
   digits = 2L,
+  theme = NULL,
   ...
 )
 }

@@ -4,7 +4,7 @@
 \alias{set_db_outname}
 \title{Helper to set the output file name for a data base}
 \usage{
-set_db_outname(filename = NULL, species = "human", signature)
+set_db_outname(filename = NULL, species = "human", signature = NULL)
 }
 \arguments{
 \item{filename}{Character string; An output file name. At the \code{NULL}
@@ -19,7 +19,8 @@ available for the convenience feature is in one of \code{c("human", "mouse",
 for other species; instead, users will provide values under arguments
 \code{ortho_mart} for the lookup of orthologs to human.}
 
-\item{signature}{A character string, i.e. "go" for uses in an output filename.}
+\item{signature}{A character string, i.e. "go_bp" for uses in an output
+file name.}
 }
 \description{
 Helper to set the output file name for a data base

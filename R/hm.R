@@ -49,7 +49,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotHM <- function(df, id, col_select, col_order, col_benchmark, 
-                   label_scheme_sub, dot_plot = TRUE, 
+                   label_scheme_sub, dot_plot = FALSE, 
                    filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_rows = annot_rows, 
@@ -181,6 +181,10 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   sample_ids <- label_scheme_sub$Sample_ID
+  
+  if (!(is.null(col_order) || is.factor(label_scheme[[col_order]]))) {
+    label_scheme[[col_order]] <- factor(label_scheme[[col_order]])
+  }
   
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
@@ -818,7 +822,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    
@@ -1050,7 +1054,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = TRUE, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    

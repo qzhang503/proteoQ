@@ -42,12 +42,38 @@ proc_obo <- function(db_path, fn_obo,
   last_row <- grep("\\[Typedef\\]", df)[1] - 2L
   df <- df[first_row:last_row]
   
-  go_ids <- df %>% .[grepl("^id:\\s{1}", .)] %>% gsub("^id:\\s{1}", "", .)
-  go_nms <- df %>% .[grepl("^name:\\s{1}", .)] %>% gsub("^name:\\s{1}", "", .)
-  go_type <- df %>% .[grepl("^namespace:\\s{1}", .)] %>% gsub("^namespace:\\s{1}", "", .)
+  go_ids <- df %>% 
+    .[grepl("^id:\\s{1}", .)] %>% 
+    gsub("^id:\\s{1}", "", .)
+  go_nms <- df %>% 
+    .[grepl("^name:\\s{1}", .)] %>% 
+    gsub("^name:\\s{1}", "", .)
+  go_type <- df %>% 
+    .[grepl("^namespace:\\s{1}", .)] %>% 
+    gsub("^namespace:\\s{1}", "", .)
+  
+  #  | Broad compartment     | GO ID      | GO term               |
+  #  | --------------------- | ---------- | --------------------- |
+  #  | Nucleus               | GO:0005634 | nucleus               |
+  #  | Chromatin             | GO:0000785 | chromatin             |
+  #  | Cytoplasm             | GO:0005737 | cytoplasm             |
+  #  | Cytosol               | GO:0005829 | cytosol               |
+  #  | Plasma membrane       | GO:0005886 | plasma membrane       |
+  #  | Mitochondrion         | GO:0005739 | mitochondrion         |
+  #  | Endoplasmic reticulum | GO:0005783 | endoplasmic reticulum |
+  #  | Golgi apparatus       | GO:0005794 | Golgi apparatus       |
+  #  | Lysosome              | GO:0005764 | lysosome              |
+  #  | Endosome              | GO:0005768 | endosome              |
+  #  | Ribosome              | GO:0005840 | ribosome              |
+  #  | Proteasome            | GO:0000502 | proteasome complex    |
+  #  | Cytoskeleton          | GO:0005856 | cytoskeleton          |
+  #  | Centrosome            | GO:0005813 | centrosome            |
+  #  | Extracellular region  | GO:0005576 | extracellular region  |
+  #  | Vesicle               | GO:0031982 | vesicle               |
+  #  | Peroxisome            | GO:0005777 | peroxisome            |
   
   df <- tibble::tibble(go_id = go_ids, go_name = go_nms, go_space = go_type) |>
-    dplyr::filter(go_space %in% type) %>% 
+    dplyr::filter(go_space %in% type) |>
     dplyr::select(-go_space) 
 }
 
@@ -381,10 +407,11 @@ find_abbr_species <- function(species = "human", abbr_species = NULL)
 
 
 #' Helper to set the output file name for a data base
-#' 
-#' @param signature A character string, i.e. "go" for uses in an output filename.
+#'
+#' @param signature A character string, i.e. "go_bp" for uses in an output
+#'   file name.
 #' @inheritParams prepMSig
-set_db_outname <- function(filename = NULL, species = "human", signature) 
+set_db_outname <- function(filename = NULL, species = "human", signature = NULL) 
 {
   filename <- rlang::enexpr(filename)
   
@@ -400,15 +427,22 @@ set_db_outname <- function(filename = NULL, species = "human", signature)
     filename <- paste0(signature, "_", abbr_species_lwr, ".rds")
   } 
   else {
-    filename <- rlang::as_string(filename)
+    filename  <- rlang::as_string(filename)
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
     fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-    if (fn_prefix == fn_suffix) 
+    
+    if (fn_prefix == fn_suffix) {
       stop("No '.' to separate a basename and an extension.")
-    if (fn_suffix != "rds") 
+    }
+      
+    if (fn_suffix != "rds") {
       stop("File extension must be `.rds`.")
+    }
+
     filename <- paste0(fn_prefix, ".rds")
   }
+  
+  filename
 }
 
 
@@ -614,6 +648,7 @@ prepGO <- function(species = "human", abbr_species = NULL,
          "\n=================================================================")
   }
 
+  type <- match.arg(type)
   species <- rlang::as_string(rlang::enexpr(species))
 
   db_path <- create_db_path(db_path)
@@ -664,20 +699,38 @@ prepGO <- function(species = "human", abbr_species = NULL,
   }
   
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
-  filename <- set_db_outname(!!rlang::enexpr(filename), species, "go")
+  
+  abbr_type <- switch(
+    type, 
+    biological_process = "bp",
+    cellular_component = "cc",
+    molecular_function = "mf",
+    stop("`type` not in one of `biological_process`, `cellular_component`", 
+         " or `molecular_function`.")
+  )
+  
+  filename <- set_db_outname(
+    !!rlang::enexpr(filename), 
+    species = species, 
+    signature = paste0("go_", abbr_type))
 
   df_gaf <- proc_gaf(db_path, fn_gaf)
   df_obo <- proc_obo(db_path, fn_obo, type)
   
   df <- dplyr::left_join(df_gaf, df_obo, by = "go_id") |>
+    dplyr::filter(!is.na(go_name)) |>
     dplyr::mutate(go_name = paste(go_id, go_name)) |>
     dplyr::select(go_name, gene)
-  readr::write_tsv(df, file.path(db_path, paste0("tbl_go_", species, ".tsv")))
+  readr::write_tsv(
+    df, file.path(db_path, paste0("tbl_go_", abbr_type, "_", species, ".tsv")))
   
-  accessions <- annot_from_to(abbr_species = abbr_species, 
-                              keys = unique(df$gene), from = "SYMBOL", to = "ENTREZID") %>% 
-    dplyr::rename(gene = SYMBOL, entrez = ENTREZID) %>% 
-    dplyr::filter(!is.na(entrez), !is.na(gene))  %>% 
+  accessions <- annot_from_to(
+    abbr_species = abbr_species, 
+    keys = unique(df$gene), 
+    from = "SYMBOL", 
+    to = "ENTREZID") |>
+    dplyr::rename(gene = SYMBOL, entrez = ENTREZID) |>
+    dplyr::filter(!is.na(entrez), !is.na(gene))  |>
     dplyr::filter(!duplicated(gene))
   
   gsets <- accessions %>% 
@@ -690,7 +743,7 @@ prepGO <- function(species = "human", abbr_species = NULL,
   saveRDS(gsets, file.path(db_path, filename))
   
   if (TRUE) {
-    nm_obj <- paste0("go_sets_", tolower(abbr_species))
+    nm_obj <- paste0("go_sets_", abbr_type, "_", tolower(abbr_species))
     assign(nm_obj, gsets)
     save(list = nm_obj, file = file.path(db_path, paste0(nm_obj, ".rda")))
   }

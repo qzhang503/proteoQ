@@ -48,8 +48,9 @@ find_trend_m <- function (dots, choice = "cmeans", n_clust = 5L, df_mean_log2r)
     # (2) excluded formalArgs: `x` and `centers`; 
     #     mistaken `k` intended for `cluster::clara` excluded as well; 
     #     no mismatch between "m" and "method" with `%in%`
-    dots <- dots[names(dots) %in% c("iter.max", "verbose", "dist", "method", 
-                                    "m", "rate.par", "weights", "control")]
+    dots <- dots[names(dots) %in% c(
+      "iter.max", "verbose", "dist", "method", "m", "rate.par", "weights", 
+      "control")]
     
     # (3) conversion: expr to character string
     nms <- intersect(c("dist", "method"), names(dots))
@@ -63,13 +64,12 @@ find_trend_m <- function (dots, choice = "cmeans", n_clust = 5L, df_mean_log2r)
         m <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
           D^(-0.0406 * log(N) - 0.1134)
         
-        message("Set `m` to ", round(m, digits = 2), ".")
+        message("Set `m` to ", round(m, digits = 2L), ".")
         
         m
       })
     }
-  } 
-  else if (choice == "kmeans") {
+  } else if (choice == "kmeans") {
     if (!is.null(dots[["centers"]])) {
       n_clust <- centers
       dots[["centers"]] <- NULL
@@ -84,8 +84,7 @@ find_trend_m <- function (dots, choice = "cmeans", n_clust = 5L, df_mean_log2r)
       dots[["nstart"]] <- 20
       message("Set `n_start` to 20.")
     }
-  } 
-  else if (choice == "clara") {
+  } else if (choice == "clara") {
     if (!is.null(dots[["k"]])) {
       n_clust <- k
       dots[["k"]] <- NULL
@@ -102,8 +101,7 @@ find_trend_m <- function (dots, choice = "cmeans", n_clust = 5L, df_mean_log2r)
       dots[["samples"]] <- 50
       message("Set `samples` to 50.")
     }
-  } 
-  else if (choice == "pam") {
+  } else if (choice == "pam") {
     if (!is.null(dots[["k"]])) {
       n_clust <- k
       dots[["k"]] <- NULL
@@ -196,130 +194,237 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 #' @importFrom e1071 cmeans
 #' @importFrom cluster clusGap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-analTrend <- function (df, id, col_group, col_order, label_scheme_sub, 
-                       choice, n_clust, impute_group_na = TRUE, 
-                       scale_log2r = TRUE, complete_cases = FALSE, 
-                       impute_na = FALSE, p_outlier = .05, 
-                       filepath, filename, anal_type, ...) 
-{
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_group <- rlang::as_string(rlang::enexpr(col_group))
-  col_order <- rlang::as_string(rlang::enexpr(col_order))
-  
-  dots <- rlang::enexprs(...)
-  lang_dots    <- dots[unlist(lapply(dots, is.language))]
-  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
-  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
-  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
-  
-  if (!nrow(label_scheme_sub)) {
-    stop("Empty metadata.")
-  }
-  
-  if (!impute_group_na) {
-    complete_cases <- 
-      to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
-  }
-  
-  if (complete_cases) {
-    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-  }
-  
-  ## Data aggregation by groups
-  res <- prepTrend(
-    df = df, id = id, col_group = col_group, col_order = col_order, 
-    label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
-    scale_log2r = scale_log2r, complete_cases = complete_cases, 
-    impute_na = impute_na, anal_type = anal_type, 
-    p_outlier = p_outlier, group_renorm_by = FALSE, ...)
-  df_mean_log2r <- res$df_mean_log2r
-  df_mean_int <- res$df_mean_int
-  dfR <- res$dfR
-  dfI <- res$dfI
-  sids <- res$sids
-  grps <- res$grps
-  ugrps <- res$ugrps
-  n_samples <- res$n_samples
-  label_scheme_sub <- res$label_scheme_sub
-  fcts <- res$fcts
-  dots <- res$dots
-  rm(list = "res")
-
-  ## Analysis
-  fn_suffix <- tools::file_ext(basename(filename))
-  fn_prefix <- tools::file_path_sans_ext(filename)
-  
-  if (is.null(n_clust)) {
-    n_clust <- local({
+analTrend <- 
+  function (df, id = "gene", col_group = "Group", col_order = "Order", 
+            col_subcellular = NULL, col_subtype = NULL, label_scheme_sub = NULL, 
+            choice = "cmeans", n_clust = c(4, 6, 8, 12, 16), 
+            impute_group_na = TRUE, scale_log2r = TRUE, complete_cases = FALSE, 
+            impute_na = FALSE, p_outlier = .05, filepath = NULL, 
+            filename = NULL, anal_type = "Trend", ...) 
+  {
+    options(warn = 1L)
+    
+    if (!is.null(id <- rlang::enexpr(id))) {
+      id <- rlang::as_string(id)
+    }
+    
+    if (!is.null(col_group <- rlang::enexpr(col_group))) {
+      col_group <- rlang::as_string(col_group)
+    }
+    
+    if (!is.null(col_order <- rlang::enexpr(col_order))) {
+      col_order <- rlang::as_string(col_order)
+    }
+    
+    if (!is.null(col_subcellular <- rlang::enexpr(col_subcellular))) {
+      col_subcellular <- rlang::as_string(col_subcellular)
+    }
+    
+    if (!is.null(col_subtype <- rlang::enexpr(col_subtype))) {
+      col_subtype <- rlang::as_string(col_subtype)
+    }
+    
+    if (is.null(col_subtype) && !is.null(col_subcellular)) {
+      col_subtype <- "sample_type_unknown"
+      label_scheme_sub[[col_subtype]] <- "unknown"
+      
+      warning("Need specification of 'col_subtype' in label_scheme for ", 
+              "subcellular analysis.\n", 
+              "Added placeholder column ", col_subtype)
+    }
+    
+    dots <- rlang::enexprs(...)
+    lang_dots    <- dots[unlist(lapply(dots, is.language))]
+    filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+    arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+    dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
+    
+    if (!nrow(label_scheme_sub)) {
+      stop("Empty metadata.")
+    }
+    
+    if (!impute_group_na) {
+      complete_cases <- 
+        to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+    }
+    
+    if (complete_cases) {
+      df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+    }
+    
+    ## Data aggregation by groups
+    res <- prepTrend(
+      df = df, id = id, col_group = col_group, col_order = col_order, 
+      col_subcellular = col_subcellular, col_subtype = col_subtype, 
+      label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
+      scale_log2r = scale_log2r, complete_cases = complete_cases, 
+      impute_na = impute_na, anal_type = anal_type, p_outlier = p_outlier, 
+      group_renorm_by = FALSE, ...)
+    df_mean_log2r <- res$df_mean_log2r
+    df_mean_int <- res$df_mean_int
+    df_frac_purity <- res$df_frac_purity
+    df_entropy <- res$df_entropy
+    df_score_loc <- res$df_score_loc
+    sc_lookup <- res$sc_lookup
+    dfR <- res$dfR
+    dfI <- res$dfI
+    sids <- res$sids
+    grps <- res$grps
+    ugrps <- res$ugrps
+    n_samples <- res$n_samples
+    label_scheme_sub <- res$label_scheme_sub
+    fcts <- res$fcts
+    dots <- res$dots
+    rm(list = "res")
+    
+    ## Analysis
+    fn_suffix <- tools::file_ext(basename(filename))
+    fn_prefix <- tools::file_path_sans_ext(filename)
+    
+    if (is.null(n_clust)) {
       gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
-      cluster::maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
-    })
-    
-    message("Set `n_clust` to ", n_clust, ".")
-    fn_prefix <- paste0(fn_prefix, n_clust)
-  } else {
-    if (!all(n_clust >= 2L)) {
-      stop("All 'n_clust' need to be >= 2.")
+      n_clust  <- cluster::maxSE(
+        f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
+      rm(list = "gap_stat")
+      
+      message("Set `n_clust` to ", n_clust, ".")
+      fn_prefix <- paste0(fn_prefix, n_clust)
+    } else {
+      if (!all(n_clust >= 2L)) {
+        stop("All 'n_clust' need to be >= 2.")
+      }
+      
+      if (!(all(n_clust %% 1 == 0L))) {
+        stop("All 'n_clust' need to be integers.")
+      }
     }
     
-    if (!(all(n_clust %% 1 == 0L))) {
-      stop("All 'n_clust' need to be integers.")
+    ans_dots <- find_trend_m(
+      dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_mean_log2r)
+    dots <- ans_dots[["dots"]]
+    n_clust <- ans_dots[["n_clust"]]
+    rm(list = "ans_dots")
+    
+    res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
+                     id = id, df_mean_log2r = df_mean_log2r)
+    
+    ## Outputs
+    df_mean_log2r <- df_mean_log2r |>
+      tibble::rownames_to_column(id)
+    
+    df_mean_int <- log10(df_mean_int) |>
+      tibble::rownames_to_column(id) |>
+      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "log10Int") |>
+      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+    
+    if (ok_frac_purity <- !is.null(df_frac_purity)) {
+      df_frac_purity <- df_frac_purity |>
+        tibble::rownames_to_column(id) |>
+        tidyr::pivot_longer(-!!id, names_to = "group", values_to = "purity") |>
+        tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+      
+      df_score_loc <- df_score_loc |>
+        tibble::rownames_to_column(id) |>
+        tidyr::pivot_longer(-!!id, names_to = "group", values_to = "loc_score") |>
+        tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+      
+      df_entropy <- df_entropy |>
+        tibble::rownames_to_column(id) |>
+        tidyr::pivot_longer(-!!id, names_to = "sub_type", values_to = "entropy")
+      
+      # Should not occur with the addition of a placeholder 'col_subtype'
+      if (is.null(col_subtype)) {
+        df_entropy <- df_entropy |>
+          dplyr::rename(uid_ent := !!id) |>
+          dplyr::select(-dplyr::one_of("sub_type"))
+      } else {
+        df_entropy <- df_entropy |>
+          tidyr::unite(uid_ent, !!id, sub_type, sep = ".", remove = TRUE)
+      }
     }
+    
+    out <- vector("list", length(n_clust))
+    for (i in seq_along(n_clust)) {
+      outi <- df_mean_log2r |>
+        dplyr::left_join(res_cl[[i]], by = id) |>
+        tidyr::pivot_longer(
+          cols = -c(.data[[id]], cluster), 
+          names_to = "group", 
+          values_to = "log2FC") |>
+        dplyr::mutate(group = factor(group, levels = fcts)) |>
+        dplyr::arrange(group) |>
+        tidyr::unite(uid, !!id, group, sep = ".", remove = FALSE) |> 
+        dplyr::left_join(df_mean_int, by = "uid")
+      
+      if (ok_frac_purity) {
+        outi <- outi |>
+          dplyr::left_join(sc_lookup, by = c("group" = "Sample_ID"))
+        
+        outi <- outi |>
+          dplyr::left_join(df_frac_purity, by = "uid")
+        
+        outi <- outi |>
+          tidyr::unite(uid_ent, !!id, col_subtype, sep = ".", remove = FALSE) |> 
+          dplyr::left_join(df_entropy, by = "uid_ent") |>
+          dplyr::left_join(df_score_loc, by = "uid")
+      } else {
+        outi[["uid"]] <- NA_character_
+      }
+      
+      # Param file 'anal_prnTrend.rda' overwritten by the latest call ->
+      # embedded col_group etc. for self-containness
+      outi <- outi |>
+        dplyr::select(-dplyr::one_of(c("uid", "uid_ent"))) |> 
+        dplyr::left_join(df[, c(id, "species")], by = id)
+      
+      outi <- outi |>
+        dplyr::mutate(log2FC = round(log2FC, digits = 2L), 
+                      log10Int =round(log10Int, digits = 2L))
+      
+      saveRDS(
+        list(data = outi, 
+             col_group = col_group, col_order = col_order, 
+             col_subcellular = col_subcellular, col_subtype = col_subtype, 
+             sc_lookup = sc_lookup), 
+        file.path(filepath, paste0(sub("\\.txt", "", filename[[i]]), ".rds")))
+      
+      outi <- outi |>
+        dplyr::mutate(col_group = col_group, 
+                      col_order = col_order, )
+      
+      if (!is.null(col_subcellular)) {
+        outi <- outi |>
+          dplyr::mutate(col_subcellular = col_subcellular, )
+      }
+      
+      if (!is.null(col_subtype)) {
+        outi <- outi |>
+          dplyr::mutate(col_subtype = col_subtype, )
+      }
+      
+      readr::write_tsv(outi, file.path(filepath, filename[[i]]))
+      
+      out[[i]] <- outi
+    }
+    
+    if ((!is.null(sc_lookup)) && is.data.frame(sc_lookup)) {
+      readr::write_tsv(sc_lookup, file.path(filepath, "subcellular_lookup.tsv"))
+    }
+    
+    invisible(out)
   }
-  
-  ans_dots <- find_trend_m(
-    dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_mean_log2r)
-  dots <- ans_dots[["dots"]]
-  n_clust <- ans_dots[["n_clust"]]
-  rm(list = "ans_dots")
-  
-  res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
-                   id = id, df_mean_log2r = df_mean_log2r)
-  
-  df_mean_log2r <- df_mean_log2r |>
-    tibble::rownames_to_column(id)
-  
-  out <- vector("list", length(n_clust))
-  for (i in seq_along(n_clust)) {
-    out[[i]] <- df_mean_log2r |>
-      dplyr::left_join(res_cl[[i]], by = id) |>
-      tidyr::pivot_longer(
-        cols = -c(.data[[id]], cluster), 
-        names_to = "group", 
-        values_to = "log2FC") |>
-      dplyr::mutate(group = factor(group, levels = fcts)) |>
-      dplyr::arrange(group) |>
-      tidyr::unite(uid, !!id, group, sep = ".", remove = FALSE) |> 
-      dplyr::left_join(df_mean_int, by = "uid") |>
-      dplyr::select(-uid) |>
-      dplyr::left_join(df[, c(id, "species")], by = id) |>
-      dplyr::mutate(col_group = rlang::as_string(col_group), 
-                    col_order = rlang::as_string(col_order)) %T>% 
-      write.table(file.path(filepath, filename[[i]]), sep = "\t", 
-                  col.names = TRUE, row.names = FALSE, quote = FALSE)	
-  }
-  
-  saveRDS(
-    list(log2R = dfR, Intensity = dfI, group = grps), 
-    file.path(
-      filepath, paste0(sub("_nclust\\d+\\.txt", "", filename[[1]]), ".rds"))
-  )
-  
-  invisible(out)
-}
 
 
 #' Prepare data for trend analysis.
 #' 
-#' @param parallel Parallel processing or not.
 #' @param int_to_long Logical; if TRUE, pivot intensities to a long form.
 #' @inheritParams analTrend
-prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL, 
-                       label_scheme_sub = NULL, impute_group_na = TRUE, 
-                       scale_log2r = TRUE, complete_cases = FALSE, 
-                       impute_na = FALSE, anal_type = "Trend", 
-                       p_outlier = 0.05, group_renorm_by = NULL, 
-                       int_to_long = TRUE, ...)
+prepTrend <- function (
+    df = NULL, id = NULL, col_group = NULL, col_order = NULL, 
+    col_subcellular = NULL, col_subtype = NULL, label_scheme_sub = NULL, 
+    impute_group_na = TRUE, scale_log2r = TRUE, complete_cases = FALSE, 
+    impute_na = FALSE, anal_type = "Trend", p_outlier = 0.05, 
+    group_renorm_by = NULL, int_to_long = TRUE, ...)
 {
   dots <- rlang::enexprs(...)
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
@@ -341,7 +446,7 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
 
   label_scheme_sub <- label_scheme_sub |>
     dplyr::filter(Sample_ID %in% colnames(dfR))
-
+  
   tempdata <- make_renorm_data(
     df_lgr = dfR, df_log2r = NULL, df_int = dfI, 
     group_renorm_by = group_renorm_by, label_scheme_sub = label_scheme_sub, 
@@ -366,20 +471,14 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
   grps  <- label_scheme_sub[[col_group]][mts]
   ugrps <- unique(grps)
   ugrps <- ugrps[!is.na(ugrps)]
-  
-  fcts <- label_scheme_sub |>
-    dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
-    dplyr::arrange(.data[[col_order]]) |>
-    dplyr::pull(.data[[col_group]])
-  sids <- label_scheme_sub[["Sample_ID"]]
+  sids  <- label_scheme_sub[["Sample_ID"]]
   
   dfN <- local({
-    ans <- sep_data_by_group(
+    dfsI <- sep_data_by_group(
       elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
-      label_scheme = label_scheme_sub)
-    dfsI <- lapply(ans, `[[`, "Intensity")
-    n_nas <- lapply(dfsI, function (x) rowSums(!is.na(x)))
-    do.call(cbind, n_nas)
+      label_scheme = label_scheme_sub) |>
+      lapply(`[[`, "Intensity")
+    do.call(cbind, lapply(dfsI, function (x) rowSums(!is.na(x))))
   })
 
   if (impute_group_na) {
@@ -389,25 +488,18 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
     dfsR <- ans1[["log2R"]]
     dfsI <- ans1[["Intensity"]]
     ys_base <- ans1[["baseline"]]
-    rm(list = "ans1")
-    
-    if (FALSE) {
-      mapply(function (x, y) {
-        stopifnot(identical(rownames(x), rownames(y)))
-        stopifnot(identical(colnames(x), colnames(y)))
-      }, dfsR, dfsI)
-    }
 
     # Update dfR and dfI with baseline imputation
     ans2 <- impute_baseline_ints(
       dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
-      ys_base = ys_base, sample_ids = sids, impute_low_qualities = TRUE)
+      ys_base = ys_base, sample_ids = sids, 
+      impute_low_qualities = TRUE)
     dfR <- ans2[["log2R"]]
     dfI <- ans2[["Intensity"]]
-    rm(list = c("ans2", "dfsR", "dfsI", "ys_base"))
+    rm(list = c("ans1", "ans2", "dfsR", "dfsI", "ys_base"))
   }
   
-  # Group-separate data based on updated dfR and dfI
+  # Group-separation of data based on updated dfR and dfI
   ans <- sep_data_by_group(
     elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
     label_scheme = label_scheme_sub)
@@ -447,29 +539,133 @@ prepTrend <- function (df = NULL, id = NULL, col_group = NULL, col_order = NULL,
     parallel::stopCluster(cl)
   }
 
+  fcts_plot_ord <- label_scheme_sub |>
+    dplyr::distinct(.data[[col_order]], .data[[col_group]]) |>
+    dplyr::arrange(.data[[col_order]]) |>
+    dplyr::pull(.data[[col_group]])
+  
   df_mean_log2r <- do.call(cbind, lapply(dfsR, rowMeans, na.rm = TRUE))
+  df_mean_log2r <- data.frame(df_mean_log2r[, fcts_plot_ord, drop = FALSE])
   df_mean_int   <- do.call(cbind, lapply(dfsI, rowMeans, na.rm = TRUE))
-  df_mean_log2r <- data.frame(df_mean_log2r[, fcts, drop = FALSE])
-  df_mean_int   <- data.frame(df_mean_int[, fcts, drop = FALSE])
+  df_mean_int   <- data.frame(df_mean_int[, fcts_plot_ord, drop = FALSE])
+  
   nans <- sapply(df_mean_log2r, is.nan)
   df_mean_log2r[nans] <- NA_real_
   df_mean_int[nans] <- NA_real_
   rm(list = "nans")
   
-  df_mean_int <- log10(df_mean_int) |>
-    tibble::rownames_to_column(id)
-  
-  if (int_to_long) {
-    df_mean_int <- df_mean_int |>
-      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "Log10Int") |>
-      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
-  }
+  # Calculate purity after group mean: some sample may lost certain fractions
+  ans_frac_purity <- calc_subcell_frac(
+    dfR = df_mean_log2r, 
+    dfI = df_mean_int, 
+    label_scheme_sub = label_scheme_sub, 
+    col_group = col_group, 
+    col_subcellular = col_subcellular, 
+    col_subtype = col_subtype)
+
+  df_frac_purity <- ans_frac_purity[["purity"]]
+  df_entropy <- ans_frac_purity[["entropy"]]
+  df_score_loc <- ans_frac_purity[["score_loc"]]
+  sc_lookup <- ans_frac_purity[["sc_lookup"]]
+  rm(list = "ans_frac_purity")
 
   list(
     df_mean_log2r = df_mean_log2r, df_mean_int = df_mean_int, 
+    df_frac_purity = df_frac_purity, df_entropy = df_entropy, 
+    df_score_loc = df_score_loc, sc_lookup = sc_lookup, 
     dfR = dfR, dfI = dfI, dfN = dfN, grps = grps, ugrps = ugrps, 
-    sids = sids, n_samples = n_samples, fcts = fcts, 
+    sids = sids, n_samples = n_samples, fcts = fcts_plot_ord, 
     label_scheme_sub = label_scheme_sub, dots = dots)
+}
+
+
+#' Calculate subcellular intensity fractions.
+#' 
+#' @param dfR A data frame of log2Ratios.
+#' @param dfI A data frame of intensities.
+#' @param label_scheme_sub Metadata.
+#' @inherit anal_prnTrend
+calc_subcell_frac <- function (
+    dfR = NULL, dfI = NULL, label_scheme_sub = NULL, col_group = "Group", 
+    col_subcellular = "Subcellular", col_subtype = NULL) 
+{
+  if (is.null(col_subcellular)) {
+    return(NULL)
+  }
+  
+  # Should not incur with the placeholders: 
+  #  col_subtype <- "sample_type_unknown" and 
+  #  label_scheme_sub[[col_subtype]] <- "unknown"
+  if (is.null(col_subtype)) {
+    purities   <- dfI / rowSums(dfI, na.rm = TRUE)
+    entropies  <- -rowSums(purities * log10(purities))
+    scores_loc <- purities * (1 - entropies)
+    
+    # Column name is 'entropies' if single-column data.frame
+    entropies <- data.frame(entropies)
+
+    return(
+      list(purity = purities, entropy = entropies, score_loc = scores_loc, 
+           sc_lookup = NULL)
+    )
+  }
+
+  sc_lookup <- label_scheme_sub |>
+    dplyr::select(dplyr::one_of(col_group, col_subcellular, col_subtype)) |>
+    unique() |>
+    dplyr::rename(Sample_ID := col_group)
+  
+  dfs <- sep_data_by_group(
+    elements = unique(sc_lookup[[col_subtype]]), 
+    dfR = dfR, 
+    dfI = dfI, 
+    sids = sc_lookup[["Sample_ID"]], 
+    key_col = col_subtype, 
+    label_scheme = sc_lookup)
+
+  # Fraction probability
+  purities <- vector("list", length(dfs))
+  for (i in seq_along(purities)) {
+    dfi <- dfs[[i]]
+    dfx <- dfi[["log2R"]]
+    dfy <- dfi[["Intensity"]]
+    purities[[i]] <- dfy / rowSums(dfy, na.rm = TRUE)
+  }
+
+  entropies <- lapply(purities, function (x) {
+    -rowSums(x * log10(x))
+  })
+  
+  scores_loc <- mapply(function (df, y) {
+    df * (1 - y)
+  }, purities, entropies, SIMPLIFY = FALSE, USE.NAMES = TRUE)
+  
+  # OK to have low entropy and low purity since entropy is an "average" across 
+  # all fractions whereas purity pertains to a fraction
+  purities <- do.call(cbind, purities)
+  entropies <- do.call(cbind, entropies)
+  colnames(entropies) <- names(dfs)
+  scores_loc <- do.call(cbind, scores_loc)
+
+  nans <- sapply(purities, is.nan)
+  purities[nans] <- NA_real_
+  purities <- round(purities, digits = 3L)
+  purities <- data.frame(purities, check.names = FALSE)
+  purities <- purities[, colnames(dfI)]
+  
+  nans <- sapply(scores_loc, is.nan)
+  scores_loc[nans] <- NA_real_
+  scores_loc <- round(scores_loc, digits = 3L)
+  scores_loc <- data.frame(scores_loc, check.names = FALSE)
+  scores_loc <- scores_loc[, colnames(dfI)]
+  
+  nans <- sapply(entropies, is.nan)
+  entropies[nans] <- NA_real_
+  entropies <- round(entropies, digits = 3L)
+  entropies <- data.frame(entropies, check.names = FALSE)
+  
+  list(purity = purities, entropy = entropies, score_loc = scores_loc, 
+       sc_lookup = sc_lookup)
 }
 
 
@@ -502,6 +698,7 @@ update_ls_by_col_order <- function (label_scheme_sub, col_group, col_order)
   
   label_scheme_sub
 }
+
 
 #' Re-normalize data locally by group.
 #' 
@@ -573,6 +770,72 @@ make_renorm_data <- function (
 }
 
 
+#' Finds the input file for Trend plots.
+#' 
+#' @param df2 Filename(s) of trend inputs.
+#' @param n_clust The number of clusters.
+#' @param filepath Input and output filepath.
+#' @inheritParams normPSM
+find_trend_df2 <- function (df2 = NULL, n_clust = NULL, scale_log2r = TRUE, 
+                            impute_na = FALSE, filepath = NULL)
+{
+  pat <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
+  ins <- list.files(path = filepath, pattern = pat)
+  
+  if (!length(ins)) {
+    stop("No inputs under ", filepath)
+  }
+  
+  if (is.null(df2)) {
+    ins <- 
+      if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
+    
+    ins <- if (is.na(scale_log2r))
+      ins[grepl("_Trend_O_", ins)]
+    else if (scale_log2r)
+      ins[grepl("_Trend_Z_", ins)]
+    else
+      ins[grepl("_Trend_N_", ins)]
+    
+    if (!length(ins)) {
+      stop("No inputs correspond to impute_na = ", impute_na, 
+           ", scale_log2r = ", scale_log2r)
+    }
+    
+    if (is.null(n_clust)) {
+      df2 <- ins
+    } 
+    else {
+      stopifnot(all(n_clust >= 2L), all(n_clust %% 1 == 0L))
+      
+      possibles <- gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", ins) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      n_clust2 <- n_clust[n_clust %in% possibles]
+      df2 <- names(possibles[possibles %in% n_clust2])
+      
+      if (!length(df2)) {
+        stop("No input files correspond to impute_na = ", impute_na, 
+             ", scale_log2r = ", scale_log2r, 
+             " at n_clust = ", paste0(n_clust, collapse = ","))
+      }
+    }    
+  } 
+  else {
+    if (length(non_exists <- df2[!df2 %in% ins])) {
+      stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
+    }
+    
+    if (!length(df2)) {
+      stop("File(s) not found under ", filepath)
+    }
+  }
+  
+  df2
+}
+
+
 #' Plots trends
 #' 
 #' @param panel_ids Panel IDs for plotting.
@@ -584,7 +847,7 @@ make_renorm_data <- function (
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotTrend <- function(id, col_group = NULL, col_order = NULL, label_scheme_sub, 
-                      n_clust = NULL, panel_ids = NULL, 
+                      n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
                       scale_log2r, complete_cases, impute_na, 
                       df2 = NULL, filepath, filename, theme, ...) 
 {
@@ -595,74 +858,20 @@ plotTrend <- function(id, col_group = NULL, col_order = NULL, label_scheme_sub,
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-  ## find input df2
-  pat <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
-  ins <- list.files(path = filepath, pattern = pat)
+  # find input df2
+  df2 <- find_trend_df2(df2 = df2, n_clust = n_clust, scale_log2r = scale_log2r, 
+                        impute_na = impute_na, filepath = filepath)
   
-  if (!length(ins)) {
-    stop("No inputs under ", filepath)
-  }
-
-  if (is.null(df2)) {
-    ins <- 
-      if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
-
-    ins <- if (is.na(scale_log2r))
-      ins[grepl("_Trend_O_", ins)]
-    else if (scale_log2r)
-      ins[grepl("_Trend_Z_", ins)]
-    else
-      ins[grepl("_Trend_N_", ins)]
-
-    if (!length(ins)) {
-      stop("No inputs correspond to impute_na = ", impute_na, 
-           ", scale_log2r = ", scale_log2r)
-    }
-
-  	if (is.null(n_clust)) {
-  	  df2 <- ins
-  	} 
-    else {
-  	  stopifnot(all(n_clust >= 2L), all(n_clust %% 1 == 0L))
-  	  
-  	  df2 <- local({
-    	  possibles <- ins %>% 
-    	    gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .) %>% 
-    	    as.numeric() %>% 
-    	    `names<-`(ins)
-    	  
-    	  n_clust2 <- n_clust[n_clust %in% possibles]
-    	  df2 <- names(possibles[possibles %in% n_clust2])	    
-  	  })
-  	  
-  	  if (!length(df2)) {
-  	    stop("No input files correspond to impute_na = ", impute_na, 
-  	         ", scale_log2r = ", scale_log2r, 
-  	         " at n_clust = ", paste0(n_clust, collapse = ","))
-  	  }
-  	}    
-  } 
-  else {
-    local({
-      non_exists <- df2[!df2 %in% ins]
-      
-      if (length(non_exists)) {
-        stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
-      }
-    })
-    
-    if (!length(df2)) {
-      stop("File(s) not found under ", filepath)
-    }
-  }
-
-  # prepare output filename ---------------------------	
-  custom_prefix <- if (id %in% c("pep_seq", "pep_seq_mod"))
+  # prepare output filename
+  custom_prefix <- if (id %in% c("pep_seq", "pep_seq_mod")) {
     purrr::map_chr(df2, ~ gsub("(.*_{0,1})Peptide_Trend.*", "\\1", .x))
-  else if (id %in% c("prot_acc", "gene"))
+  }
+  else if (id %in% c("prot_acc", "gene")) {
     purrr::map_chr(df2, ~ gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x))
-  else
+  }
+  else {
     stop("Unknown id = ", id)
+  }
 
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -709,8 +918,11 @@ plotTrend <- function(id, col_group = NULL, col_order = NULL, label_scheme_sub,
       fn_suffix = fn_suffix, 
       df = df, 
       id = id, 
+      col_group = rlang::enexpr(col_group), 
+      col_order = rlang::enexpr(col_order), 
       complete_cases = complete_cases, 
       panel_ids = panel_ids, 
+      show_panel_ids = show_panel_ids, 
       filepath = filepath, 
       label_scheme_sub = label_scheme_sub, 
       theme = theme, 
@@ -732,7 +944,9 @@ plotTrend <- function(id, col_group = NULL, col_order = NULL, label_scheme_sub,
 #' @importFrom magrittr %>% %T>% 
 #' @import dplyr ggplot2 RColorBrewer
 plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id, 
+                           col_group = NULL, col_order = NULL, 
                            complete_cases = FALSE, panel_ids = NULL, 
+                           show_panel_ids = TRUE, 
                            filepath = NULL, label_scheme_sub = NULL, 
                            theme = NULL, dots = NULL)
 {
@@ -744,27 +958,30 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
     readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
     error = function(e) NA)
 
-  if (!is.null(dim(df)))
+  if (!is.null(dim(df))) {
     message(paste("File loaded:", src_path))
-  else
+  } else {
     stop(paste("Non-exist file or directory:", src_path))
-  
+  }
+
   df <- df |>
     dplyr::mutate(cluster = as.integer(cluster))
   
-  if (!is.null(panel_ids)) {
-    df <- df |>
-      dplyr::filter(cluster %in% panel_ids)
-    df <- df |>
-      dplyr::mutate(cluster = factor(cluster, levels = panel_ids))
-  } else {
+  if (is.null(panel_ids)) {
     df <- df |>
       dplyr::mutate(cluster = factor(cluster))
+  } else {
+    df <- df |>
+      dplyr::filter(cluster %in% panel_ids) |>
+      dplyr::mutate(cluster = factor(cluster, levels = panel_ids))
   }
-  
+
+  # (x) 'anal_prnTrend.rda' overwritten with the latest call ->
+  #     embedded 'col_group' etc. into the trend analysis output
+  # (x) may use timestamp later or call from corresponding .rds
   col_group <- df[["col_group"]][1]
   col_order <- df[["col_order"]][1]
-  
+
   levs <- label_scheme_sub |>
     dplyr::arrange(!!rlang::sym(col_order)) |>
     dplyr::select(!!rlang::sym(col_group)) |>
@@ -785,7 +1002,8 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
            "\n\n", 
            "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
            paste(levs, collapse = ", "), "\n\n", 
-           "??? Check for consistency in the setting of `anal_prnTrend(col_group = ...)` ", 
+           "??? Check for consistency in the setting of ", 
+           "`anal_prnTrend(col_group = ...)` ", 
            "and `plot_prnTrend(col_group = ...)` for file `", 
            df2, "`.")
     }
@@ -807,9 +1025,7 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
     filters_in_call(!!!filter2_dots) |>
     arrangers_in_call(!!!arrange2_dots) |>
     dplyr::mutate(group = factor(group, levels = levs))
-  
-  # rm(list = c("filter2_dots", "arrange2_dots"))
-  
+
   if (complete_cases) {
     df <- df[complete.cases(df), ]
   }
@@ -829,7 +1045,6 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
   if (is.null(ybreaks)) ybreaks <- 1
   if (is.null(ncol)) ncol <- 1
   if (is.null(nrow)) nrow <- 2
-  # if (is.null(color)) color <- "#f0f0f0"
   if (is.null(color)) color <- "#2c7fb8"
   if (is.null(alpha)) alpha <- .25
   
@@ -868,8 +1083,17 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
     labs(title = "", x = "", y = x_label) +
     theme
   
-  p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
-  
+  if (show_panel_ids) {
+    p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
+  } else {
+    p <- p + 
+      facet_wrap(~ cluster, nrow = nrow, labeller = function(x) "") +
+      theme(
+        strip.text = element_blank(),
+        strip.background = element_blank(),
+        plot.subtitle = element_blank())
+  }
+
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
   
   rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(out_nm)),
@@ -893,6 +1117,16 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnHM
 #'@inheritParams prnSig
+#'@param col_subcellular Only applied to subcellular data analysis. Character
+#'  string to a column key in \code{expt_smry.xlsx} indicating subcellular
+#'  fractions. No calculation of subcellular location score at the \code{NULL}
+#'  default.
+#'  
+#'  Suggest the corresponding column key \code{Subcellular} in metadata.
+#'@param col_subtype Temporarily applied only to subcellular data analysis.
+#'  Character string to a column key in \code{expt_smry.xlsx} indicating sample
+#'  subtypes linked to subcellular fractions. This is needed, e.g., when each
+#'  subcellular fraction contain multiple subtypes of control, treated etc.
 #'@param choice Character string; the clustering method in \code{c("cmeans",
 #'  "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
@@ -987,6 +1221,7 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
 #'
 #'@export
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+                           col_subcellular = NULL, col_subtype = NULL, 
                            choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
                            n_clust = NULL, type = "protein", 
                            scale_log2r = TRUE, complete_cases = FALSE, 
@@ -1026,7 +1261,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   # difficult to make every dummy variables in the instance
   ##############################################################
   
-  dir.create(file.path(get_gl_dat_dir(), type, "Trend/log"), 
+  dat_dir <- get_gl_dat_dir()
+  dir.create(file.path(dat_dir, type, "Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
   if (type == "protein") {
@@ -1067,6 +1303,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   col_select  <- rlang::enexpr(col_select)
   col_group   <- rlang::enexpr(col_group)
   col_order   <- rlang::enexpr(col_order)
+  col_subcellular <- rlang::enexpr(col_subcellular)
+  col_subtype <- rlang::enexpr(col_subtype)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
@@ -1077,6 +1315,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
             col_select = !!col_select, 
             col_group = !!col_group, 
             col_order = !!col_order,
+            col_subcellular = !!col_subcellular, 
+            col_subtype = !!col_subtype, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
@@ -1118,6 +1358,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 #'  of \code{df} and \code{df2}.
 #'@param panel_ids A subset of panel IDs for visualization.
+#'@param show_panel_ids Logical; show panel IDs or not.
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with
 #'  \code{_N[...].txt} in name will be taken. An error will be thrown if no
@@ -1207,7 +1448,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
-                           panel_ids = NULL, 
+                           panel_ids = NULL, show_panel_ids = TRUE, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
                            df2 = NULL, filename = NULL, theme = NULL, ...) 
@@ -1256,6 +1497,7 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
             filename = !!filename,
             anal_type = "Trend_line")(n_clust = n_clust, 
                                       panel_ids = panel_ids, 
+                                      show_panel_ids = show_panel_ids, 
                                       theme = theme, ...)
 }
 

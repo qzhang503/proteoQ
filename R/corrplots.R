@@ -10,7 +10,7 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
                       col_select = NULL, col_order = NULL, label_scheme_sub = NULL, 
                       scale_log2r = TRUE, complete_cases = FALSE, 
                       filepath = NULL, filename = NULL, 
-                      cor_method = "pearson", digits = 2L, ...) 
+                      cor_method = "pearson", digits = 2L, theme = NULL, ...) 
 {
   if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
@@ -121,7 +121,8 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
                 xlab = x_label, ylab = y_label,
                 filename = filename, filepath = filepath,
                 xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
-                width = width, height = height, digits = digits, !!!dots)
+                width = width, height = height, digits = digits, 
+                theme = theme, !!!dots)
 }
 
 
@@ -216,8 +217,17 @@ my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4
 plot_corr_sub <- function (df, cor_method = "pearson", 
                            xlab, ylab, filename, filepath, 
                            xmin, xmax, xbreaks, width, height, 
-                           digits = 2L, ...) 
+                           digits = 2L, theme = NULL, ...) 
 {
+  dots <- rlang::enexprs(...)
+  dot_low  <- dots[["low"]]
+  dot_mid  <- dots[["mid"]]
+  dot_high <- dots[["high"]]
+  
+  low  <- if (is.null(dot_low)) "#3B9AB2" else dot_low
+  mid  <- if (is.null(dot_mid)) "#EEEEEE" else dot_mid
+  high <- if (is.null(dot_high)) "#F21A00" else dot_high
+
   # not used
   my_fn <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
@@ -296,41 +306,15 @@ plot_corr_sub <- function (df, cor_method = "pearson",
     p
   }
 
-  # not u sed
+  # not used
   my_diag <- function(data, mapping, ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_density(fill = "#fec44f", size = .02, alpha = .5, adjust = 3)
     p
   }
 
-
-  my_theme <- theme_bw() +
-    theme(
-      axis.text.x  = element_text(angle = 0, vjust = 0.5, size = 10),
-      axis.text.y  = element_text(angle = 0, vjust = 0.5, size = 10),
-      axis.title.x = element_text(colour = "black", size = 16),
-      axis.title.y = element_text(colour = "black", size = 16),
-      plot.title = element_text(face = "bold", colour = "black", size = 20,
-                                hjust = 0.5, vjust = 0.5),
-
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.y = element_blank(),
-      panel.grid.minor.y = element_blank(),
-
-      legend.key = element_rect(colour = NA, fill = 'transparent'),
-      legend.background = element_rect(colour = NA,  fill = "transparent"),
-      legend.position = "none",
-      legend.title = element_text(colour = "black", size = 16),
-      legend.text = element_text(colour = "black", size = 14),
-      legend.text.align = 0,
-      legend.box = NULL
-    )
-
   dots <- rlang::enexprs(...)
-
   ncol <- ncol(df)
-  
   df <- df %>% dplyr::mutate_all(~ replace(.x, is.infinite(.), NA_real_))
   sids <- as.character(names(df))
   
@@ -342,7 +326,8 @@ plot_corr_sub <- function (df, cor_method = "pearson",
                                                cor_method = cor_method, 
                                                digits = digits)))
   
-  p2 <- ggcorr(df, label = TRUE, label_round = 2)
+  p2 <- ggcorr(df, label = TRUE, label_round = 2L, 
+               low = low, mid = mid, high = high)
   
   local({
     cors <- df %>% 
@@ -439,10 +424,39 @@ plot_corr_sub <- function (df, cor_method = "pearson",
       scale_x_continuous(limits = c(xmin-.2, xmax+.2), 
                          breaks = c(xmin, 0, xmax))
   }
+  
+  my_theme <- theme_bw() +
+    theme(
+      axis.text.x  = element_text(angle = 0, vjust = 0.5, size = 10),
+      axis.text.y  = element_text(angle = 0, vjust = 0.5, size = 10),
+      axis.title.x = element_text(colour = "black", size = 16),
+      axis.title.y = element_text(colour = "black", size = 16),
+      plot.title = element_text(face = "bold", colour = "black", size = 20,
+                                hjust = 0.5, vjust = 0.5),
+      
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      
+      legend.key = element_rect(colour = NA, fill = 'transparent'),
+      legend.background = element_rect(colour = NA,  fill = "transparent"),
+      legend.position = "none",
+      legend.title = element_text(colour = "black", size = 16),
+      legend.text = element_text(colour = "black", size = 14),
+      legend.text.align = 0,
+      legend.box = NULL
+    )
+  
+  if (is.null(theme)) {
+    theme <- my_theme
+  }
+  
+  theme_simple <- theme(
+    plot.title = element_text(face = "bold", colour = "black", size = 20, 
+                              hjust = 0.5, vjust = 0.5))
 
-  p1 <- p1 +
-    theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
-                                    hjust = 0.5, vjust = 0.5))
+  p1 <- p1 + theme # theme_simple
 
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
   
@@ -471,7 +485,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
                            filename = NULL, cor_method = "pearson", 
-                           digits = 2L, ...) 
+                           digits = 2L, theme = NULL, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -506,6 +520,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
             anal_type = "Corrplot")(data_select = "logFC", 
                                     cor_method = cor_method, 
                                     digits = digits,
+                                    theme = theme, 
                                     ...)
 }
 
@@ -523,7 +538,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
                             filename = NULL, cor_method = "pearson", 
-                            digits = 2L, ...) 
+                            digits = 2L, theme = NULL, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -558,6 +573,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
             anal_type = "Corrplot")(data_select = "logInt", 
                                     cor_method = cor_method, 
                                     digits = digits,
+                                    theme = theme, 
                                     ...)
 }
 
@@ -662,7 +678,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
                            filename = NULL, cor_method = "pearson", 
-                           digits = 2L, ...) 
+                           digits = 2L, theme = NULL, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -697,6 +713,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
             anal_type = "Corrplot")(data_select = "logFC", 
                                     cor_method = cor_method, 
                                     digits = digits, 
+                                    theme = theme, 
                                     ...)
 }
 
@@ -715,7 +732,7 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
                             filename = NULL, cor_method = "pearson", 
-                            digits = 2L, ...) 
+                            digits = 2L, theme = NULL, ...) 
 {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
@@ -750,6 +767,7 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
             anal_type = "Corrplot")(data_select = "logInt", 
                                     cor_method = cor_method, 
                                     digits = digits, 
+                                    theme = theme, 
                                     ...)
 }
 

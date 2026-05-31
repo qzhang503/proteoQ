@@ -137,8 +137,8 @@ prepFml <- function(formula, label_scheme_sub, ...)
       gsub(".plus.", "+", ., fixed = TRUE) %>% 
       gsub(".minus.", "-", ., fixed = TRUE)
     
-    message("\ncontrs: ", as.character(contrs), "\n")
-    message("new_contrs: ", as.character(new_contrs), "\n")
+    message("\ncontrs: ", paste(contrs, collapse = ", "), "\n")
+    message("new_contrs: ", paste(new_contrs, collapse = ", "), "\n")
     message("elements: ", paste(elements, collapse = ", "), "\n")
     message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
   } else {
