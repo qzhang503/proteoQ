@@ -17,8 +17,10 @@ byfile_plotVolcano(
   anal_type = "Volcano",
   gsets = NULL,
   gset_ids = NULL,
+  is_subcellular = FALSE,
   scale_log2r = TRUE,
   impute_na = FALSE,
+  highlights = NULL,
   theme = NULL,
   ...
 )
@@ -77,6 +79,8 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 \item{gset_ids}{A subset of gene set IDs for visualization. If not
 \code{NULL}, the entries from \code{gset_nms} will be overruled.}
 
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
@@ -84,6 +88,9 @@ be used.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{highlights}{A list of entries for highlighting. See also \code{filter_}
+varargs for the format.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

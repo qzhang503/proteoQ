@@ -12,7 +12,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                         show_passed_only = TRUE, fml_nms = NULL, 
                         gset_nms = "go_sets", gset_ids = NULL, 
                         scale_log2r = TRUE, complete_cases = FALSE, 
-                        impute_na = FALSE, 
+                        impute_na = FALSE, is_subcellular = FALSE, 
                         filepath = NULL, filename = NULL, theme = NULL, 
                         highlights = NULL, grids = NULL, ...) 
 {
@@ -80,7 +80,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
   fml_nms <- fml_nms[map_dbl(fml_nms, function (x) which(x == names(fmls)))]
   
   if (!length(fml_nms)) {
-    stop("No formula (names) matched to those in \"pepSig(...)\" or \"prnSig(...)\".")
+    stop("No formula (names) matched to those in 'pepSig' or 'prnSig'.")
   }
 
   purrr::walk(
@@ -103,7 +103,6 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
   }
   
   if (is.null(gset_nms)) {
-    # stop("'gset_nms' cannot be NULL.")
     gsets <- NULL
   } else {
     gsets <- load_dbs(gset_nms = gset_nms, species = species, id = id_gspa)
@@ -169,6 +168,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                  # gset_nms = gset_nms, 
                  gsets = gsets, 
                  gset_ids = gset_ids, # an indictor of using custom entries
+                 is_subcellular = is_subcellular, 
                  scale_log2r = scale_log2r, 
                  complete_cases = complete_cases, 
                  impute_na = impute_na, 
@@ -210,7 +210,8 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            topn_labels, anal_type, show_sig, 
                            show_passed_only = TRUE, 
                            gsets = NULL, gset_ids = NULL, 
-                           scale_log2r, complete_cases, impute_na, 
+                           is_subcellular = FALSE, scale_log2r = TRUE, 
+                           complete_cases = FALSE, impute_na = FALSE, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
   id  <- rlang::as_string(rlang::enexpr(id))
@@ -229,6 +230,7 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                      fml_nm = fml_nm, filepath = filepath, filename = filename, 
                      adjP = adjP, topn_labels = topn_labels, 
                      anal_type = anal_type, gsets = gsets, gset_ids = gset_ids, 
+                     is_subcellular = is_subcellular, 
                      scale_log2r = scale_log2r, 
                      impute_na = impute_na)(
                        gspval_cutoff = gspval_cutoff, 
@@ -256,9 +258,10 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                                adjP = FALSE, topn_labels = 20, 
                                anal_type = "Volcano", gsets = NULL, 
                                gset_ids = NULL, 
+                               is_subcellular = FALSE, 
                                scale_log2r = TRUE, impute_na = FALSE, 
-                               # highlights = NULL, 
-                               theme = NULL, ...) 
+                               highlights = NULL, theme = NULL, 
+                               ...) 
 {
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -267,9 +270,9 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   
   if (anal_type %in% c("Volcano")) {
     function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn_gsets = 0, 
-             show_sig = "none", highlights = NULL, theme = NULL, grids = NULL, 
-             ...) {
-      
+             show_sig = "none", show_passed_only = FALSE, highlights = NULL, 
+             grids = NULL, theme = NULL, ...) {
+
       rm(list = c("gspval_cutoff", "gslogFC_cutoff", "show_sig"))
 
       fullVolcano(df = df, 
@@ -283,18 +286,23 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                   topn_labels = topn_labels, 
                   highlights = highlights, 
                   grids = grids, 
+                  is_subcellular = is_subcellular, 
+                  scale_log2r = scale_log2r, 
+                  impute_na = impute_na, 
                   ...)
     }
   } else if (anal_type == "mapGSPA") 
     function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn_gsets = Inf, 
-             show_sig = "none", show_passed_only = TRUE, theme = theme, 
-             grids = NULL, ...) {
+             show_sig = "none", show_passed_only = TRUE, highlights = NULL, 
+             grids = NULL, theme = theme, ...) {
+
       if (is.null(fml_nm)) {
         stop("`fml_nm` is required for `mapGSPA` volcano plots.")
       }
 
       filepath_fml <- file.path(filepath, fml_nm)
-      in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
+      in_names <- 
+        list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
       
       if (!length(in_names)) {
         warning("No GSPA inputs under ", filepath_fml)
@@ -361,6 +369,9 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                   gspval_cutoff = gspval_cutoff, 
                   gslogFC_cutoff = gslogFC_cutoff, 
                   topn_gsets = topn_gsets, 
+                  is_subcellular = is_subcellular, 
+                  scale_log2r = scale_log2r, 
+                  impute_na = impute_na, 
                   ...)
     }
 }
@@ -404,9 +415,46 @@ subset_volcano_df <- function (x, df, keys = c("pVal", "adjP", "log2Ratio"))
 fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, 
                         theme = NULL, fml_nm = NULL, filepath = NULL, 
                         filename = NULL, adjP = FALSE, topn_labels = 20, 
-                        highlights = NULL, grids = NULL, ...)
+                        highlights = NULL, grids = NULL, 
+                        is_subcellular = FALSE, 
+                        scale_log2r = TRUE, impute_na = FALSE, 
+                        ...)
 {
   id    <- rlang::as_string(rlang::enexpr(id))
+  dat_dir <- get_gl_dat_dir()
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  if (is_subcellular) {
+    df <- local({
+      res_subcell <- add_subcell(
+        df= df, dat_dir = dat_dir, group_pep_by = id, 
+        is_subcellular = is_subcellular, scale_log2r = scale_log2r, 
+        impute_na = impute_na)
+      
+      df <- res_subcell[["df"]]
+      col_subcellular <- res_subcell[["col_subcellular"]]
+      col_subtype <- res_subcell[["col_subtype"]]
+      col_subgroup <- res_subcell[["col_group"]]
+      rm(list = "res_subcell")
+      
+      ans_fr <- check_gspa_subcellular(
+        fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme, 
+        col_subcellular = col_subcellular, col_group = col_subgroup)
+      subcell_frac <- ans_fr[["frac"]]
+      subcell_grps <- ans_fr[["grp"]]
+      rm(list = "ans_fr")
+      
+      subcell_grps <- subcell_grps[subcell_grps %in% colnames(df)]
+      
+      # len == 1L -> single subcellular; any score > 0 -> TRUE, present
+      if (length(subcell_frac) == 1L && length(subcell_grps)) {
+        df <- df[purrr::reduce(df[, subcell_grps, drop = FALSE], `|`), ]
+      }
+      
+      df
+    })
+  }
+
   dots  <- rlang::enexprs(...)
   xco   <- if (is.null(dots[["xco"]])) 1.2 else dots[["xco"]]
   yco   <- if (is.null(dots[["yco"]])) .05 else dots[["yco"]]
@@ -796,28 +844,34 @@ plot_venn <- function(Counts, filepath, direction, fml_nm)
 #' @inheritParams fullVolcano
 #' @import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>%
-gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL, 
+gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", 
+                      contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, gset_ids = NULL, 
-                      id_gspa = "entrez", theme = NULL, fml_nm = NULL, 
+                      id_gspa = "entrez", theme = NULL, 
+                      fml_nm = NULL, 
                       filepath = NULL, filename = NULL, adjP = FALSE, 
                       topn_labels = 20, show_sig = "none", 
                       show_passed_only = TRUE, 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), 
-                      topn_gsets = Inf, ...) 
+                      topn_gsets = Inf, 
+                      is_subcellular = FALSE, 
+                      scale_log2r = TRUE, impute_na = FALSE, 
+                      ...) 
 {
   options(warn = 1L)
   
   id <- rlang::as_string(rlang::enexpr(id))
   
   dat_dir <- get_gl_dat_dir()
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
   par_filepath <- 
     file.path(dat_dir, "Calls", 
               gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
   
   if (file.exists(par_filepath)) {
     load(par_filepath)
-  }
-  else {
+  } else {
     call_pars <- NULL
   }
 
@@ -828,17 +882,48 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
     
     if (length(par_filter_dots)) {
       message(
-        "\nApply the following vararg(s) from matching `prnGSPA` to: ", fml_nm, ".", 
+        "\nApply the following vararg(s) from matching 'prnGSPA to: ", 
+        fml_nm, ".", 
         paste(par_filter_dots, "\n"))
       
       df <- filters_in_call(df, !!!par_filter_dots)
-    } 
-    else {
-      # message("\nNo `filter_` varargs with formula `", fml_nm, "`.")
     }
     
     df
   })
+  
+  if (is_subcellular) {
+    df <- local({
+      res_subcell <- add_subcell(
+        df= df, dat_dir = dat_dir, group_pep_by = "gene", 
+        is_subcellular = is_subcellular, scale_log2r = scale_log2r, 
+        impute_na = impute_na)
+      
+      df <- res_subcell[["df"]]
+      # df_trend <- res_subcell[["df_trend"]]
+      col_subcellular <- res_subcell[["col_subcellular"]]
+      col_subtype <- res_subcell[["col_subtype"]]
+      col_subgroup <- res_subcell[["col_group"]]
+      # path_trend <- res_subcell[["path_trend"]]
+      rm(list = "res_subcell")
+      
+      ans_fr <- check_gspa_subcellular(
+        fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme, 
+        col_subcellular = col_subcellular, col_group = col_subgroup)
+      subcell_frac <- ans_fr[["frac"]]
+      subcell_grps <- ans_fr[["grp"]]
+      rm(list = "ans_fr")
+      
+      subcell_grps <- subcell_grps[subcell_grps %in% colnames(df)]
+      
+      # len == 1L -> single subcellular; any score > 0 -> TRUE, present
+      if (length(subcell_frac) == 1L && length(subcell_grps)) {
+        df <- df[purrr::reduce(df[, subcell_grps, drop = FALSE], `|`), ]
+      }
+      
+      df
+    })
+  }
   
   local({
     use_adjP <- call_pars$use_adjP
@@ -878,30 +963,26 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   
   xco <- if (is.null(dots$xco)) {
     1.2
-  }
-  else {
+  } else {
     dots$xco
   }
   
   yco <- if (is.null(dots$yco)) {
     .05
-  }
-  else {
+  } else {
     dots$yco
   }
   
   x_label <- if (is.null(dots$x_label)) {
     expression("Ratio ("*log[2]*")")
-  }
-  else {
+  } else {
     dots$x_label
   }
 
   y_label <- if (is.null(dots$y_label)) {
     if (adjP) {
       expression("adjP ("*-log[10]*")")
-    }
-    else {
+    } else {
       expression("pVal ("*-log[10]*")")
     }
   }
@@ -926,8 +1007,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   if (is.null(gset_ids)) {
     if ("pass" %in% names(gsea_res)) {
       if (show_passed_only) {
-        gsea_res <- gsea_res |>
-          dplyr::filter(pass)
+        gsea_res <- gsea_res |> dplyr::filter(pass)
       }
     }
   } else {
@@ -940,7 +1020,17 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
   
   if (!nrow(gsea_res)) {
     warning("No GSPA data remained after filtration.")
-    return(NULL)
+    
+    # Currently handle only a singular custom gene set 
+    if (length(gset_ids) == 1L) {
+      gsea_res <- dplyr::bind_rows(
+        gsea_res, 
+        data.frame(term = names(gsets[grepl(gset_ids, names(gsets))])))
+    }
+    
+    if (!nrow(gsea_res)) {
+      return(NULL)
+    }
   }
 
   message("Secondary file loaded: ", file.path(filepath, fml_nm, df2))
@@ -975,7 +1065,6 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
 
   gsea_res <- gsea_res |>
     dplyr::mutate(score = round(score, digits = 1L), 
-                  # q_val = format(p_val, scientific = TRUE, digits = 2L), 
                   log2Ratio = round(log2Ratio, digits = 2L), ) |>
     dplyr::rename(log2Ratio_gs = log2Ratio)
 
@@ -998,12 +1087,14 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
     lapply(terms, 
            plot_gspa_volcano, 
            gsets = gsets, gsea_res = gsea_res, dfw = dfw, 
-           id_gspa = id_gspa, show_sig = show_sig, 
+           is_subcellular = is_subcellular, 
+           id = id, id_gspa = id_gspa, show_sig = show_sig, 
            topn_labels = topn_labels, xco = xco, yco = yco, 
            pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
            filepath = filepath, fml_nm = fml_nm, 
            custom_prefix = custom_prefix, fn_suffix = fn_suffix, 
            x_label = x_label, y_label = y_label, theme = theme, 
+           # myPalette = c("#377EB8", "#E41A1C"), 
            dots = dots)
   }
 }
@@ -1019,15 +1110,17 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene", contrast_groups = NULL
 #' @inheritParams fullVolcano
 #' @import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw, 
+plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL, 
+                               dfw = NULL, is_subcellular = FALSE, 
                                id = "gene", id_gspa = "entrez", 
                                show_sig = "none", topn_labels = 20L, 
                                xco = 1.2, yco = .05, 
-                               pval_cutoff = .05, logFC_cutoff = log2(1.2), 
+                               pval_cutoff = .05, logFC_cutoff = log2(1.2),
+                               filepath = NULL, fml_nm = NULL, 
+                               custom_prefix = NULL, fn_suffix = NULL, 
                                x_label = NULL, y_label = NULL, theme = NULL, 
                                myPalette = c("#377EB8", "#E41A1C"), 
-                               filepath, fml_nm, 
-                               custom_prefix, fn_suffix, dots)
+                               dots)
 {
   # some results may be based on gene sets from an older database, 
   # which become missing terms in the current
@@ -1117,10 +1210,10 @@ plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw,
   
   if (show_sig != "none") {
     if (grepl("^p", show_sig)) {
-      dfw_sub <- dfw_sub %>%
+      dfw_sub <- dfw_sub |>
         dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
     } else if (grepl("^q", show_sig)) {
-      dfw_sub <- dfw_sub %>%
+      dfw_sub <- dfw_sub |>
         dplyr::mutate(newContrast = paste0(Contrast, " (S = ", score, ")"))
     }
   }
@@ -1139,7 +1232,7 @@ plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw,
   
   dt <- purrr::map(newLevels, function (x) {
     dfw_sub_top20 |>
-      dplyr::filter(newContrast == x) |>
+      dplyr::filter(as.character(newContrast) == x) |>
       data.frame(check.names = FALSE) |>
       dplyr::select(c("Index", id)) |>
       to_csv_() %>%
@@ -1160,15 +1253,15 @@ plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw,
   
   dt_pos <- if (nrow(dfw_greater) > nrow(dfw_less)) -xmax*.85 else xmax*.6
   
-  nrow <- if(is.null(dots$nrow))
+  nrow <- if(is.null(dots$nrow)) {
     if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
-  else {
+  } else {
     dots$nrow
   }
   
-  nrow <- if(is.null(dots$nrow))
+  nrow <- if(is.null(dots$nrow)) {
     if (length(unique(dfw_sub$Contrast)) > 3L) 2L else 1L
-  else {
+  } else {
     dots$nrow
   }
   
@@ -1185,6 +1278,7 @@ plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw,
     geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
                size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
                alpha = .2, stroke = .5)
+  
   p <- p +
     geom_point(
       data = dfw_greater, 
@@ -1196,6 +1290,7 @@ plot_gspa_volcano <- function (gt, gsets, gsea_res, dfw,
       mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
       fill = myPalette[1], color = "white", shape = 21, 
       alpha = .6, stroke = .5)
+  
   p <- p +
     geom_hline(yintercept = -log10(yco), linetype = "longdash", linewidth = .5) +
     geom_vline(xintercept = -lg2xco, linetype = "longdash", linewidth = .5) +
@@ -1480,7 +1575,7 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
                     adjP = FALSE, topn_labels = 20, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, highlights = NULL, 
-                    grids = NULL, ...) 
+                    grids = NULL, is_subcellular = FALSE, ...) 
 {
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
@@ -1513,6 +1608,7 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
                                    theme = theme, 
                                    highlights = highlights, 
                                    grids = grids, 
+                                   is_subcellular = is_subcellular, 
                                    ...)
 }
 
@@ -1613,11 +1709,11 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
-prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    adjP = FALSE, topn_labels = 20, 
+prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, 
+                    impute_na = FALSE, adjP = FALSE, topn_labels = 20, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, highlights = NULL, 
-                    grids = NULL, ...) 
+                    grids = NULL, is_subcellular = FALSE, ...) 
 {
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
@@ -1650,6 +1746,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
                                    theme = theme, 
                                    highlights = highlights, 
                                    grids = grids, 
+                                   is_subcellular = is_subcellular, 
                                    ...)
 }
 
@@ -1671,7 +1768,8 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                         adjP = FALSE, topn_labels = 20, 
                         show_sig = "none", show_passed_only = TRUE, 
                         gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
-                        topn_gsets = Inf, theme = NULL, ...) 
+                        topn_gsets = Inf, theme = NULL, is_subcellular = FALSE, 
+                        ...) 
 {
   check_dots(c("id", "anal_type"), ...)
   
@@ -1734,6 +1832,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                                    show_sig = show_sig,
                                    gset_nms = gset_nms, 
                                    theme = theme, 
+                                   is_subcellular = is_subcellular, 
                                    ...)
 }
 
@@ -1781,6 +1880,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'   \code{\link{prnGSPA}} and in that way no terms will be missed for
 #'   visualization. See also \code{\link{prnGSPA}} for examples of custom data
 #'   bases.
+#' @param is_subcellular Logical; does data contain subcellular specificity.
 #' @param ... \code{filter_}: Variable argument statements for the row
 #'   filtration against data in a primary file linked to \code{df}. See also
 #'   \code{\link{normPSM}} for the format of \code{filter_} statements and the
@@ -1864,6 +1964,7 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #' @export
 prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                         gset_ids = NULL, grids = NULL, id_gspa = "entrez",
+                        is_subcellular = FALSE, 
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         impute_na = FALSE, df = NULL, df2 = NULL, 
                         filepath = NULL, filename = NULL, fml_nms = NULL, 
@@ -1951,6 +2052,7 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                                    show_passed_only = show_passed_only,
                                    gset_nms = gset_nms, 
                                    theme = theme, 
+                                   is_subcellular = is_subcellular, 
                                    ...)
 }
 

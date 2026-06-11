@@ -7,11 +7,20 @@
 prep_gspa(
   df = NULL,
   id = NULL,
+  df_trend = NULL,
+  is_subcellular = FALSE,
+  col_subcellular = NULL,
+  col_subtype = NULL,
+  col_group = NULL,
   fml_nm = NULL,
+  dat_dir = NULL,
+  label_scheme_sub = NULL,
   col_ind = 0L,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
-  use_adjP = FALSE
+  use_adjP = FALSE,
+  scale_log2r = TRUE,
+  impute_na = FALSE
 )
 }
 \arguments{
@@ -27,7 +36,34 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{id}{Currently only "entrez".}
 
+\item{df_trend}{Trend data.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
+
+\item{col_subcellular}{Only applied to subcellular data analysis. Character
+string to a column key in \code{expt_smry.xlsx} indicating subcellular
+fractions. No calculation of subcellular location score at the \code{NULL}
+default.
+
+Suggest the corresponding column key \code{Subcellular} in metadata.}
+
+\item{col_subtype}{Temporarily applied only to subcellular data analysis.
+Character string to a column key in \code{expt_smry.xlsx} indicating sample
+subtypes linked to subcellular fractions. This is needed, e.g., when each
+subcellular fraction contain multiple subtypes of control, treated etc.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
 \item{fml_nm}{A character string; the name of \code{fml}.}
+
+\item{dat_dir}{The working directory.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
 
 \item{col_ind}{Numeric vector; the indexes of columns for the ascribed
 \code{fml_nm}.}
@@ -48,6 +84,14 @@ of absolute values in \code{log2FC}.}
 
 \item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
 FALSE.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 }
 \description{
 Helper of GSPA

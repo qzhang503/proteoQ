@@ -21,6 +21,7 @@ gspaTest(
   gsscore_cutoff = 5,
   gslogFC_cutoff = log2(1),
   gspval_cutoff = 0.01,
+  is_subcellular = FALSE,
   min_size = 6L,
   max_size = .Machine$integer.max,
   min_delta = 5L,
@@ -114,6 +115,8 @@ more significant than the threshold will be reported. The default is 0.05
 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by

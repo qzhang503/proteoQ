@@ -2,7 +2,7 @@
 % Please edit documentation in R/trends.R
 \name{analTrend}
 \alias{analTrend}
-\title{Trend analysis}
+\title{Trend analysis.}
 \usage{
 analTrend(
   df,
@@ -118,5 +118,5 @@ provided; \cr \code{x} is disabled with input data being determined
 automatically.}
 }
 \description{
-Trend analysis
+Trend analysis.
 }

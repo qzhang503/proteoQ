@@ -607,8 +607,9 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "Volcano") {
-    function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
-             theme = NULL, highlights = NULL, grids = NULL, ...) {
+    function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, theme = NULL, 
+             highlights = NULL, grids = NULL, is_subcellular = FALSE, ...) {
+      
       plotVolcano(df = df,
                   df2 = NULL,
                   id = !!id,
@@ -624,6 +625,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                   fml_nms = fml_nms,
                   gset_nms = NULL,
                   gset_ids = NULL, 
+                  is_subcellular = is_subcellular, 
                   scale_log2r = scale_log2r,
                   complete_cases = complete_cases,
                   impute_na = impute_na,
@@ -636,11 +638,11 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "mapGSPA") {
-    function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
-             gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
+    function(fml_nms = NULL, gset_ids = NULL, grids = NULL, adjP = FALSE, 
+             topn_labels = 20, gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
              topn_gsets = Inf, show_sig = "none", show_passed_only = TRUE, 
-             gset_nms = "go_sets", gset_ids = NULL, grids = NULL, 
-             theme = NULL, ...) {
+             gset_nms = "go_sets", theme = NULL, is_subcellular = FALSE, ...) {
+      
       plotVolcano(df = df,
                   df2 = df2,
                   id = !!id,
@@ -656,11 +658,13 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
                   fml_nms = fml_nms,
                   gset_nms = gset_nms,
                   gset_ids = gset_ids, 
+                  is_subcellular = is_subcellular, 
                   scale_log2r = scale_log2r,
                   complete_cases = complete_cases,
                   impute_na = impute_na,
                   filepath = filepath,
                   filename = paste0(fn_prefix, ".", fn_suffix),
+                  highlights = NULL, 
                   grids = grids, 
                   theme = theme,
                   ...)
@@ -744,10 +748,11 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
   } 
   else if (anal_type == "Subcellular_plot") {
     function(n_clust = NULL, panel_ids = NULL, levels_subcellular = NULL, 
-             levels_subtype = NULL, theme = NULL, ...) {
+             levels_subtype = NULL, qt = .5, theme = NULL, ...) {
       plotSubcellular(
         df2 = df2,
         id = !!id,
+        qt = qt, 
         col_group = !!col_group,
         col_order = !!col_order,
         levels_subcellular = levels_subcellular, 
@@ -827,7 +832,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
     }
   } 
   else if (anal_type == "GSPA") {
-    function(gset_nms = "go_sets", var_cutoff = .5,
+    function(gset_nms = "go_sets", is_subcellular = FALSE, var_cutoff = .5,
              pval_cutoff = 1E-2, logFC_cutoff = log2(1.1),
              gsscore_cutoff = 10., gslogFC_cutoff = log2(1),
              gspval_cutoff = 1E-2, 
@@ -837,6 +842,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez",
              ...) {
       gspaTest(df = df,
                id = !!id,
+               is_subcellular = is_subcellular, 
                id_gspa = id_gspa, 
                label_scheme_sub = label_scheme_sub,
                scale_log2r = scale_log2r,

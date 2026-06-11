@@ -9,6 +9,7 @@ plot_prnSubcellular(
   col_order = NULL,
   levels_subcellular = NULL,
   levels_subtype = NULL,
+  qt = 0.5,
   n_clust = NULL,
   panel_ids = NULL,
   scale_log2r = TRUE,
@@ -37,6 +38,9 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 \item{levels_subcellular}{The levels of subcellular fractions.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
+
+\item{qt}{Not used. The quantile of localization score for thresholding
+subcellular compartment specificity. The default is to use median.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the gap method
@@ -86,20 +90,20 @@ provided; \cr \code{x} is disabled with input data being determined
 automatically.}
 }
 \description{
-\code{plot_prnSubcellular} plots the subcellular purity of protein expressions
-from \code{\link{anal_prnTrend}}.
+\code{plot_prnSubcellular} plots the subcellular purity of protein
+expressions from \code{\link{anal_prnTrend}}.
 }
 \examples{
 if (FALSE) {
-  cl <- 16; width = 10; height = 7.5; 
+  cl <- 16; width = 10; height = 7.5;
   plot_prnSubcellular(
-    df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"), 
+    df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"),
     col_order = Order,
-    n_clust = cl, 
-    levels_subcellular = c("CP", "NP", "ChA"), 
+    n_clust = cl,
+    levels_subcellular = c("CP", "NP", "ChA"),
     ncol = 4,
-    width = !!width, 
-    height = !!height, 
+    width = !!width,
+    height = !!height,
   )
 }
 

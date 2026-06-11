@@ -18,6 +18,7 @@ pepVol(
   theme = NULL,
   highlights = NULL,
   grids = NULL,
+  is_subcellular = FALSE,
   ...
 )
 
@@ -34,6 +35,7 @@ prnVol(
   theme = NULL,
   highlights = NULL,
   grids = NULL,
+  is_subcellular = FALSE,
   ...
 )
 }
@@ -87,6 +89,8 @@ varargs for the format.}
 contrasts within a group. For example with a group of three contrasts,
 \code{grids = 2:3} will hide the first grid from displaying. At the
 NULL default, all available grids will be shown.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

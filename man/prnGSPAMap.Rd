@@ -26,6 +26,7 @@ pepGSPAMap(
   gslogFC_cutoff = log2(1.2),
   topn_gsets = Inf,
   theme = NULL,
+  is_subcellular = FALSE,
   ...
 )
 
@@ -34,6 +35,7 @@ prnGSPAMap(
   gset_ids = NULL,
   grids = NULL,
   id_gspa = "entrez",
+  is_subcellular = FALSE,
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -159,6 +161,8 @@ threshold is allowed by supplying a vector of absolute values in
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
 will be applied.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row
 filtration against data in a primary file linked to \code{df}. See also

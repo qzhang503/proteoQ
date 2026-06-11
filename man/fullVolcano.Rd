@@ -16,6 +16,9 @@ fullVolcano(
   topn_labels = 20,
   highlights = NULL,
   grids = NULL,
+  is_subcellular = FALSE,
+  scale_log2r = TRUE,
+  impute_na = FALSE,
   ...
 )
 }
@@ -66,6 +69,16 @@ varargs for the format.}
 contrasts within a group. For example with a group of three contrasts,
 \code{grids = 2:3} will hide the first grid from displaying. At the
 NULL default, all available grids will be shown.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

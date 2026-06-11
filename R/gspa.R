@@ -8,6 +8,7 @@
 #'@import purrr dplyr
 #'@export
 pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
+                     is_subcellular = FALSE, 
                      method = "mean", scale_log2r = TRUE, 
                      complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
@@ -94,6 +95,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
             impute_na = impute_na, 
             anal_type = "GSPA")(
               gset_nms = gset_nms, 
+              is_subcellular = is_subcellular, 
               var_cutoff = 1000, 
               pval_cutoff = pval_cutoff, 
               logFC_cutoff = logFC_cutoff, 
@@ -134,6 +136,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'
 #'@inheritParams anal_pepNMF
 #'@inheritParams prnHist
+#'@param is_subcellular Logical; does data contain subcellular specificity.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param gset_nms Character string or vector containing the shorthanded name(s),
@@ -281,6 +284,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 prnGSPA <- function (
     gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+    is_subcellular = FALSE, 
     pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
     gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1.2), 
     gspval_cutoff = 1E-2, min_size = 10L, 
@@ -364,6 +368,7 @@ prnGSPA <- function (
             impute_na = impute_na, 
             anal_type = "GSPA")(
               gset_nms = gset_nms, 
+              is_subcellular = is_subcellular, 
               var_cutoff = 1000, 
               pval_cutoff = pval_cutoff, 
               logFC_cutoff = logFC_cutoff, 
@@ -377,6 +382,73 @@ prnGSPA <- function (
               use_adjP = use_adjP, 
               method = method, 
               !!!dots)
+}
+
+
+#' Add subcellular results to protein table.
+#' 
+#' @param df A data frame. 
+#' @param dat_dir The working directory.
+#' @param is_subcellular Logical; is subcellular data type or not.
+#' @inheritParams normPSM
+add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene", 
+                         is_subcellular = FALSE, scale_log2r = TRUE, 
+                         impute_na = FALSE)
+{
+  ## Find input `df2`
+  path_trend <- file.path(dat_dir, "Protein", "trend")
+  
+  if (is_subcellular) {
+    df2 <- find_trend_df2(
+      df2 = NULL, n_clust = NULL, scale_log2r = scale_log2r, 
+      impute_na = impute_na, filepath = path_trend)
+    
+    if (is.null(df2)) {
+      is_subcellular <- FALSE
+    } else {
+      df2 <- df2[[1]]
+    }
+  } else {
+    df2 <- NULL
+  }
+  
+  if (is_subcellular) {
+    df_trend <- readr::read_tsv(file.path(path_trend, df2))
+    col_subcellular <- df_trend[["col_subcellular"]][[1]]
+    col_subtype <- df_trend[["col_subtype"]][[1]]
+    col_group <- df_trend[["col_group"]][[1]]
+    
+    # col_subcellular encodes sample fraction; 
+    # sub_location: classification results
+    if (!"sub_location" %in% colnames(df_trend)) {
+      stop("Column 'sub_location' not found. ", 
+           "Run 'plot_prnSubcellular' first.")
+    }
+    
+    df_trend <- 
+      df_trend[, c("gene", "loc_score", "sub_location", "group")] |>
+      dplyr::filter(!is.na(sub_location)) |>
+      dplyr::arrange(gene) |>
+      unique() |>
+      tidyr::pivot_wider(
+        id_cols = "gene", 
+        names_from = c("group"), 
+        values_from = "loc_score",
+        values_fill = 0, 
+      )
+    
+    df <- df |>
+      dplyr::left_join(df_trend, by = "gene")
+  } else {
+    df_trend <- NULL
+    col_subcellular <- NULL
+    col_subtype <- NULL
+    col_group <- NULL
+  }
+  
+  list(df = df, df_trend = df_trend, col_subcellular = col_subcellular, 
+       col_subtype = col_subtype, col_group = col_group, 
+       path_trend = path_trend)
 }
 
 
@@ -402,7 +474,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
                      gset_nms = "go_sets", var_cutoff = 0.5, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                      gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1), 
-                     gspval_cutoff = 1E-2, 
+                     gspval_cutoff = 1E-2, is_subcellular = FALSE, 
                      min_size = 6L, max_size = .Machine$integer.max, 
                      min_delta = 5L, min_greedy_size = 1L, use_adjP = FALSE, 
                      method = "mean", anal_type = "GSPA", ...) 
@@ -423,6 +495,8 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
                      min_delta,
                      min_greedy_size), 
                    rlang::is_double, logical(1L)))
+  
+  dat_dir  <- get_gl_dat_dir()
   
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
@@ -482,6 +556,18 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
          "compare the formula name(s) with those in \"prnSig(..)\"")
   }
 
+  res_subcell <- add_subcell(
+    df= df, dat_dir = dat_dir, group_pep_by = "gene", 
+    is_subcellular = is_subcellular, scale_log2r = scale_log2r, 
+    impute_na = impute_na)
+  
+  df <- res_subcell[["df"]]
+  df_trend <- res_subcell[["df_trend"]]
+  col_subcellular <- res_subcell[["col_subcellular"]]
+  col_subtype <- res_subcell[["col_subtype"]]
+  col_group <- res_subcell[["col_group"]]
+  path_trend <- res_subcell[["path_trend"]]
+
   # Note: wrong number of arguments to '>' at devtools building of a package
   # (https://github.com/Mouse-Imaging-Centre/RMINC/issues/226)
   col_ind <- fml_nms %>% 
@@ -514,10 +600,17 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
          col_ind = col_ind, 
          id = !!id, 
          id_gspa = id_gspa,
+         df_trend = df_trend, 
+         is_subcellular = is_subcellular, 
+         col_subcellular = col_subcellular, 
+         col_subtype = col_subtype, 
+         col_group = col_group, 
          gsets = gsets, 
+         dat_dir = dat_dir, 
          label_scheme_sub = label_scheme_sub, 
          complete_cases = complete_cases, 
-         scale_log2r = scale_log2r, 
+         scale_log2r = scale_log2r,
+         impute_na = impute_na, 
          filepath = filepath, 
          filename = filename, 
          use_adjP = use_adjP, 
@@ -558,6 +651,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
 #' @param fml_nm A character string; the name of \code{fml}.
 #' @param col_ind Numeric vector; the indexes of columns for the ascribed
 #'   \code{fml_nm}.
+#' @param is_subcellular Logical; is subcellular data or not.
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
 #' @inheritParams gspaTest
@@ -572,8 +666,13 @@ fml_gspa <- function (fml, fml_nm,
                       max_size = .Machine$integer.max, min_delta = 5L, 
                       min_greedy_size = 1L, method = "mean", 
                       df, col_ind, id = "gene", id_gspa = "entrez", 
-                      gsets = "go_sets", label_scheme_sub, 
+                      df_trend = NULL, is_subcellular = FALSE, 
+                      col_subcellular = NULL, col_subtype = NULL, 
+                      col_group = NULL, 
+                      gsets = "go_sets", label_scheme_sub = NULL, 
+                      dat_dir = NULL, 
                       complete_cases = FALSE, scale_log2r = TRUE, 
+                      impute_na = FALSE, 
                       filepath, filename, use_adjP = FALSE, ...) 
 {
   on.exit(
@@ -595,9 +694,15 @@ fml_gspa <- function (fml, fml_nm,
   fn_prefix <- tools::file_path_sans_ext(filename)
   
   # Column 'contrast' is factor and sorted by contrast_groups
-  df <- prep_gspa(df, id = id_gspa, fml_nm = fml_nm, col_ind = col_ind, 
+  df <- prep_gspa(df, id = id_gspa, df_trend = df_trend, 
+                  is_subcellular = is_subcellular, 
+                  col_subcellular = col_subcellular, col_subtype = col_subtype, 
+                  col_group = col_group, 
+                  fml_nm = fml_nm, label_scheme_sub = label_scheme_sub, 
+                  dat_dir = dat_dir, col_ind = col_ind, 
                   pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-                  use_adjP = use_adjP)
+                  use_adjP = use_adjP, scale_log2r = scale_log2r, 
+                  impute_na = impute_na)
   contrast_groups <- attr(df, "contrast_groups")
   n_contrs <- length(contrast_groups)
   
@@ -907,37 +1012,40 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
     dplyr::arrange(valence) |>
     dplyr::select(-valence)
   
-  # delta_sc <- abs(delta_p  * log2(delta_n + 1L)/2) # with mean statistics
-  delta_sc <- delta_p  / log2(delta_n + 2L) # with sum statistics
+  # mean statistics
+  # delta_sc <- tibble::tibble(abs(delta_p  * log2(delta_n + 1L)/2))
+  delta_sc <- tibble::tibble(delta_p / log2(delta_n + 2L)) # sum statistics
 
   if (nrow(delta_p) == 2L) {
-    delta_p1  <- delta_p[2, ]  - delta_p[1, ]
+    delta_p1  <- delta_p[2, , drop = FALSE]  - delta_p[1, , drop = FALSE]
   } else {
     # all pos or all neg
-    delta_p1  <- delta_p[1, ]
+    delta_p1  <- delta_p[1, , drop = FALSE]
   }
   
   if (nrow(delta_fc) == 2L) {
     if (bi_direction) {
-      delta_fc1 <- delta_fc[2, ] - delta_fc[1, ]
+      delta_fc1 <- 
+        delta_fc[2, , drop = FALSE] - delta_fc[1, , drop = FALSE]
     }
     else {
-      delta_fc1 <- abs(delta_fc[2, ]) - abs(delta_fc[1, ])
+      delta_fc1 <- 
+        abs(delta_fc[2, , drop = FALSE]) - abs(delta_fc[1, , drop = FALSE])
     }
   } else {
-    delta_fc1 <- delta_fc[1, ]
+    delta_fc1 <- delta_fc[1, , drop = FALSE]
   }
   
   if (nrow(delta_n) == 2L) {
-    delta_n1  <- delta_n[2, ]  - delta_n[1, ]
+    delta_n1  <- delta_n[2, , drop = FALSE]  - delta_n[1, , drop = FALSE]
   } else {
-    delta_n1  <- delta_n[1, ]
+    delta_n1  <- delta_n[1, , drop = FALSE]
   }
   
   if (nrow(delta_sc) == 2L) {
-    delta_sc1 <- delta_sc[2, ] - delta_sc[1, ]
+    delta_sc1 <- delta_sc[2, , drop = FALSE] - delta_sc[1, , drop = FALSE]
   } else {
-    delta_sc1 <- delta_sc[1, ]
+    delta_sc1 <- delta_sc[1, , drop = FALSE]
   }
 
   delta_fc1 <- delta_fc1 / delta_n1
@@ -1069,24 +1177,81 @@ lm_gspa <- function(df, min_size = 10L, min_delta = 4L, gsscore_cutoff = 5.0,
 }
 
 
-#' Helper of GSPA
+#' Check the suitability of subcellular GSPA.
 #'
+#' @param fml_nm A formula name
+#' @param dat_dir The working directory.
+#' @param label_scheme_sub Metadata.
+#' @inheritParams anal_prnTrend
+check_gspa_subcellular <- function (
+    fml_nm = NULL, dat_dir = NULL, label_scheme_sub, col_subcellular = NULL, 
+    col_group = NULL) {
+  
+  if (is.null(col_subcellular)) {
+    return(NULL)
+  }
+  
+  if (!file.exists(fn_fml <- file.path(dat_dir, "Calls/prnSig_formulas.rda"))) {
+    return(NULL)
+  }
+  
+  load(file = fn_fml)
+  
+  fml_ops <- prepFml(prnSig_formulas[[fml_nm]], label_scheme_sub)
+  elements <- fml_ops[["elements"]]
+  key_col <- fml_ops$key_col
+  
+  rows <- label_scheme_sub[[key_col]] %in% elements
+  fracs <- unique(label_scheme_sub[[col_subcellular]][rows])
+  grps <- unique(label_scheme_sub[[col_group]][rows])
+  
+  list(frac = fracs, grp = grps)
+}
+
+#' Helper of GSPA
+#' 
+#' @param df_trend Trend data.
+#' @param dat_dir The working directory.
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
+#' @inheritParams anal_prnTrend
 #' @inheritParams fml_gspa
 #' 
 #' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readr read_tsv
-prep_gspa <- function(df = NULL, id = NULL, fml_nm = NULL, 
+prep_gspa <- function(df = NULL, id = NULL, 
+                      df_trend = NULL, is_subcellular = FALSE, 
+                      col_subcellular = NULL, col_subtype = NULL, 
+                      col_group = NULL, 
+                      fml_nm = NULL, dat_dir = NULL, label_scheme_sub = NULL, 
                       col_ind = 0L, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                      use_adjP = FALSE) 
+                      use_adjP = FALSE, scale_log2r = TRUE, impute_na = FALSE) 
 {
+  ans_fr <- check_gspa_subcellular(
+    fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme_sub, 
+    col_subcellular = col_subcellular, col_group = col_group)
+  subcell_frac <- ans_fr[["frac"]]
+  subcell_grps <- ans_fr[["grp"]]
+  rm(list = "ans_fr")
+  
   df <- df %>%
-    dplyr::select(matches(paste0("^", fml_nm, "\\."))) %>%
+    dplyr::select(dplyr::matches(paste0("^", fml_nm, "\\."))) %>%
     `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) %>% 
-    rm_pval_whitespace() %>% 
+    rm_pval_whitespace()
+  
+  # Exclude rows that are all zeros in localization scores under the fraction
+  # subcell_grps are from prnSig under the same subcellular fraction and 
+  # some of them may not be used in anal_prnTrend
+  subcell_grps <- subcell_grps[subcell_grps %in% colnames(df)]
+  
+  # len == 1L -> single subcellular; any score > 0 -> TRUE, present
+  if (length(subcell_frac) == 1L && length(subcell_grps)) {
+    df <- df[purrr::reduce(df[, subcell_grps, drop = FALSE], `|`), ]
+  }
+  
+  df <- df %>% 
     dplyr::select(id, grep("^pVal|^adjP|^log2Ratio", names(.))) %>% 
     dplyr::mutate(!!id := as.character(.[[id]]))
   

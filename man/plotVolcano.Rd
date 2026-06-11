@@ -23,6 +23,7 @@ plotVolcano(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  is_subcellular = FALSE,
   filepath = NULL,
   filename = NULL,
   theme = NULL,
@@ -132,6 +133,8 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

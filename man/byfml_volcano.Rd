@@ -23,9 +23,10 @@ byfml_volcano(
   show_passed_only = TRUE,
   gsets = NULL,
   gset_ids = NULL,
-  scale_log2r,
-  complete_cases,
-  impute_na,
+  is_subcellular = FALSE,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
   highlights = NULL,
   grids = NULL,
   theme = NULL,
@@ -123,6 +124,8 @@ passed a significant threshold.}
 
 \item{gset_ids}{A subset of gene set IDs for visualization. If not
 \code{NULL}, the entries from \code{gset_nms} will be overruled.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At

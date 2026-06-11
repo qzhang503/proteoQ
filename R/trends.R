@@ -184,7 +184,7 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 }
 
 
-#' Trend analysis
+#' Trend analysis.
 #' 
 #' @inheritParams anal_prnTrend
 #' @inheritParams info_anal
@@ -194,225 +194,225 @@ makeTrendRes <- function (fn, choice, dots, id = "gene", df_mean_log2r)
 #' @importFrom e1071 cmeans
 #' @importFrom cluster clusGap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-analTrend <- 
-  function (df, id = "gene", col_group = "Group", col_order = "Order", 
-            col_subcellular = NULL, col_subtype = NULL, label_scheme_sub = NULL, 
-            choice = "cmeans", n_clust = c(4, 6, 8, 12, 16), 
-            impute_group_na = TRUE, scale_log2r = TRUE, complete_cases = FALSE, 
-            impute_na = FALSE, p_outlier = .05, filepath = NULL, 
-            filename = NULL, anal_type = "Trend", ...) 
-  {
-    options(warn = 1L)
+analTrend <- function (
+    df, id = "gene", col_group = "Group", col_order = "Order", 
+    col_subcellular = NULL, col_subtype = NULL, label_scheme_sub = NULL, 
+    choice = "cmeans", n_clust = c(4, 6, 8, 12, 16), 
+    impute_group_na = TRUE, scale_log2r = TRUE, complete_cases = FALSE, 
+    impute_na = FALSE, p_outlier = .05, filepath = NULL, 
+    filename = NULL, anal_type = "Trend", ...) 
+{
+  options(warn = 1L)
+  
+  if (!is.null(id <- rlang::enexpr(id))) {
+    id <- rlang::as_string(id)
+  }
+  
+  if (!is.null(col_group <- rlang::enexpr(col_group))) {
+    col_group <- rlang::as_string(col_group)
+  }
+  
+  if (!is.null(col_order <- rlang::enexpr(col_order))) {
+    col_order <- rlang::as_string(col_order)
+  }
+  
+  if (!is.null(col_subcellular <- rlang::enexpr(col_subcellular))) {
+    col_subcellular <- rlang::as_string(col_subcellular)
+  }
+  
+  if (!is.null(col_subtype <- rlang::enexpr(col_subtype))) {
+    col_subtype <- rlang::as_string(col_subtype)
+  }
+  
+  if (is.null(col_subtype) && !is.null(col_subcellular)) {
+    col_subtype <- "sample_type_unknown"
+    label_scheme_sub[[col_subtype]] <- "unknown"
     
-    if (!is.null(id <- rlang::enexpr(id))) {
-      id <- rlang::as_string(id)
+    warning("Need specification of 'col_subtype' in label_scheme for ", 
+            "subcellular analysis.\n", 
+            "Added placeholder column ", col_subtype)
+  }
+  
+  dots <- rlang::enexprs(...)
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
+  
+  if (!nrow(label_scheme_sub)) {
+    stop("Empty metadata.")
+  }
+  
+  if (!impute_group_na) {
+    complete_cases <- 
+      to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+  }
+  
+  if (complete_cases) {
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+  }
+  
+  ## Data aggregation by groups
+  res <- prepTrend(
+    df = df, id = id, col_group = col_group, col_order = col_order, 
+    col_subcellular = col_subcellular, col_subtype = col_subtype, 
+    label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
+    scale_log2r = scale_log2r, complete_cases = complete_cases, 
+    impute_na = impute_na, anal_type = anal_type, p_outlier = p_outlier, 
+    group_renorm_by = FALSE, ...)
+  df_mean_log2r <- res$df_mean_log2r
+  df_mean_int <- res$df_mean_int
+  df_frac_purity <- res$df_frac_purity
+  df_entropy <- res$df_entropy
+  df_score_loc <- res$df_score_loc
+  sc_lookup <- res$sc_lookup
+  dfR <- res$dfR
+  dfI <- res$dfI
+  sids <- res$sids
+  grps <- res$grps
+  ugrps <- res$ugrps
+  n_samples <- res$n_samples
+  label_scheme_sub <- res$label_scheme_sub
+  fcts <- res$fcts
+  dots <- res$dots
+  rm(list = "res")
+  
+  ## Analysis
+  fn_suffix <- tools::file_ext(basename(filename))
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  
+  if (is.null(n_clust)) {
+    gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
+    n_clust  <- cluster::maxSE(
+      f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
+    rm(list = "gap_stat")
+    
+    message("Set `n_clust` to ", n_clust, ".")
+    fn_prefix <- paste0(fn_prefix, n_clust)
+  } else {
+    if (!all(n_clust >= 2L)) {
+      stop("All 'n_clust' need to be >= 2.")
     }
     
-    if (!is.null(col_group <- rlang::enexpr(col_group))) {
-      col_group <- rlang::as_string(col_group)
+    if (!(all(n_clust %% 1 == 0L))) {
+      stop("All 'n_clust' need to be integers.")
     }
-    
-    if (!is.null(col_order <- rlang::enexpr(col_order))) {
-      col_order <- rlang::as_string(col_order)
-    }
-    
-    if (!is.null(col_subcellular <- rlang::enexpr(col_subcellular))) {
-      col_subcellular <- rlang::as_string(col_subcellular)
-    }
-    
-    if (!is.null(col_subtype <- rlang::enexpr(col_subtype))) {
-      col_subtype <- rlang::as_string(col_subtype)
-    }
-    
-    if (is.null(col_subtype) && !is.null(col_subcellular)) {
-      col_subtype <- "sample_type_unknown"
-      label_scheme_sub[[col_subtype]] <- "unknown"
-      
-      warning("Need specification of 'col_subtype' in label_scheme for ", 
-              "subcellular analysis.\n", 
-              "Added placeholder column ", col_subtype)
-    }
-    
-    dots <- rlang::enexprs(...)
-    lang_dots    <- dots[unlist(lapply(dots, is.language))]
-    filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
-    arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
-    dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
-    
-    if (!nrow(label_scheme_sub)) {
-      stop("Empty metadata.")
-    }
-    
-    if (!impute_group_na) {
-      complete_cases <- 
-        to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
-    }
-    
-    if (complete_cases) {
-      df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-    }
-    
-    ## Data aggregation by groups
-    res <- prepTrend(
-      df = df, id = id, col_group = col_group, col_order = col_order, 
-      col_subcellular = col_subcellular, col_subtype = col_subtype, 
-      label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
-      scale_log2r = scale_log2r, complete_cases = complete_cases, 
-      impute_na = impute_na, anal_type = anal_type, p_outlier = p_outlier, 
-      group_renorm_by = FALSE, ...)
-    df_mean_log2r <- res$df_mean_log2r
-    df_mean_int <- res$df_mean_int
-    df_frac_purity <- res$df_frac_purity
-    df_entropy <- res$df_entropy
-    df_score_loc <- res$df_score_loc
-    sc_lookup <- res$sc_lookup
-    dfR <- res$dfR
-    dfI <- res$dfI
-    sids <- res$sids
-    grps <- res$grps
-    ugrps <- res$ugrps
-    n_samples <- res$n_samples
-    label_scheme_sub <- res$label_scheme_sub
-    fcts <- res$fcts
-    dots <- res$dots
-    rm(list = "res")
-    
-    ## Analysis
-    fn_suffix <- tools::file_ext(basename(filename))
-    fn_prefix <- tools::file_path_sans_ext(filename)
-    
-    if (is.null(n_clust)) {
-      gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
-      n_clust  <- cluster::maxSE(
-        f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
-      rm(list = "gap_stat")
-      
-      message("Set `n_clust` to ", n_clust, ".")
-      fn_prefix <- paste0(fn_prefix, n_clust)
-    } else {
-      if (!all(n_clust >= 2L)) {
-        stop("All 'n_clust' need to be >= 2.")
-      }
-      
-      if (!(all(n_clust %% 1 == 0L))) {
-        stop("All 'n_clust' need to be integers.")
-      }
-    }
-    
-    ans_dots <- find_trend_m(
-      dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_mean_log2r)
-    dots <- ans_dots[["dots"]]
-    n_clust <- ans_dots[["n_clust"]]
-    rm(list = "ans_dots")
-    
-    res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
-                     id = id, df_mean_log2r = df_mean_log2r)
-    
-    ## Outputs
-    df_mean_log2r <- df_mean_log2r |>
-      tibble::rownames_to_column(id)
-    
-    df_mean_int <- log10(df_mean_int) |>
+  }
+  
+  ans_dots <- find_trend_m(
+    dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_mean_log2r)
+  dots <- ans_dots[["dots"]]
+  n_clust <- ans_dots[["n_clust"]]
+  rm(list = "ans_dots")
+  
+  res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
+                   id = id, df_mean_log2r = df_mean_log2r)
+  
+  ## Outputs
+  df_mean_log2r <- df_mean_log2r |>
+    tibble::rownames_to_column(id)
+  
+  df_mean_int <- log10(df_mean_int) |>
+    tibble::rownames_to_column(id) |>
+    tidyr::pivot_longer(-!!id, names_to = "group", values_to = "log10Int") |>
+    tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+  
+  if (ok_frac_purity <- !is.null(df_frac_purity)) {
+    df_frac_purity <- df_frac_purity |>
       tibble::rownames_to_column(id) |>
-      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "log10Int") |>
+      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "purity") |>
       tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
     
-    if (ok_frac_purity <- !is.null(df_frac_purity)) {
-      df_frac_purity <- df_frac_purity |>
-        tibble::rownames_to_column(id) |>
-        tidyr::pivot_longer(-!!id, names_to = "group", values_to = "purity") |>
-        tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
-      
-      df_score_loc <- df_score_loc |>
-        tibble::rownames_to_column(id) |>
-        tidyr::pivot_longer(-!!id, names_to = "group", values_to = "loc_score") |>
-        tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
-      
+    df_score_loc <- df_score_loc |>
+      tibble::rownames_to_column(id) |>
+      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "loc_score") |>
+      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+    
+    df_entropy <- df_entropy |>
+      tibble::rownames_to_column(id) |>
+      tidyr::pivot_longer(-!!id, names_to = "sub_type", values_to = "entropy")
+    
+    # Should not occur with the addition of a placeholder 'col_subtype'
+    if (is.null(col_subtype)) {
       df_entropy <- df_entropy |>
-        tibble::rownames_to_column(id) |>
-        tidyr::pivot_longer(-!!id, names_to = "sub_type", values_to = "entropy")
-      
-      # Should not occur with the addition of a placeholder 'col_subtype'
-      if (is.null(col_subtype)) {
-        df_entropy <- df_entropy |>
-          dplyr::rename(uid_ent := !!id) |>
-          dplyr::select(-dplyr::one_of("sub_type"))
-      } else {
-        df_entropy <- df_entropy |>
-          tidyr::unite(uid_ent, !!id, sub_type, sep = ".", remove = TRUE)
-      }
+        dplyr::rename(uid_ent := !!id) |>
+        dplyr::select(-dplyr::one_of("sub_type"))
+    } else {
+      df_entropy <- df_entropy |>
+        tidyr::unite(uid_ent, !!id, sub_type, sep = ".", remove = TRUE)
     }
-    
-    out <- vector("list", length(n_clust))
-    for (i in seq_along(n_clust)) {
-      outi <- df_mean_log2r |>
-        dplyr::left_join(res_cl[[i]], by = id) |>
-        tidyr::pivot_longer(
-          cols = -c(.data[[id]], cluster), 
-          names_to = "group", 
-          values_to = "log2FC") |>
-        dplyr::mutate(group = factor(group, levels = fcts)) |>
-        dplyr::arrange(group) |>
-        tidyr::unite(uid, !!id, group, sep = ".", remove = FALSE) |> 
-        dplyr::left_join(df_mean_int, by = "uid")
-      
-      if (ok_frac_purity) {
-        outi <- outi |>
-          dplyr::left_join(sc_lookup, by = c("group" = "Sample_ID"))
-        
-        outi <- outi |>
-          dplyr::left_join(df_frac_purity, by = "uid")
-        
-        outi <- outi |>
-          tidyr::unite(uid_ent, !!id, col_subtype, sep = ".", remove = FALSE) |> 
-          dplyr::left_join(df_entropy, by = "uid_ent") |>
-          dplyr::left_join(df_score_loc, by = "uid")
-      } else {
-        outi[["uid"]] <- NA_character_
-      }
-      
-      # Param file 'anal_prnTrend.rda' overwritten by the latest call ->
-      # embedded col_group etc. for self-containness
-      outi <- outi |>
-        dplyr::select(-dplyr::one_of(c("uid", "uid_ent"))) |> 
-        dplyr::left_join(df[, c(id, "species")], by = id)
-      
-      outi <- outi |>
-        dplyr::mutate(log2FC = round(log2FC, digits = 2L), 
-                      log10Int =round(log10Int, digits = 2L))
-      
-      saveRDS(
-        list(data = outi, 
-             col_group = col_group, col_order = col_order, 
-             col_subcellular = col_subcellular, col_subtype = col_subtype, 
-             sc_lookup = sc_lookup), 
-        file.path(filepath, paste0(sub("\\.txt", "", filename[[i]]), ".rds")))
-      
-      outi <- outi |>
-        dplyr::mutate(col_group = col_group, 
-                      col_order = col_order, )
-      
-      if (!is.null(col_subcellular)) {
-        outi <- outi |>
-          dplyr::mutate(col_subcellular = col_subcellular, )
-      }
-      
-      if (!is.null(col_subtype)) {
-        outi <- outi |>
-          dplyr::mutate(col_subtype = col_subtype, )
-      }
-      
-      readr::write_tsv(outi, file.path(filepath, filename[[i]]))
-      
-      out[[i]] <- outi
-    }
-    
-    if ((!is.null(sc_lookup)) && is.data.frame(sc_lookup)) {
-      readr::write_tsv(sc_lookup, file.path(filepath, "subcellular_lookup.tsv"))
-    }
-    
-    invisible(out)
   }
+  
+  out <- vector("list", length(n_clust))
+  for (i in seq_along(n_clust)) {
+    outi <- df_mean_log2r |>
+      dplyr::left_join(res_cl[[i]], by = id) |>
+      tidyr::pivot_longer(
+        cols = -c(.data[[id]], cluster), 
+        names_to = "group", 
+        values_to = "log2FC") |>
+      dplyr::mutate(group = factor(group, levels = fcts)) |>
+      dplyr::arrange(group) |>
+      tidyr::unite(uid, !!id, group, sep = ".", remove = FALSE) |> 
+      dplyr::left_join(df_mean_int, by = "uid")
+    
+    if (ok_frac_purity) {
+      outi <- outi |>
+        dplyr::left_join(sc_lookup, by = c("group" = "Sample_ID"))
+      
+      outi <- outi |>
+        dplyr::left_join(df_frac_purity, by = "uid")
+      
+      outi <- outi |>
+        tidyr::unite(uid_ent, !!id, col_subtype, sep = ".", remove = FALSE) |> 
+        dplyr::left_join(df_entropy, by = "uid_ent") |>
+        dplyr::left_join(df_score_loc, by = "uid")
+    } else {
+      outi[["uid"]] <- NA_character_
+    }
+    
+    # Param file 'anal_prnTrend.rda' overwritten by the latest call ->
+    # embedded col_group etc. for self-containness
+    outi <- outi |>
+      dplyr::select(-dplyr::one_of(c("uid", "uid_ent"))) |> 
+      dplyr::left_join(df[, c(id, "species")], by = id)
+    
+    outi <- outi |>
+      dplyr::mutate(log2FC = round(log2FC, digits = 2L), 
+                    log10Int =round(log10Int, digits = 2L))
+    
+    saveRDS(
+      list(data = outi, 
+           col_group = col_group, col_order = col_order, 
+           col_subcellular = col_subcellular, col_subtype = col_subtype, 
+           sc_lookup = sc_lookup), 
+      file.path(filepath, paste0(sub("\\.txt", "", filename[[i]]), ".rds")))
+    
+    outi <- outi |>
+      dplyr::mutate(col_group = col_group, 
+                    col_order = col_order, )
+    
+    if (!is.null(col_subcellular)) {
+      outi <- outi |>
+        dplyr::mutate(col_subcellular = col_subcellular, )
+    }
+    
+    if (!is.null(col_subtype)) {
+      outi <- outi |>
+        dplyr::mutate(col_subtype = col_subtype, )
+    }
+    
+    readr::write_tsv(outi, file.path(filepath, filename[[i]]))
+    
+    out[[i]] <- outi
+  }
+  
+  if ((!is.null(sc_lookup)) && is.data.frame(sc_lookup)) {
+    readr::write_tsv(sc_lookup, file.path(filepath, "subcellular_lookup.tsv"))
+  }
+  
+  invisible(out)
+}
 
 
 #' Prepare data for trend analysis.
@@ -688,6 +688,7 @@ update_ls_by_col_order <- function (label_scheme_sub, col_group, col_order)
                         levels = unique(label_scheme_sub[[col_group]])))
     warning("No group order specified under '", col_order, "'.", 
             " Use orders under '", col_group, "'.")
+    nas <- rep_len(FALSE, length(nas))
   }
   
   if (any(nas)) {

@@ -2,6 +2,8 @@
 #' 
 #' @param levels_subcellular The levels of subcellular fractions.
 #' @param panel_ids Panel IDs for plotting.
+#' @param qt The quantile of localization score for thresholding subcellular
+#'   compartment specificity. The default is to use median.
 #' @inheritParams plot_prnTrend
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -13,7 +15,7 @@ plotSubcellular <- function(
     id, col_group = NULL, col_order = NULL, levels_subcellular = NULL, 
     levels_subtype = NULL, label_scheme_sub, n_clust = NULL, panel_ids = NULL, 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-    df2 = NULL, filepath, filename, theme, ...) 
+    df2 = NULL, filepath = NULL, filename = NULL, qt = .5, theme, ...) 
 {
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
@@ -30,11 +32,9 @@ plotSubcellular <- function(
   # Prepare output file name
   custom_prefix <- if (id %in% c("pep_seq", "pep_seq_mod")) {
     purrr::map_chr(df2, ~ gsub("(.*_{0,1})Peptide_Trend.*", "\\1", .x))
-  }
-  else if (id %in% c("prot_acc", "gene")) {
+  } else if (id %in% c("prot_acc", "gene")) {
     purrr::map_chr(df2, ~ gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x))
-  }
-  else {
+  } else {
     stop("Unknown id = ", id)
   }
 
@@ -55,6 +55,7 @@ plotSubcellular <- function(
       fn_suffix = fn_suffix, 
       df = df, 
       id = id, 
+      qt = qt, 
       col_group = rlang::enexpr(col_group), 
       col_order = rlang::enexpr(col_order), 
       levels_subcellular = levels_subcellular,
@@ -114,48 +115,8 @@ plotSubcellular <- function(
       dplyr::bind_rows() |>
       dplyr::select(-c("score_co"))
     
-    if (FALSE) {
-      dfx <- df[, c("gene", "sub_location")] |> 
-        dplyr::filter(!is.na(sub_location)) |>
-        unique() |> 
-        dplyr::group_by(gene) |> 
-        dplyr::mutate(
-          sub_location = factor(sub_location, levels = levels_subcellular), 
-          N = dplyr::row_number(), )
-
-      ggplot(dfx, aes(x = sub_location, fill = sub_location)) +
-        geom_bar(width = 0.6) + 
-        theme_minimal() +
-        labs(
-          title = NULL,
-          x = "Subcellular Location",
-          y = "Number of Genes",
-          fill = NULL
-        ) +
-        theme(axis.text.x = element_text(hjust = 1), 
-              panel.grid  = element_blank(), ) 
-      
-      ggsave(file.path(filepath, "prnSubcellular_counts.png"), 
-             width = 4, height = 3)
-
-      ggplot(dfx, aes(x = factor(N), fill = factor(N))) +
-        geom_bar(width = 0.6) +
-        theme_minimal() +
-        labs(
-          title = NULL,
-          x = "Number of Locations per Gene",
-          y = "Number of Genes",
-          fill = NULL
-        ) +
-        theme(
-          axis.text.x = element_text(),
-          panel.grid  = element_blank(), 
-          legend.position = "none"
-        )
-      
-      ggsave(file.path(filepath, "subcellular_counts_per_gene.png"), 
-             width = 3, height = 3)
-    }
+    df <- 
+      threshold_subcell_by_int(df, col_subcellular = col_subcellular)
     
     # Update data
     readr::write_tsv(df, file.path(filepath, fn))
@@ -164,6 +125,36 @@ plotSubcellular <- function(
   })
 
   invisible(dfs)
+}
+
+
+#' Threshold subcellular locations by intensity.
+#' 
+#' @param df A data frame.
+#' @param col_subcellular The column key indicating subcellular locations.
+#' @param fct A multiplification factor in intensity thresholding.
+threshold_subcell_by_int <- function (df, col_subcellular = NULL, fct = 1.0)
+{
+  dfs <- split(df, df[["gene"]])
+  
+  lapply(dfs, function (dfx) {
+    nas <- is.na(dfx[["sub_location"]])
+    
+    if (all(nas) || !any(nas)) {
+      return(dfx)
+    }
+    
+    dfa <- dfx[!nas, ]
+    dfb <- dfx[nas, ]
+    frs <- dfb[[col_subcellular]]
+    oks <- dfb[["log10Int"]] >= min(dfa[["log10Int"]], na.rm = TRUE) + log10(fct)
+    
+    dfb[["sub_location"]][oks] <- frs[oks]
+    dfx[["sub_location"]][nas] <- dfb[["sub_location"]]
+    
+    dfx
+  }) |>
+    dplyr::bind_rows()
 }
 
 
@@ -208,13 +199,13 @@ plot_prnSubcellular_UMAP <- function (
 
   # col_subcellular encodes sample fraction; 
   # sub_location: classification results
-  df_umap <- df[, c("gene", "loc_score", "sub_location", col_subtype)] |>
+  df_umap <- df[, c("gene", "loc_score", "sub_location", "group")] |>
     dplyr::filter(!is.na(sub_location)) |>
     dplyr::arrange(gene) |>
     unique() |>
     tidyr::pivot_wider(
       id_cols = "gene", 
-      names_from = c("sub_location", col_subtype), 
+      names_from = c("group"), 
       values_from = "loc_score",
       values_fill = 0, 
     )
@@ -252,14 +243,15 @@ plot_prnSubcellular_UMAP <- function (
   alpha  <- dots$alpha
   width  <- dots$width
   height <- dots$height
+  dpi    <- dots$dpi
   
   if (is.null(width))  width <- n_subtypes * 8 / nrow + 2
   if (is.null(height)) height <- 8 * nrow
-
   if (is.null(ncol))  ncol <- 2
   if (is.null(nrow))  nrow <- 1
-  if (is.null(size))  size <- .02
+  if (is.null(size))  size <- .01
   if (is.null(alpha)) alpha <- .5
+  if (is.null(dpi)) dpi <- 300
   
   if (is.null(ncol)) {
     if (is.null(nrow)) {
@@ -278,6 +270,7 @@ plot_prnSubcellular_UMAP <- function (
   dots$height <- NULL
   dots$alpha <- NULL
   dots$size <- NULL
+  dots$dpi <- NULL
   
   df_plot <- df |> 
     dplyr::filter(!is.na(sub_location)) |>
@@ -313,7 +306,8 @@ plot_prnSubcellular_UMAP <- function (
       panel.grid = element_blank()
     )
   
-  ggsave(file.path(filepath, filename), width = width, height = height)
+  ggsave(file.path(filepath, filename), width = width, height = height, 
+         dpi = dpi) # , type = "cairo"
   
   ## Map to UniProt etc.
   if ((!is.null(filename_ref)) && file.exists(filename_ref)) {
@@ -381,22 +375,24 @@ plot_prnSubcellular_UMAP <- function (
 
 
 #' Plots trends at a given \code{n_clust}.
-#' 
+#'
 #' @param custom_prefix A custom filename prefix.
 #' @param fn_prefix A file name prefix.
 #' @param fn_suffix A file name suffix.
-#' @param filepath An output file path. 
+#' @param filepath An output file path.
 #' @param df A data frame.
 #' @param label_scheme_sub A metadata subset.
+#' @param qt The quantile of localization score for thresholding subcellular
+#'   compartment specificity. The default is to use median.
 #' @param dots Variable arguments.
 #' @inheritParams plotTrend
 #' @inheritParams plotSubcellular
-#' @importFrom magrittr %>% %T>% 
+#' @importFrom magrittr %>% %T>%
 #' @import dplyr ggplot2 RColorBrewer
 plotSubcellular_sub <- function (
     df2 = NULL, custom_prefix = NULL, fn_prefix = NULL, fn_suffix = NULL, 
     df = NULL, id = "gene", col_group = NULL, col_order = NULL, 
-    levels_subcellular = NULL, levels_subtype = NULL, 
+    levels_subcellular = NULL, levels_subtype = NULL, qt = .5, 
     complete_cases = FALSE, panel_ids = NULL, filepath = NULL, 
     label_scheme_sub = NULL, theme = NULL, dots = NULL)
 {
@@ -404,14 +400,15 @@ plotSubcellular_sub <- function (
   out_nm <- paste0(custom_prefix, fn_prefix, "_nclust", cl_id, ".", fn_suffix)
   src_path <- file.path(filepath, df2)
   
-  df <- tryCatch(
-    readr::read_tsv(
-      src_path, 
-      col_types = cols(group = col_factor(), cluster = col_integer())), 
-    error = function(e) NA)
+  if (!file.exists(src_path)) {
+    stop("File not found: ", src_path)
+  }
   
+  df <- readr::read_tsv(
+    src_path, col_types = cols(group = col_factor(), cluster = col_integer()))
+
   if (is.null(dim(df))) {
-    stop(paste("Non-exist file or directory:", src_path))
+    stop("File contains not data: ", src_path)
   }
   
   message(paste("File loaded:", src_path))
@@ -436,15 +433,9 @@ plotSubcellular_sub <- function (
   col_subcellular <- df[["col_subcellular"]][1]
   col_subtype <- df[["col_subtype"]][1]
   
-  if (FALSE) {
-    col_group <- rlang::as_string(rlang::enexpr(col_group))
-    col_order <- rlang::as_string(rlang::enexpr(col_order))
-    col_subcellular <- match_call_arg(anal_prnTrend, "col_subcellular")
-    col_subcellular <- rlang::as_string(rlang::enexpr(col_subcellular))
-    col_subtype <- match_call_arg(anal_prnTrend, "col_subtype")
-    col_subtype <- rlang::as_string(rlang::enexpr(col_subtype))
-  }
-  
+  df[["col_group"]] <- df[["col_order"]] <- df[["col_subcellular"]] <- 
+    df[["col_subtype"]] <- NULL
+
   if (FALSE) {
     fn_df2_rds <- paste0(tools::file_path_sans_ext(df2), ".rds")
     fn_sc_lookup <- "subcellular_lookup.tsv"
@@ -551,13 +542,14 @@ plotSubcellular_sub <- function (
   # Median description of localization scores
   # User defined column `group" provides the finest granularity including 
   #  subcellular, sample type, etc.
+
   df_med <- lapply(split(df, df[["cluster"]]), function (dfx) {
     dfx |>
       dplyr::group_by(group) |>
       dplyr::summarise(
-        purity  = median(purity, na.rm = TRUE), 
-        entropy = median(entropy, na.rm = TRUE), 
-        score   = median(loc_score, na.rm = TRUE), 
+        purity  = as.numeric(quantile(purity, probs = qt, na.rm = TRUE)), 
+        entropy = as.numeric(quantile(entropy, probs = qt, na.rm = TRUE)), 
+        score   = as.numeric(quantile(loc_score, probs = qt, na.rm = TRUE))
       )
   }) |>
     dplyr::bind_rows(.id = "cluster") |>
@@ -565,7 +557,7 @@ plotSubcellular_sub <- function (
       cluster = as.integer(cluster),
       cluster = factor(cluster, levels = sort(unique(cluster)))
     )
-  
+
   df_med <- df_med |>
     dplyr::left_join(
       unique(df[, c("cluster", "group", col_subcellular, col_subtype)]), 
@@ -609,13 +601,6 @@ plotSubcellular_sub <- function (
     rlang::eval_tidy()
   
   ## Classify trends
-  if (FALSE) {
-    res <- tryCatch(
-      classify_trends(df_med = df_med, col_subcellular = col_subcellular, 
-                      col_subtype = col_subtype),
-      error = function(e) NULL)
-  }
-
   res <- lapply(split(df_med, df_med[[col_subtype]]), function (dfx) {
     tryCatch(
       classify_trends(df_med = dfx, col_subcellular = col_subcellular, 
@@ -757,32 +742,34 @@ classify_trends <- function (df_med = NULL, col_subcellular, col_subtype)
 
 
 #' Visualization of subcellular results.
-#' 
-#' \code{plot_prnSubcellular} plots the subcellular purity of protein expressions
-#' from \code{\link{anal_prnTrend}}.
-#' 
+#'
+#' \code{plot_prnSubcellular} plots the subcellular purity of protein
+#' expressions from \code{\link{anal_prnTrend}}.
+#'
 #' @param levels_subcellular The levels of subcellular fractions.
 #' @param levels_subtype The levels of sample subtypes, e.g., Control, Treated.
+#' @param qt Not used. The quantile of localization score for thresholding
+#'   subcellular compartment specificity. The default is to use median.
 #' @inheritParams anal_prnTrend
 #' @inheritParams plot_prnTrend
 #' @examples
 #' if (FALSE) {
-#'   cl <- 16; width = 10; height = 7.5; 
+#'   cl <- 16; width = 10; height = 7.5;
 #'   plot_prnSubcellular(
-#'     df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"), 
+#'     df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"),
 #'     col_order = Order,
-#'     n_clust = cl, 
-#'     levels_subcellular = c("CP", "NP", "ChA"), 
+#'     n_clust = cl,
+#'     levels_subcellular = c("CP", "NP", "ChA"),
 #'     ncol = 4,
-#'     width = !!width, 
-#'     height = !!height, 
+#'     width = !!width,
+#'     height = !!height,
 #'   )
 #' }
-#' 
+#'
 #' @export
 plot_prnSubcellular <- function (
     col_select = NULL, col_order = NULL, levels_subcellular = NULL, 
-    levels_subtype = NULL, 
+    levels_subtype = NULL, qt = .5, 
     # levels_col_group = NULL, 
     n_clust = NULL, panel_ids = NULL, scale_log2r = TRUE, 
     complete_cases = FALSE, impute_na = FALSE, df2 = NULL, 
@@ -833,6 +820,95 @@ plot_prnSubcellular <- function (
             anal_type = "Subcellular_plot")(
               levels_subcellular = levels_subcellular, 
               levels_subtype = levels_subtype, 
-              n_clust = n_clust, panel_ids = panel_ids, theme = theme, ...)
+              n_clust = n_clust, qt = qt, panel_ids = panel_ids, 
+              theme = theme, ...)
 }
+
+
+#' Update protein tables of \code{Protein.txt} etc. by subcellular locations.
+#' 
+#' Not yet used.
+#' 
+#' @param id Identifier.
+#' @inheritParams anal_prnTrend
+update_subcellular <- function (id = "gene", impute_na = FALSE, 
+                                scale_log2r = TRUE, ...) 
+{
+  dots <- rlang::enexprs(...)
+  
+  dat_dir  <- get_gl_dat_dir()
+  filepath <- file.path(dat_dir, "Protein", "trend")
+  
+  label_scheme_sub <- load_ls_group(dat_dir)
+  
+  ## Find input `df2`
+  df2 <- find_trend_df2(
+    df2 = NULL, n_clust = NULL, scale_log2r = scale_log2r, 
+    impute_na = impute_na, filepath = filepath)
+  
+  if (!length(df2)) {
+    stop("No trend results found.", " Run 'anal_prnTrend' first.")
+  }
+  
+  df_trend <- readr::read_tsv(file.path(filepath, df2[[1]]))
+  col_subcellular <- df_trend[["col_subcellular"]][[1]]
+  col_subtype <- df_trend[["col_subtype"]][[1]]
+  df_trend <- df_trend[, c("gene", "loc_score", "sub_location", col_subtype)]
+  
+  hupdate_subcellular(
+    df_trend = df_trend, dat_dir = dat_dir, id = id, 
+    label_scheme_sub = label_scheme_sub, col_subcellular = col_subcellular, 
+    col_subtype = col_subtype) 
+}
+
+#' Update subcellular protein and peptide tables.
+#' 
+#' Not yet used.
+#' 
+#' @param df_trend Trend results
+#' @param dat_dir The working directory.
+#' @param id Identifier.
+#' @param label_scheme_sub Metadata.
+#' @param col_subcellular The column key in metadata linking to subcellular
+#'   values.
+#' @param col_subtye The column key metadata linking to sample sub-types.
+hupdate_subcellular <- function (df_trend, dat_dir, id = "gene", 
+                                 label_scheme_sub, 
+                                 col_subcellular = NULL, col_subtype = NULL) 
+{
+  path_prn <- file.path(dat_dir, "Protein", "Protein.txt")
+  path_pep <- file.path(dat_dir, "Peptide", "Peptide.txt")
+  file.copy(path_prn, file.path(dat_dir, "Protein", "Protein_bf_subcell.txt"))
+  file.copy(path_pep, file.path(dat_dir, "Peptide", "Peptide_bf_subcell.txt"))
+  
+  df_prn <- readr::read_tsv(path_prn)
+  df_pep <- readr::read_tsv(path_pep)
+  
+  metas <- split(label_scheme_sub, 
+                 label_scheme_sub[, c(col_subcellular, col_subtype)])
+  
+  for (i in seq_along(metas)) {
+    meta <- metas[[i]]
+    
+    gns <- df_trend |>
+      dplyr::filter(
+        sub_location == meta[[col_subcellular]][[1]], 
+        !!rlang::sym(col_subtype) == meta[[col_subtype]][[1]], ) |>
+      dplyr::pull(id)
+    
+    pats <- paste0("\\(", meta[["Sample_ID"]], "\\)$")
+    cols_prn <- grepl(paste0(pats, collapse = "|"), colnames(df_prn))
+    cols_pep <- grepl(paste0(pats, collapse = "|"), colnames(df_pep))
+    rows_prn <- !df_prn[[id]] %in% gns
+    rows_pep <- !df_pep[[id]] %in% gns
+    df_prn[rows_prn, cols_prn] <- NA_real_
+    df_pep[rows_pep, cols_pep] <- NA_real_
+  }
+  
+  readr::write_tsv(df_prn, path_prn)
+  readr::write_tsv(df_pep, path_pep)
+  
+  invisible(df_prn)
+}
+
 

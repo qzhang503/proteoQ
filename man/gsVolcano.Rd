@@ -24,6 +24,9 @@ gsVolcano(
   gspval_cutoff = 1e-06,
   gslogFC_cutoff = log2(1.2),
   topn_gsets = Inf,
+  is_subcellular = FALSE,
+  scale_log2r = TRUE,
+  impute_na = FALSE,
   ...
 )
 }
@@ -119,6 +122,16 @@ threshold is allowed by supplying a vector of absolute values in
   \code{\link{prnGSPA}} and in that way no terms will be missed for
   visualization. See also \code{\link{prnGSPA}} for examples of custom data
   bases.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE. At
+\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
+be used.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

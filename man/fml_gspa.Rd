@@ -21,10 +21,17 @@ fml_gspa(
   col_ind,
   id = "gene",
   id_gspa = "entrez",
+  df_trend = NULL,
+  is_subcellular = FALSE,
+  col_subcellular = NULL,
+  col_subtype = NULL,
+  col_group = NULL,
   gsets = "go_sets",
-  label_scheme_sub,
+  label_scheme_sub = NULL,
+  dat_dir = NULL,
   complete_cases = FALSE,
   scale_log2r = TRUE,
+  impute_na = FALSE,
   filepath,
   filename,
   use_adjP = FALSE,
@@ -115,6 +122,8 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
 
+\item{is_subcellular}{Logical; is subcellular data or not.}
+
 \item{gsets}{The gene sets.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
@@ -127,6 +136,9 @@ missing values will be used. The default is FALSE.}
 of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
 be used.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

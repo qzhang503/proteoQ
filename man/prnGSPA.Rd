@@ -7,6 +7,7 @@
 \usage{
 pepGSPA(
   gset_nms = c("go_sets", "c2_msig", "kinsub"),
+  is_subcellular = FALSE,
   method = "mean",
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -35,6 +36,7 @@ prnGSPA(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  is_subcellular = FALSE,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
   gsscore_cutoff = 5,
@@ -65,6 +67,8 @@ also: \code{\link{prepGO}} for the preparation of custom \code{GO};
 \code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
 custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{method}{Character string or vector; the method to assess the p-values of
 GSPA. The default is \code{mean} and the alternative is \code{limma}. See

@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.9.4
+Version: 1.9.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -9,7 +9,7 @@ Authors@R:
            comment = c(ORCID = "0000-0001-7046-4378"))
 Description: Analysis of Mass Spectrometrirc Data.  
 biocViews: 
-Depends: R (>= 4.1)
+Depends: R (>= 4.2)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

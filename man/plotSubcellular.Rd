@@ -17,8 +17,9 @@ plotSubcellular(
   complete_cases = FALSE,
   impute_na = FALSE,
   df2 = NULL,
-  filepath,
-  filename,
+  filepath = NULL,
+  filename = NULL,
+  qt = 0.5,
   theme,
   ...
 )
@@ -76,6 +77,9 @@ of \code{id} in the \code{call}.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
+
+\item{qt}{The quantile of localization score for thresholding subcellular
+compartment specificity. The default is to use median.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

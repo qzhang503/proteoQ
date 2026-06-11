@@ -15,6 +15,7 @@ plotSubcellular_sub(
   col_order = NULL,
   levels_subcellular = NULL,
   levels_subtype = NULL,
+  qt = 0.5,
   complete_cases = FALSE,
   panel_ids = NULL,
   filepath = NULL,
@@ -55,6 +56,9 @@ the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{levels_subcellular}{The levels of subcellular fractions.}
+
+\item{qt}{The quantile of localization score for thresholding subcellular
+compartment specificity. The default is to use median.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

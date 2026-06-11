@@ -6,9 +6,10 @@
 \usage{
 plot_gspa_volcano(
   gt,
-  gsets,
-  gsea_res,
-  dfw,
+  gsets = "go_sets",
+  gsea_res = NULL,
+  dfw = NULL,
+  is_subcellular = FALSE,
   id = "gene",
   id_gspa = "entrez",
   show_sig = "none",
@@ -17,19 +18,21 @@ plot_gspa_volcano(
   yco = 0.05,
   pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2),
+  filepath = NULL,
+  fml_nm = NULL,
+  custom_prefix = NULL,
+  fn_suffix = NULL,
   x_label = NULL,
   y_label = NULL,
   theme = NULL,
   myPalette = c("#377EB8", "#E41A1C"),
-  filepath,
-  fml_nm,
-  custom_prefix,
-  fn_suffix,
   dots
 )
 }
 \arguments{
 \item{gsets}{The gene sets.}
+
+\item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
@@ -60,16 +63,16 @@ is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
-\item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
-i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
-will be applied.}
-
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 }
 \description{
 Volcano plots of protein \code{log2FC} under given gene sets
