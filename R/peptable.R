@@ -1395,6 +1395,7 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
                     grep(pat_N_log2_R,  nms), 
                     grep(pat_I,         nms), 
                     grep(pat_N_I,       nms)) |>
+      dplyr::select(-dplyr::matches("(R|I)000$")) |>
       dplyr::group_by_at(cols_grp) |>
       aggrNumLCMS(group_psm_by, label_scheme_full) |>
       dplyr::mutate(TMT_Set = as.integer(TMT_Set)) |>
@@ -4510,6 +4511,12 @@ rm_diann_empties <- function (df, label_scheme_full)
   # Remove samples not in metadata and align sample IDs by metadata
   mts  <- match(label_scheme_full[["RAW_File"]], raws)
   dfx  <- df[, cols, drop = FALSE]
+  
+  if (any(mts)) {
+    warning("Not all RAW files matched to 'expt_smry'. ", 
+            "Check for possible errors in file names.")
+  }
+  
   dfx  <- dfx[, mts, drop = FALSE]
   raws <- raws[mts]
   

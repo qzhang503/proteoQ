@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -74,12 +75,14 @@
 # $gspa.R
 # pepGSPA
 # prnGSPA
+# add_subcell
 # gspaTest
 # fml_gspa
 # hgspa_summary_mean
 # hgspa_summary_limma
 # ok_min_size
 # lm_gspa
+# check_gspa_subcellular
 # prep_gspa
 # map_essential
 # prnGSPAHM
@@ -476,14 +479,26 @@
 # prepString
 # load_stringdbs
 #
+# $subcellular.R
+# plotSubcellular
+# threshold_subcell_by_int
+# plot_prnSubcellular_UMAP
+# plotSubcellular_sub
+# classify_trends
+# plot_prnSubcellular
+# update_subcellular
+# hupdate_subcellular
+#
 # $trends.R
 # checkdots_analTrend
 # find_trend_m
 # makeTrendRes
 # analTrend
 # prepTrend
+# calc_subcell_frac
 # update_ls_by_col_order
 # make_renorm_data
+# find_trend_df2
 # plotTrend
 # plotTrend_sub
 # anal_prnTrend

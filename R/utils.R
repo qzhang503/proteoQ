@@ -655,64 +655,104 @@ replace_trivial_with_na <- function (x)
 
 #' Sets up the column annotation in heat maps
 #' 
+#' @param annot_col_levels The levels of column annotation.
 #' @inheritParams prnEucDist
 #' @inheritParams gspa_colAnnot
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL) 
+colAnnot <- function (annot_cols = NULL, annot_colnames = NULL, 
+                      annot_col_levels = NULL, sample_ids = NULL) 
 {
-  if (is.null(annot_cols)) 
+  if (is.null(annot_cols)) {
     return(NA)
+  }
   
+  if ((!is.null(annot_colnames)) && 
+      length(annot_colnames) != length(annot_cols)) {
+    stop("The length of 'annot_colnames' is different to the length of ", 
+         "'annot_cols'")
+  }
+  
+  if ((!is.null(annot_col_levels)) && 
+      length(annot_col_levels) != length(annot_cols)) {
+    stop("The length of 'annot_col_levels' is different to the length of ", 
+         "'annot_cols'")
+  }
+
   dat_dir <- get_gl_dat_dir()
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   exists <- annot_cols %in% names(label_scheme)
   
   if (sum(!exists) > 0L) {
     warning(paste0("Column '", annot_cols[!exists], "'",
-                   " not found in \"label_scheme\" and will be skipped."), 
-            call. = FALSE)
+                   " not found in \"label_scheme\" and will be skipped."))
     annot_cols <- annot_cols[exists]
+    
+    if (!is.null(annot_colnames)) {
+      annot_colnames <- annot_colnames[exists]
+    }
+
+    if (!is.null(annot_col_levels)) {
+      annot_col_levels <- annot_col_levels[exists]
+    }
   }
   
-  if (!length(annot_cols)) 
+  if (!length(annot_cols)) {
     return(NA)
-  
-  x <- label_scheme %>%
-    dplyr::filter(Sample_ID %in% sample_ids) %>%
-    dplyr::select(annot_cols, Sample_ID) 
+  }
+
+  x <- label_scheme |>
+    dplyr::filter(Sample_ID %in% sample_ids) |>
+    dplyr::select(annot_cols, Sample_ID)
   
   idx <- !not_all_NA(x)
   
-  if (sum(idx) > 0L) 
+  if (sum(idx) > 0L) {
     stop("No aesthetics defined under column(s) `", 
          paste(names(x)[idx], collapse = ", "), "`.")
-  
+  }
+
   x <- x %>%
     dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
                   !is.na(.[["Sample_ID"]])) %>%
     data.frame(check.names = FALSE) %>%
     `rownames<-`(.[["Sample_ID"]])
   
-  if (any(duplicated(x[["Sample_ID"]]))) 
+  if (any(duplicated(x[["Sample_ID"]]))) {
     stop("Duplicated sample IDs found.\n")
-  
-  if (!"Sample_ID" %in% annot_cols) 
-    x <- x %>% dplyr::select(-Sample_ID)
-  
-  if (!ncol(x)) 
+  }
+
+  if (!"Sample_ID" %in% annot_cols) {
+    x <- x |> dplyr::select(-Sample_ID)
+  }
+    
+  if (!ncol(x)) {
     return(NA)
-  
-  if ("TMT_Set" %in% names(x)) {
-    x <- x %>%
-      tibble::rownames_to_column() %>%
+  }
+
+  if ("TMT_Set" %in% colnames(x)) {
+    x <- x |>
+      tibble::rownames_to_column() |>
       dplyr::mutate(TMT_Set = as.factor(TMT_Set)) %>%
       `rownames<-`(NULL) %>% 
       tibble::column_to_rownames(var = "rowname")
   }
   
-  x <- x %>% 
+  x <- x |>
     mutate_if(is.logical, factor)
+  
+  if (!is.null(annot_col_levels)) {
+    nms <- names(annot_col_levels)
+    
+    for (i in seq_along(annot_col_levels)) {
+      nm <- nms[[i]]
+      lev <- annot_col_levels[[nm]]
+      x[[nm]] <- factor(x[[nm]], levels = lev)
+    }
+    
+    x <- x |>
+      dplyr::arrange_at(nms)
+  }
   
   invisible(x)
 }

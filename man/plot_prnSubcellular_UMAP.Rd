@@ -8,10 +8,12 @@ plot_prnSubcellular_UMAP(
   df2 = NULL,
   levels_subcellular = NULL,
   levels_subtype = NULL,
+  key_subcellular = "location_slim3",
   filename_ref = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
   filename = NULL,
+  seed = 42,
   ...
 )
 }
@@ -26,6 +28,9 @@ of \code{df} and \code{df2}.}
 \item{levels_subcellular}{The levels of subcellular fractions.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
+
+\item{key_subcellular}{The key of subcellular compartments from the reference
+data.}
 
 \item{filename_ref}{Optional; a file name with prepending path to a reference
 subcellular annotation file, e.g., UniProt and GO intersection.}
@@ -42,6 +47,8 @@ matched under given conditions.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
+
+\item{seed}{A seed for umap.}
 
 \item{...}{\code{filter2_}: Variable argument statements for the row
 filtration against data in secondary file(s) of

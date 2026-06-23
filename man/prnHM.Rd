@@ -21,7 +21,9 @@ pepHM(
   filename = NULL,
   annot_cols = NULL,
   annot_colnames = NULL,
+  annot_col_levels = NULL,
   annot_rows = NULL,
+  annot_row_levels = NULL,
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -57,7 +59,9 @@ prnHM(
   filename = NULL,
   annot_cols = NULL,
   annot_colnames = NULL,
+  annot_col_levels = NULL,
   annot_rows = NULL,
+  annot_row_levels = NULL,
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -114,8 +118,8 @@ for padding purposes across datasets.}
 \item{group_renorm_by}{A metadata column key for re-normalization data within
 each groups.}
 
-\item{group_fct_int}{Used in conjunction with \code{group_renorm_by}; a
-vector for intensity scaling by group.}
+\item{group_fct_int}{Used in conjunction with \code{group_renorm_by}; a vector
+for intensity scaling by group.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
@@ -145,10 +149,16 @@ annotation.}
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
 
+\item{annot_col_levels}{The levels of annot_cols. For example, at
+\code{annot_cols = c("Color", "Shape")}, the corresponding levels are
+\code{annot_col_levels = list{Color = c("A", "B"), Shape = c("X", "Y")}}.}
+
 \item{annot_rows}{A character vector of column keys that can be found from
 input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
 the selected keys will be used to color-code peptides or proteins on the
 side of the indicated plot. The default is NULL without row annotation.}
+
+\item{annot_row_levels}{Not yet used. The levels of annot_rows.}
 
 \item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
 

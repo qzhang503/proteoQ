@@ -1183,18 +1183,25 @@ plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL,
     stopifnot(ymin < ymax)
   }
   
+  if (is.null(dots$size)) {
+    size <- 3
+  } else {
+    size <- eval(dots$size)
+    stopifnot(size > 0)
+  }
+  
   # ensure the same levels between "Levels" and "newLevels"
   Levels <- levels(dfw_sub$Contrast)
   
-  dfw_sub <- dfw_sub %>%
-    dplyr::arrange(Contrast, pVal) %>%
-    dplyr::group_by(Contrast) %>%
-    dplyr::mutate(Index = row_number()) %>%
-    data.frame(check.names = FALSE) %>% 
-    dplyr::mutate(Contrast = as.character(Contrast)) %>% 
-    dplyr::left_join(res_sub, by = c("Contrast" = "contrast")) %>%
-    dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
-    dplyr::arrange(Contrast) %>%
+  dfw_sub <- dfw_sub |>
+    dplyr::arrange(Contrast, pVal) |>
+    dplyr::group_by(Contrast) |>
+    dplyr::mutate(Index = dplyr::row_number()) %>%
+    data.frame(check.names = FALSE) |>
+    dplyr::mutate(Contrast = as.character(Contrast)) |>
+    dplyr::left_join(res_sub, by = c("Contrast" = "contrast")) |>
+    dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) |>
+    dplyr::arrange(Contrast) |>
     # dplyr::mutate(p_val = format(p_val, scientific = TRUE, digits = 2)) %>%
     # dplyr::mutate(p_val = as.numeric(p_val)) %>%
     # dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
@@ -1276,18 +1283,19 @@ plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL,
   
   p <- ggplot() +
     geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-               size = 1.5, fill = "#252525", color = "#252525", shape = 21, 
+               size = size, fill = "#252525", color = "#252525", shape = 21, 
                alpha = .2, stroke = .5)
   
   p <- p +
     geom_point(
       data = dfw_greater, 
-      mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
-      fill = myPalette[2], color = "white", shape = 21, 
+      mapping = aes(x = log2Ratio, y = -log10(pVal), ), # size = mean_lint
+      size = size, fill = myPalette[2], color = "white", shape = 21, 
       alpha = .6, stroke = .5) +
     geom_point(
       data = dfw_less, 
-      mapping = aes(x = log2Ratio, y = -log10(pVal), size = mean_lint), 
+      mapping = aes(x = log2Ratio, y = -log10(pVal), ), # size = mean_lint
+      size = size, 
       fill = myPalette[1], color = "white", shape = 21, 
       alpha = .6, stroke = .5)
   

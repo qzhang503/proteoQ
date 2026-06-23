@@ -162,13 +162,17 @@ threshold_subcell_by_int <- function (df, col_subcellular = NULL, fct = 1.0)
 #'
 #' @param filename_ref Optional; a file name with prepending path to a reference
 #'   subcellular annotation file, e.g., UniProt and GO intersection.
+#' @param key_subcellular The key of subcellular compartments from the reference
+#'   data.
+#' @param seed A seed for umap.
 #' @inheritParams plot_prnTrend
 #' @inheritParams plot_prnSubcellular
 #' @export
 plot_prnSubcellular_UMAP <- function (
     df2 = NULL, levels_subcellular = NULL, levels_subtype = NULL, 
-    filename_ref = NULL, 
-    scale_log2r = TRUE, impute_na = FALSE, filename = NULL, ...) 
+    key_subcellular = "location_slim3", 
+    filename_ref = NULL, scale_log2r = TRUE, impute_na = FALSE, 
+    filename = NULL, seed = 42, ...) 
 {
   dots <- rlang::enexprs(...)
   
@@ -210,21 +214,14 @@ plot_prnSubcellular_UMAP <- function (
       values_fill = 0, 
     )
   
-  res_umap <- local({
-    dfx <- data.frame(df_umap)
-    rownames(dfx) <- df_umap$gene
-    dfx$gene <- NULL
-    
-    set.seed(42)
-    res <- umap::umap(dfx)
-  })
+  set.seed(seed)
+  res_umap <- umap::umap(df_umap[, !colnames(df_umap) == "gene", drop = FALSE])
   
-  umap_df <- data.frame(
-    UMAP1 = res_umap$layout[, 1],
-    UMAP2 = res_umap$layout[, 2]
-  ) |>
-    tibble::rownames_to_column("gene")
-  
+  umap_df <- res_umap$layout[, 1:2]
+  colnames(umap_df) <- paste0("UMAP", 1:2)
+  rownames(umap_df) <- df_umap$gene
+  umap_df <- tibble::rownames_to_column(data.frame(umap_df), "gene")
+
   ## Plot of predicted subcellular results
   ok_subtypes <- sort(unique(df[[col_subtype]]))
   if (is.null(levels_subtype)) {
@@ -272,8 +269,7 @@ plot_prnSubcellular_UMAP <- function (
   dots$size <- NULL
   dots$dpi <- NULL
   
-  df_plot <- df |> 
-    dplyr::filter(!is.na(sub_location)) |>
+  df <- df |> 
     dplyr::mutate(
       !!col_subtype := 
         factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
@@ -281,9 +277,12 @@ plot_prnSubcellular_UMAP <- function (
         factor(!!rlang::sym(col_subcellular), levels = levels_subcellular),
       sub_location = 
         factor(sub_location, levels = levels_subcellular),
-    ) |>
-    dplyr::left_join(umap_df, by = "gene")
+    )
   
+  df_plot <- df |>
+    dplyr::left_join(umap_df, by = "gene") |> 
+    dplyr::filter(!is.na(sub_location))
+
   p <- ggplot(df_plot, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
     geom_point(shape = 46, alpha = alpha, size = size) +
     scale_color_manual(
@@ -309,6 +308,49 @@ plot_prnSubcellular_UMAP <- function (
   ggsave(file.path(filepath, filename), width = width, height = height, 
          dpi = dpi) # , type = "cairo"
   
+  if (FALSE) {
+    # before classification
+    dfx <- df[, c("gene", col_subcellular, col_subtype, "purity", "entropy", 
+                  "loc_score", "sub_location")] |>
+      unique()
+    out_nmx <- paste0(gsub("umap$", "hist", fn_prefix), "_all.", fn_suffix)
+    
+    # after classification
+    dfx <- df_plot
+    out_nmx <- paste0(gsub("umap$", "hist", fn_prefix), "_fil.", fn_suffix)
+
+    ggplot(dfx, aes(x = loc_score, fill = !!rlang::sym(col_subtype))) +
+      geom_histogram(aes(y = after_stat(count)), 
+                     color = "white", linewidth = 0.3, binwidth = 0.01, 
+                     alpha = .9) +
+      scale_x_continuous(
+        labels = scales::label_number(accuracy = .2),
+        breaks = scales::breaks_width(.4)
+      ) +
+      facet_wrap(vars(!!rlang::sym(col_subcellular)), nrow = 1, 
+                 labeller = label_value) + 
+      scale_fill_brewer(palette = "Set2") +
+      labs(x = "Score", y = "Count") +
+      theme_classic() + 
+      theme(
+        plot.title = element_blank(),
+        axis.title.x = element_text(size = 14, margin = margin(t = 14)), 
+        axis.title.y = element_text(size = 14, margin = margin(r = 14)),
+        strip.text = element_text(size = 12, hjust = 0), # face = "bold", 
+        axis.line = element_line(linewidth = 0.3, color = "grey30"),
+        axis.text = element_text(color = "grey20"),
+        legend.title = element_blank(),
+        legend.position = "top", 
+        legend.justification = "left",
+        panel.spacing.y = unit(1.2, "lines"),
+        # FIX: Adds 15 points of padding to the right side of the plot
+        plot.margin = margin(t = 5, r = 15, b = 5, l = 5, unit = "pt")
+      )
+    
+    ggsave(file.path(filepath, out_nmx), width = width, height = height, 
+           dpi = dpi)
+  }
+  
   ## Map to UniProt etc.
   if ((!is.null(filename_ref)) && file.exists(filename_ref)) {
     filename2 <- paste0(fn_prefix, "_ref.", fn_suffix)
@@ -328,17 +370,17 @@ plot_prnSubcellular_UMAP <- function (
     }
     
     df_ref <- df_ref |>
-      dplyr::rename(sub_location = compartment_2) |>
+      dplyr::rename(sub_location = !!rlang::sym(key_subcellular)) |>
       dplyr::select(c("gene", "sub_location")) |>
       unique() |>
       dplyr::filter(gene %in% unique(df$gene))
     
-    df_plot2 <- df_plot |>
+    df_plot_ref <- df_plot |>
       dplyr::select(-one_of("sub_location")) |>
       dplyr::left_join(df_ref, by = "gene") |>
       dplyr::filter(!is.na(sub_location)) |>
-      dplyr::select(
-        one_of(c("gene", "UMAP1", "UMAP2", "sub_location", col_subtype))) |>
+      dplyr::select(dplyr::one_of(
+        c("gene", "UMAP1", "UMAP2", "sub_location", col_subtype))) |>
       unique() |>
       dplyr::mutate(
         !!col_subtype := 
@@ -347,7 +389,7 @@ plot_prnSubcellular_UMAP <- function (
           factor(sub_location, levels = levels_subcellular),
       )
 
-    p2 <- ggplot(df_plot2, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
+    p_ref <- ggplot(df_plot_ref, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
       geom_point(shape = 46, alpha = alpha, size = size) +
       scale_color_manual(
         values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A")

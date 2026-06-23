@@ -24,8 +24,8 @@ for heat map visualization.}
 \item{group_renorm_by}{A metadata column key for re-normalization data within
 each groups.}
 
-\item{group_fct_int}{Used in conjunction with \code{group_renorm_by}; a
-vector for intensity scaling by group.}
+\item{group_fct_int}{Used in conjunction with \code{group_renorm_by}; a vector
+for intensity scaling by group.}
 
 \item{label_scheme_sub}{Metadata.}
 }

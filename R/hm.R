@@ -52,7 +52,8 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
                    label_scheme_sub, dot_plot = FALSE, 
                    filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, 
-                   annot_rows = annot_rows, 
+                   annot_col_levels = NULL, 
+                   annot_rows = annot_rows, annot_row_levels = NULL, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
@@ -312,16 +313,10 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   annotation_col <- if (is.null(annot_cols)) {
     NA
   } else {
-    colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+    colAnnot(annot_cols = annot_cols, annot_col_levels = annot_col_levels, 
+             sample_ids = sample_ids)
   }
   
-  # Better use col_order
-  for (i in seq_along(ncol(annotation_col))) {
-    annot_i <- annotation_col[[i]]
-    annotation_col[[i]] <- factor(annot_i, levels = unique(annot_i))
-  }
-  rm(list = "annot_i")
-
   if ((!is.null(annot_colnames)) && 
       (length(annot_colnames) == length(annot_cols))) {
     colnames(annotation_col) <- annot_colnames
@@ -821,7 +816,9 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL,
-                   annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                   annot_cols = NULL, annot_colnames = NULL, 
+                   annot_col_levels = NULL, 
+                   annot_rows = NULL, annot_row_levels = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
@@ -868,7 +865,9 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    dot_plot = dot_plot, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
+                                   annot_col_levels = annot_col_levels, 
                                    annot_rows = annot_rows, 
+                                   annot_row_levels = annot_row_levels, 
                                    p_dist_rows = p_dist_rows, 
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
@@ -929,8 +928,8 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'  for padding purposes across datasets.
 #'@param group_renorm_by A metadata column key for re-normalization data within
 #'  each groups.
-#'@param group_fct_int Used in conjunction with \code{group_renorm_by}; a
-#'  vector for intensity scaling by group. 
+#'@param group_fct_int Used in conjunction with \code{group_renorm_by}; a vector
+#'  for intensity scaling by group.
 #'@param annot_rows A character vector of column keys that can be found from
 #'  input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under
 #'  the selected keys will be used to color-code peptides or proteins on the
@@ -957,6 +956,10 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'  argument in \link[pheatmap]{pheatmap}.
 #'@param annotation_row Dummy argument to avoid incurring the corresponding
 #'  argument in \link[pheatmap]{pheatmap}.
+#'@param annot_col_levels The levels of annot_cols. For example, at
+#'  \code{annot_cols = c("Color", "Shape")}, the corresponding levels are
+#'  \code{annot_col_levels = list{Color = c("A", "B"), Shape = c("X", "Y")}}.
+#'@param annot_row_levels Not yet used. The levels of annot_rows.
 #'@param clustering_method Dummy argument to avoid incurring the corresponding
 #'  argument in \link[pheatmap]{pheatmap}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -1053,7 +1056,9 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
                    group_renorm_by = NULL, group_fct_int = NULL, 
                    df = NULL, filepath = NULL, filename = NULL, 
-                   annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                   annot_cols = NULL, annot_colnames = NULL, 
+                   annot_col_levels = NULL, 
+                   annot_rows = NULL, annot_row_levels = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
@@ -1109,7 +1114,9 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                                    dot_plot = dot_plot, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
+                                   annot_col_levels = annot_col_levels, 
                                    annot_rows = annot_rows, 
+                                   annot_row_levels = annot_row_levels, 
                                    p_dist_rows = p_dist_rows, 
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
