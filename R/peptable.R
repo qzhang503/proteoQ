@@ -1457,11 +1457,15 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
   ## (3) outputs: Format: ..._log2_R126_1_[base], ..._I126_1_[base]
   nms <- names(df_num)
   # set_indexes <- sort(unique(df_num$TMT_Set))
+  
   df_num <- df_num |>
-    tidyr::gather(grep("[RIC]{1}[0-9]{3}[NC]{0,1}", nms), 
-                  key = ID, value = value) |>
-    dplyr::arrange_at(cols_grp2) |>
-    tidyr::unite(ID, c(ID, cols_grp2))
+    tidyr::pivot_longer(
+      cols = grep("[RIC]{1}[0-9]{3}[NC]{0,1}", nms),
+      names_to = "ID",
+      values_to = "value"
+    ) |>
+    dplyr::arrange(across(all_of(cols_grp2))) |>
+    tidyr::unite("ID", c("ID", all_of(cols_grp2)))
 
   # define the levels of TMT channels;
   # otherwise, the order of channels will flip between N(itrogen) and C(arbon)

@@ -8003,7 +8003,7 @@ pad_mf_channels <- function(file = NULL, prob_co = .99, ...)
   df <- df |>
     dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
   
-  pat <- "^Intensity _[0-9]{3}[NC]{0,1}"
+  pat <- "^Intensity .*_[0-9]{3}[NC]{0,1}"
   cols_int <- grepl(pat, names(df))
   this_plex <- sum(cols_int)
   
@@ -8018,6 +8018,8 @@ pad_mf_channels <- function(file = NULL, prob_co = .99, ...)
   df_int <- df[, cols_int, drop = FALSE]
   
   rm(list = "nms_df")
+  
+  raws_fr <- fraction_scheme$RAW_File
 
   ## TMT only from this point on
   if (!"PSM_File" %in% names(fraction_scheme)) {
@@ -8052,7 +8054,9 @@ pad_mf_channels <- function(file = NULL, prob_co = .99, ...)
   }
   
   if (!nrow(label_scheme_sub)) {
-    stop("No RAW_Files(s) matched between PSM and metadata.")
+    message("RAW files from metadata: \n", paste(raws_fr, collapse = "\n "))
+    message("RAW files from PSM table: \n", paste(raw_files, collapse = "\n "))
+    stop("No RAW_Files(s) matched between PSM and metadata. \n")
   }
 
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
@@ -8202,6 +8206,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
   # (1.2.2) add ratio columns
   if (tmt_plex && (sum(grepl("^I.*[0-9]{3}[NC]{0,1}", names(df))) > 1L)) {
+    # use reference columns instead of df[["I126"]]
     df <- sweep(df[, find_int_cols(tmt_plex), drop = FALSE], 
                 1, df[["I126"]], "/") %>% 
       `colnames<-`(gsub("I", "R", names(.))) %>% 
