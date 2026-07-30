@@ -6,6 +6,7 @@
 \usage{
 prepDM(
   df = NULL,
+  dat_dir = NULL,
   id = "pep_seq",
   scale_log2r = TRUE,
   sub_grp = NULL,
@@ -24,6 +25,9 @@ primary file contains normalized peptide or protein data and is among
 require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}

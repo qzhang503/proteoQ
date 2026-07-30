@@ -6,6 +6,7 @@
 \title{Significance tests of peptide/protein log2FC}
 \usage{
 pepSig(
+  dat_dir = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
   impute_group_na = TRUE,
@@ -26,6 +27,7 @@ pepSig(
 )
 
 prnSig(
+  dat_dir = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
   impute_group_na = TRUE,
@@ -46,6 +48,9 @@ prnSig(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
@@ -163,14 +168,13 @@ samples in it.
 # Significance tests
 # ===================================
 
-## !!!require the brief working example in `?load_expts`
+## !!!Require the brief working example in `?load_expts`
 
-## global option
+## Global option
 scale_log2r <- TRUE
 
-## peptides (`Term` etc. are user-defined column keys in expt_smry.xlsx)
+## Peptides (`Term` etc. are user-defined column keys in expt_smry.xlsx)
 pepSig(
-  impute_na = FALSE, 
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
                   "W2.JHU.TMT2-W2.JHU.TMT1", 
                   "W2.PNNL.TMT2-W2.PNNL.TMT1"],
@@ -182,11 +186,22 @@ pepSig(
 
 pepVol()
 
-## proteins (formulae matched to `pepSig` by default)
-prnSig(impute_na = FALSE)
+## User-specified method
+# Approach 1:
+prnSig(method = "lm")
+
+# Approach 2:
+prnSig(method = lm)
+
+# Appproach 3:
+my_method <- "lm"
+prnSig(method = !!my_method)
+
+## Proteins (formulae matched to `pepSig` by default)
+prnSig()
 prnVol()
 
-# note the incongruity in peptide and protein fold changes
+# Note the incongruity in peptide and protein fold changes
 # (no measures for peptides but for proteins)
 
 #  sequence |   ref    | sample_1 | sample_2 |  log2FC   
@@ -199,24 +214,23 @@ prnVol()
 # -------------------------------------------------------
 #   prnX    |    0     |   1.15   |    0.05  |   1.10
 
-## averaged batch effect
+## Averaged batch effect
 # (suggest run both `pepSig` and `prnSig` for consistency)
 pepSig(
-  impute_na = FALSE,
   W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], 
 )
 
-prnSig(impute_na = FALSE)
+prnSig()
 
 pepVol()
 prnVol()
 
-## random effects
+## Random effects
 # NA imputation (suggested for models with random effects)
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 
-# single
+# Single
 pepSig(
   impute_na = TRUE,
   W2_vs_W16_fix = ~ Term_3["W16-W2"],
@@ -228,7 +242,7 @@ prnSig(impute_na = TRUE)
 pepVol()
 prnVol()
 
-# one to multiple (method `lm` for multiple random)
+# One to multiple (method `lm` for multiple random)
 pepSig(
   impute_na = TRUE,
   method = lm,

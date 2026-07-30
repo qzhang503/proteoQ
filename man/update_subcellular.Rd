@@ -17,13 +17,13 @@ of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
 be used.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-against data in a primary file linked to \code{df}. See also
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 \code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
+for the format of \code{arrange_} statements. \cr \cr Additional arguments
+for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
 \link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
 \code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With
@@ -32,5 +32,5 @@ provided; \cr \code{x} is disabled with input data being determined
 automatically.}
 }
 \description{
-Not yet used.
+Not used.
 }

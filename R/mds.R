@@ -56,22 +56,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                    rlang::is_logical, logical(1L)))
   
   stopifnot(vapply(c(p, k), is.numeric, logical(1L)))
+  if (!nrow(label_scheme_sub)) stop("Empty metadata.")
+  if (complete_cases) df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   
-  if (!nrow(label_scheme_sub))
-    stop("Empty metadata.")
-  
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  col_fill <- rlang::enexpr(col_fill)
-  col_color <- rlang::enexpr(col_color)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
-  
-  if (complete_cases) 
-    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-  
-  id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% 
@@ -145,7 +132,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     filters_in_call(!!!filter_dots) %>%
     arrangers_in_call(!!!arrange_dots) %>%
     scoreMDS(
-      id = !!id,
+      id = id,
       label_scheme_sub = label_scheme_sub,
       anal_type = anal_type,
       scale_log2r = scale_log2r,
@@ -157,7 +144,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       method = method,
       p = p,
       k = k,
-      col_group = !!col_group,
+      col_group = col_group,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
@@ -183,20 +170,25 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
   nms <- names(df)
   
-  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
+  if (col_color != "Color" || !col_color %in% nms) {
+    assign(paste0("map_", tolower(col_color)), "X")
+  }
   
-  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
+  if (col_fill != "Fill" || !col_fill %in% nms) {
+    assign(paste0("map_", tolower(col_fill)), "X")
+  }
   
-  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+  if (col_shape != "Shape" || !col_shape %in% nms) {
+    assign(paste0("map_", tolower(col_shape)), "X")
+  }
   
-  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
+  if (col_size != "Size" || !col_size %in% nms) {
+    assign(paste0("map_", tolower(col_size)), "X")
+  }
   
-  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+  if (col_alpha != "Alpha" || !col_alpha %in% nms) {
+    assign(paste0("map_", tolower(col_alpha)), "X")
+  }
   
   if (!is.na(map_color)) col_color <- NULL
   if (!is.na(map_fill)) col_fill <- NULL
@@ -206,15 +198,6 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
   suppressWarnings(rm(list = c("map_.")))
-  
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
-  if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
-  
-  size_manual <- eval_bare(size_manual, env = caller_env())
-  shape_manual <- eval_bare(shape_manual, env = caller_env())
-  alpha_manual <- eval_bare(alpha_manual, env = caller_env())
   
   proteoq_mds_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=0, vjust=0.5, size=16),
@@ -260,32 +243,30 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   rm(list = c("max_dim"))
   
   # --- set up aes ---
-  if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
-    col_color <- NULL
-  if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
-    col_fill <- NULL
-  if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
-    col_shape <- NULL
-  if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
-    col_size <- NULL
-  if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
-    col_alpha <- NULL
+  if ((length(col_color)) && col_color == ".") col_color <- NULL
+  if ((length(col_fill)) && col_fill == ".") col_fill <- NULL
+  if ((length(col_shape)) && col_shape == ".") col_shape <- NULL
+  if ((length(col_size)) && col_size == ".") col_size <- NULL
+  if ((length(col_alpha)) && col_alpha == ".") col_alpha <- NULL
   
   if (dimension > 2L) {
-    mapping <- ggplot2::aes(colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
-  } 
-  else {
-    mapping <- ggplot2::aes(x = Coordinate.1, 
-                            y = Coordinate.2,
-                            colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
+    mapping <- aes(
+      colour = !!if (!is.null(col_color)) rlang::sym(col_color),
+      shape  = !!if (!is.null(col_shape)) rlang::sym(col_shape),
+      fill   = !!if (!is.null(col_fill))  rlang::sym(col_fill), 
+      size = !!if (!is.null(col_size)) rlang::sym(col_size),
+      alpha  = !!if (!is.null(col_alpha)) rlang::sym(col_alpha),
+    )
+  } else {
+    mapping <- aes(
+      x = Coordinate.1,
+      y = Coordinate.2,
+      colour = !!if (!is.null(col_color)) rlang::sym(col_color),
+      shape  = !!if (!is.null(col_shape)) rlang::sym(col_shape),
+      fill   = !!if (!is.null(col_fill))  rlang::sym(col_fill), 
+      size = !!if (!is.null(col_size)) rlang::sym(col_size),
+      alpha  = !!if (!is.null(col_alpha)) rlang::sym(col_alpha),
+    )
   }
   
   idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
@@ -436,36 +417,36 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     if (show_ids) {
       p <- p +
         geom_text(data = df,
-                  mapping = aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID),
+                  mapping = aes(x = Coordinate.1, y = Coordinate.2, 
+                                label = Sample_ID),
                   color = "gray", size = 3)
     }
     
-    p <- p +
-      labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+    p <- p + labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
     
-    if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
-    if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
+    if (length(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
+    if (length(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
     
-    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+    if (length(col_size) && length(size_manual)) {
       check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
       p <- p + scale_size_manual(values = size_manual)
     }
     
-    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+    if (length(col_shape) && length(shape_manual)) {
       check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
       p <- p + scale_shape_manual(values = shape_manual)
     }
     
-    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+    if (length(col_alpha) && length(alpha_manual)) {
       check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
       p <- p + scale_shape_manual(values = alpha_manual)
     }
   }
   
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
-  rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-                                     plot = p, 
-                                     !!!ggsave_dots)))
+  rlang::eval_tidy(rlang::quo(
+    ggsave(filename = file.path(filepath, gg_imgname(filename)),
+           plot = p, !!!ggsave_dots)))
   
   invisible(df)
 }
@@ -608,13 +589,10 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       p = 2L, k = 3L, col_group, folds, out_file, ...) 
 {
   dots <- rlang::enexprs(...)
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_group <- rlang::enexpr(col_group)
   
-  if (nrow(df) <= 50L)
-    stop("Need more than 50 entries for MDS.")
+  if (nrow(df) <= 50L) stop("Need more than 50 entries for MDS.")
   
-  df <- prepDM(df = df, id = !!id, 
+  df <- prepDM(df = df, id = id, 
                scale_log2r = scale_log2r,
                sub_grp = label_scheme_sub$Sample_ID, 
                anal_type = anal_type, 
@@ -627,12 +605,12 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   label_scheme_sub <- label_scheme_sub %>% 
     dplyr::filter(Sample_ID %in% nms)
   
-  res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
+  res <- prep_folded_tdata(df, folds, label_scheme_sub, col_group)
   df_t <- res$df_t
   ls_sub <- res$ls_sub
   rm(list = "res")
   
-  if (rlang::as_string(col_group) %in% names(df_t)) {
+  if (col_group %in% names(df_t)) {
     df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
   }
   
@@ -750,9 +728,6 @@ prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group)
   nms <- names(df)
   n_rows <- nrow(df)
 
-  # not used
-  col_group = rlang::enexpr(col_group)
-
   if (folds == 1) {
     nms_feat <- rownames(df)
     nms_smpl <- nms
@@ -847,7 +822,8 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type,
 #'
 #'@import purrr
 #'@export
-pepMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+pepMDS <- function (dat_dir = NULL, 
+                    col_select = NULL, col_group = NULL, col_order = NULL, 
                     col_color = NULL, col_fill = NULL, col_shape = NULL, 
                     col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
                     fill_brewer = NULL,size_manual = NULL, shape_manual = NULL, 
@@ -860,8 +836,11 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL,
                     df = NULL, filepath = NULL, filename = NULL,
                     theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "MDS")
+
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
@@ -873,75 +852,100 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL,
   
   check_formalArgs(pepMDS, dist, c("method", "p"))
   
+  # force(choice); force(method);
+  # force(col_select); force(col_group); force(col_order); force(col_color); 
+  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
+  # force(color_brewer); force(fill_brewer); force(size_manual); 
+  # force(shape_manual); force(alpha_manual); 
+  # force(df); force(filepath); force(filename); 
+  
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
+  choice <- if (length(choice) > 1L) "cmdscale" else as.character(choice)
+  method <- rlang::enexpr(method)
+  method <- if (length(method) > 1L) "euclidean" else as.character(method)
 
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
+  
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   col_group  <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
+  col_order  <- rlang::enexpr(col_order)
   col_color  <- rlang::enexpr(col_color)
   col_fill   <- rlang::enexpr(col_fill)
   col_shape  <- rlang::enexpr(col_shape)
   col_size   <- rlang::enexpr(col_size)
   col_alpha  <- rlang::enexpr(col_alpha)
-
+  
   color_brewer <- rlang::enexpr(color_brewer)
   fill_brewer  <- rlang::enexpr(fill_brewer)
   size_manual  <- rlang::enexpr(size_manual)
   shape_manual <- rlang::enexpr(shape_manual)
   alpha_manual <- rlang::enexpr(alpha_manual)
-
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "euclidean" else rlang::as_string(method)
-
+  
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_color)) col_color <- as.character(col_color)
+  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
+  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
+  if (!is.character(col_size)) col_size <- as.character(col_size)
+  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
+  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
+  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
+  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
+  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
+  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
 
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_order = !!col_order,
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group  = col_group,
+            col_order  = col_order,
+            col_color  = col_color, 
+            col_fill   = col_fill,
+            col_shape  = col_shape, 
+            col_size   = col_size, 
+            col_alpha  = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer  = fill_brewer,
+            size_manual  = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "MDS")(choice = choice, 
-                               dist_co = dist_co, 
-                               adjEucDist = adjEucDist, 
-                               method = method,
-                               p = p, 
-                               k = k, 
-                               dimension = dimension, 
-                               folds = folds, 
-                               show_ids = show_ids,
-                               show_ellipses = show_ellipses, 
-                               center_features = center_features,
-                               scale_features = scale_features,
-                               theme = theme, ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "MDS")(
+              choice = choice, 
+              dist_co = dist_co, 
+              adjEucDist = adjEucDist, 
+              method = method,
+              p = p, 
+              k = k, 
+              dimension = dimension, 
+              folds = folds, 
+              show_ids = show_ids,
+              show_ellipses = show_ellipses, 
+              center_features = center_features,
+              scale_features = scale_features,
+              theme = theme, ...)
 
 }
 
@@ -1111,7 +1115,8 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+prnMDS <- function (dat_dir = NULL, 
+                    col_select = NULL, col_group = NULL, col_order = NULL, 
                     col_color = NULL, col_fill = NULL, col_shape = NULL, 
                     col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
                     fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
@@ -1124,8 +1129,11 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL,
                     df = NULL, filepath = NULL, filename = NULL,
                     theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "MDS")
+
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
@@ -1137,75 +1145,100 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_order = NULL,
   
   check_formalArgs(prnMDS, dist, c("method", "p"))
   
+  # force(choice); force(method);
+  # force(col_select); force(col_group); force(col_order); force(col_color); 
+  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
+  # force(color_brewer); force(fill_brewer); force(size_manual); 
+  # force(shape_manual); force(alpha_manual); 
+  # force(df); force(filepath); force(filename); 
+  
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "cmdscale" else rlang::as_string(choice)
+  choice <- if (length(choice) > 1L) "cmdscale" else as.character(choice)
+  method <- rlang::enexpr(method)
+  method <- if (length(method) > 1L) "euclidean" else as.character(method)
 
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
-
+  col_group  <- rlang::enexpr(col_group)
+  col_order  <- rlang::enexpr(col_order)
+  col_color  <- rlang::enexpr(col_color)
+  col_fill   <- rlang::enexpr(col_fill)
+  col_shape  <- rlang::enexpr(col_shape)
+  col_size   <- rlang::enexpr(col_size)
+  col_alpha  <- rlang::enexpr(col_alpha)
+  
   color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
+  fill_brewer  <- rlang::enexpr(fill_brewer)
+  size_manual  <- rlang::enexpr(size_manual)
   shape_manual <- rlang::enexpr(shape_manual)
   alpha_manual <- rlang::enexpr(alpha_manual)
-
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "euclidean" else rlang::as_string(method)
-
+  
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_color)) col_color <- as.character(col_color)
+  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
+  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
+  if (!is.character(col_size)) col_size <- as.character(col_size)
+  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
+  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
+  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
+  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
+  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
+  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
 
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_order = !!col_order, 
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group  = col_group,
+            col_order  = col_order, 
+            col_color  = col_color, 
+            col_fill   = col_fill,
+            col_shape  = col_shape, 
+            col_size   = col_size, 
+            col_alpha  = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer  = fill_brewer,
+            size_manual  = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "MDS")(choice = choice, 
-                               dist_co = dist_co, 
-                               adjEucDist = adjEucDist, 
-                               method = method,
-                               p = p, 
-                               k = k, 
-                               dimension = dimension, 
-                               folds = folds, 
-                               show_ids = show_ids,
-                               show_ellipses = show_ellipses, 
-                               center_features = center_features,
-                               scale_features = scale_features,
-                               theme = theme, ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "MDS")(
+              choice = choice, 
+              dist_co = dist_co, 
+              adjEucDist = adjEucDist, 
+              method = method,
+              p = p, 
+              k = k, 
+              dimension = dimension, 
+              folds = folds, 
+              show_ids = show_ids,
+              show_ellipses = show_ellipses, 
+              center_features = center_features,
+              scale_features = scale_features,
+              theme = theme, ...)
 }
 
 

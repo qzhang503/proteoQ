@@ -9,6 +9,7 @@ plot_prnSubcellular_UMAP(
   levels_subcellular = NULL,
   levels_subtype = NULL,
   key_subcellular = "location_slim3",
+  key_col = "loc_score",
   filename_ref = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
@@ -31,6 +32,8 @@ of \code{df} and \code{df2}.}
 
 \item{key_subcellular}{The key of subcellular compartments from the reference
 data.}
+
+\item{key_col}{The column key where its values are used for UMAP.}
 
 \item{filename_ref}{Optional; a file name with prepending path to a reference
 subcellular annotation file, e.g., UniProt and GO intersection.}
@@ -65,5 +68,5 @@ the height of plot; \cr \code{color}, the color of lines; \cr \code{alpha},
 the transparency of lines.}
 }
 \description{
-Plot UMAP of subcellular scores.
+Against localization scores.
 }

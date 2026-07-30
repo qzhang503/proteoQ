@@ -4,12 +4,14 @@
 \alias{threshold_subcell_by_int}
 \title{Threshold subcellular locations by intensity.}
 \usage{
-threshold_subcell_by_int(df, col_subcellular = NULL, fct = 1)
+threshold_subcell_by_int(df, id = "gene", col_fraction = NULL, fct = 1)
 }
 \arguments{
 \item{df}{A data frame.}
 
-\item{col_subcellular}{The column key indicating subcellular locations.}
+\item{id}{An identifier}
+
+\item{col_fraction}{The column key indicating subcellular locations.}
 
 \item{fct}{A multiplification factor in intensity thresholding.}
 }

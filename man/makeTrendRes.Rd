@@ -4,7 +4,14 @@
 \alias{makeTrendRes}
 \title{Helper to make the outputs of trend analysis.}
 \usage{
-makeTrendRes(fn, choice, dots, id = "gene", df_mean_log2r)
+makeTrendRes(
+  fn,
+  choice = "cmeans",
+  dots = NULL,
+  id = "gene",
+  df_mean_log2r = NULL,
+  ext = "txt"
+)
 }
 \arguments{
 \item{fn}{A prefix of file name.}
@@ -15,6 +22,8 @@ makeTrendRes(fn, choice, dots, id = "gene", df_mean_log2r)
 \item{id}{An identifier.}
 
 \item{df_mean_log2r}{Data of mean log2Ratio.}
+
+\item{ext}{The extension of out filenames.}
 }
 \description{
 Helper to make the outputs of trend analysis.

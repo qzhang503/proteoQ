@@ -16,7 +16,9 @@ plotTrend_sub(
   complete_cases = FALSE,
   panel_ids = NULL,
   show_panel_ids = TRUE,
+  group_data_by = "ratio",
   filepath = NULL,
+  ext = "txt",
   label_scheme_sub = NULL,
   theme = NULL,
   dots = NULL
@@ -61,6 +63,8 @@ missing values will be used. The default is FALSE.}
 \item{show_panel_ids}{Logical; show panel IDs or not.}
 
 \item{filepath}{An output file path.}
+
+\item{ext}{The filename extension.}
 
 \item{label_scheme_sub}{A metadata subset.}
 

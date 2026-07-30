@@ -29,8 +29,10 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -50,6 +52,7 @@
 # proc_rpt
 # proc_remap
 # annot_from_to
+# convert_genes_human_to_mouse
 # get_full_entrez
 # dl_gene_homo
 # sp_lookup_go
@@ -112,7 +115,6 @@
 # $informatics.R
 # info_anal
 # find_pri_df
-# find_sec_df
 # vararg_secmsg
 #
 # $kin.R
@@ -484,8 +486,15 @@
 # threshold_subcell_by_int
 # plot_prnSubcellular_UMAP
 # plotSubcellular_sub
+# hclassify_trends
 # classify_trends
 # plot_prnSubcellular
+# svmSubcell
+# prepSubcell
+# make_subcell_expr
+# cluster_svmprobs
+# classify_subcellular
+# plot_prnSubcell_UMAP
 # update_subcellular
 # hupdate_subcellular
 #
@@ -501,7 +510,9 @@
 # find_trend_df2
 # plotTrend
 # plotTrend_sub
+# anal_pepTrend
 # anal_prnTrend
+# plot_pepTrend
 # plot_prnTrend
 #
 # $utils.R

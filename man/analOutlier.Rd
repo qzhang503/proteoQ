@@ -42,8 +42,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{dat_dir}{A character string to the working directory. The default is to
-match the value under the global environment.}
+\item{dat_dir}{The current working directory.}
 
 \item{group_pep_by}{A character string specifying the method in peptide
 grouping. At the \code{prot_acc} default, descriptive statistics will be
@@ -96,13 +95,13 @@ will be used. The default is FALSE.}
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-against data in a primary file linked to \code{df}. See also
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 \code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
+for the format of \code{arrange_} statements. \cr \cr Additional arguments
+for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
 \link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
 \code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With

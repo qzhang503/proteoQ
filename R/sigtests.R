@@ -323,8 +323,6 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
               " under `", formula, "`.")
   })
   
-  id <- rlang::as_string(rlang::enexpr(id))
-  
   # Set aside the name list as rows may drop in filtration
   df_nms <- tibble::tibble(!!id := rownames(dfR))
   
@@ -606,8 +604,6 @@ sigTest <- function(df, id, label_scheme_sub,
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
                    logical(1L)))
   
-  id     <- rlang::as_string(rlang::enexpr(id))
-  method <- rlang::as_string(rlang::enexpr(method))
   dots   <- rlang::enexprs(...)
   
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
@@ -640,7 +636,7 @@ sigTest <- function(df, id, label_scheme_sub,
   tempdata <- df |>
     filters_in_call(!!!filter_dots) |>
     arrangers_in_call(!!!arrange_dots) |>
-    prepDM(id = !!id, 
+    prepDM(id = id, 
            scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, 
            anal_type = anal_type, 
@@ -677,7 +673,7 @@ sigTest <- function(df, id, label_scheme_sub,
 
   # `complete_cases` depends on lm contrasts
   df_op <- lapply(dots, function (formula) model_onechannel(
-    dfR = dfR, dfI = dfI, id = !!id, formula = formula, 
+    dfR = dfR, dfI = dfI, id = id, formula = formula, 
     label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
     impute_group_na = impute_group_na, 
     perc_baseline_intensity = perc_baseline_intensity, 
@@ -1035,7 +1031,7 @@ gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
 #' 
 #' @import purrr
 #' @export
-pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
+pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
                     abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
@@ -1045,70 +1041,70 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
   on.exit({
-    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-      c(rlang::enexprs(...)) %>% 
+    dots <- rlang::enexprs(...)
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+      c(dots) |>
       save_call("pepSig")
   }, add = TRUE)
   
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Model")
+  
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  method <- rlang::enexpr(method)
+  # force(method); force(method_replace_na); force(padj_method);
+  # force(df); force(filepath); force(filename); 
   
-  method <- if (method == rlang::expr(c("limma", "lm")))
-    "limma"
-  else
-    rlang::as_string(method)
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+  method <- rlang::enexpr(method)
+  method <- if (length(method) > 1L) "limma" else as.character(method)
+  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   
   # replace NA other than mice imputation
   # (only for sigTest)
   method_replace_na <- rlang::enexpr(method_replace_na)
-  
-  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min")))
-    "none"
-  else
-    rlang::as_string(method_replace_na)
-  
-  stopifnot(method_replace_na %in% c("none", "min"), 
-            length(method_replace_na) == 1L)
-  
-  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+  method_replace_na <- if (length(method_replace_na) > 1L) "none" else as.character(method_replace_na)
+  stopifnot(method_replace_na %in% c("none", "min"), length(method_replace_na) == 1L)
+
+  ## Argument with single, non-NULL option (with or without quotation mark)
+  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method)
+    warning("Coerce 'impute_na = ", impute_na, "' at method = ", method)
   }
   
   stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
                    rlang::is_logical, logical(1L)))
-  
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
                    is.numeric, logical(1L)))
   
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
+            id = id, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             impute_group_na = impute_group_na, 
             method_replace_na = method_replace_na, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             anal_type = "Model")(
               method = method, 
               padj_method = padj_method, 
@@ -1257,7 +1253,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE,
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@export
-prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, 
+prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE, 
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
                     abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
@@ -1269,66 +1265,69 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE,
   on.exit({
     load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
-    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-      c(dots) %>% 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+      c(dots) |>
       save_call("prnSig")
   }, add = TRUE)
   
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Model")
+  
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  method <- rlang::enexpr(method)
-  method <- if (method == rlang::expr(c("limma", "lm"))) {
-    "limma"
-  } else {
-    rlang::as_string(method)
-  }
-  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+  # force(method); force(method_replace_na)
+  # force(df); force(filepath); force(filename); force(padj_method); 
   
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+  method <- rlang::enexpr(method)
+  method <- if (length(method) > 1L) "limma" else as.character(method)
+  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+
   # replace NA other than mice imputation
   # (only for sigTest)
   method_replace_na <- rlang::enexpr(method_replace_na)
-  method_replace_na <- if (method_replace_na == rlang::expr(c("none", "min"))) {
-    "none"
-  } else {
-    rlang::as_string(method_replace_na)
-  }
-
-  stopifnot(method_replace_na %in% c("none", "min"), 
-            length(method_replace_na) == 1L)
+  method_replace_na <- if (length(method_replace_na) > 1L) "none" else as.character(method_replace_na)
+  stopifnot(method_replace_na %in% c("none", "min"), length(method_replace_na) == 1L)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
+  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+
   reload_expts()
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method)
+    warning("Coerce 'impute_na = ", impute_na, "' at method = ", method)
   }
   
   stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
                    rlang::is_logical, logical(1L)))
-  
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
                    is.numeric, logical(1L)))
   
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
+            id = id, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             impute_group_na = impute_group_na, 
             method_replace_na = method_replace_na, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             anal_type = "Model")(
               method = method, 
               padj_method = padj_method, 

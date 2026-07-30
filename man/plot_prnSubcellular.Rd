@@ -5,23 +5,32 @@
 \title{Visualization of subcellular results.}
 \usage{
 plot_prnSubcellular(
+  dat_dir = NULL,
   col_select = NULL,
   col_order = NULL,
   levels_subcellular = NULL,
   levels_subtype = NULL,
+  tie_method = "none",
   qt = 0.5,
   n_clust = NULL,
   panel_ids = NULL,
+  pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
+  ext = "txt",
+  data_type = "Trend",
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
   df2 = NULL,
+  filepath = NULL,
   filename = NULL,
+  make_plot = TRUE,
   theme = NULL,
   ...
 )
 }
 \arguments{
+\item{dat_dir}{The working directory.}
+
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
 \code{expt_smry.xlsx} will be used. In the case of no samples being
@@ -49,6 +58,12 @@ argument \code{centers} in \code{\link[e1071]{cmeans}}.}
 
 \item{panel_ids}{A subset of panel IDs for visualization.}
 
+\item{pat}{The pattern of input filenames.}
+
+\item{ext}{The extension of input filenames.}
+
+\item{data_type}{The type of input data.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
@@ -67,21 +82,25 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
 
+\item{filepath}{Use system default.}
+
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
+
+\item{make_plot}{Logical; to bypass the plotting at FALSE.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
 will be applied.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-against data in a primary file linked to \code{df}. See also
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 \code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
+for the format of \code{arrange_} statements. \cr \cr Additional arguments
+for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
 \link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
 \code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With
@@ -106,5 +125,4 @@ if (FALSE) {
     height = !!height,
   )
 }
-
 }

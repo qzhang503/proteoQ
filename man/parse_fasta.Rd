@@ -4,7 +4,7 @@
 \alias{parse_fasta}
 \title{Parses FASTA for accession lookups}
 \usage{
-parse_fasta(df, fasta, entrez, warns = TRUE)
+parse_fasta(df = NULL, fasta = NULL, entrez = NULL, warns = TRUE)
 }
 \arguments{
 \item{df}{An input data frame.}

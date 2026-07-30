@@ -6,6 +6,7 @@
 \title{GSPA of peptide data}
 \usage{
 pepGSPA(
+  dat_dir = NULL,
   gset_nms = c("go_sets", "c2_msig", "kinsub"),
   is_subcellular = FALSE,
   method = "mean",
@@ -31,6 +32,7 @@ pepGSPA(
 )
 
 prnGSPA(
+  dat_dir = NULL,
   gset_nms = c("go_sets", "c2_msig", "kinsub"),
   method = "mean",
   scale_log2r = TRUE,
@@ -56,6 +58,9 @@ prnGSPA(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{gset_nms}{Character string or vector containing the shorthanded name(s),
 full file path(s), or both, to gene sets for enrichment analysis. For
 species among \code{"human", "mouse", "rat"}, the default of

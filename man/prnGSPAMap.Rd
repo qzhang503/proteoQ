@@ -31,6 +31,7 @@ pepGSPAMap(
 )
 
 prnGSPAMap(
+  dat_dir = NULL,
   gset_nms = c("go_sets", "c2_msig", "kinsub"),
   gset_ids = NULL,
   grids = NULL,
@@ -177,6 +178,9 @@ plotting: \cr \code{xco}, the cut-off lines of fold changes at position
 cut-off line of \code{pVal} at position \code{y}; the default is
 \eqn{0.05}. \cr \code{width}, the width of plot; \cr \code{height}, the
 height of plot. \cr \code{nrow}, the number of rows in a plot.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 }
 \description{
 \code{pepGSPAMap} visualizes the volcano plots of peptides under the
@@ -191,22 +195,22 @@ same gene sets.
 # Volcano plots
 # ===================================
 
-## !!!require the brief working example in `?load_expts`
+## !!!Require the brief working example in `?load_expts`
 
-## global option
+## Global option
 scale_log2r <- TRUE
 
-## for all peptides or proteins
+## For all peptides or proteins
 # all peptides
 pepVol()
 
-# all proteins
+# All proteins
 prnVol(
   xco = 1.2,
   yco = 0.01,
 )
 
-# hide `xco` and/or `yco` lines
+# Hide `xco` and/or `yco` lines
 # (xco = 0 -> log2(xco) = - Inf)
 prnVol(
   xco = 0,
@@ -214,7 +218,7 @@ prnVol(
   filename = no_xylines.png,
 )
 
-# shows vertical center line at log2(1)
+# Shows vertical center line at log2(1)
 # (xco = 1 -> log2(xco) = 0)
 prnVol(
   xco = 1,
@@ -222,7 +226,7 @@ prnVol(
   filename = no_xylines.png,
 )
 
-# kinases and prot_n_pep >= 2
+# Kinases and prot_n_pep >= 2
 prnVol(
   xco = 1.2,
   yco = 0.01,
@@ -230,7 +234,7 @@ prnVol(
   filename = "kin_npep2.png"
 )
 
-# selected formula and/or customization
+# Selected formula and/or customization
 prnVol(
   fml_nms = "W2_bat",
   xmin = -5,
@@ -244,7 +248,7 @@ prnVol(
   filename = custom.png,
 )
 
-# custom theme
+# Custom theme
 library(ggplot2)
 my_theme <- theme_bw() +
   theme(
@@ -275,7 +279,7 @@ my_theme <- theme_bw() +
 
 prnVol(theme = my_theme, filename = my_theme.png)
 
-# custom plot
+# Custom plot
 # ("W2_bat" etc. are contrast names in `pepSig`)
 prnVol(fml_nms = c("W2_bat", "W2_loc"), filename = foo.png)
 
@@ -333,18 +337,16 @@ prnGSPA(
   gset_nms = c("go_sets"),
 )
 
-# mapping gene sets to volcano-plot visualization
+# Mapping gene sets to volcano-plot visualization
 # (1) forced lines of `pval_cutoff` and `logFC_cutoff`  
 #   according to the corresponding `prnGSPA` in red; 
 # (2) optional lines of `xco` and `yco` in grey
-gspaMap(
-  impute_na = FALSE,
-  topn_gsets = 20, 
+prnGSPAMap(
   show_sig = pVal, 
 )
 
-# disable the lines of `xco` and `yco`, 
-gspaMap(
+# Disable the lines of `xco` and `yco`, 
+prnGSPAMap(
   impute_na = FALSE,
   topn_gsets = 20, 
   show_sig = pVal, 
@@ -352,8 +354,8 @@ gspaMap(
   yco = Inf, 
 )
 
-# customized thresholds for visualization
-gspaMap(
+# Customized thresholds for visualization
+prnGSPAMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   gspval_cutoff = c(5E-2, 5E-2, 1E-10),
   gslogFC_cutoff = log2(1.2),
@@ -364,10 +366,10 @@ gspaMap(
   yco = Inf, 
 )
 
-## gspaMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 
+## prnGSPAMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 
 #  from prnGSPA(...) onto a primary `df` of `Protein[_impNA]_pVal.txt` 
 #  
-#  see also ?prnGSPA for additional examples involving both `df` and `df2`, 
+#  See also ?prnGSPA for additional examples involving both `df` and `df2`, 
 #  as well as `filter_` and `filter2_`
 }
 }

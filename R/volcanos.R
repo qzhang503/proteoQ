@@ -32,7 +32,8 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
   
   stopifnot(is.numeric(topn_labels), topn_labels >= 0L)
   
-  id <- rlang::as_string(rlang::enexpr(id))
+  # force(id)
+  # id <- rlang::as_string(rlang::enexpr(id))
 
   df <- df %>%
     `rownames<-`(.[, id]) %>%
@@ -156,7 +157,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
                  df = df, 
                  df2 = df2, 
                  col_ind = col_ind, 
-                 id = !!id, 
+                 id = id, 
                  id_gspa = id_gspa, 
                  filepath = filepath, 
                  filename = filename, 
@@ -214,7 +215,8 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            complete_cases = FALSE, impute_na = FALSE, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
-  id  <- rlang::as_string(rlang::enexpr(id))
+  # force(id)
+  # id  <- rlang::as_string(rlang::enexpr(id))
   pat <- paste0("^", fml_nm, "\\.")
   
   df <- df |>
@@ -226,7 +228,7 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
     df <- pval_complete_cases(df)
   }
 
-  byfile_plotVolcano(df = df, df2 = df2, id = !!id, id_gspa = id_gspa, 
+  byfile_plotVolcano(df = df, df2 = df2, id = id, id_gspa = id_gspa, 
                      fml_nm = fml_nm, filepath = filepath, filename = filename, 
                      adjP = adjP, topn_labels = topn_labels, 
                      anal_type = anal_type, gsets = gsets, gset_ids = gset_ids, 
@@ -263,8 +265,6 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
                                highlights = NULL, theme = NULL, 
                                ...) 
 {
-  id <- rlang::as_string(rlang::enexpr(id))
-  
   contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
     gsub("^log2Ratio\\s+\\(|\\)$", "", .)
   
@@ -276,7 +276,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
       rm(list = c("gspval_cutoff", "gslogFC_cutoff", "show_sig"))
 
       fullVolcano(df = df, 
-                  id = !!id, 
+                  id = id, 
                   contrast_groups = contrast_groups,
                   theme = theme, 
                   fml_nm = fml_nm, 
@@ -301,15 +301,28 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
       }
 
       filepath_fml <- file.path(filepath, fml_nm)
-      in_names <- 
-        list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
+      in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[ONZ].*\\.txt$")
       
       if (!length(in_names)) {
         warning("No GSPA inputs under ", filepath_fml)
         return(NULL)
       }
       
-      if (is.null(df2)) {
+      if (length(df2)) {
+        local({
+          if (grepl("_essmap|_essmeta|_resgreedy", df2)) {
+            stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`.")
+          }
+          
+          if (length(non_exists <- df2[df2 %in% in_names])) {
+            stop("Missing file(s): ", paste(non_exists, collapse = ", "))
+          }
+        })
+        
+        if (!length(df2)) {
+          stop("File(s) not found under \"", filepath_fml, "\".")
+        }
+      } else {
         in_names <- in_names %>% 
           .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
           {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]}
@@ -321,28 +334,14 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
         } else {
           in_names <- in_names[grepl("_GSPA_N", in_names)]
         }
-
+        
         if (!length(in_names)) {
           stop("No inputs correspond to impute_na = ", impute_na, 
                ", scale_log2r = ", scale_log2r, 
                " at fml_nms = ", fml_nm)
         }
-
-        df2 <- in_names
-      } else {
-        local({
-          if (grepl("_essmap|_essmeta|_resgreedy", df2)) {
-            stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`.")
-          }
-
-          if (length(non_exists <- df2[df2 %in% in_names])) {
-            stop("Missing file(s): ", paste(non_exists, collapse = ", "))
-          }
-        })
         
-        if (!length(df2)) {
-          stop("File(s) not found under \"", filepath_fml, "\".")
-        }
+        df2 <- in_names
       }
       
       if (!is.null(grids)) {
@@ -352,7 +351,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
       ## plot data
       purrr::walk(df2, gsVolcano, 
                   df = df, 
-                  id = !!id, 
+                  id = id, 
                   contrast_groups = contrast_groups, 
                   gsea_key = "term", 
                   gsets = gsets,
@@ -420,7 +419,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
                         scale_log2r = TRUE, impute_na = FALSE, 
                         ...)
 {
-  id    <- rlang::as_string(rlang::enexpr(id))
+  # force(id)
+  # id    <- rlang::as_string(rlang::enexpr(id))
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
@@ -859,8 +859,6 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
                       ...) 
 {
   options(warn = 1L)
-  
-  id <- rlang::as_string(rlang::enexpr(id))
   
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1579,45 +1577,51 @@ plot_ibaq <- function(outname = NULL, highlights = NULL, group_pep_by = "gene",
 #'
 #' @import purrr
 #' @export
-pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    adjP = FALSE, topn_labels = 20, 
+pepVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+                    impute_na = FALSE, adjP = FALSE, topn_labels = 20, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, highlights = NULL, 
                     grids = NULL, is_subcellular = FALSE, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Volcano")
+
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  scale_log2r <- match_pepSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  scale_log2r <- match_pepSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)	
+  filename <- rlang::enexpr(filename)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
 
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            id = id, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            anal_type = "Volcano")(fml_nms = fml_nms, 
-                                   adjP = adjP, 
-                                   topn_labels = topn_labels, 
-                                   theme = theme, 
-                                   highlights = highlights, 
-                                   grids = grids, 
-                                   is_subcellular = is_subcellular, 
-                                   ...)
+            anal_type = "Volcano")(
+              fml_nms = fml_nms, 
+              adjP = adjP, 
+              topn_labels = topn_labels, 
+              theme = theme, 
+              highlights = highlights, 
+              grids = grids, 
+              is_subcellular = is_subcellular, 
+              ...)
 }
 
 
@@ -1717,45 +1721,51 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
-prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, 
+prnVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, adjP = FALSE, topn_labels = 20, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, highlights = NULL, 
                     grids = NULL, is_subcellular = FALSE, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Volcano")
+  
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)	
+  filename <- rlang::enexpr(filename)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
 
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            id = id, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            anal_type = "Volcano")(fml_nms = fml_nms, 
-                                   adjP = adjP, 
-                                   topn_labels = topn_labels, 
-                                   theme = theme, 
-                                   highlights = highlights, 
-                                   grids = grids, 
-                                   is_subcellular = is_subcellular, 
-                                   ...)
+            anal_type = "Volcano")(
+              fml_nms = fml_nms, 
+              adjP = adjP, 
+              topn_labels = topn_labels, 
+              theme = theme, 
+              highlights = highlights, 
+              grids = grids, 
+              is_subcellular = is_subcellular, 
+              ...)
 }
 
 
@@ -1970,7 +1980,8 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'   system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #' @export
-prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
+prnGSPAMap <- function (dat_dir = NULL, 
+                        gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                         gset_ids = NULL, grids = NULL, id_gspa = "entrez",
                         is_subcellular = FALSE, 
                         scale_log2r = TRUE, complete_cases = FALSE, 
@@ -1981,6 +1992,9 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1.2), 
                         topn_gsets = .Machine$integer.max, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "GSPA")
+  
   check_dots(c("id", "anal_type"), ...)
   
   check_depreciated_args(
@@ -1988,9 +2002,9 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
          c("logFC_cutoff", "gslogFC_cutoff"), 
          c("show_labels", "topn_labels")), ...)
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
-    error = function(e) NA)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
@@ -2002,66 +2016,54 @@ prnGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
     id <- "gene"
   }
   
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  ## Argument with single option and NULL default (quotation marks or not)
+  df  <- rlang::enexpr(df)
+  df2 <- rlang::enexpr(df2)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
   
-  df_ <- rlang::enexpr(df)
-  df2_ <- rlang::enexpr(df2)
-  filepath_ <- rlang::enexpr(filepath)
-  filename_ <- rlang::enexpr(filename)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(df2)) df2 <- as.character(df2)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
 
-  if ((!is.null(df_)) && df_ != "df") {
-    df <- df_
-  }
-  
-  if ((!is.null(df2_)) && df2_ != "df2") {
-    df2 <- df2_
-  }
-  
-  if ((!is.null(filepath_)) && filepath_ != "filepath") {
-    filepath <- rlang::as_string(filepath_)
-  }
-  
-  if ((!is.null(filename_)) && 
-      (filename_ != "filename" || filename_ != rlang::sym("filename")) ) {
-    filename <- rlang::as_string(filename_)
-  }
-
+  ## Argument with single, non-NULL option (with or without quotation mark)
   show_sig <- rlang::as_string(rlang::enexpr(show_sig))
   
-  stopifnot(show_sig %in% c("none", "pVal", "qVal"), 
-            length(show_sig) == 1L)
+  stopifnot(show_sig %in% c("none", "pVal", "qVal"), length(show_sig) == 1L)
   
   check_gset_nms(gset_nms)
   
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(df = !!df, 
-            df2 = !!df2, 
-            id = !!id, 
+  info_anal(df  = df, 
+            df2 = df2, 
+            id  = id, 
             id_gspa = id_gspa,
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            anal_type = "mapGSPA")(fml_nms = fml_nms, 
-                                   gset_ids = gset_ids,
-                                   grids = grids, 
-                                   adjP = adjP, 
-                                   topn_labels = topn_labels, 
-                                   gspval_cutoff = gspval_cutoff, 
-                                   gslogFC_cutoff = gslogFC_cutoff, 
-                                   topn_gsets = topn_gsets, 
-                                   show_sig = show_sig,
-                                   show_passed_only = show_passed_only,
-                                   gset_nms = gset_nms, 
-                                   theme = theme, 
-                                   is_subcellular = is_subcellular, 
-                                   ...)
+            anal_type = "mapGSPA")(
+              fml_nms = fml_nms, 
+              gset_ids = gset_ids,
+              grids = grids, 
+              adjP = adjP, 
+              topn_labels = topn_labels, 
+              gspval_cutoff = gspval_cutoff, 
+              gslogFC_cutoff = gslogFC_cutoff, 
+              topn_gsets = topn_gsets, 
+              show_sig = show_sig,
+              show_passed_only = show_passed_only,
+              gset_nms = gset_nms, 
+              theme = theme, 
+              is_subcellular = is_subcellular, 
+              ...)
 }
 
 

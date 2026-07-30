@@ -1426,8 +1426,41 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::group_by_at(cols_grp) |>
       aggrNumLCMS(group_psm_by, label_scheme_full) |>
       dplyr::ungroup() |>
-      dplyr::mutate(TMT_Set = as.integer(TMT_Set), 
-                    N_I000 = I000, sd_log2_R000 = NA_real_, 
+      dplyr::mutate(TMT_Set = as.integer(TMT_Set), )
+    
+    # if not to use the default peptide table from engines such as MSFragger...
+    if (FALSE) {
+      df_num <- local({
+        dfR <- df_num |>
+          tidyr::pivot_wider(names_from = TMT_Set, values_from = I000) 
+        ids <- dfR[[group_psm_by]]
+        dfR <- dfR |>
+          dplyr::select(-dplyr::one_of(group_psm_by)) %>%
+          sweep(1, rowMeans(., na.rm = TRUE), "/")
+        
+        dfSD <- apply(dfR, 1, sd, na.rm = TRUE)
+        
+        dfR <- dfR %>% 
+          dplyr::bind_cols(!!group_psm_by := ids, ., sd_log2_R000 = dfSD)
+        
+        dfR <- dfR |>
+          tidyr::pivot_longer(
+            cols = -c(group_psm_by, "sd_log2_R000"), 
+            names_to = "TMT_Set",
+            values_to = "log2_R000"
+          ) |>
+          dplyr::mutate(TMT_Set = as.integer(TMT_Set), )
+        
+        df_num <- df_num |>
+          dplyr::mutate(N_I000 = I000, ) |>
+          dplyr::left_join(dfR, by = c(group_psm_by, "TMT_Set")) |>
+          dplyr::mutate(N_log2_R000 = log2_R000, ) |>
+          dplyr::arrange(TMT_Set)
+      })
+    }
+    
+    df_num <- df_num |>
+      dplyr::mutate(N_I000 = I000, sd_log2_R000 = NA_real_, 
                     log2_R000 = NA_real_, N_log2_R000 = NA_real_) |>
       dplyr::arrange(TMT_Set)
   }
@@ -3069,6 +3102,7 @@ mergePep <- function (
 {
   dat_dir <- get_gl_dat_dir()
   engine  <- find_search_engine(dat_dir)
+  fmls <- formals()
   
   old_opts <- options()
   options(warn = 1L)
@@ -3081,21 +3115,17 @@ mergePep <- function (
         save_call("mergePep")
     }, add = TRUE)
 
-  # ---
-  duppeps_repair <- "majority"
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   duppeps_repair <- rlang::enexpr(duppeps_repair)
-  oks <- eval(formals()[["duppeps_repair"]])
-  
-  duppeps_repair <- if (length(duppeps_repair) > 1L) {
-    oks[[1]]
-  }
-  else {
-    rlang::as_string(duppeps_repair)
+  duppeps_repair <- if (length(duppeps_repair) > 1L) "majority" else as.character(duppeps_repair)
+  oks <- eval(fmls[["duppeps_repair"]])
+  if (!duppeps_repair %in% oks) {
+    stop("The `duppeps_repair` is not one of ", paste(oks, collapse = ", "))
   }
   
-  stopifnot(duppeps_repair %in% oks, length(duppeps_repair) == 1L)
-  # ---
-  
+  # Temporary bypassing
+  duppeps_repair <- "majority"
+
   stopifnot(cut_points >= 0, ret_sd_tol > 0, 
             vapply(c(plot_log2FC_cv, use_duppeps, rm_allna, omit_single_lfq, 
                      rm_ret_outliers), rlang::is_logical, logical(1)))
@@ -3177,16 +3207,18 @@ mergePep <- function (
                 !!!filter_dots)
   
   if (plot_log2FC_cv) {
-    quiet_out <- purrr::quietly(sd_violin)(
-      df = df, 
-      id = !!group_pep_by, 
-      filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw/Peptide_sd.png"), 
-      width = 8 * n_TMT_sets(label_scheme), 
-      height = 8, 
-      type = "log2_R", 
-      adjSD = FALSE, 
-      is_psm = FALSE, 
-      ...
+    try(
+      quiet_out <- purrr::quietly(sd_violin)(
+        df = df, 
+        id = group_pep_by, 
+        filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw/Peptide_sd.png"), 
+        width = 8 * n_TMT_sets(label_scheme), 
+        height = 8, 
+        type = "log2_R", 
+        adjSD = FALSE, 
+        is_psm = FALSE, 
+        ...
+      )
     )
   }
   
@@ -3337,13 +3369,14 @@ mergePep <- function (
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-standPep <- function (method_align = c("MC", "MGKernel", "None"), 
+standPep <- function (dat_dir = NULL, 
+                      method_align = c("MC", "MGKernel", "None"), 
                       col_select = NULL, col_group = NULL, 
                       range_log2r = c(10, 90), range_int = c(5, 95), 
                       n_comp = NULL, seed = NULL, 
                       plot_log2FC_cv = FALSE, ...) 
 {
-  dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   
   old_opts <- options()
   options(warn = 1)
@@ -3372,18 +3405,20 @@ standPep <- function (method_align = c("MC", "MGKernel", "None"),
 
   ok_method_align <- c("MC", "MGKernel", "None")
   method_align <- rlang::enexpr(method_align)
-  if (method_align == rlang::expr(ok_method_align)) {
-    method_align <- "MC"
-  } 
-  else {
-    method_align <- rlang::as_string(method_align)
-    if (length(method_align) != 1L) {
-      warning("More than one 'method_align'; set to 'MC'.")
+  method_align <- if (length(method_align) > 1L) "MC" else as.character(method_align)
+  
+  if (FALSE) {
+    if (method_align == rlang::expr(ok_method_align)) {
       method_align <- "MC"
-    }
-    else if (!method_align %in% ok_method_align) {
-      warning("Unknown 'method_align'; set to 'MC'.")
-      method_align <- "MC"
+    } else {
+      method_align <- rlang::as_string(method_align)
+      if (length(method_align) != 1L) {
+        warning("More than one 'method_align'; set to 'MC'.")
+        method_align <- "MC"
+      } else if (!method_align %in% ok_method_align) {
+        warning("Unknown 'method_align'; set to 'MC'.")
+        method_align <- "MC"
+      }
     }
   }
   
@@ -3395,22 +3430,17 @@ standPep <- function (method_align = c("MC", "MGKernel", "None"),
   ok_existing_params(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_N.txt"))
 
   col_select <- rlang::enexpr(col_select)
-  col_select <- if (is.null(col_select)) 
-    rlang::expr(Sample_ID) 
-  else 
-    rlang::sym(col_select)
-  col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!length(col_select)) col_select <- "Sample_ID"
+  col_select <- parse_col_select(col_select, label_scheme)
 
   col_group <- rlang::enexpr(col_group)
-  col_group <- if (is.null(col_group)) 
-    rlang::expr(Group) 
-  else 
-    rlang::sym(col_group)
-  col_group <- rlang::as_string(col_group)
-  
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!length(col_group)) col_group <- "Group"
+
   dots <- rlang::enexprs(...)
   
-  filename <- file.path(dat_dir, "Peptide/Peptide.txt")
+  filename <- file.path(dat_dir, "Peptide", "Peptide.txt")
   
   if (!file.exists(filename)) {
     stop(filename, " not found; run `mergePep(...)` first.")
@@ -3444,8 +3474,9 @@ standPep <- function (method_align = c("MC", "MGKernel", "None"),
                 sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv & TMT_plex(label_scheme)) {
-    sd_violin(df = df, id = !!group_pep_by, 
-              filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw", "Peptide_sd.png"), 
+    sd_violin(df = df, id = group_pep_by, 
+              filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw", 
+                                   "Peptide_sd.png"), 
               width = 8 * n_TMT_sets(label_scheme), height = 8, 
               type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
@@ -4516,7 +4547,7 @@ rm_diann_empties <- function (df, label_scheme_full)
   mts  <- match(label_scheme_full[["RAW_File"]], raws)
   dfx  <- df[, cols, drop = FALSE]
   
-  if (any(mts)) {
+  if (any(is.na(mts))) {
     warning("Not all RAW files matched to 'expt_smry'. ", 
             "Check for possible errors in file names.")
   }
@@ -4590,7 +4621,54 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   
   # Merge duplicated LCMS
   df <- aggrLCMS_DIANN(df)
+  
+  # Not expected
+  df <- local({
+    rows <- grepl(";", df[["prot_acc"]])
+    dfx <- df[rows, ]
+    df[rows, "prot_acc"] <- sub(";.*", "", dfx[["prot_acc"]])
+    
+    df
+  })
+  
+  df <- local({
+    # Column 'gene' not yet available
+    rows <- grepl("\\.\\d+$", df[["prot_acc"]])
+    
+    if (sum(rows)) {
+      df[["pep_is_signal"]] <- FALSE
+      dfx <- df[rows, ]
+      dfx[["pep_is_signal"]] <- TRUE
+      dfx[["prot_acc"]] <- gsub("\\.\\d+$", "", dfx[["prot_acc"]])
+      dfx[["prot_accs"]] <- gsub("\\.[0-9]{3}", "", dfx[["prot_accs"]])
+      dfx[["genes"]] <- gsub("\\.[0-9]{3}", "", dfx[["genes"]])
+      
+      df[rows, ] <- dfx
+    }
+    
+    df
+  })
+  
   df <- annotPrn(df, fasta = fasta, entrez = entrez)
+  
+  # DIA-NN already collapses pep_seq rows
+  if (FALSE) {
+    # to get literal unique to FASTA database
+    load(file.path(dat_dir, "fasta_db.rda"))
+    
+    dfx <- df[, c("prot_acc", "pep_seq")] |>
+      unique() |>
+      mzion::groupProts()
+    df <- df |>
+      dplyr::select(-dplyr::one_of("pep_razor_unique")) |>
+      dplyr::left_join(
+        unique(dfx[, c("pep_seq", "pep_literal_unique", "pep_razor_unique")]), 
+        by = c("pep_seq"))
+    df <- df |>
+      dplyr::relocate("pep_literal_unique", .after = "pep_seq_mod") |>
+      dplyr::relocate("pep_razor_unique", .after = "pep_seq_mod")
+    rm(list = "dfx")
+  }
   
   # Annotate peptides
   df <- df |>

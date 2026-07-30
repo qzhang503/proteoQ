@@ -1047,23 +1047,22 @@ anal_pepOutlier <- function (
     contr_pairs = NULL, group_renorm_by = NULL, scale_log2r = TRUE, 
     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
-  on.exit(
+  on.exit({
+    dots <- rlang::enexprs(...)
     mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-      c(rlang::enexprs(...)) |>
-      save_call(paste0("anal", "_pepOutlier")), add = TRUE)
+      c(dots) |>
+      save_call(paste0("anal", "_pepOutlier"))
+  }, add = TRUE)
   
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  }
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Outlier")
   
   old_opts <- options()
   options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("df2", "anal_type"), ...)
-  
-  dir.create(file.path(dat_dir, "Peptide", "Outlier/log"), 
-             recursive = TRUE, showWarnings = FALSE)
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   group_psm_by <- tryCatch(
     match_call_arg(normPSM, group_psm_by), 
@@ -1093,32 +1092,40 @@ anal_pepOutlier <- function (
     group_pep_by <- "gene"
   }
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select  <- rlang::enexpr(col_select)
   col_group   <- rlang::enexpr(col_group)
   col_order   <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
+  group_renorm_by <- rlang::enexpr(group_renorm_by)
   
-  if (!is.null(group_renorm_by)) {
-    group_renorm_by <- rlang::as_string(rlang::enexpr(group_renorm_by))
-  }
+  # NULL or symbol -> length 0 or 1
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  if (!is.character(group_renorm_by)) group_renorm_by <- as.character(group_renorm_by)
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!group_psm_by, 
-            col_select = !!col_select, 
-            col_group = !!col_group, 
-            col_order = !!col_order,
+  info_anal(id = group_psm_by, 
+            col_select = col_select, 
+            col_group = col_group, 
+            col_order = col_order,
             scale_log2r = TRUE, 
             complete_cases = FALSE, 
             impute_na = FALSE,
             impute_group_na = FALSE, 
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "Outlier")(
               p_outlier = p_outlier, 
               min_n = min_n, 
@@ -1190,6 +1197,7 @@ analOutlier <- function (
   }
   
   ans_grp <- prepTrend(
+    dat_dir = dat_dir, 
     df = df, id = id, col_group = col_group, col_order = col_order, 
     label_scheme_sub = label_scheme_sub, impute_group_na = impute_group_na, 
     scale_log2r = scale_log2r, complete_cases = complete_cases, 

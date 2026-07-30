@@ -5,6 +5,7 @@
 \title{helper for finding input `df`}
 \usage{
 find_pri_df(
+  dat_dir = NULL,
   anal_type = "Model",
   df = NULL,
   id = "gene",
@@ -13,6 +14,9 @@ find_pri_df(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",

@@ -5,6 +5,7 @@
 \title{Standardize peptide results}
 \usage{
 standPep(
+  dat_dir = NULL,
   method_align = c("MC", "MGKernel", "None"),
   col_select = NULL,
   col_group = NULL,
@@ -17,6 +18,9 @@ standPep(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{method_align}{Character string indicating the method in aligning
 \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
 the kernel density defined by multiple Gaussian functions

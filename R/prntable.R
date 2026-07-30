@@ -102,13 +102,14 @@
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-standPrn <- function (method_align = c("MC", "MGKernel"), 
+standPrn <- function (dat_dir = NULL, method_align = c("MC", "MGKernel"), 
                       range_log2r = c(10, 90), range_int = c(5, 95), 
                       n_comp = NULL, seed = NULL, 
                       col_select = NULL, col_group = NULL, cut_points = Inf, 
                       cache = TRUE, ...) 
 {
-  dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
              recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein/cache"), 
@@ -132,15 +133,20 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   reload_expts()
   
   method_align <- rlang::enexpr(method_align)
-  if (method_align == rlang::expr(c("MC", "MGKernel"))) {
-    method_align <- "MC"
-  } 
-  else {
-    method_align <- rlang::as_string(method_align)
-    stopifnot(method_align %in% c("MC", "MGKernel"), 
-              length(method_align) == 1)
-  }
+  method_align <- rlang::enexpr(method_align)
+  method_align <- if (length(method_align) > 1L) "MC" else as.character(method_align)
   
+  if (FALSE) {
+    if (method_align == rlang::expr(c("MC", "MGKernel"))) {
+      method_align <- "MC"
+    } 
+    else {
+      method_align <- rlang::as_string(method_align)
+      stopifnot(method_align %in% c("MC", "MGKernel"), 
+                length(method_align) == 1)
+    }
+  }
+
   range_log2r <- prep_range(range_log2r)
   range_int <- prep_range(range_int)
 
@@ -160,18 +166,16 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
 
   col_group <- rlang::enexpr(col_group)
-  col_group <- if (is.null(col_group)) 
-    rlang::expr(Group) 
-  else 
-    rlang::sym(col_group)
-  col_group <- rlang::as_string(col_group)
-  
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!length(col_select)) col_select <- "Sample_ID"
+
   dots <- rlang::enexprs(...)
 
-  filename <- file.path(dat_dir, "Protein/Protein.txt")
+  filename <- file.path(dat_dir, "Protein", "Protein.txt")
   
-  if (!file.exists(filename)) 
+  if (!file.exists(filename)) {
     stop(filename, " not found; run `Pep2Prn` first.")
+  }
 
   df <- filename |>
     readr::read_tsv(col_types = get_col_types(), show_col_types = FALSE) |>

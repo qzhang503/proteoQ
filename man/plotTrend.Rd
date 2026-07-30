@@ -5,26 +5,38 @@
 \title{Plots trends}
 \usage{
 plotTrend(
-  id,
+  id = "gene",
+  dat_dir = NULL,
+  anal_type = "Trend",
   col_group = NULL,
   col_order = NULL,
-  label_scheme_sub,
+  label_scheme_sub = NULL,
+  data_type = "ratio",
+  pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
+  ext = "txt",
   n_clust = NULL,
   panel_ids = NULL,
   show_panel_ids = TRUE,
-  scale_log2r,
-  complete_cases,
-  impute_na,
+  group_data_by = "ratio",
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
   df2 = NULL,
-  filepath,
-  filename,
-  theme,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
   ...
 )
 }
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
+\item{anal_type}{The type of analysis. To differentiate from custom plots
+such as results from svmProb.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -40,6 +52,12 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{data_type}{The type of data, either intensity or log2FC.}
+
+\item{pat}{The pattern of secondary files (df2).}
+
+\item{ext}{The filename extension.}
 
 \item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
 \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
@@ -69,9 +87,7 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
 
-\item{filepath}{A file path to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of \code{id} in the \code{call}.}
+\item{filepath}{Use system default.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}

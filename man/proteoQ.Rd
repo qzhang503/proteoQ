@@ -37,4 +37,9 @@ The companion package, mzion, performs database searches.
 \author{
 \strong{Maintainer}: Qiang Zhang \email{qzhang503@gmail.com} (\href{https://orcid.org/0000-0001-7046-4378}{ORCID})
 
+Authors:
+\itemize{
+  \item Qiang Zhang \email{qzhang503@gmail.com} (\href{https://orcid.org/0000-0001-7046-4378}{ORCID})
+}
+
 }

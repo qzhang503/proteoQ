@@ -4,7 +4,7 @@
 \alias{annotPrn}
 \title{Adds protein annotation}
 \usage{
-annotPrn(df, fasta, entrez)
+annotPrn(df = NULL, fasta = NULL, entrez = NULL)
 }
 \arguments{
 \item{df}{A data frame.}

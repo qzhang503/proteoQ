@@ -7,7 +7,8 @@
 #'
 #'@import purrr dplyr
 #'@export
-pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
+pepGSPA <- function (dat_dir = NULL, 
+                     gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                      is_subcellular = FALSE, 
                      method = "mean", scale_log2r = TRUE, 
                      complete_cases = FALSE, impute_na = FALSE, 
@@ -21,28 +22,20 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
                      filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-        c(rlang::enexprs(...)) |>
-        save_call(paste0("anal", "_pepGSPA"))
-    } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-        c(rlang::enexprs(...)) |>
-        save_call(paste0("anal", "_prnGSPA"))
-    }, 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+      c(rlang::enexprs(...)) |>
+      save_call(paste0("anal", "_pepGSPA")), 
     add = TRUE
   )  
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
-  dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Peptide/GSPA/log"), 
-             recursive = TRUE, showWarnings = FALSE)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), 
-    error = function(e) NA)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "GSPA")
+
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
@@ -54,24 +47,21 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
     id <- "pep_seq_mod"
   }
 
-  stopifnot(
-    rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
-
-  scale_log2r <- 
-    match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
-
+  ## Argument with single option and NULL default (quotation marks or not)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
-  method <- rlang::enexpr(method)
-  method <- if (rlang::is_call(method))
-    eval(method, envir = rlang::caller_env())
-  else
-    rlang::as_string(method)
-
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
+  id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
+  method <- rlang::as_string(rlang::enexpr(method))
+  
   stopifnot(all(method %in% c("mean", "limma")))
   
   dots <- rlang::enexprs(...)
@@ -83,13 +73,15 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
     anal_type = "GSPA"
   )
   
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(df = !!df, 
-            id = !!id, 
+  info_anal(df = df, 
+            id = id, 
             id_gspa = id_gspa, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
@@ -282,6 +274,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
 #'
 #'@export
 prnGSPA <- function (
+    dat_dir = NULL,
     gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     is_subcellular = FALSE, 
@@ -293,29 +286,19 @@ prnGSPA <- function (
     filepath = NULL, filename = NULL, ...) 
 {
   on.exit(
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-        c(rlang::enexprs(...)) |>
-        save_call(paste0("anal", "_pepGSPA"))
-    } 
-    else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
-        c(rlang::enexprs(...)) |>
-        save_call(paste0("anal", "_prnGSPA"))
-    }, 
-    add = TRUE
-  )  
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) |>
+      c(rlang::enexprs(...)) |>
+      save_call(paste0("anal", "_prnGSPA")), 
+    add = TRUE)
+
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "GSPA")
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
-  dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/GSPA/log"), 
-             recursive = TRUE, showWarnings = FALSE)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
-    error = function(e) NA)
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
@@ -327,25 +310,22 @@ prnGSPA <- function (
     id <- "gene"
   }
   
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  scale_log2r <- match_prnSig_scale_log2r(
-    scale_log2r = scale_log2r, impute_na = impute_na)
-
+  ## Argument with single option and NULL default (quotation marks or not)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+
+  ## Argument with single, non-NULL option (with or without quotation mark)
   id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
+  method <- rlang::as_string(rlang::enexpr(method))
 
-  method <- rlang::enexpr(method)
-  
-  method <- if (rlang::is_call(method))
-    eval(method, envir = rlang::caller_env())
-  else
-    rlang::as_string(method)
-
-  stopifnot(all(method %in% c("mean", "limma")))
+  stopifnot(method %in% c("mean", "limma"))
   
   dots <- rlang::enexprs(...)
   
@@ -356,13 +336,15 @@ prnGSPA <- function (
     anal_type = "GSPA"
   )
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(df = !!df, 
-            id = !!id, 
+  info_anal(df = df, 
+            id = id, 
             id_gspa = id_gspa, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
@@ -598,7 +580,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
          fml_gspa, 
          df = df, 
          col_ind = col_ind, 
-         id = !!id, 
+         id = id, 
          id_gspa = id_gspa,
          df_trend = df_trend, 
          is_subcellular = is_subcellular, 
@@ -630,7 +612,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
          fml_gsea, 
          df = df, 
          col_ind = col_ind, 
-         id = !!id, 
+         id = id, 
          gsets = gsets, 
          label_scheme_sub = label_scheme_sub, 
          complete_cases = complete_cases, 
@@ -690,7 +672,7 @@ fml_gspa <- function (fml, fml_nm,
   dir.create(file.path(filepath, fml_nm), recursive = TRUE, 
              showWarnings = FALSE)
 
-  id <- rlang::as_string(rlang::enexpr(id))
+  # id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- tools::file_path_sans_ext(filename)
   
   # Column 'contrast' is factor and sorted by contrast_groups

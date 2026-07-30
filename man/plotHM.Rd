@@ -21,6 +21,7 @@ plotHM(
   annot_col_levels = NULL,
   annot_rows = annot_rows,
   annot_row_levels = NULL,
+  add_prot_id = FALSE,
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -115,6 +116,9 @@ the selected keys will be used to color-code peptides or proteins on the
 side of the indicated plot. The default is NULL without row annotation.}
 
 \item{annot_row_levels}{Not yet used. The levels of annot_rows.}
+
+\item{add_prot_id}{Logical; only for \link{pepHM}. Append protein identifiers
+to peptide sequences.}
 
 \item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
 

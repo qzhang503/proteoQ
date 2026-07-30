@@ -9,7 +9,7 @@ hupdate_subcellular(
   dat_dir,
   id = "gene",
   label_scheme_sub,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL
 )
 }
@@ -22,11 +22,11 @@ hupdate_subcellular(
 
 \item{label_scheme_sub}{Metadata.}
 
-\item{col_subcellular}{The column key in metadata linking to subcellular
+\item{col_fraction}{The column key in metadata linking to subcellular
 values.}
 
 \item{col_subtye}{The column key metadata linking to sample sub-types.}
 }
 \description{
-Not yet used.
+Not used.
 }

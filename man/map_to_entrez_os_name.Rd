@@ -2,7 +2,7 @@
 % Please edit documentation in R/go.R
 \name{map_to_entrez_os_name}
 \alias{map_to_entrez_os_name}
-\title{Map uniprot or refseq to entrez (not currently used)}
+\title{Map \code{Uniprot} or \code{Refseq} to \code{entrez} (not currently used).}
 \usage{
 map_to_entrez_os_name(
   species = "human",
@@ -18,20 +18,20 @@ map_to_entrez_os_name(
 \item{species}{Character string; the name of a species.}
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
-species used with
-\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
-The value of \code{abbr_species} will be determined automatically if the
-species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
-example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ. 
+ species used with
+ \href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+ species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+ example, users need to provide \code{abbr_species = Ce} for fetching the
+ \code{org.Ce.eg.db} package in the name space of proteoQ.
 
-For analysis against
-\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-Signatures}, the argument is further applied to differentiate the same
-biological terms under different species; e.g., \code{GO~0072686 mitotic
-spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
-\code{mm_GO~0072686 mitotic spindle} for mouse.}
+ For analysis against
+ \href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+ Signatures}, the argument is further applied to differentiate the same
+ biological terms under different species; e.g., \code{GO~0072686 mitotic
+ spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
+ \code{mm_GO~0072686 mitotic spindle} for mouse.}
 
 \item{os_name}{An organism name by UniProt.}
 
@@ -49,5 +49,5 @@ is \code{"~/proteoQ/dbs/entrez"}.}
 default is FALSE.}
 }
 \description{
-Map uniprot or refseq to entrez (not currently used)
+Map \code{Uniprot} or \code{Refseq} to \code{entrez} (not currently used).
 }

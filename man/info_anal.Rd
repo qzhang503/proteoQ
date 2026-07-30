@@ -7,6 +7,7 @@
 info_anal(
   id = "gene",
   id_gspa = "entrez",
+  dat_dir = NULL,
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
@@ -15,7 +16,7 @@ info_anal(
   col_shape = NULL,
   col_size = NULL,
   col_alpha = NULL,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL,
   color_brewer = NULL,
   fill_brewer = NULL,
@@ -41,6 +42,9 @@ info_anal(
 
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in

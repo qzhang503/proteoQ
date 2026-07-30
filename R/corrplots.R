@@ -16,7 +16,6 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   }
 
-  id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
   xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
@@ -53,14 +52,11 @@ plotCorr <- function (df = NULL, id = NULL, anal_type, data_select,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
-  
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   df <- prepDM(df = df, 
-               id = !!id, 
+               id = id, 
                scale_log2r = scale_log2r, 
                sub_grp = label_scheme_sub$Sample_ID, 
                anal_type = anal_type, 
@@ -294,7 +290,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   my_lower <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_point(size = .02, alpha = .5) +
-      geom_abline(alpha = .5, linetype = "dashed", color = "gray", size = 1) +
+      geom_abline(alpha = .5, linetype = "dashed", color = "gray", linewidth = 1) +
       geom_smooth(size = 1, method = method, ...)
     p
   }
@@ -302,7 +298,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   my_lower_no_sm <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_point(size = .02, alpha = .5) +
-      geom_abline(alpha = .5, linetype = "dashed", color = "gray", size = 1)
+      geom_abline(alpha = .5, linetype = "dashed", color = "gray", linewidth = 1)
     p
   }
 
@@ -481,100 +477,121 @@ plot_corr_sub <- function (df, cor_method = "pearson",
 #'
 #'@import purrr
 #'@export
-pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
+pepCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
                            filename = NULL, cor_method = "pearson", 
                            digits = 2L, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Corrplot")
+  
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
   cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order = col_order,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logFC", 
-                                    cor_method = cor_method, 
-                                    digits = digits,
-                                    theme = theme, 
-                                    ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "Corrplot")(
+              data_select = "logFC", 
+              cor_method = cor_method, 
+              digits = digits,
+              theme = theme, 
+              ...)
 }
 
 
-#'Correlation plots
+#' Correlation plots
 #'
-#'\code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
-#'for peptide data.
+#' \code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
+#' for peptide data.
 #'
-#'@rdname prnCorr_logFC
+#' @rdname prnCorr_logFC
 #'
-#'@import purrr
-#'@export
-pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
+#' @export
+pepCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
                             filename = NULL, cor_method = "pearson", 
                             digits = 2L, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Corrplot")
+  
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
   cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order = col_order,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logInt", 
-                                    cor_method = cor_method, 
-                                    digits = digits,
-                                    theme = theme, 
-                                    ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "Corrplot")(
+              data_select = "logInt", 
+              cor_method = cor_method, 
+              digits = digits,
+              theme = theme, 
+              ...)
 }
 
 
@@ -674,47 +691,58 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
+prnCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, df = NULL, filepath = NULL, 
                            filename = NULL, cor_method = "pearson", 
                            digits = 2L, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Corrplot")
+  
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-  
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
+  
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
+  
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
   cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order  = col_order,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logFC", 
-                                    cor_method = cor_method, 
-                                    digits = digits, 
-                                    theme = theme, 
-                                    ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "Corrplot")(
+              data_select = "logFC", 
+              cor_method = cor_method, 
+              digits = digits, 
+              theme = theme, 
+              ...)
 }
 
 
@@ -726,49 +754,59 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'
 #'@rdname prnCorr_logFC
 #'
-#'@import purrr
 #'@export
-prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
+prnCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, df = NULL, filepath = NULL, 
                             filename = NULL, cor_method = "pearson", 
                             digits = 2L, theme = NULL, ...) 
 {
-  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Corrplot")
   
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-
+  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
+
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
   cor_method <- rlang::as_string(rlang::enexpr(cor_method))
   
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order = col_order,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logInt", 
-                                    cor_method = cor_method, 
-                                    digits = digits, 
-                                    theme = theme, 
-                                    ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "Corrplot")(
+              data_select = "logInt", 
+              cor_method = cor_method, 
+              digits = digits, 
+              theme = theme, 
+              ...)
 }
 
 

@@ -3,7 +3,7 @@
 \name{Uni2Entrez}
 \alias{Uni2Entrez}
 \alias{Ref2Entrez}
-\title{Map UniProt accessions to Entrez IDs}
+\title{Map \code{UniProt} accessions to \code{Entrez} IDs}
 \usage{
 Uni2Entrez(
   species = "human",
@@ -25,20 +25,20 @@ Ref2Entrez(
 \item{species}{Character string; the name of a species.}
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
-species used with
-\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
-The value of \code{abbr_species} will be determined automatically if the
-species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
-example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ. 
+ species used with
+ \href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+ species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+ example, users need to provide \code{abbr_species = Ce} for fetching the
+ \code{org.Ce.eg.db} package in the name space of proteoQ.
 
-For analysis against
-\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-Signatures}, the argument is further applied to differentiate the same
-biological terms under different species; e.g., \code{GO~0072686 mitotic
-spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
-\code{mm_GO~0072686 mitotic spindle} for mouse.}
+ For analysis against
+ \href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+ Signatures}, the argument is further applied to differentiate the same
+ biological terms under different species; e.g., \code{GO~0072686 mitotic
+ spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
+ \code{mm_GO~0072686 mitotic spindle} for mouse.}
 
 \item{filename}{Character string; An output file name. At the \code{NULL}
 default, the name will be determined automatically at a given
@@ -52,7 +52,7 @@ is \code{"~/proteoQ/dbs/entrez"}.}
 default is FALSE.}
 }
 \description{
-\code{Uni2Entrez} prepares lookup tables between UniProt accessions and
+\code{Uni2Entrez} prepares look-up tables between UniProt accessions and
 Entrez IDs for uses with \link{normPSM} and downstream gene-set analysis such
 as \link{prnGSPA}. The utility is optional for \code{human}, \code{mouse} and
 \code{rat} data. It is \strong{required} for other species with \link{prnGSPA}

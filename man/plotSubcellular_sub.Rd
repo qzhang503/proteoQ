@@ -13,14 +13,20 @@ plotSubcellular_sub(
   id = "gene",
   col_group = NULL,
   col_order = NULL,
+  col_cluster = "cluster",
+  data_type = "Trend",
+  pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
+  ext = "txt",
   levels_subcellular = NULL,
   levels_subtype = NULL,
+  tie_method = "none",
   qt = 0.5,
   complete_cases = FALSE,
   panel_ids = NULL,
   filepath = NULL,
   label_scheme_sub = NULL,
   theme = NULL,
+  make_plot = TRUE,
   dots = NULL
 )
 }
@@ -55,7 +61,17 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
+\item{col_cluster}{The column key of cluster nodes.}
+
+\item{data_type}{The type of data, either intensity or log2FC.}
+
+\item{pat}{The pattern of secondary files (df2).}
+
+\item{ext}{The filename extension.}
+
 \item{levels_subcellular}{The levels of subcellular fractions.}
+
+\item{tie_method}{The method to handle ties.}
 
 \item{qt}{The quantile of localization score for thresholding subcellular
 compartment specificity. The default is to use median.}
@@ -73,6 +89,8 @@ missing values will be used. The default is FALSE.}
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
 will be applied.}
+
+\item{make_plot}{Logical; to bypass the plotting at FALSE.}
 
 \item{dots}{Variable arguments.}
 }

@@ -3,13 +3,13 @@
 # Heat map
 # ===================================
 
-## !!!require the brief working example in `?load_expts`
+## !!!Require the brief working example in `?load_expts`
 
-## global option
+## Global option
 scale_log2r <- TRUE
 
-## proteins
-# row clustering
+## Proteins
+# Row clustering
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -28,7 +28,18 @@ prnHM(
   filename = "huprns_npep2.png",
 )
 
-# rows ordered by kinase classes then by gene names
+## User-specified method
+# Approach 1:
+prnHM(hc_method_rows = "ward.D2", ...)
+
+# Or
+prnHM(hc_method_rows = ward.D2, ...)
+
+# Or
+my_hc_method_rows <- "ward.D2"
+prnHM(hc_method_rows = !!my_hc_method_rows, ...)
+
+# Rows ordered by kinase classes then by gene names
 # (error if `normPSM(annot_kinases = FALSE, ...)`)
 prnHM(
   xmin = -1,
@@ -50,7 +61,7 @@ prnHM(
   filename = "hukins_rows_by_class.png",
 )
 
-# `cutree_rows` ignored at `cluster_rows = FALSE`
+# Ignored `cutree_rows` at `cluster_rows = FALSE`
 prnHM(
   scale_log2r = TRUE,
   annot_cols = c("Group"),
@@ -66,7 +77,7 @@ prnHM(
   filename = "cutree_overruled.png",
 )
 
-# `minkowski` distance and `ward.D2` clustering
+# Clustered by `minkowski` distance and `ward.D2` 
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -92,7 +103,7 @@ prnHM(
   filename = "rowminko2_colman_clustward.D2.png",
 )
 
-## additional row filtration by pVals (proteins, impute_na = FALSE)
+## Additional row filtration by pVals (proteins, impute_na = FALSE)
 # if not yet, run prerequisitive significance tests at `impute_na = FALSE`
 pepSig(
   impute_na = FALSE, 
@@ -125,7 +136,7 @@ prnHM(
   filename = "pval_cutoff_at_1e6.png", 
 )
 
-## additional row filtration by pVals (proteins, impute_na = TRUE)
+## Additional row filtration by pVals (proteins, impute_na = TRUE)
 # if not yet, run prerequisitive NA imputation
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
@@ -185,7 +196,7 @@ pepHM(
   filename = "ncl_all.png",
 )
 
-# rows ordered by gene 
+# Rows ordered by gene 
 pepHM(
   xmin = -2,
   xmax = 2,
@@ -207,7 +218,7 @@ pepHM(
   filename = "ncl_rows_by_gene.png",
 )
 
-# rows ordered by sequence 
+# Rows ordered by sequence 
 # (may try alternatively `exprs(pep_seq)` if `pep_seq_mod` not a column key in `Peptide.txt`)
 pepHM(
   xmin = -2,
@@ -229,7 +240,7 @@ pepHM(
   filename = "ncl_rows_by_seq.png",
 )
 
-# more options
+# More options
 pepHM(
   xmin = -2,
   xmax = 2,
@@ -251,7 +262,7 @@ pepHM(
   filename = "ncl_more.png",
 )
 
-# selected samples
+# Selected samples
 pepHM(
   col_select = BI_1, 
   xmin = -2,
@@ -273,7 +284,7 @@ pepHM(
   filename = "ncl_bi1.png",
 )
 
-## multiple genes
+## Multiple genes
 genes <- c("NCL", "Ncl")
 
 lapply(genes, function (gene) {

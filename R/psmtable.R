@@ -2343,7 +2343,7 @@ splitPSM_ma <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                                     stringr::str_count(pep_seq, "[KR]") - 1,
                                     stringr::str_count(pep_seq, "[KR]"))) %>% 
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1L)) 
-      calc_cover(., id = !!rlang::sym(group_pep_by)) 
+      calc_cover(., id = group_pep_by)
       else 
         dplyr::mutate(., prot_cover = prot_cover/100) } 
   
@@ -3318,7 +3318,7 @@ annotPSM <- function(dat_dir = NULL, group_psm_by = "pep_seq",
     
     if (plot_log2FC_cv && TMT_plex) {
       try(sd_violin(df, 
-                    id = !!group_psm_by, 
+                    id = group_psm_by, 
                     filepath = 
                       file.path(dat_dir, "PSM/log2FC_cv/raw", 
                                 gsub("_PSM_N\\.txt", "_sd.png", out_fn)), 
@@ -3593,59 +3593,44 @@ normPSM <- function(dat_dir = NULL,
 
   lapply(fasta, function (x) if (!file.exists(x)) stop("FASTA not found: ", x))
 
-  # ---
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   group_psm_by <- rlang::enexpr(group_psm_by)
-  oks <- eval(fmls[["group_psm_by"]])
+  group_pep_by <- rlang::enexpr(group_pep_by)
+  type_sd <- rlang::enexpr(type_sd)
+  pep_unique_by <- rlang::enexpr(pep_unique_by)
+  mc_psm_by <- rlang::enexpr(mc_psm_by)
   
-  group_psm_by <- if (length(group_psm_by) > 1L) {
-    oks[[1]]
-  }
-  else {
-    rlang::as_string(group_psm_by)
-  }
-
+  group_psm_by <- if (length(group_psm_by) > 1L) "pep_seq_mod" else as.character(group_psm_by)
+  group_pep_by <- if (length(group_pep_by) > 1L) "gene" else as.character(group_pep_by)
+  type_sd <- if (length(type_sd) > 1L) "log2_R" else as.character(type_sd)
+  pep_unique_by <- if (length(pep_unique_by) > 1L) "group" else as.character(pep_unique_by)
+  mc_psm_by <- if (length(mc_psm_by) > 1L) "peptide" else as.character(mc_psm_by)
+  
+  oks <- eval(fmls[["group_psm_by"]])
   if (!group_psm_by %in% oks) {
     stop("\"group_psm_by\" is not one of ", paste(oks, collapse = ", "))
   }
-
-  if (length(group_psm_by) != 1L) {
-    stop("Length of \"group_psm_by\" is not one.")
-  }
-  
-  # ---
-  group_pep_by <- rlang::enexpr(group_pep_by)
   
   oks <- eval(fmls[["group_pep_by"]])
-  
-  group_pep_by <- if (length(group_pep_by) > 1L) {
-    oks[[1]]
-  }
-  else {
-    rlang::as_string(group_pep_by)
-  }
-
   if (!group_pep_by %in% oks) {
     stop("\"group_pep_by\" is not one of ", paste(oks, collapse = ", "))
   }
 
-  if (length(group_pep_by) != 1L) {
-    stop("Length of \"group_pep_by\" is not one.")
-  }
-
-  # ---
-  type_sd <- rlang::enexpr(type_sd)
-  type_sd <- if (length(type_sd) > 1L) "log2_R" else rlang::as_string(type_sd)
   oks <- eval(fmls[["type_sd"]])
-
   if (!type_sd %in% oks) {
     stop("The `type_sd` is not one of ", paste(oks, collapse = ", "))
   }
-
-  if (length(type_sd) != 1L) {
-    stop("The length of `type_sd` needs to be one.")
+  
+  oks <- eval(fmls[["pep_unique_by"]])
+  if (!pep_unique_by %in% oks) {
+    stop("\"pep_unique_by\" is not one of ", paste(oks, collapse = ", "))
   }
-
-  # ---
+  
+  oks <- eval(fmls[["mc_psm_by"]])
+  if (!mc_psm_by %in% oks) {
+    stop("\"mc_psm_by\" is not one of ", paste(oks, collapse = ", "))
+  }
+  
   dir.create(file.path(dat_dir, "PSM/cache"), 
              recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM/rprt_int/raw"), 
@@ -3661,40 +3646,7 @@ normPSM <- function(dat_dir = NULL,
   
   engine <- find_search_engine(dat_dir)
   
-  # ---
-  pep_unique_by <- rlang::enexpr(pep_unique_by)
-  oks <- eval(fmls[["pep_unique_by"]])
-  
-  pep_unique_by <- if (length(pep_unique_by) > 1L) {
-    oks[[1]]
-  }
-  else {
-    rlang::as_string(pep_unique_by)
-  }
-
-  if (!pep_unique_by %in% oks) {
-    stop("\"pep_unique_by\" is not one of ", paste(oks, collapse = ", "))
-  }
-  
-  if (length(pep_unique_by) != 1L) {
-    stop("Length of \"pep_unique_by\" is not 1L.")
-  }
-
-  # ---
-  mc_psm_by <- rlang::enexpr(mc_psm_by)
-  oks <- eval(fmls[["mc_psm_by"]])
-  mc_psm_by <- 
-    if (length(mc_psm_by) > 1L) oks[[1]] else rlang::as_string(mc_psm_by)
-
-  if (!mc_psm_by %in% oks) {
-    stop("\"mc_psm_by\" is not one of ", paste(oks, collapse = ", "))
-  }
-  
-  if (length(mc_psm_by) != 1L) {
-    stop("Length of \"mc_psm_by\" is not 1L.")
-  }
-
-  # ---
+  ## Argument with single, non-NULL option (with or without quotation mark)
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
   
@@ -4763,15 +4715,15 @@ calcTMTLFQPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   if (!exists("df_num", envir = environment(), inherits = FALSE)) {
     df_num <- switch(
       method_psm_pep, 
-      median = aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-      mean = aggrNums(mean)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-      weighted_mean = tmt_wtmean(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-      top_3_mean = TMT_top_n(df_num, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-      lfq_max = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 1, na.rm = TRUE), 
-      lfq_top_2_sum = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 2, na.rm = TRUE), 
-      lfq_top_3_sum = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 3, na.rm = TRUE), 
-      lfq_all = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), Inf, na.rm = TRUE), 
-      aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE))
+      median = aggrNums(median)(df, group_psm_by, na.rm = TRUE), 
+      mean = aggrNums(mean)(df, group_psm_by, na.rm = TRUE), 
+      weighted_mean = tmt_wtmean(df, group_psm_by, na.rm = TRUE), 
+      top_3_mean = TMT_top_n(df_num, group_psm_by, na.rm = TRUE), 
+      lfq_max = aggrTopn(sum)(df, group_psm_by, 1, na.rm = TRUE), 
+      lfq_top_2_sum = aggrTopn(sum)(df, group_psm_by, 2, na.rm = TRUE), 
+      lfq_top_3_sum = aggrTopn(sum)(df, group_psm_by, 3, na.rm = TRUE), 
+      lfq_all = aggrTopn(sum)(df, group_psm_by, Inf, na.rm = TRUE), 
+      aggrNums(median)(df, group_psm_by, na.rm = TRUE))
   }
   
   # `pep_unique_int` and `pep_razor_int` recalculated  
@@ -5055,20 +5007,16 @@ PSM2Pep <- function(method_psm_pep =
   tmt_plex     <- TMT_plex(label_scheme_full)
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  
-  # ---
   method_psm_pep <- if (tmt_plex) { "median" } else { "lfq_max" }
 
-  # ---
-  if (length(type_sd <- rlang::enexpr(type_sd)) > 1L) {
-    type_sd <- "log2_R"
-  }
-  else {
-    type_sd <- rlang::as_string(type_sd)
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+  type_sd <- rlang::enexpr(type_sd)
+  type_sd <- if (length(type_sd) > 1L) "log2_R" else as.character(type_sd)
+  oks <- eval(fmls[["type_sd"]])
+  if (!type_sd %in% oks) {
+    stop("The `type_sd` is not one of ", paste(oks, collapse = ", "))
   }
   
-  stopifnot(type_sd %in% c("log2_R", "N_log2_R", "Z_log2_R"), 
-            length(type_sd) == 1L)
   stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1L)))
   
   if (!dir.exists(temp_dir <- file.path(dat_dir, "Peptide/cache"))) {
@@ -7669,7 +7617,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                                     stringr::str_count(pep_seq, "[KR]") - 1,
                                     stringr::str_count(pep_seq, "[KR]"))) %>% 
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
-        calc_cover(., id = !!rlang::sym(group_pep_by)) 
+        calc_cover(., id = group_pep_by) 
       else . } %>% 
     dplyr::select(-which(names(.) %in% c("Length", "Missed cleavages", "Missed Clevages"))) 
   
@@ -8194,19 +8142,60 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (1.1) row filtration, column padding and psm file combinations
   # (make also `RAW_File`, I000 or I126 etc.)
   df <- purrr::map(filelist, pad_mf_channels, prob_co = prob_co, !!!filter_dots)
-  df <- suppressWarnings(dplyr::bind_rows(df))
+  ok_tmt <- tmt_plex && (sum(grepl("^I.*[0-9]{3}[NC]{0,1}", names(df))) > 1L)
   
-  stopifnot(c("Is Unique", # razor uniqueness
-              "Mapped Proteins", # literal and razor uniqueness
-              "Intensity", # precursor intensity
-              "Modified Peptide" # pep_seq_mod
-  ) %in% names(df))
+  # to use reference columns instead of df[["I126"]]...
+  if (FALSE) {
+    if (ok_tmt) {
+      refChannels_all <- local({
+        # Assume identical reference across LCMS_Injection at the same TMT_Set
+        label_scheme_one <- label_scheme_full |>
+          dplyr::distinct(TMT_Set, TMT_Channel, .keep_all = TRUE)
+        
+        ls_subs <- 
+          split(label_scheme_one, list(label_scheme_one$TMT_Set), drop = TRUE)
+        
+        refChannels_all <- vector("character", length(ls_subs))
+        for (i in seq_along(ls_subs)) {
+          ls_sub <- ls_subs[[i]]
+          oks <- ls_sub[["Reference"]]
+          refChannels_all[[i]] <- 
+            gsub("^TMT-", "", ls_sub[["TMT_Channel"]][oks], ignore.case = TRUE)
+        }
+        
+        # if (any(refChannels_all == "")) { refChannels_all <- NULL }
+        refChannels_all
+      })
+      
+      df <- mapply(function (dfx, ref_channels) {
+        cols_tmt <- find_int_cols(tmt_plex)
+        ref_nms <- paste0("I", ref_channels)
+        rms <- rowMeans(dfx[, ref_nms, drop = FALSE])
+        
+        df_sub <- sweep(dfx[, cols_tmt, drop = FALSE], 1, rms, "/") # |>
+        # dplyr::select(-dplyr::one_of(ref_nms))
+        
+        colnames(df_sub) <- gsub("^I", "R", names(df_sub))
+        
+        df_sub <- df_sub %>% 
+          dplyr::mutate_at(
+            vars(grep("^R[0-9]{3}", names(.))), 
+            function (x) replace(x, is.infinite(x) | is.nan(x), NA_real_))
+        
+        dplyr::bind_cols(dfx, df_sub)
+        
+      }, df, refChannels_all, SIMPLIFY = FALSE)
+    } else {
+      refChannels_all <- rep("", length(ls_subs))
+    }
+  }
   
   # (1.2.1) 
 
   # (1.2.2) add ratio columns
-  if (tmt_plex && (sum(grepl("^I.*[0-9]{3}[NC]{0,1}", names(df))) > 1L)) {
-    # use reference columns instead of df[["I126"]]
+  if (ok_tmt) {
+    df <- dplyr::bind_rows(df)
+    
     df <- sweep(df[, find_int_cols(tmt_plex), drop = FALSE], 
                 1, df[["I126"]], "/") %>% 
       `colnames<-`(gsub("I", "R", names(.))) %>% 
@@ -8217,6 +8206,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   } 
   else {
     # timsTOF
+    df <- dplyr::bind_rows(df)
+    
     if (!"I000" %in% (nms_df <- names(df))) {
       if ("Intensity" %in% nms_df)
         df$I000 <- df$Intensity
@@ -8230,6 +8221,12 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                     R000 = 
                       ifelse(is.infinite(R000) | is.nan(R000), NA_real_, R000)) 
   }
+  
+  stopifnot(c("Is Unique", # razor uniqueness
+              "Mapped Proteins", # literal and razor uniqueness
+              "Intensity", # precursor intensity
+              "Modified Peptide" # pep_seq_mod
+  ) %in% names(df))
   
   # (1.3) clean up prot_acc
   # (no craps removal by grepl("\\|.*\\|$", Protein); ending "|" not present)
@@ -8429,7 +8426,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                                     stringr::str_count(pep_seq, "[KR]") - 1,
                                     stringr::str_count(pep_seq, "[KR]"))) %>% 
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1L)) 
-      calc_cover(., id = !!rlang::sym(group_pep_by)) 
+      calc_cover(., id = group_pep_by)
       else . } 
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
@@ -9502,7 +9499,7 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     ###
     dplyr::mutate(pep_istryptic = as.logical(pep_istryptic), 
                   pep_miss = as.integer(pep_miss)) |>
-    calc_cover(id = !!rlang::sym(group_pep_by)) 
+    calc_cover(id = group_pep_by) 
   
   # (2.7) apply parsimony
   df <- dplyr::arrange(df, pep_rank, -prot_mass)

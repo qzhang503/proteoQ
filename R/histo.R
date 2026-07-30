@@ -6,14 +6,15 @@
 #' @import dplyr purrr ggplot2 RColorBrewer
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE, 
-                       complete_cases = FALSE, 
+plotHisto <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
+                       scale_log2r = TRUE, complete_cases = FALSE, 
                        cut_points, show_curves = FALSE, show_vline = FALSE, 
                        scale_y = TRUE, filepath = NULL, filename = NULL, 
                        theme = NULL, ...) 
 {
-  stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
-                   rlang::is_logical, logical(1L)))
+  stopifnot(vapply(
+    c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
+    rlang::is_logical, logical(1L)))
   
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata (at a data subset).")
@@ -40,7 +41,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     show_curves <- FALSE
   }
   
-  id   <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
   xmin     <- eval(dots$xmin, envir = rlang::caller_env()) 
@@ -87,8 +87,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
       filters_in_call(!!!filter_dots) %>% 
       arrangers_in_call(!!!arrange_dots)
     
-    if (!nrow(df))
+    if (!nrow(df)) {
       stop("Zero row of data.")
+    }
   }
   
   by <- (xmax - xmin) / 200
@@ -112,7 +113,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     # density profiles
     fit <- params %>%
       dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::mutate(
+        Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
       dplyr::arrange(Sample_ID) %>%
       split(.$Sample_ID) %>%
       lapply(sumdnorm, xmin, xmax, by = by)
@@ -166,18 +168,20 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     legend.box = NULL
   )
   
-  if (is.null(theme)) 
+  if (is.null(theme)) {
     theme <- proteoq_histo_theme
-  
+  }
+
   if (!scale_y) {
     df <- df %>% 
       filters_in_call(!!!filter_dots) %>% 
       arrangers_in_call(!!!arrange_dots)
   }
   
-  if (!nrow(df))
+  if (!nrow(df)) {
     stop("Zero row of data")
-  
+  }
+
   # cut_points = c(prot_icover = seq(.25, .75, .25))
   # cut_points = c(mean_lint = seq(4, 7, .5)) 
   # cut_points = c(prot_icover = Inf)
@@ -196,7 +200,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
     df_melt <- df %>% 
       dplyr::mutate(col_cut = !!rlang::sym(nm)) %>% 
       dplyr::select(col_cut, 
-                    grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
+                    grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), 
+                         names(.))) %>%
       dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
       dplyr::select(which(not_all_zero(.))) %>%
       dplyr::select(which(colSums(!is.na(.)) > 0)) 
@@ -215,7 +220,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
       stop("No ratio fields available after data filtration.")
     
     df_melt <- df_melt %>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+      dplyr::mutate(
+        Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
       dplyr::arrange(Sample_ID) %>%
       dplyr::filter(!is.na(value), !is.na(col_cut)) %>%
       dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
@@ -260,11 +266,14 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
       rlang::eval_tidy()
   )
   
-  readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
+  readr::write_tsv(
+    df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
   
-  if (!any(is.na(fit)))
-    readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
-  
+  if (!any(is.na(fit))) {
+    readr::write_tsv(
+      fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
+  }
+
   invisible(list(raw = df_melt, fitted = fit))
 }
 
@@ -276,28 +285,33 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r = TRUE,
 #'@rdname prnHist
 #'@import purrr
 #'@export
-pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+pepHist <- function (dat_dir = NULL, col_select = NULL, scale_log2r = TRUE, 
+                     complete_cases = FALSE, 
                      cut_points = c(mean_lint = NA), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Histogram")
+
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- 
-    tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NULL)
-  
-  if (is.null(id)) {
-    id <- "pep_seq_mod"
-  }
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NULL)
+  if (is.null(id)) id <- "pep_seq_mod"
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
 
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  
+
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+
   dots <- rlang::enexprs(...)
   
   if (!is.null(dots$impute_na)) {
@@ -305,17 +319,19 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
     rlang::warn("No NA imputation with histograms.")
   }
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
+  info_anal(id = id, 
+            col_select = col_select, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = FALSE,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "Histogram")(
               cut_points = cut_points, 
               show_curves = show_curves, 
@@ -463,46 +479,53 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #' @return Histograms of \code{log2FC}; raw histogram data:
 #'   \code{[...]_raw.txt}; fitted data for curves: \code{[...]_fitted.txt}
 #' @export
-prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+prnHist <- function (dat_dir = NULL, col_select = NULL, scale_log2r = TRUE, 
+                     complete_cases = FALSE, 
                      cut_points = c(mean_lint = NA), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Histogram")
+  
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- 
-    tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NULL)
-  
-  if (is.null(id)) {
-    id <- "gene"
-  }
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NULL)
+  if (is.null(id)) id <- "gene"
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
 
   dots <- rlang::enexprs(...)
   
   if (!is.null(dots$impute_na)) {
     dots$impute_na <- NULL
-    warning("No NA imputation with histograms.", call. = FALSE)
+    warning("No NA imputation with histograms.")
   }
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
+  info_anal(id = id, 
+            col_select = col_select, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = FALSE,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "Histogram")(
               cut_points = cut_points, 
               show_curves = show_curves,

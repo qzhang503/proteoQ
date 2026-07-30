@@ -6,18 +6,24 @@
 \usage{
 find_trend_df2(
   df2 = NULL,
+  filepath = NULL,
   n_clust = NULL,
+  pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
+  ext = "txt",
   scale_log2r = TRUE,
-  impute_na = FALSE,
-  filepath = NULL
+  impute_na = FALSE
 )
 }
 \arguments{
 \item{df2}{Filename(s) of trend inputs.}
 
+\item{filepath}{Input and output filepath.}
+
 \item{n_clust}{The number of clusters.}
 
-\item{filepath}{Input and output filepath.}
+\item{pat}{The pattern of secondary files (df2).}
+
+\item{ext}{The filename extension.}
 }
 \description{
 Finds the input file for Trend plots.

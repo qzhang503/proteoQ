@@ -5,14 +5,17 @@
 \title{Trend analysis.}
 \usage{
 analTrend(
-  df,
+  df = NULL,
   id = "gene",
+  dat_dir = NULL,
   col_group = "Group",
   col_order = "Order",
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL,
   label_scheme_sub = NULL,
+  cluster_data = TRUE,
   choice = "cmeans",
+  group_data_by = "ratio",
   n_clust = c(4, 6, 8, 12, 16),
   impute_group_na = TRUE,
   scale_log2r = TRUE,
@@ -39,6 +42,8 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
+\item{dat_dir}{The current working directory.}
+
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
 used for sample grouping in the indicated analysis. At the NULL default, the
@@ -51,12 +56,12 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{col_subcellular}{Only applied to subcellular data analysis. Character
-string to a column key in \code{expt_smry.xlsx} indicating subcellular
-fractions. No calculation of subcellular location score at the \code{NULL}
-default.
+\item{col_fraction}{Only applied to subcellular data analysis. Character
+  string to a column key in \code{expt_smry.xlsx} indicating subcellular
+  fractions. No calculation of subcellular location score at the \code{NULL}
+  default.
 
-Suggest the corresponding column key \code{Subcellular} in metadata.}
+  Suggest the corresponding column key \code{Subcellular} in metadata.}
 
 \item{col_subtype}{Temporarily applied only to subcellular data analysis.
 Character string to a column key in \code{expt_smry.xlsx} indicating sample
@@ -66,8 +71,17 @@ subcellular fraction contain multiple subtypes of control, treated etc.}
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
 
+\item{cluster_data}{Logical; to cluster data or not. The default is
+\code{TRUE}. Set \code{cluster_data = FALSE} To return only aggregated
+log2Ratio and intensity data without further clustering.}
+
 \item{choice}{Character string; the clustering method in \code{c("cmeans",
 "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".}
+
+\item{group_data_by}{The type of values (\code{"ratio"} or
+\code{"intensity"})for clustering. \code{log2Ratio} are used at
+\code{group_data_by = "ratio"} and apex-normalized intensity at
+\code{group_data_by = "intensity"}.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the gap method
@@ -103,13 +117,13 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-against data in a primary file linked to \code{df}. See also
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 \code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
+for the format of \code{arrange_} statements. \cr \cr Additional arguments
+for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
 \link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
 \code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With

@@ -6,6 +6,7 @@
 \title{Histogram visualization}
 \usage{
 pepHist(
+  dat_dir = NULL,
   col_select = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -21,6 +22,7 @@ pepHist(
 )
 
 prnHist(
+  dat_dir = NULL,
   col_select = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -36,6 +38,9 @@ prnHist(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
 \code{expt_smry.xlsx} will be used. In the case of no samples being

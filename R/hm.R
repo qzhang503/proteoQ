@@ -54,6 +54,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_col_levels = NULL, 
                    annot_rows = annot_rows, annot_row_levels = NULL, 
+                   add_prot_id = FALSE, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
@@ -118,13 +119,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   dir.create(file.path(filepath, "Subtrees", fn_prefix), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_select <- rlang::enexpr(col_select)
-  col_order  <- rlang::enexpr(col_order)
-  col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
-  
-  dots <- rlang::enexprs(...)
-  
+  dots         <- rlang::enexprs(...)
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
   filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
   arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
@@ -256,6 +251,12 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       "pep_end" %in% names(df) && 
       isTRUE(add_pep_range)) {
     pep_ids <- paste0(rownames(df), " (", df$pep_start, ":", df$pep_end, ")")
+    
+    if (add_prot_id) {
+      # introduce group_pep_by later...
+      pep_ids <- paste0(df[["gene"]], ": ", pep_ids)
+    }
+    
     rownames(df) <- df[[id]] <- pep_ids
   } else {
     pep_ids <- df[[id]]
@@ -322,10 +323,13 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     colnames(annotation_col) <- annot_colnames
   }
 
-  annotation_row <- if (is.null(annot_rows)) {
-    NA
+  if (is.null(annot_rows)) {
+    annotation_row <- NA
   } else {
-    dplyr::select(df, annot_rows)
+    annotation_row <- dplyr::select(df, annot_rows)
+    
+    annotation_row <- annotation_row |> 
+      dplyr::mutate(dplyr::across(dplyr::where(is.logical), as.integer))
   }
 
   annotation_colors <- if (is.null(dots$annotation_colors)) {
@@ -811,7 +815,8 @@ make_dotplot_hm <- function (df, df_lgr, df_int,
 #'
 #'@import purrr
 #'@export
-pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
+pepHM <- function (dat_dir = NULL, 
+                   col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, 
                    impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
                    group_renorm_by = NULL, group_fct_int = NULL, 
@@ -819,6 +824,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_col_levels = NULL, 
                    annot_rows = NULL, annot_row_levels = NULL, 
+                   add_prot_id = FALSE, 
                    xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
@@ -829,66 +835,83 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    clustering_method = NULL, ...) 
 {
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
-
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Heatmap")
+  
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+
+  ## Argument with single option and NULL default (quotation marks or not)
+  # force(col_select); force(col_order); force(col_benchmark); force(df);
+  # force(filepath); force(filename);
+  # force(hc_method_rows); force(hc_method_cols)
+  
+  col_select    <- rlang::enexpr(col_select)
+  col_order     <- rlang::enexpr(col_order)
   col_benchmark <- rlang::enexpr(col_benchmark)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
+  df            <- rlang::enexpr(df)
+  filepath      <- rlang::enexpr(filepath)
+  filename      <- rlang::enexpr(filename)
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_benchmark)) col_benchmark <- as.character(col_benchmark)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
+  # Never NULL (since the default is not NULL)
   hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
   hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order, 
-            col_benchmark = !!col_benchmark,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order = col_order, 
+            col_benchmark = col_benchmark,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
-            anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
-                                   dot_plot = dot_plot, 
-                                   annot_cols = annot_cols, 
-                                   annot_colnames = annot_colnames, 
-                                   annot_col_levels = annot_col_levels, 
-                                   annot_rows = annot_rows, 
-                                   annot_row_levels = annot_row_levels, 
-                                   p_dist_rows = p_dist_rows, 
-                                   p_dist_cols = p_dist_cols, 
-                                   hc_method_rows = hc_method_rows, 
-                                   hc_method_cols = hc_method_cols, 
-                                   type_int = "N_I", 
-                                   row_entries_must = row_entries_must, 
-                                   group_renorm_by = group_renorm_by, 
-                                   group_fct_int = group_fct_int, 
-
-                                   x = x, 
-                                   p = p, 
-                                   method = method, 
-                                   diag = diag, 
-                                   upper = upper, 
-                                   annotation_col = annotation_col, 
-                                   annotation_row = annotation_row, 
-                                   clustering_method = clustering_method, 
-                                   rm_allna = rm_allna, 
-                                   ...)
+            df = df, df2 = NULL, filepath = filepath, filename = filename, 
+            anal_type = "Heatmap")(
+              xmin = xmin, xmax = xmax, xmargin = xmargin, 
+              dot_plot = dot_plot, 
+              annot_cols = annot_cols, 
+              annot_colnames = annot_colnames, 
+              annot_col_levels = annot_col_levels, 
+              annot_rows = annot_rows, 
+              annot_row_levels = annot_row_levels, 
+              add_prot_id = add_prot_id, 
+              p_dist_rows = p_dist_rows, 
+              p_dist_cols = p_dist_cols, 
+              hc_method_rows = hc_method_rows, 
+              hc_method_cols = hc_method_cols, 
+              type_int = "N_I", 
+              row_entries_must = row_entries_must, 
+              group_renorm_by = group_renorm_by, 
+              group_fct_int = group_fct_int, 
+              x = x, 
+              p = p, 
+              method = method, 
+              diag = diag, 
+              upper = upper, 
+              annotation_col = annotation_col, 
+              annotation_row = annotation_row, 
+              clustering_method = clustering_method, 
+              rm_allna = rm_allna, 
+              ...)
 }
-
 
 
 #'Visualization of heat maps
@@ -960,6 +983,8 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'  \code{annot_cols = c("Color", "Shape")}, the corresponding levels are
 #'  \code{annot_col_levels = list{Color = c("A", "B"), Shape = c("X", "Y")}}.
 #'@param annot_row_levels Not yet used. The levels of annot_rows.
+#'@param add_prot_id Logical; only for \link{pepHM}. Append protein identifiers
+#'  to peptide sequences.
 #'@param clustering_method Dummy argument to avoid incurring the corresponding
 #'  argument in \link[pheatmap]{pheatmap}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -1051,7 +1076,8 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
+prnHM <- function (dat_dir = NULL, 
+                   col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, 
                    impute_na = FALSE, rm_allna = TRUE, row_entries_must = NULL, 
                    group_renorm_by = NULL, group_fct_int = NULL, 
@@ -1059,6 +1085,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    annot_cols = NULL, annot_colnames = NULL, 
                    annot_col_levels = NULL, 
                    annot_rows = NULL, annot_row_levels = NULL, 
+                   add_prot_id = FALSE, 
                    xmin = -1, xmax = 1, xmargin = 0.1, dot_plot = FALSE, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
                    p_dist_rows = 2, p_dist_cols = 2, 
@@ -1076,65 +1103,86 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
   # prnHM(xmin = -1, xmax = 1, xmargin = .1, x = df)
 
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
-
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Heatmap")  
+  
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
+
+  # force(col_select); force(col_order); force(col_benchmark); force(df);
+  # force(filepath); force(filename);
+  # force(hc_method_rows); force(hc_method_cols)
+  
+  ## Argument with single option and NULL default (quotation marks or not)
+  col_select    <- rlang::enexpr(col_select)
+  col_order     <- rlang::enexpr(col_order)
   col_benchmark <- rlang::enexpr(col_benchmark)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
+  df            <- rlang::enexpr(df)
+  filepath      <- rlang::enexpr(filepath)
+  filename      <- rlang::enexpr(filename)
+  
+  # NULL or symbol -> length 0 or 1
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_benchmark)) col_benchmark <- as.character(col_benchmark)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
+  
+  ## Argument with single, non-NULL option (with or without quotation mark)
+  # Never NULL (since the default is not NULL)
   hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
   hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id, 
-            col_select = !!col_select, 
-            col_order = !!col_order, 
-            col_benchmark = !!col_benchmark,
+  info_anal(id = id, 
+            col_select = col_select, 
+            col_order = col_order, 
+            col_benchmark = col_benchmark,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
-            anal_type = "Heatmap")(xmin = xmin, 
-                                   xmax = xmax, 
-                                   xmargin = xmargin, 
-                                   dot_plot = dot_plot, 
-                                   annot_cols = annot_cols, 
-                                   annot_colnames = annot_colnames, 
-                                   annot_col_levels = annot_col_levels, 
-                                   annot_rows = annot_rows, 
-                                   annot_row_levels = annot_row_levels, 
-                                   p_dist_rows = p_dist_rows, 
-                                   p_dist_cols = p_dist_cols, 
-                                   hc_method_rows = hc_method_rows, 
-                                   hc_method_cols = hc_method_cols, 
-                                   type_int = "N_I", 
-                                   row_entries_must = row_entries_must,
-                                   group_renorm_by = group_renorm_by, 
-                                   group_fct_int = group_fct_int, 
-                                   x = x, 
-                                   p = p, 
-                                   method = method, 
-                                   diag = diag, 
-                                   upper = upper, 
-                                   annotation_col = annotation_col, 
-                                   annotation_row = annotation_row, 
-                                   clustering_method = clustering_method, 
-                                   rm_allna = rm_allna, 
-                                   ...)
+            df = df, df2 = NULL, 
+            filepath = filepath, 
+            filename = filename, 
+            anal_type = "Heatmap")(
+              xmin = xmin, 
+              xmax = xmax, 
+              xmargin = xmargin, 
+              dot_plot = dot_plot, 
+              annot_cols = annot_cols, 
+              annot_colnames = annot_colnames, 
+              annot_col_levels = annot_col_levels, 
+              annot_rows = annot_rows, 
+              annot_row_levels = annot_row_levels, 
+              add_prot_id = add_prot_id, 
+              p_dist_rows = p_dist_rows, 
+              p_dist_cols = p_dist_cols, 
+              hc_method_rows = hc_method_rows, 
+              hc_method_cols = hc_method_cols, 
+              type_int = "N_I", 
+              row_entries_must = row_entries_must,
+              group_renorm_by = group_renorm_by, 
+              group_fct_int = group_fct_int, 
+              x = x, 
+              p = p, 
+              method = method, 
+              diag = diag, 
+              upper = upper, 
+              annotation_col = annotation_col, 
+              annotation_row = annotation_row, 
+              clustering_method = clustering_method, 
+              rm_allna = rm_allna, 
+              ...)
 }
 
 

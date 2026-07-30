@@ -14,17 +14,21 @@
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #' @import dplyr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, 
-                   sub_grp = NULL, type = "ratio", anal_type = NULL, 
-                   rm_allna = FALSE) 
+prepDM <- function(df = NULL, dat_dir = NULL, id = "pep_seq", 
+                   scale_log2r = TRUE, sub_grp = NULL, type = "ratio", 
+                   anal_type = NULL, rm_allna = FALSE) 
 {
-  dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)){
+    dat_dir <- get_gl_dat_dir()
+  }
+  
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   if (!nrow(df)) {
     stop("Zero row of data after subsetting.")
   }
   
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (anal_type %in% c("ESGAGE", "GSVA")) {
@@ -338,6 +342,7 @@ not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
 aggrNums <- function(f) 
 {
   function (df, id, ...) {
+    force(id)
     id <- rlang::as_string(rlang::enexpr(id))
 
     df %>%
@@ -359,6 +364,7 @@ aggrNums <- function(f)
 aggrTopn <- function(f) 
 {
   function (df, id, n, ...) {
+    force(id)
     id <- rlang::as_string(rlang::enexpr(id))
 
     df %>%
@@ -444,6 +450,7 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
   
   range_int <- c(.05, .95)
   
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
@@ -528,6 +535,7 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 TMT_top_n <- function (df, id, ...) 
 {
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
 
   df %>%
@@ -832,6 +840,7 @@ setHMlims <- function (x, xmin, xmax)
 #' @examples \donttest{ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)}
 ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) 
 {
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   
   nm_ctrl <- rlang::as_string(rlang::ensym(nm_ctrl))
@@ -912,6 +921,7 @@ imputeNA <- function (id, overwrite = FALSE, ...)
          call. = FALSE)
   }
   
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
@@ -1324,7 +1334,7 @@ parse_acc <- function(df)
 #' @inheritParams normPSM
 #' @seealso \code{\link{read_fasta}} for the definition of fasta_name(s).
 #' @return A lookup table, \code{acc_lookup}.
-parse_fasta <- function (df, fasta, entrez, warns = TRUE) 
+parse_fasta <- function (df = NULL, fasta = NULL, entrez = NULL, warns = TRUE) 
 {
   my_lookup <- c(
     "Homo sapiens" = "human",
@@ -1767,7 +1777,7 @@ na_acc_type_to_other <- function(df)
 #' @inheritParams normPSM
 #' @import dplyr purrr stringr 
 #' @importFrom magrittr %>% %$% %T>% 
-annotPrn <- function (df, fasta, entrez) 
+annotPrn <- function (df = NULL, fasta = NULL, entrez = NULL) 
 {
   # currently with MSGF+ outputs at UniProt DB
   uniboth <- grepl("^..\\|[[:alnum:]]+\\|[^_]+_[A-Z]{1,10}$", df[["prot_acc"]])
@@ -2404,6 +2414,7 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
   
   fasta_db <- fasta_db %>% .[!duplicated(names(.))]
   
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (id == "gene") {
@@ -2503,6 +2514,7 @@ calc_cover <- function(df, id)
     df$pep_end <- as.numeric(as.character(df$pep_end))
   }
 
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (id == "gene") {
@@ -2893,45 +2905,31 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
-  
-  col_select <- if (is.null(col_select)) 
-    rlang::expr(Select)
-  else 
-    rlang::sym(col_select)
+  if (!length(col_select)) col_select <- "Select"
+  if (!length(col_order)) col_order <- "Order"
 
-  col_order <- if (is.null(col_order)) 
-    rlang::expr(Order)
-  else 
-    rlang::sym(col_order)
-
-  if (col_select == rlang::expr(Sample_ID)) 
-    stop(err_msg1, call. = FALSE)
-  
-  if (col_order == rlang::expr(Sample_ID)) 
-    stop(err_msg1, call. = FALSE)
+  if (col_select == "Sample_ID") stop(err_msg1)
+  if (col_order == "Sample_ID") stop(err_msg1)
   
   label_scheme_full <- load_ls_group(dat_dir, label_scheme_full)
   label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   if (is.null(label_scheme_full[[col_select]])) 
-    stop("Column \'", rlang::as_string(col_select), "\' does not exist.", 
-         call. = FALSE)
+    stop("Column \'", col_select, "\' does not exist.")
   else if (sum(!is.na(label_scheme_full[[col_select]])) == 0) 
-    stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
-         call. = FALSE)
+    stop("No samples were selected under column \'", col_select, "\'.")
   
   if (is.null(label_scheme_full[[col_order]])) {
     warning("Column \'", rlang::as_string(col_order), "\' does not exist.
-			Samples will be arranged by the alphebatic order.", 
-            call. = FALSE)
+			Samples will be arranged by the alphebatic order.")
   } 
   else if (sum(!is.na(label_scheme_full[[col_order]])) == 0) {
-    # warning("No orders under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
+    # warning("No orders under column \'", rlang::as_string(col_order), "\'.")
   }
   
   if (is_psm) {
     label_scheme_sub <- local({
-      set_idx <- as.integer(gsub("^.*TMTset(\\d+)_.*", "\\1", filepath))
+      set_idx  <- as.integer(gsub("^.*TMTset(\\d+)_.*", "\\1", filepath))
       injn_idx <- as.integer(gsub("^.*TMTset\\d+_LCMSinj(\\d+)_sd\\.png$", "\\1", filepath))
 
       label_scheme_full %>% 
@@ -2954,6 +2952,7 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
     label_scheme_sub$new_id <- label_scheme_sub$Sample_ID
   }
 
+  force(id)
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   

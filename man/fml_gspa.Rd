@@ -129,6 +129,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
 
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 

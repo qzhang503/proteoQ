@@ -72,6 +72,66 @@ proc_obo <- function(db_path, fn_obo,
   #  | Vesicle               | GO:0031982 | vesicle               |
   #  | Peroxisome            | GO:0005777 | peroxisome            |
   
+  # | Broad Compartment | GO ID | GO Term | HGNC Gene Symbols | Notes / Details |
+  # | --- | --- | --- | --- | --- |
+  # | Nucleus | GO:0005634 | nucleus | LMNB1, LMNA, TBP, TOP1 | LMNB1/LMNA mark the nuclear envelope; TBP/TOP1 are ideal for soluble nuclear fractions. |
+  # | Chromatin | GO:0000785 | chromatin | H3C1, H4C1, CBX5 | H3C1 (Histone H3) and H4C1 (Histone H4) are the standard structural markers; CBX5 is HP1 alpha. |
+  # | Cytoplasm | GO:0005737 | cytoplasm | GAPDH, ACTB, TUBB | Classic, highly abundant whole-cytoplasm housekeepers including both cytosol and organelles. |
+  # | Cytosol | GO:0005829 | cytosol | LDHA, MAP2K1, MAP2K2 | LDHA (Lactate dehydrogenase A) is free of organellar anchoring, making it an excellent cytosol-only marker. |
+  # | Plasma membrane | GO:0005886 | plasma membrane | ATP1A1, CDH1, CAV1 | ATP1A1 (Na+/K+-ATPase alpha 1) and CDH1 (E-cadherin) represent integral membrane proteins. |
+  # | Mitochondrion | GO:0005739 | mitochondrion | VDAC1, COX4I1, HSPD1 | VDAC1 (Outer membrane), COX4I1 (Inner membrane), and HSPD1 (Hsp60, Matrix). |
+  # | Endoplasmic reticulum | GO:0005783 | endoplasmic reticulum | CANX, P4HB, HSPA5 | CANX (Calnexin) is a membrane anchor; P4HB (PDI) and HSPA5 (BiP) mark the lumen. |
+  # | Golgi apparatus | GO:0005794 | Golgi apparatus | GOLGA2, GOLGA1, GOLT1B | GOLGA2 (GM130) is the most trusted marker for the cis-Golgi matrix. |
+  # | Lysosome | GO:0005764 | lysosome | LAMP1, LAMP2, CTSD | LAMP1 and LAMP2 are transmembrane markers; CTSD (Cathepsin D) is a soluble lumenal hydrolase. |
+  # | Endosome | GO:0005768 | endosome | EEA1, RAB5A, RAB7A | EEA1 and RAB5A mark early endosomes; RAB7A tracks late endosomes. |
+  # | Ribosome | GO:0005840 | ribosome | RPS6, RPL7A, RPL10 | RPS6 belongs to the small 40S subunit; RPL7A/RPL10 belong to the large 60S subunit. |
+  # | Proteasome | GO:0000502 | proteasome complex | PSMD4, PSMA1, PSMB5 | PSMD4 acts in the 19S regulatory cap; PSMA1/PSMB5 form part of the 20S core. |
+  # | Cytoskeleton | GO:0005856 | cytoskeleton | ACTB, TUBA1A, VIM | Microfilaments (ACTB), microtubules (TUBA1A), and intermediate filaments (VIM). |
+  # | Centrosome | GO:0005813 | centrosome | TUBG1, PCNT, CEP250 | TUBG1 (Gamma-tubulin 1) and PCNT (Pericentrin) mark the pericentriolar material. |
+  # | Extracellular region | GO:0005576 | extracellular region | FN1, COL1A1, ALB | Matrix structural components (FN1, COL1A1) or highly abundant secreted proteins (ALB). |
+  # | Vesicle | GO:0031982 | vesicle | CLTC, CAV1, FLOT1 | CLTC (Clathrin heavy chain) handles endocytic vesicles; CD63/PDCD6IP(Alix) can be used if isolating exosomes. |
+  # | Peroxisome | GO:0005777 | peroxisome | ABCD3, CAT, PEX14 | ABCD3 (PMP70) tracks the peroxisomal membrane; CAT (Catalase) tracks the matrix. |
+  
+  # Subcellular marker gene lists for Mouse (Mus musculus)
+  mouse_markers <- list(
+    Nucleus = c("Lmnb1", "Lmna", "Tbp", "Top1"),
+    Chromatin = c("H3c1", "H4c1", "Cbx5"),
+    Cytoplasm = c("Gapdh", "Actb", "Tubb"),
+    Cytosol = c("Ldha", "Map2k1", "Map2k2"),
+    Plasma_membrane = c("Atp1a1", "Cdh1", "Cav1"),
+    Mitochondrion = c("Vdac1", "Cox4i1", "Hspd1"),
+    Endoplasmic_reticulum = c("Canx", "P4hb", "Hspa5"),
+    Golgi_apparatus = c("Golga2", "Golga1", "Golt1b"),
+    Lysosome = c("Lamp1", "Lamp2", "Ctsd"),
+    Endosome = c("Eea1", "Rab5a", "Rab7a"),
+    Ribosome = c("Rps6", "Rpl7a", "Rpl10"),
+    Proteasome = c("Psmd4", "Psma1", "Psmb5"),
+    Cytoskeleton = c("Actb", "Tuba1a", "Vim"),
+    Centrosome = c("Tubg1", "Pcnt", "Cep250"),
+    Extracellular_region = c("Fn1", "Col1a1", "Alb"),
+    Vesicle = c("Cltc", "Cav1", "Flot1"),
+    Peroxisome = c("Abcd3", "Cat", "Pex14")
+  )
+  
+  # Optional: To map them back to their GO IDs if needed
+  mouse_marker_metadata <- data.frame(
+    compartment = names(mouse_markers),
+    go_id = c(
+      "GO:0005634", "GO:0000785", "GO:0005737", "GO:0005829", "GO:0005886", 
+      "GO:0005739", "GO:0005783", "GO:0005794", "GO:0005764", "GO:0005768", 
+      "GO:0005840", "GO:0000502", "GO:0005856", "GO:0005813", "GO:0005576", 
+      "GO:0031982", "GO:0005777"
+    ),
+    go_term = c(
+      "nucleus", "chromatin", "cytoplasm", "cytosol", "plasma membrane", 
+      "mitochondrion", "endoplasmic reticulum", "Golgi apparatus", "lysosome", 
+      "endosome", "ribosome", "proteasome complex", "cytoskeleton", "centrosome", 
+      "extracellular region", "vesicle", "peroxisome"
+    ),
+    stringsAsFactors = FALSE
+  )
+  
+  
   df <- tibble::tibble(go_id = go_ids, go_name = go_nms, go_space = go_type) |>
     dplyr::filter(go_space %in% type) |>
     dplyr::select(-go_space) 
@@ -273,7 +333,7 @@ proc_remap <- function(db_path = "~/proteoQ/dbs/remap",
 }
 
 
-#' Helper to map `SYMBOL` to `ENTREZID` 
+#' Helper to map SYMBOL to ENTREZID
 #' 
 #' @param keys Identifier such as gene names.
 #' @param from the type of \code{keys}
@@ -288,7 +348,7 @@ annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL",
   pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
   
   if (!requireNamespace(pkg_nm, quietly = TRUE)) {
-    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.")
+    stop("Run BiocManager::install(\"", pkg_nm, "\") first.")
   }
 
   x <- tryCatch(
@@ -309,7 +369,28 @@ annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL",
 }
 
 
-#' Helper to get a complete list of `ENTREZID` from `egUNIPROT`
+#' Convert human genes to mouse.
+#' 
+#' @param genes A list of human genes.
+#' @param species A target species.
+#' @param human Logical; are the input genes belong to human or not.
+convert_genes_human_to_mouse <- function (
+    genes, species = "Mus musculus", human = TRUE)
+{
+  pkg_nm <- "babelgene"
+  
+  if (!requireNamespace(pkg_nm, quietly = TRUE)) {
+    stop("Run install.packages(\"", pkg_nm, "\") first.")
+  }
+  
+  # gns_hu <- c("TP53", "APOE", "BRCA1", "GAPDH")
+  
+  ans <- babelgene::orthologs(
+    genes = genes, species = species, human = human)
+}
+
+
+#' Helper to get a complete list of `ENTREZID` from egUNIPROT
 #' 
 #' @inheritParams prepGO
 #' @inheritParams annot_from_to
@@ -536,12 +617,11 @@ proc_gmt <- function(species = "human", abbr_species = "hu", ortho_mart,
 #'Download and prepare gene ontology
 #'
 #'\code{prepGO} downloads and prepares data bases of
-#'\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-#'ontology} (GO) for enrichment analysis by gene sets.
+#' \href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#' ontology} (GO) for enrichment analysis by gene sets.
 #'
-#'@import dplyr purrr fs readr org.Hs.eg.db org.Mm.eg.db
-#'  org.Rn.eg.db
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@import dplyr purrr fs readr org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@param overwrite Logical; if TRUE, overwrite the downloaded database(s). The
 #'  default is FALSE.
 #'@param species Character string; the name of a species for the
@@ -556,8 +636,8 @@ proc_gmt <- function(species = "human", abbr_species = "hu", ortho_mart,
 #'  The value of \code{abbr_species} will be determined automatically if the
 #'  species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
 #'  example, users need to provide \code{abbr_species = Ce} for fetching the
-#'  \code{org.Ce.eg.db} package in the name space of proteoQ. 
-#'  
+#'  \code{org.Ce.eg.db} package in the name space of proteoQ.
+#'
 #'  For analysis against
 #'  \href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'  ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
@@ -594,10 +674,10 @@ proc_gmt <- function(species = "human", abbr_species = "hu", ortho_mart,
 #' # outputs under `db_path`
 #' prepGO(human)
 #' prepGO(mouse)
-#' 
+#'
 #' # head(readRDS(file.path("~/proteoQ/dbs/go/go_hs.rds")))
 #' # head(readRDS(file.path("~/proteoQ/dbs/go/go_mm.rds")))
-#' 
+#'
 #' # enrichment analysis with custom `GO`
 #' prnGSPA(
 #'   gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
@@ -622,11 +702,11 @@ proc_gmt <- function(species = "human", abbr_species = "hu", ortho_mart,
 #'   # species = worm,
 #'   abbr_species = Ce,
 #'   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
-#'   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo", 
+#'   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
 #'   filename = go_ce.rds,
 #' )
 #' }
-#' 
+#'
 #'@export
 prepGO <- function(species = "human", abbr_species = NULL, 
                    gaf_url = NULL, obo_url = NULL, 
@@ -920,12 +1000,11 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 #'   "REFSEQ", "ACCNUM").
 #' @inheritParams prepMSig
 #' @inheritParams annot_from_to
-#' @import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db
-#'   org.Rn.eg.db
+#' @import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #' @export
-map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
-                          filename = NULL, db_path = "~/proteoQ/dbs/entrez", 
-                          overwrite = FALSE) 
+map_to_entrez <- function(
+    species = "human", abbr_species = NULL, from = "UNIPROT", filename = NULL, 
+    db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) 
 {
   old_opts <- options()
   options(warn = 1)
@@ -1009,9 +1088,9 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 }
 
 
-#'Map UniProt accessions to Entrez IDs
+#'Map \code{UniProt} accessions to \code{Entrez} IDs
 #'
-#'\code{Uni2Entrez} prepares lookup tables between UniProt accessions and
+#'\code{Uni2Entrez} prepares look-up tables between UniProt accessions and
 #'Entrez IDs for uses with \link{normPSM} and downstream gene-set analysis such
 #'as \link{prnGSPA}. The utility is optional for \code{human}, \code{mouse} and
 #'\code{rat} data. It is \strong{required} for other species with \link{prnGSPA}
@@ -1038,7 +1117,7 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 }
 
 
-#'Map RefSeq accessions to Entrez IDs and gene names
+#'Map \code{RefSeq} accessions to \code{Entrez} IDs and gene names
 #'
 #'\code{Ref2Entrez} prepares lookup tables between RefSeq accessions and
 #'Entrez IDs and gene names for uses with \link{normPSM} and downstream gene-set
@@ -1064,7 +1143,7 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 }
 
 
-#' Map uniprot or refseq to entrez (not currently used)
+#' Map \code{Uniprot} or \code{Refseq} to \code{entrez} (not currently used).
 #'
 #' @param os_name An organism name by UniProt.
 #' @inheritParams Uni2Entrez

@@ -4,17 +4,30 @@
 \alias{classify_trends}
 \title{Classify trends.}
 \usage{
-classify_trends(df_med = NULL, col_subcellular, col_subtype)
+classify_trends(
+  df_med = NULL,
+  tie_method = "none",
+  col_y = "score",
+  col_cluster = "cluster",
+  col_fraction = NULL,
+  col_subtype = NULL
+)
 }
 \arguments{
-\item{df_med}{A median description of trend scores.}
+\item{df_med}{A median description of localization scores by modules.}
 
-\item{col_subcellular}{Only applied to subcellular data analysis. Character
-string to a column key in \code{expt_smry.xlsx} indicating subcellular
-fractions. No calculation of subcellular location score at the \code{NULL}
-default.
+\item{tie_method}{A method handling ties in localization scores.}
 
-Suggest the corresponding column key \code{Subcellular} in metadata.}
+\item{col_y}{The column name of Y values for summarization.}
+
+\item{col_cluster}{The column key of cluster nodes.}
+
+\item{col_fraction}{Only applied to subcellular data analysis. Character
+  string to a column key in \code{expt_smry.xlsx} indicating subcellular
+  fractions. No calculation of subcellular location score at the \code{NULL}
+  default.
+
+  Suggest the corresponding column key \code{Subcellular} in metadata.}
 
 \item{col_subtype}{Temporarily applied only to subcellular data analysis.
 Character string to a column key in \code{expt_smry.xlsx} indicating sample

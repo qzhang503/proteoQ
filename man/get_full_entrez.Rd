@@ -2,7 +2,7 @@
 % Please edit documentation in R/go.R
 \name{get_full_entrez}
 \alias{get_full_entrez}
-\title{Helper to get a complete list of `ENTREZID` from `egUNIPROT`}
+\title{Helper to get a complete list of `ENTREZID` from egUNIPROT}
 \usage{
 get_full_entrez(species, from = "egUNIPROT")
 }
@@ -17,5 +17,5 @@ species; instead, users will provide values under arguments
 \item{from}{the type of \code{keys}}
 }
 \description{
-Helper to get a complete list of `ENTREZID` from `egUNIPROT`
+Helper to get a complete list of `ENTREZID` from egUNIPROT
 }

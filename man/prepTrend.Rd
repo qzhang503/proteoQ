@@ -5,11 +5,12 @@
 \title{Prepare data for trend analysis.}
 \usage{
 prepTrend(
+  dat_dir = NULL,
   df = NULL,
   id = NULL,
   col_group = NULL,
   col_order = NULL,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL,
   label_scheme_sub = NULL,
   impute_group_na = TRUE,
@@ -24,6 +25,8 @@ prepTrend(
 )
 }
 \arguments{
+\item{dat_dir}{The current working directory.}
+
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
 \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -49,12 +52,12 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{col_subcellular}{Only applied to subcellular data analysis. Character
-string to a column key in \code{expt_smry.xlsx} indicating subcellular
-fractions. No calculation of subcellular location score at the \code{NULL}
-default.
+\item{col_fraction}{Only applied to subcellular data analysis. Character
+  string to a column key in \code{expt_smry.xlsx} indicating subcellular
+  fractions. No calculation of subcellular location score at the \code{NULL}
+  default.
 
-Suggest the corresponding column key \code{Subcellular} in metadata.}
+  Suggest the corresponding column key \code{Subcellular} in metadata.}
 
 \item{col_subtype}{Temporarily applied only to subcellular data analysis.
 Character string to a column key in \code{expt_smry.xlsx} indicating sample
@@ -90,13 +93,13 @@ outlier removals.}
 
 \item{int_to_long}{Logical; if TRUE, pivot intensities to a long form.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-against data in a primary file linked to \code{df}. See also
+\item{...}{\code{filter_}: Variable argument statements for the row
+filtration against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 \code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
+for the format of \code{arrange_} statements. \cr \cr Additional arguments
+for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
 \link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
 \code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With

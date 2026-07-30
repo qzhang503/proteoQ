@@ -6,6 +6,7 @@
 \title{MDS plots}
 \usage{
 pepMDS(
+  dat_dir = NULL,
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
@@ -42,6 +43,7 @@ pepMDS(
 )
 
 prnMDS(
+  dat_dir = NULL,
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
@@ -78,6 +80,9 @@ prnMDS(
 )
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
 \code{expt_smry.xlsx} will be used. In the case of no samples being

@@ -24,20 +24,20 @@ species; instead, users will provide values under arguments
 \code{abbr_species}, \code{gaf_url} and \code{obo_url}.}
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
-species used with
-\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
-The value of \code{abbr_species} will be determined automatically if the
-species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
-example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ. 
+ species used with
+ \href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+ species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+ example, users need to provide \code{abbr_species = Ce} for fetching the
+ \code{org.Ce.eg.db} package in the name space of proteoQ.
 
-For analysis against
-\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-Signatures}, the argument is further applied to differentiate the same
-biological terms under different species; e.g., \code{GO~0072686 mitotic
-spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
-\code{mm_GO~0072686 mitotic spindle} for mouse.}
+ For analysis against
+ \href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+ Signatures}, the argument is further applied to differentiate the same
+ biological terms under different species; e.g., \code{GO~0072686 mitotic
+ spindle} becomes \code{hs_GO~0072686 mitotic spindle} for human and
+ \code{mm_GO~0072686 mitotic spindle} for mouse.}
 
 \item{gaf_url}{A URL to
 \href{http://current.geneontology.org/products/pages/downloads.html}{GO
@@ -109,7 +109,7 @@ prepGO(
   # species = worm,
   abbr_species = Ce,
   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
-  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo", 
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
   filename = go_ce.rds,
 )
 }

@@ -6,8 +6,8 @@
 \usage{
 plotHisto(
   df = NULL,
-  id,
-  label_scheme_sub,
+  id = NULL,
+  label_scheme_sub = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
   cut_points,

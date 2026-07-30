@@ -5,14 +5,20 @@
 \title{Subcellular plots.}
 \usage{
 plotSubcellular(
-  id,
+  id = "gene",
+  dat_dir = NULL,
   col_group = NULL,
   col_order = NULL,
+  col_cluster = "cluster",
   levels_subcellular = NULL,
   levels_subtype = NULL,
-  label_scheme_sub,
+  tie_method = "none",
+  label_scheme_sub = NULL,
   n_clust = NULL,
   panel_ids = NULL,
+  pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
+  ext = "txt",
+  data_type = "Trend",
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -20,13 +26,17 @@ plotSubcellular(
   filepath = NULL,
   filename = NULL,
   qt = 0.5,
-  theme,
+  make_plot = TRUE,
+  theme = NULL,
   ...
 )
 }
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -40,7 +50,11 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
+\item{col_cluster}{The column key of cluster nodes.}
+
 \item{levels_subcellular}{The levels of subcellular fractions.}
+
+\item{tie_method}{The method to handle ties.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
@@ -50,6 +64,12 @@ for selected samples.}
 available cluster IDs will be used.}
 
 \item{panel_ids}{Panel IDs for plotting.}
+
+\item{pat}{A pattern of input files.}
+
+\item{ext}{The extension of input files.}
+
+\item{data_type}{The type of data.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with
@@ -71,15 +91,15 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
 
-\item{filepath}{A file path to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of \code{id} in the \code{call}.}
+\item{filepath}{Use system default.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
 \item{qt}{The quantile of localization score for thresholding subcellular
 compartment specificity. The default is to use median.}
+
+\item{make_plot}{Logical; to bypass the plotting at FALSE.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

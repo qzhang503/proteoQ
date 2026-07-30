@@ -165,7 +165,7 @@ center_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
 
   ## !!! align `N_log2_R` and `N_I` only AFTER the calculation of "df_z"
   df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, centers, "-")
-  df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^centers, "/")    
+  df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^centers, "/")
   
   invisible(list(df = df, nm_log2r_z = nm_log2r_z))
 }
@@ -442,14 +442,10 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
   dat_dir <- get_gl_dat_dir()
   
   dots <- rlang::enexprs(...)
-  
-  slice_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^slice_", names(.))]
-  
-  nonslice_dots <- dots %>% 
-    .[! . %in% slice_dots]
-  
+  lang_dots  <- dots[unlist(lapply(dots, is.language))]
+  slice_dots <- lang_dots[grepl("^slice_", names(lang_dots))]
+  nonslice_dots <- dots[!dots %in% slice_dots]
+
   # if different `n_comp` between two `method_align = MGKernel`, 
   #   force `col_select` to `Sample_ID` (all samples); 
   # if `n_comp` is given but with `method_align = MC`, 
@@ -461,11 +457,13 @@ normMulGau <- function(df, method_align = "MC", n_comp = NULL, seed = NULL,
   ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
   
   if (method_align == "MGKernel") {
-    if ((!ok_N_ncomp) && (col_select != rlang::expr(sample_ID))) 
+    if ((!ok_N_ncomp) && (col_select != rlang::expr(sample_ID))) {
       col_select <- rlang::expr(Sample_ID)
-    
-    if ((!ok_Z_ncomp) && (col_select != rlang::expr(sample_ID))) 
+    }
+      
+    if ((!ok_Z_ncomp) && (col_select != rlang::expr(sample_ID))) {
       col_select <- rlang::expr(Sample_ID)
+    }
   }
   
   label_scheme <- load_ls_group(dat_dir, "label_scheme")

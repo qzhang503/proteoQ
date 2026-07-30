@@ -24,28 +24,22 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      center_features, scale_features),
                    rlang::is_logical, logical(1L)))
   
-  if (!nrow(label_scheme_sub))
-    stop("Empty metadata.")
+  if (!nrow(label_scheme_sub)) stop("Empty metadata.")
+  
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
+  complete_cases <- 
+    to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
   
-  complete_cases <- to_complete_cases(complete_cases = complete_cases, 
-                                      impute_na = impute_na)
-  if (complete_cases) 
+  if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
-  
+  }
+
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
-    warning("No ellipses at `type = feats`.", call. = FALSE)
+    warning("No ellipses at `type = feats`.")
   }
   
-  id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% 
@@ -71,13 +65,11 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       scale_features <- anal_dots$scale.
       
       warning("Overwrite `scale_features` with `scale.`; ", 
-              "suggest use only `scale_features`.", 
-              call. = FALSE)
+              "suggest use only `scale_features`.")
     } 
     else if (type == "feats") {
       warning("Argument `scale.` not used; ", 
-              "data scaling already set by `scale_log2r`.", 
-              call. = FALSE)
+              "data scaling already set by `scale_log2r`.")
     }
     
     anal_dots$scale. <- NULL
@@ -88,13 +80,11 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       center_features <- anal_dots$center
       
       warning("Overwrite `center_features` with `center`; ", 
-              "suggest use only `center_features`.", 
-              call. = FALSE)
+              "suggest use only `center_features`.")
     } 
     else if (type == "feats") {
       warning("Argument `center` not used; ", 
-              "data already centered with `standPep()` or `standPrn()`.", 
-              call. = FALSE)
+              "data already centered with `standPep()` or `standPrn()`.")
     }
     
     anal_dots$center <- NULL
@@ -102,13 +92,12 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   if (!is.null(anal_dots$x)) {
     anal_dots$x <- NULL
-    warning("Argument `x` in `prcomp()` automated.", call. = FALSE)
+    warning("Argument `x` in `prcomp()` automated.")
   }
   
   if (length(fml_dots)) {
     fml_dots <- NULL
-    warning("The method for class 'formula' is not yet available in proteoQ.", 
-            call. = FALSE)
+    warning("The method for class 'formula' is not yet available in proteoQ.")
   }
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -118,7 +107,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     filters_in_call(!!!filter_dots) %>%
     arrangers_in_call(!!!arrange_dots) %>%
     scorePCA(
-      id = !!id,
+      id = id,
       label_scheme_sub = label_scheme_sub,
       anal_type = anal_type,
       scale_log2r = scale_log2r,
@@ -126,7 +115,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       scale_features = scale_features,
       choice = choice, 
       type = type,
-      col_group = !!col_group,
+      col_group = col_group,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
@@ -160,20 +149,25 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   nms <- names(df)
   
-  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
+  if (col_color != "Color" || !col_color %in% nms) {
+    assign(paste0("map_", tolower(col_color)), "X")
+  }
 
-  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
+  if (col_fill != "Fill" || !col_fill %in% nms) {
+    assign(paste0("map_", tolower(col_fill)), "X")
+  }
 
-  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+  if (col_shape != "Shape" || !col_shape %in% nms) {
+    assign(paste0("map_", tolower(col_shape)), "X")
+  }
 
-  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
+  if (col_size != "Size" || !col_size %in% nms) {
+    assign(paste0("map_", tolower(col_size)), "X")
+  }
 
-  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+  if (col_alpha != "Alpha" || !col_alpha %in% nms) {
+    assign(paste0("map_", tolower(col_alpha)), "X")
+  }
 
   if (!is.na(map_color)) col_color <- NULL
   if (!is.na(map_fill)) col_fill <- NULL
@@ -181,41 +175,36 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if (!is.na(map_size)) col_size <- NULL
   if (!is.na(map_alpha)) col_alpha <- NULL
   
-  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
+  rm(list = 
+       c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
   suppressWarnings(rm(list = c("map_.")))
 
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
-  if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
+  proteoq_pca_theme <- theme_bw() + 
+    theme(
+      axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
+      axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
+      axis.title.x = element_text(colour="black", size=20),
+      axis.title.y = element_text(colour="black", size=20),
+      plot.title = element_text(face="bold", colour="black", 
+                                size=20, hjust=0.5, vjust=0.5),
+      
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      
+      legend.key = element_rect(colour = NA, fill = 'transparent'),
+      legend.background = element_rect(colour = NA,  fill = "transparent"),
+      legend.title = element_blank(),
+      legend.text = element_text(colour="black", size=14),
+      legend.text.align = 0,
+      legend.box = NULL
+    )
   
-  size_manual <- eval_bare(size_manual, env = caller_env())
-  shape_manual <- eval_bare(shape_manual, env = caller_env())
-  alpha_manual <- eval_bare(alpha_manual, env = caller_env())
-  
-  proteoq_pca_theme <- theme_bw() + theme(
-    axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
-    axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
-    axis.title.x = element_text(colour="black", size=20),
-    axis.title.y = element_text(colour="black", size=20),
-    plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
-    
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    
-    legend.key = element_rect(colour = NA, fill = 'transparent'),
-    legend.background = element_rect(colour = NA,  fill = "transparent"),
-    legend.title = element_blank(),
-    legend.text = element_text(colour="black", size=14),
-    legend.text.align = 0,
-    legend.box = NULL
-  )
-  
-  if (is.null(theme)) 
+  if (is.null(theme)) {
     theme <- proteoq_pca_theme
-  
+  }
+
   # --- check dimension ---
   if (dimension < 2L) {
     warning("The `dimension` increased from ", dimension, " to a minimum of 2.")
@@ -236,32 +225,30 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   rm(list = "max_dim")
   
   # --- set up aes ---
-  if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
-    col_color <- NULL
-  if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
-    col_fill <- NULL
-  if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
-    col_shape <- NULL
-  if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
-    col_size <- NULL
-  if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
-    col_alpha <- NULL
+  if ((length(col_color)) && col_color == ".") col_color <- NULL
+  if ((length(col_fill)) && col_fill == ".") col_fill <- NULL
+  if ((length(col_shape)) && col_shape == ".") col_shape <- NULL
+  if ((length(col_size)) && col_size == ".") col_size <- NULL
+  if ((length(col_alpha)) && col_alpha == ".") col_alpha <- NULL
   
   if (dimension > 2L) {
-    mapping <- ggplot2::aes(colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
-  } 
-  else {
-    mapping <- ggplot2::aes(x = PC1, 
-                            y = PC2,
-                            colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
+    mapping <- aes(
+      colour = !!if (!is.null(col_color)) rlang::sym(col_color),
+      shape  = !!if (!is.null(col_shape)) rlang::sym(col_shape),
+      fill   = !!if (!is.null(col_fill))  rlang::sym(col_fill), 
+      size = !!if (!is.null(col_size)) rlang::sym(col_size),
+      alpha  = !!if (!is.null(col_alpha)) rlang::sym(col_alpha),
+    )
+  } else {
+    mapping <- aes(
+      x = PC1,
+      y = PC2,
+      colour = !!if (!is.null(col_color)) rlang::sym(col_color),
+      shape  = !!if (!is.null(col_shape)) rlang::sym(col_shape),
+      fill   = !!if (!is.null(col_fill))  rlang::sym(col_fill), 
+      size = !!if (!is.null(col_size)) rlang::sym(col_size),
+      alpha  = !!if (!is.null(col_alpha)) rlang::sym(col_alpha),
+    )
   }
   
   idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
@@ -442,28 +429,34 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     p <- p +
       labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
     
-    if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
-    if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
+    if (length(fill_brewer)) {
+      p <- p + scale_fill_brewer(palette = fill_brewer)
+    }
     
-    if ((!is.null(col_size)) && (!is.null(size_manual))) {
+    if (length(color_brewer)) {
+      p <- p + scale_color_brewer(palette = color_brewer)
+    }
+    
+    if (length(col_size) && length(size_manual)) {
       check_aes_length(label_scheme_sub, col_size, "size_manual", size_manual)
       p <- p + scale_size_manual(values = size_manual)
     }
     
-    if ((!is.null(col_shape)) && (!is.null(shape_manual))) {
+    if (length(col_shape) && length(shape_manual)) {
       check_aes_length(label_scheme_sub, col_shape, "shape_manual", shape_manual)
       p <- p + scale_shape_manual(values = shape_manual)
     }
     
-    if ((!is.null(col_alpha)) && (!is.null(alpha_manual))) {
+    if (length(col_alpha) && length(alpha_manual)) {
       check_aes_length(label_scheme_sub, col_alpha, "alpha_manual", alpha_manual)
       p <- p + scale_shape_manual(values = alpha_manual)
     }
   }
   
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
-  rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-                                     plot = p, !!!ggsave_dots)))
+  rlang::eval_tidy(
+    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
+                      plot = p, !!!ggsave_dots)))
   
   invisible(res)
 }
@@ -484,9 +477,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       folds, out_file, ...) 
 {
   dots <- rlang::enexprs(...)
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_group <- rlang::enexpr(col_group)
-  
+
   if (length(dots$rank.)) {
     if (dots$rank. < 2L) {
       warning("PCA `rank.` increased from ", dots$rank., " to a minimum of 2.")
@@ -496,7 +487,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   
   df_orig <- df
   
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
+  df <- prepDM(df = df, id = id, scale_log2r = scale_log2r,
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type, 
                rm_allna = TRUE) %>%
     .$log2R
@@ -504,18 +495,17 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   nms <- names(df)
   n_rows <- nrow(df)
   
-  if (n_rows <= 50L)
-    stop("Need 50 or more data rows for PCA.", call. = FALSE)
+  if (n_rows <= 50L) stop("Need 50 or more data rows for PCA.")
 
   label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
   
   if (type == "obs") {
-    res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
+    res <- prep_folded_tdata(df, folds, label_scheme_sub, col_group)
     df_t <- res$df_t
     ls_sub <- res$ls_sub
     rm(list = "res")
 
-    if (rlang::as_string(col_group) %in% names(df_t)) {
+    if (col_group %in% names(df_t)) {
       df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
     }
     
@@ -602,7 +592,8 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #'
 #'@import purrr
 #'@export
-pepPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+pepPCA <- function (dat_dir = NULL, 
+                    col_select = NULL, col_group = NULL, col_order = NULL, 
                     col_color = NULL, col_fill = NULL, col_shape = NULL, 
                     col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
                     fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
@@ -614,79 +605,108 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL,
                     df = NULL, filepath = NULL, filename = NULL,
                     theme = NULL, type = c("obs", "feats"), ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "PCA")
+
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
   check_formalArgs(pepPCA, prcomp)
-  
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
-  
-  id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  type <- rlang::enexpr(type)
-  type <- if (type == rlang::expr(c("obs", "feats"))) "obs" else rlang::as_string(type)
+  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+
+  # force(choice); force(type);
+  # force(col_select); force(col_group); force(col_order); force(col_color); 
+  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
+  # force(color_brewer); force(fill_brewer); force(size_manual); 
+  # force(shape_manual); force(alpha_manual); 
+  # force(df); force(filepath); force(filename);
+  
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+  # (choice currently has one possibility)
+  choice <- rlang::enexpr(choice)
+  choice <- if (length(choice) > 1L) "prcomp" else as.character(choice)
+  type   <- rlang::enexpr(type)
+  type   <- if (length(type) > 1L) "obs" else as.character(type)
   stopifnot(type %in% c("obs", "feats"))
   
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
+  col_group  <- rlang::enexpr(col_group)
+  col_order  <- rlang::enexpr(col_order)
+  col_color  <- rlang::enexpr(col_color)
+  col_fill   <- rlang::enexpr(col_fill)
+  col_shape  <- rlang::enexpr(col_shape)
+  col_size   <- rlang::enexpr(col_size)
+  col_alpha  <- rlang::enexpr(col_alpha)
   
   color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
+  fill_brewer  <- rlang::enexpr(fill_brewer)
+  size_manual  <- rlang::enexpr(size_manual)
   shape_manual <- rlang::enexpr(shape_manual)
   alpha_manual <- rlang::enexpr(alpha_manual)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_color)) col_color <- as.character(col_color)
+  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
+  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
+  if (!is.character(col_size)) col_size <- as.character(col_size)
+  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
+  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
+  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
+  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
+  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
+  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_order = !!col_order, 
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
-            scale_log2r = scale_log2r, 
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group  = col_group,
+            col_order  = col_order, 
+            col_color  = col_color, 
+            col_fill   = col_fill,
+            col_shape  = col_shape, 
+            col_size   = col_size, 
+            col_alpha  = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer  = fill_brewer,
+            size_manual  = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
+            scale_log2r  = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
-            anal_type = "PCA")(choice = choice, 
-                               type = type, 
-                               dimension = dimension, 
-                               folds = folds, 
-                               show_ids = show_ids,
-                               show_ellipses = show_ellipses, 
-                               center_features = center_features,
-                               scale_features = scale_features,
-                               theme = theme, ...)
+            filepath = filepath, 
+            filename = filename,
+            anal_type = "PCA")(
+              choice = choice, 
+              type = type, 
+              dimension = dimension, 
+              folds = folds, 
+              show_ids = show_ids,
+              show_ellipses = show_ellipses, 
+              center_features = center_features,
+              scale_features = scale_features,
+              theme = theme, ...)
 }
 
 
@@ -801,7 +821,8 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-prnPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+prnPCA <- function (dat_dir = NULL, 
+                    col_select = NULL, col_group = NULL, col_order = NULL, 
                     col_color = NULL, col_fill = NULL, col_shape = NULL, 
                     col_size = NULL, col_alpha = NULL, color_brewer = NULL, 
                     fill_brewer = NULL, size_manual = NULL, shape_manual = NULL, 
@@ -813,70 +834,98 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_order = NULL,
                     df = NULL, filepath = NULL, filename = NULL,
                     theme = NULL, type = c("obs", "feats"), ...) 
 {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "PCA")
+  
   old_opts <- options()
-  options(warn = 1, warnPartialMatchArgs = TRUE)
+  options(warn = 1L, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
   check_formalArgs(prnPCA, prcomp)
-  
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "prcomp" else rlang::as_string(choice)
-
-  id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  type <- rlang::enexpr(type)
-  type <- if (type == rlang::expr(c("obs", "feats"))) "obs" else rlang::as_string(type)
+  # force(choice); force(type);
+  # force(col_select); force(col_group); force(col_order); force(col_color); 
+  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
+  # force(color_brewer); force(fill_brewer); force(size_manual); 
+  # force(shape_manual); force(alpha_manual); 
+  # force(df); force(filepath); force(filename);
+  
+  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+  # (choice currently has one possibility)
+  choice <- rlang::enexpr(choice)
+  choice <- if (length(choice) > 1L) "prcomp" else as.character(choice)
+  type   <- rlang::enexpr(type)
+  type   <- if (length(type) > 1L) "obs" else as.character(type)
   stopifnot(type %in% c("obs", "feats"))
 
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+
+  ## Argument with single option and NULL default (quotation marks or not)
   col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
+  col_group  <- rlang::enexpr(col_group)
+  col_order  <- rlang::enexpr(col_order)
+  col_color  <- rlang::enexpr(col_color)
+  col_fill   <- rlang::enexpr(col_fill)
+  col_shape  <- rlang::enexpr(col_shape)
+  col_size   <- rlang::enexpr(col_size)
+  col_alpha  <- rlang::enexpr(col_alpha)
   
   color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
+  fill_brewer  <- rlang::enexpr(fill_brewer)
+  size_manual  <- rlang::enexpr(size_manual)
   shape_manual <- rlang::enexpr(shape_manual)
   alpha_manual <- rlang::enexpr(alpha_manual)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
+  
+  # NULL default: length(0); symbol -> length(1)
+  if (!is.character(col_select)) col_select <- as.character(col_select)
+  if (!is.character(col_group)) col_group <- as.character(col_group)
+  if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_color)) col_color <- as.character(col_color)
+  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
+  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
+  if (!is.character(col_size)) col_size <- as.character(col_size)
+  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
+  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
+  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
+  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
+  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
+  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
+  if (!is.character(df)) df <- as.character(df)
+  if (!is.character(filepath)) filepath <- as.character(filepath)
+  if (!is.character(filename)) filename <- as.character(filename)
 
+  dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+  
   reload_expts()
   
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_order = !!col_order, 
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
-            scale_log2r = scale_log2r, 
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group  = col_group,
+            col_order  = col_order, 
+            col_color  = col_color, 
+            col_fill   = col_fill,
+            col_shape  = col_shape, 
+            col_size   = col_size, 
+            col_alpha  = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer  = fill_brewer,
+            size_manual  = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
+            scale_log2r  = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "PCA")(choice = choice, 
                                type = type, 
                                dimension = dimension, 
