@@ -9,10 +9,11 @@ plot_prnSubcell_UMAP(
   df_expr = NULL,
   id = "gene",
   n_clust = 16:36,
-  levels_subcell_compartments = c("Cytosol", "Nucleus", "ER", "PM", "Mitochondrion",
-    "Golgi", "Lysosome", "Ribosome", "Stress.granule", "Proteasome", "Peroxisome",
-    "Centrosome", "Endosome", "Unknown"),
+  levels_ref_compartments = c("Cytosol", "Nucleus", "ER", "PM", "Mitochondrion", "Golgi",
+    "Lysosome", "Ribosome", "Stress granule", "Proteasome", "Peroxisome", "Centrosome",
+    "Endosome", "Unknown"),
   col_subtype = NULL,
+  levels_subtype = NULL,
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
@@ -31,8 +32,8 @@ plot_prnSubcell_UMAP(
 
 \item{n_clust}{Not used. The number of clusters.}
 
-\item{levels_subcell_compartments}{The factor levels of subcellular
-compartments. Set \code{levels_subcell_compartments = NULL} for automatic
+\item{levels_ref_compartments}{The factor levels of subcellular
+compartments. Set \code{levels_ref_compartments = NULL} for automatic
 determination.}
 
 \item{df2}{Not used. The names of secondary input files.}

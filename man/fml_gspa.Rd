@@ -23,7 +23,7 @@ fml_gspa(
   id_gspa = "entrez",
   df_trend = NULL,
   is_subcellular = FALSE,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL,
   col_group = NULL,
   gsets = "go_sets",

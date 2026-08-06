@@ -9,7 +9,7 @@ prep_gspa(
   id = NULL,
   df_trend = NULL,
   is_subcellular = FALSE,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_subtype = NULL,
   col_group = NULL,
   fml_nm = NULL,
@@ -40,10 +40,19 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
-\item{col_subtype}{Temporarily applied only to subcellular data analysis.
-Character string to a column key in \code{expt_smry.xlsx} indicating sample
-subtypes linked to subcellular fractions. This is needed, e.g., when each
-subcellular fraction contain multiple subtypes of control, treated etc.}
+\item{col_fraction}{Only applicable to subcellular data analysis for
+  assessing fraction purity etc. Character string to a column key in
+  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+  subcellular location score at the \code{NULL} default.
+
+  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
+
+\item{col_subtype}{Only applicable to subcellular data analysis for assessing
+sub-group fraction purity etc. Character string to a column key in
+\code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+fractions. This is needed, e.g., when each subcellular fraction contain
+multiple subtypes of control, treated etc. and purity will be asssessed
+independently.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be

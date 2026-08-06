@@ -6,7 +6,7 @@
 \usage{
 plot_prnSubcellular_UMAP(
   df2 = NULL,
-  levels_subcellular = NULL,
+  levels_fraction = NULL,
   levels_subtype = NULL,
   key_subcellular = "location_slim3",
   key_col = "loc_score",
@@ -26,7 +26,7 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
 
-\item{levels_subcellular}{The levels of subcellular fractions.}
+\item{levels_fraction}{The levels of subcellular fractions.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 

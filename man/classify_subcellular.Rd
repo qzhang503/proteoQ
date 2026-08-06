@@ -10,12 +10,12 @@ classify_subcellular(
   id = "gene",
   species = "human",
   n_clust = 16:36,
-  levels_subcellular = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K",
-    "SN"),
+  col_fraction = NULL,
+  levels_fraction = NULL,
+  col_subtype = NULL,
+  levels_subtype = NULL,
   col_group = NULL,
   col_order = NULL,
-  col_fraction = NULL,
-  col_subtype = NULL,
   min_prot_n_peps = 2L,
   plot_prob_clusters = TRUE,
   seed = 42L,
@@ -35,6 +35,8 @@ identifying the database of reference markers.}
 
 \item{n_clust}{The number of clusters.}
 
+\item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
+
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
 protein for consideration.}
 
@@ -53,7 +55,7 @@ A wrapper of classifying subcellular locations.
 classify_subcellular(
   dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36, 
   col_group = "Group", col_order = "Order", col_fraction = "Fraction", 
-  levels_subcellular = 
+  levels_fraction = 
     c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"))
 }
 

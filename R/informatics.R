@@ -383,7 +383,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                     !Reference)
   } else {
     label_scheme_sub <- label_scheme %>%
-      dplyr::filter(!is.na(!!col_select))
+      dplyr::filter(!is.na(!!rlang::sym(col_select)))
   }
   
   if (!nrow(label_scheme_sub)) {
@@ -791,8 +791,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "Trend_line") {
-    function(n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
-             data_type = "ratio", theme = NULL, ...) {
+    function(levels_group = NULL, n_clust = NULL, panel_ids = NULL, 
+             show_panel_ids = TRUE, data_type = "ratio", theme = NULL, ...) {
       plotTrend(df2 = df2,
                 dat_dir = dat_dir,
                 # To differentiate from custom plots without using label_scheme
@@ -801,6 +801,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                 col_group = col_group,
                 col_order = col_order,
                 label_scheme_sub = label_scheme_sub,
+                levels_group = levels_group, 
                 n_clust = n_clust,
                 panel_ids = panel_ids,
                 show_panel_ids = show_panel_ids, 
@@ -815,22 +816,24 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "Subcellular_plot") {
-    function(n_clust = NULL, panel_ids = NULL, levels_subcellular = NULL, 
+    function(n_clust = NULL, panel_ids = NULL, data_type = "Trend", 
              pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
-             data_type = "Trend", 
-             levels_subtype = NULL, tie_method = "none", qt = .5, 
-             make_plot = TRUE, theme = NULL, 
+             col_fraction = NULL, levels_fraction = NULL, 
+             col_subtype = NULL, levels_subtype = NULL, 
+             tie_method = "none", qt = .5, make_plot = TRUE, theme = NULL, 
              ...) {
       plotSubcellular(
         df2 = df2,
         id = id,
         col_group = col_group,
-        col_order = col_order,
+        col_order = col_order, # "colnames"
+        col_fraction = col_fraction, 
+        levels_fraction = levels_fraction, 
+        col_subtype = col_subtype,
+        levels_subtype = levels_subtype, 
         col_cluster = "cluster", 
         dat_dir = dat_dir,
         qt = qt, # .5 -> median
-        levels_subcellular = levels_subcellular, 
-        levels_subtype = levels_subtype, 
         tie_method = tie_method, 
         label_scheme_sub = label_scheme_sub,
         n_clust = n_clust,

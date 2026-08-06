@@ -10,6 +10,7 @@ plotTrend(
   anal_type = "Trend",
   col_group = NULL,
   col_order = NULL,
+  levels_group = NULL,
   label_scheme_sub = NULL,
   data_type = "ratio",
   pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
@@ -49,6 +50,11 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{levels_group}{The factor levels of the values under the column 'group'
+in trend outputs for ordering on the X-axis. If not NULL, the levels will
+overwrite the order specified by the combination of \code{col_order} and
+\code{group}.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}

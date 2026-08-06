@@ -396,11 +396,11 @@ add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene",
   
   if (is_subcellular) {
     df_trend <- readr::read_tsv(file.path(path_trend, df2))
-    col_subcellular <- df_trend[["col_subcellular"]][[1]]
+    col_fraction <- df_trend[["col_fraction"]][[1]]
     col_subtype <- df_trend[["col_subtype"]][[1]]
     col_group <- df_trend[["col_group"]][[1]]
     
-    # col_subcellular encodes sample fraction; 
+    # col_fraction encodes sample fraction; 
     # sub_location: classification results
     if (!"sub_location" %in% colnames(df_trend)) {
       stop("Column 'sub_location' not found. ", 
@@ -423,12 +423,12 @@ add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene",
       dplyr::left_join(df_trend, by = "gene")
   } else {
     df_trend <- NULL
-    col_subcellular <- NULL
+    col_fraction <- NULL
     col_subtype <- NULL
     col_group <- NULL
   }
   
-  list(df = df, df_trend = df_trend, col_subcellular = col_subcellular, 
+  list(df = df, df_trend = df_trend, col_fraction = col_fraction, 
        col_subtype = col_subtype, col_group = col_group, 
        path_trend = path_trend)
 }
@@ -545,7 +545,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   
   df <- res_subcell[["df"]]
   df_trend <- res_subcell[["df_trend"]]
-  col_subcellular <- res_subcell[["col_subcellular"]]
+  col_fraction <- res_subcell[["col_fraction"]]
   col_subtype <- res_subcell[["col_subtype"]]
   col_group <- res_subcell[["col_group"]]
   path_trend <- res_subcell[["path_trend"]]
@@ -584,7 +584,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
          id_gspa = id_gspa,
          df_trend = df_trend, 
          is_subcellular = is_subcellular, 
-         col_subcellular = col_subcellular, 
+         col_fraction = col_fraction, 
          col_subtype = col_subtype, 
          col_group = col_group, 
          gsets = gsets, 
@@ -649,7 +649,7 @@ fml_gspa <- function (fml, fml_nm,
                       min_greedy_size = 1L, method = "mean", 
                       df, col_ind, id = "gene", id_gspa = "entrez", 
                       df_trend = NULL, is_subcellular = FALSE, 
-                      col_subcellular = NULL, col_subtype = NULL, 
+                      col_fraction = NULL, col_subtype = NULL, 
                       col_group = NULL, 
                       gsets = "go_sets", label_scheme_sub = NULL, 
                       dat_dir = NULL, 
@@ -678,7 +678,7 @@ fml_gspa <- function (fml, fml_nm,
   # Column 'contrast' is factor and sorted by contrast_groups
   df <- prep_gspa(df, id = id_gspa, df_trend = df_trend, 
                   is_subcellular = is_subcellular, 
-                  col_subcellular = col_subcellular, col_subtype = col_subtype, 
+                  col_fraction = col_fraction, col_subtype = col_subtype, 
                   col_group = col_group, 
                   fml_nm = fml_nm, label_scheme_sub = label_scheme_sub, 
                   dat_dir = dat_dir, col_ind = col_ind, 
@@ -1166,10 +1166,10 @@ lm_gspa <- function(df, min_size = 10L, min_delta = 4L, gsscore_cutoff = 5.0,
 #' @param label_scheme_sub Metadata.
 #' @inheritParams anal_prnTrend
 check_gspa_subcellular <- function (
-    fml_nm = NULL, dat_dir = NULL, label_scheme_sub, col_subcellular = NULL, 
+    fml_nm = NULL, dat_dir = NULL, label_scheme_sub, col_fraction = NULL, 
     col_group = NULL) {
   
-  if (is.null(col_subcellular)) {
+  if (is.null(col_fraction)) {
     return(NULL)
   }
   
@@ -1184,7 +1184,7 @@ check_gspa_subcellular <- function (
   key_col <- fml_ops$key_col
   
   rows <- label_scheme_sub[[key_col]] %in% elements
-  fracs <- unique(label_scheme_sub[[col_subcellular]][rows])
+  fracs <- unique(label_scheme_sub[[col_fraction]][rows])
   grps <- unique(label_scheme_sub[[col_group]][rows])
   
   list(frac = fracs, grp = grps)
@@ -1204,7 +1204,7 @@ check_gspa_subcellular <- function (
 #' @importFrom readr read_tsv
 prep_gspa <- function(df = NULL, id = NULL, 
                       df_trend = NULL, is_subcellular = FALSE, 
-                      col_subcellular = NULL, col_subtype = NULL, 
+                      col_fraction = NULL, col_subtype = NULL, 
                       col_group = NULL, 
                       fml_nm = NULL, dat_dir = NULL, label_scheme_sub = NULL, 
                       col_ind = 0L, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
@@ -1212,7 +1212,7 @@ prep_gspa <- function(df = NULL, id = NULL,
 {
   ans_fr <- check_gspa_subcellular(
     fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme_sub, 
-    col_subcellular = col_subcellular, col_group = col_group)
+    col_fraction = col_fraction, col_group = col_group)
   subcell_frac <- ans_fr[["frac"]]
   subcell_grps <- ans_fr[["grp"]]
   rm(list = "ans_fr")

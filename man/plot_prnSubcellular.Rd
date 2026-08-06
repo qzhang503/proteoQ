@@ -2,13 +2,15 @@
 % Please edit documentation in R/subcellular.R
 \name{plot_prnSubcellular}
 \alias{plot_prnSubcellular}
-\title{Visualization of subcellular results.}
+\title{Bar plots of median subcellular scores.}
 \usage{
 plot_prnSubcellular(
   dat_dir = NULL,
   col_select = NULL,
   col_order = NULL,
-  levels_subcellular = NULL,
+  col_fraction = NULL,
+  levels_fraction = NULL,
+  col_subtype = NULL,
   levels_subtype = NULL,
   tie_method = "none",
   qt = 0.5,
@@ -44,7 +46,21 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{levels_subcellular}{The levels of subcellular fractions.}
+\item{col_fraction}{Only applicable to subcellular data analysis for
+  assessing fraction purity etc. Character string to a column key in
+  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+  subcellular location score at the \code{NULL} default.
+
+  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
+
+\item{levels_fraction}{The levels of subcellular fractions.}
+
+\item{col_subtype}{Only applicable to subcellular data analysis for assessing
+sub-group fraction purity etc. Character string to a column key in
+\code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+fractions. This is needed, e.g., when each subcellular fraction contain
+multiple subtypes of control, treated etc. and purity will be asssessed
+independently.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
@@ -107,10 +123,15 @@ for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
 \link[e1071]{cmeans}, \code{m} is according to Schwaemmle and Jensen if not
 provided; \cr \code{x} is disabled with input data being determined
 automatically.}
+
+\item{col_subtye}{For uses with subcellular data. The column key in metadata
+(\code{expt_smry.xlsx}) linking to sample sub-types, e.g., \code{Control,
+Treated}.}
 }
 \description{
 \code{plot_prnSubcellular} plots the subcellular purity of protein
-expressions from \code{\link{anal_prnTrend}}.
+expressions from \code{\link{anal_prnTrend}} or the probabilities from
+\link{svmSubcell}.
 }
 \examples{
 if (FALSE) {
@@ -119,7 +140,8 @@ if (FALSE) {
     df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"),
     col_order = Order,
     n_clust = cl,
-    levels_subcellular = c("CP", "NP", "ChA"),
+    col_subtye = "Type",
+    levels_fraction = c("CP", "NP", "ChA"),
     ncol = 4,
     width = !!width,
     height = !!height,

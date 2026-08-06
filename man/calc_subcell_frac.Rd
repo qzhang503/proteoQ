@@ -26,17 +26,19 @@ used for sample grouping in the indicated analysis. At the NULL default, the
 column key \code{Group} will be used. No data annotation by groups will be
 performed if the fields under the indicated group column is empty.}
 
-\item{col_fraction}{Only applied to subcellular data analysis. Character
-  string to a column key in \code{expt_smry.xlsx} indicating subcellular
-  fractions. No calculation of subcellular location score at the \code{NULL}
-  default.
+\item{col_fraction}{Only applicable to subcellular data analysis for
+  assessing fraction purity etc. Character string to a column key in
+  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+  subcellular location score at the \code{NULL} default.
 
-  Suggest the corresponding column key \code{Subcellular} in metadata.}
+  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
 
-\item{col_subtype}{Temporarily applied only to subcellular data analysis.
-Character string to a column key in \code{expt_smry.xlsx} indicating sample
-subtypes linked to subcellular fractions. This is needed, e.g., when each
-subcellular fraction contain multiple subtypes of control, treated etc.}
+\item{col_subtype}{Only applicable to subcellular data analysis for assessing
+sub-group fraction purity etc. Character string to a column key in
+\code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+fractions. This is needed, e.g., when each subcellular fraction contain
+multiple subtypes of control, treated etc. and purity will be asssessed
+independently.}
 }
 \value{
 Classified \code{log2FC}.

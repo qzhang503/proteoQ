@@ -1,10 +1,10 @@
-#' Subcellular plots.
+#' Bar plots of median subcellular statistics.
 #' 
 #' @param col_cluster The column key of cluster nodes.
 #' @param pat A pattern of input files.
 #' @param ext The extension of input files.
 #' @param data_type The type of data.
-#' @param levels_subcellular The levels of subcellular fractions.
+#' @param levels_fraction The levels of subcellular fractions.
 #' @param tie_method The method to handle ties.
 #' @param panel_ids Panel IDs for plotting.
 #' @param qt The quantile of localization score for thresholding subcellular
@@ -20,7 +20,9 @@
 plotSubcellular <- function(
     id = "gene", dat_dir = NULL, col_group = NULL, col_order = NULL, 
     col_cluster = "cluster", 
-    levels_subcellular = NULL, levels_subtype = NULL, tie_method = "none", 
+    col_fraction = NULL, levels_fraction = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    tie_method = "none", 
     label_scheme_sub = NULL, n_clust = NULL, panel_ids = NULL, 
     pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", data_type = "Trend", 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -36,7 +38,7 @@ plotSubcellular <- function(
   df2 <- find_trend_df2(
     df2 = df2, n_clust = n_clust, pat = pat, ext = ext, 
     scale_log2r = scale_log2r, impute_na = impute_na, filepath = filepath)
-
+  
   # Prepare output file name
   custom_prefix <- if (id %in% c("pep_seq", "pep_seq_mod")) {
     purrr::map_chr(
@@ -66,8 +68,10 @@ plotSubcellular <- function(
       qt = qt, 
       col_group = col_group, 
       col_order = col_order, 
-      col_cluster = col_cluster, 
-      levels_subcellular = levels_subcellular,
+      col_cluster = col_cluster,
+      col_fraction = col_fraction, 
+      levels_fraction = levels_fraction,
+      col_subtype = col_subtype, 
       levels_subtype = levels_subtype, 
       tie_method = tie_method, 
       complete_cases = complete_cases, 
@@ -84,11 +88,25 @@ plotSubcellular <- function(
   
   df_meds <- lapply(tempsub, `[[`, "df_med")
   col_fraction <- tempsub[[1]][["col_fraction"]]
-  col_subtype <- tempsub[[1]][["col_subtype"]]
+  col_subtype  <- tempsub[[1]][["col_subtype"]]
   col_x <- tempsub[[1]][["col_x"]]
   col_y <- tempsub[[1]][["col_y"]]
-  rm(list = "tempsub")
   
+  # Derived from file names and is "" with Trend results: "Protein_Trend_Z_nclust[...].txt"
+  sub_types <- lapply(tempsub, `[[`, "sub_type")
+  # rm(list = "tempsub")
+  
+  if (data_type != "Trend" && length(col_subtype)) {
+    # One subtype a file for non Trend data
+    df_meds <- mapply(function (x, y) {
+      if (is.null(x[[col_subtype]]) && nchar(y) > 0L) {
+        x[[col_subtype]] <- y
+      }
+      
+      x
+    }, df_meds, sub_types, SIMPLIFY = FALSE)
+  }
+
   ## Classify trends
   tempdata <- lapply(
     df_meds, 
@@ -109,7 +127,7 @@ plotSubcellular <- function(
   col_subtype <- tempdata[[1]][["col_subtype"]]
   col_x <- tempdata[[1]][["col_x"]]
   col_y <- tempdata[[1]][["col_y"]]
-  rm(list = "tempdata")
+  # rm(list = "tempdata")
   
   ## Update subcellular locations
   res_score_co <- res_score_co |>
@@ -132,8 +150,14 @@ plotSubcellular <- function(
   join_cols <- c(col_fraction, col_subtype)
   names(join_cols) <- c(col_fraction, col_subtype)
   
-  dfs <- lapply(df2, function (fn) {
-    df <- readr::read_tsv(file.path(filepath, fn)) |>
+  dfs <- mapply(function (fn, sub_type) {
+    df <- readr::read_tsv(file.path(filepath, fn))
+    
+    if (length(sub_type) && nchar(sub_type) && !col_subtype %in% names(df)) {
+      df[[col_subtype]] <- sub_type
+    }
+    
+    df <- df |>
       dplyr::left_join(
         res_score_co[, c(col_fraction, "score_co", col_subtype)], 
         by = join_cols)
@@ -151,17 +175,17 @@ plotSubcellular <- function(
       dplyr::bind_rows() |>
       dplyr::select(-c("score_co"))
     
-    # Not yet for svmProb: need column log10Int
+    # Not yet for svmProb: need column 'log10Int'
     if (data_type == "Trend") {
       df <- threshold_subcell_by_int(df, id = id, col_fraction = col_fraction)
     }
-
+    
     # Update data
     readr::write_tsv(df, file.path(filepath, fn))
     
     df
-  })
-
+  }, df2, sub_types, SIMPLIFY = FALSE)
+  
   invisible(dfs)
 }
 
@@ -175,6 +199,11 @@ plotSubcellular <- function(
 threshold_subcell_by_int <- function (df, id = "gene", col_fraction = NULL, 
                                       fct = 1.0)
 {
+  if (!"log10Int" %in% names(df)) {
+    warning("Column 'log10Int' not found.")
+    return(df)
+  }
+  
   dfs <- split(df, df[[id]])
   
   lapply(dfs, function (dfx) {
@@ -212,7 +241,7 @@ threshold_subcell_by_int <- function (df, id = "gene", col_fraction = NULL,
 #' @inheritParams plot_prnSubcellular
 #' @export
 plot_prnSubcellular_UMAP <- function (
-    df2 = NULL, levels_subcellular = NULL, levels_subtype = NULL, 
+    df2 = NULL, levels_fraction = NULL, levels_subtype = NULL, 
     key_subcellular = "location_slim3", key_col = "loc_score", 
     filename_ref = NULL, scale_log2r = TRUE, impute_na = FALSE, 
     filename = NULL, seed = 42, ...) 
@@ -257,9 +286,8 @@ plot_prnSubcellular_UMAP <- function (
       id_cols = "gene", 
       names_from = c("group"), 
       values_from = key_col,
-      values_fill = 0, 
-    )
-  
+      values_fill = 0, )
+
   set.seed(seed)
   res_umap <- umap::umap(df_expr[, !colnames(df_expr) == "gene", drop = FALSE])
   
@@ -321,9 +349,9 @@ plot_prnSubcellular_UMAP <- function (
       !!col_subtype := 
         factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
       !!col_fraction := 
-        factor(!!rlang::sym(col_fraction), levels = levels_subcellular),
+        factor(!!rlang::sym(col_fraction), levels = levels_fraction),
       sub_location = 
-        factor(sub_location, levels = levels_subcellular),
+        factor(sub_location, levels = levels_fraction),
     )
   
   df_plot <- df |>
@@ -431,7 +459,7 @@ plot_prnSubcellular_UMAP <- function (
         !!col_subtype := 
           factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
         sub_location = 
-          factor(sub_location, levels = levels_subcellular),
+          factor(sub_location, levels = levels_fraction),
       )
 
     p_ref <- ggplot(df_plot_ref, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
@@ -461,7 +489,10 @@ plot_prnSubcellular_UMAP <- function (
 }
 
 
-#' Plots trends at a given \code{n_clust}.
+#' Plots median trends at a given \code{n_clust}.
+#'
+#' Input data include results from \link{anal_prnTrend} at \code{is_subcellular
+#' = TRUE} or the probabilities from \link{svmSubcell}.
 #'
 #' @param custom_prefix A custom filename prefix.
 #' @param fn_prefix A file name prefix.
@@ -480,36 +511,131 @@ plot_prnSubcellular_UMAP <- function (
 plotSubcellular_sub <- function (
     df2 = NULL, custom_prefix = NULL, fn_prefix = NULL, fn_suffix = NULL, 
     df = NULL, id = "gene", col_group = NULL, col_order = NULL, 
-    col_cluster = "cluster", data_type = "Trend", 
-    pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
-    levels_subcellular = NULL, levels_subtype = NULL, tie_method = "none", 
+    col_cluster = "cluster", 
+    col_fraction = NULL, levels_fraction = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    data_type = "Trend", pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
+    tie_method = "none", 
     qt = .5, complete_cases = FALSE, panel_ids = NULL, filepath = NULL, 
     label_scheme_sub = NULL, theme = NULL, make_plot = TRUE, dots = NULL)
 {
   ## (1) Load input data
+  if (data_type == "Trend") {
+    col_x <- "group"
+  } else {
+    col_x <- "compartment"
+  }
+  col_y <- "loc_score"
+  
   cl_id  <- sub(paste0(".*_nclust(\\d+)[^\\d]*\\.", ext), "\\1", df2) |>
     as.numeric()
-  out_nm <- paste0(custom_prefix, fn_prefix, "_nclust", cl_id, ".", fn_suffix)
-  src_path <- file.path(filepath, df2)
   
-  if (!file.exists(src_path)) {
+  sub_type <- sub(paste0(".*_nclust\\d+[_]{0,1}(.*)\\.", ext), "\\1", df2)
+  
+  out_nm <- paste0(
+    paste(
+      c(paste0(custom_prefix, fn_prefix, "_nclust", cl_id), 
+        sub_type), 
+      collapse = "_"), 
+    ".", fn_suffix)
+  
+  # column format from 'anal_prnTrend':
+  #   gene	cluster	group	log2FC	log10Int	purity	entropy	loc_score	sub_location
+  #   | Fraction	Type	species	col_group	col_order	col_fraction	col_subtype	
+  #   
+  # column format from svmSubcell: 
+  #   gene  cluster compartment purity entropy loc_score | Type 
+
+  if (!file.exists(src_path <- file.path(filepath, df2))) {
     stop("File not found: ", src_path)
   }
   
-  # Warning msg: column 'group' not yet existed with data_type != "Trend"
-  df <- readr::read_tsv(
-    src_path, 
-    col_types = cols(group = col_factor(), !!col_cluster := col_integer()))
-  
+  df <- readr::read_tsv(src_path)
+
   if (is.null(dim(df))) {
     stop("File contains not data: ", src_path)
   }
   
-  if (!col_cluster %in% names(df)) {
-    stop("Column 'cluster' not found in input data.")
-  }
-  
   message(paste("File loaded:", src_path))
+
+  lapply(c(col_cluster, col_x, col_y), function (x) {
+    if (!x %in% names(df)) stop("Column '", x, "' not found in input data.")
+  })
+  
+  df <- df |>
+    dplyr::mutate(
+      !!col_x := factor(!!rlang::sym(col_x)), 
+      !!col_cluster := as.factor(as.integer(!!rlang::sym(col_cluster))), )
+  
+  # (x) 'anal_prnTrend.rda' overwritten with the latest call ->
+  #     embedded 'col_group' etc. into the trend analysis output
+  # (x) later to call from corresponding Protein_Trend_Z_nclust[...].rds
+  if (data_type == "Trend") {
+    if (length(levels_fraction)) {
+      levels_group <- local({
+        if (length(levels_subtype)) {
+          grid <- expand.grid(sub = levels_subtype, sub_type = levels_fraction)
+          levels_group <- paste(grid$sub, grid$sub_type, sep = "_")
+        } else {
+          levels_group <- levels_fraction
+        }
+      })
+    } else {
+      levels_group <- local({
+        col_group <- df[["col_group"]][1]
+        col_order <- df[["col_order"]][1]
+        
+        label_scheme_sub |>
+          dplyr::arrange(!!rlang::sym(col_order)) |>
+          dplyr::pull(!!rlang::sym(col_group)) |> 
+          unique()
+      })
+    }
+    
+    local({
+      levs_df  <- levels(df[[col_x]])
+      mis_levs <- levs_df[!levs_df %in% levels_group]
+      
+      if (length(mis_levs)) {
+        if (length(mis_levs) > 12L) 
+          mis_levs <- c(mis_levs[1:12], "...")
+        
+        stop(
+          "\n--- Mismatches in data levels ---\n\n", 
+          "Levels in `", df2, "`:\n", paste(mis_levs, collapse = ", "), "\n\n", 
+          "Levels by `levels_group:\n", paste(levels_group, collapse = ", "), "\n\n", 
+          "??? Check for consistency in the setting of ", 
+          "`anal_prnTrend(col_group = ...)` ", 
+          "and `plot_prnTrend(col_group = ...)` for file `", df2, "`.")
+      }
+    })
+
+    # col_group <- df[["col_group"]][1]
+    # col_order <- df[["col_order"]][1]
+    
+    # col_fraction: for aesthetics: same col_fraction, same color
+    if (!length(col_fraction)) col_fraction <- df[["col_fraction"]][1] 
+    
+    # col_subtype: for separate median statistics
+    if (!length(col_subtype)) col_subtype <- df[["col_subtype"]][1]
+
+    if (FALSE) {
+      df$group_prefix <- sub("_(?:.(?!_))+$", "", df[["group"]], perl = TRUE)
+      df$group_suffix <- 
+        ifelse(grepl("_", df[["group"]]), 
+               sub(".*_", "", df[["group"]]), 
+               NA_character_) # "sample_type_unknown"
+      col_subtype <- "group_suffix"
+      col_fraction <- "group_prefix"
+    }
+
+    # df[["col_group"]] <- df[["col_order"]] <- df[["col_fraction"]] <- df[["col_subtype"]] <- NULL
+  } else {
+    # col_group # Not used
+    # col_order # "colnames"
+    # col_subtype # Not used; plot one subtype across all compartments at a time
+    col_fraction <- col_x # "compartment"
+  }
   
   if (is.null(panel_ids)) {
     df <- df |>
@@ -525,17 +651,6 @@ plotSubcellular_sub <- function (
                       factor(.data[[col_cluster]], levels = panel_ids))
   }
   
-  # (x) 'anal_prnTrend.rda' overwritten with the latest call ->
-  #     embedded 'col_group' etc. into the trend analysis output
-  # (x) later to call from corresponding Protein_Trend_Z_nclust[...].rds
-  col_group <- df[["col_group"]][1]
-  col_order <- df[["col_order"]][1]
-  col_fraction <- df[["col_fraction"]][1]
-  col_subtype <- df[["col_subtype"]][1]
-  
-  df[["col_group"]] <- df[["col_order"]] <- df[["col_fraction"]] <- 
-    df[["col_subtype"]] <- NULL
-
   ## (2.1) Set up plot parameters
   ymin    <- eval(dots$ymin, envir = rlang::caller_env())
   ymax    <- eval(dots$ymax, envir = rlang::caller_env())
@@ -597,53 +712,20 @@ plotSubcellular_sub <- function (
   
   ## (3.1) Set up the order of plot on the x-axis
   if (data_type == "Trend") {
-    col_y <- "loc_score"
-    col_x <- "group"
-
-    df <- local({
-      lev_x  <- label_scheme_sub |>
-        dplyr::arrange(!!rlang::sym(col_order)) |>
-        dplyr::select(!!rlang::sym(col_group)) |>
-        unique() |>
-        dplyr::pull(col_group)
-      
-      levs_df  <- levels(df[[col_x]])
-      mis_lev_x <- levs_df[!levs_df %in% lev_x]
-      
-      if (length(mis_lev_x)) {
-        if (length(mis_lev_x) > 12L) 
-          mis_lev_x <- c(mis_lev_x[1:12], "...")
-        
-        stop("\n--- Mismatches in data levels ---\n\n", 
-             "Levels in `", df2, "`:\n",
-             paste(mis_lev_x, collapse = ", "), 
-             "\n\n", 
-             "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
-             paste(levs, collapse = ", "), "\n\n", 
-             "??? Check for consistency in the setting of ", 
-             "`anal_prnTrend(col_group = ...)` ", 
-             "and `plot_prnTrend(col_group = ...)` for file `", 
-             df2, "`.")
-      }
-      
-      df <- df |>
-        dplyr::filter(!!rlang::sym(col_x) %in% lev_x) |>
-        filters_in_call(!!!filter2_dots) |>
-        arrangers_in_call(!!!arrange2_dots) |>
-        dplyr::mutate(!!col_x := factor(.data[[col_x]], levels = lev_x))
-    })
+    df <- df |>
+      dplyr::filter(!!rlang::sym(col_x) %in% levels_group) |>
+      filters_in_call(!!!filter2_dots) |>
+      arrangers_in_call(!!!arrange2_dots) |>
+      dplyr::mutate(!!col_x := factor(.data[[col_x]], levels = levels_group))
   } else {
-    col_y <- "loc_score"
-    col_x <- "compartment"
-    
-    levels_subcellular <- sort(unique(df[[col_x]]))
+    if (!length(levels_fraction)) levels_fraction <- sort(unique(df[[col_x]]))
 
     # To a long form
     df <- df |> 
       # tidyr::pivot_longer(-c(!!id, !!col_cluster), names_to = col_x, values_to = col_y) |>
       dplyr::arrange_at(c(col_cluster, col_x)) |>
       dplyr::mutate(
-        !!col_x := factor(.data[[col_x]], levels = levels_subcellular))
+        !!col_x := factor(.data[[col_x]], levels = levels_fraction))
   }
   
   # Median description of localization scores
@@ -674,22 +756,19 @@ plotSubcellular_sub <- function (
       dplyr::left_join(
         df |>
           dplyr::select(
-            dplyr::one_of(c(col_cluster, col_x, col_fraction, 
-                            col_subtype))) |>
+            dplyr::one_of(c(col_cluster, col_x, col_fraction, col_subtype))) |>
           unique(), 
-        by = c(col_cluster, col_x))
-    
-    df_med <- df_med |>
+        by = c(col_cluster, col_x)) |>
       dplyr::mutate(
         !!col_fraction := 
-          factor(!!rlang::sym(col_fraction), levels = levels_subcellular), )
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction), )
   }
   
   # Handle multiple sub_type later...
   # e.g., df[[col_x]]: Veh_CP, TG_CP, df[[col_fraction]]: CP, CP
   # This allow the same fill color for 
   # different df[[col_x]] at the same df[[col_fraction]]
-  if (is.null(col_fraction)) col_fraction <- col_x
+  # if (!length(col_fraction)) col_fraction <- col_x
   
   if (make_plot) {
     p <- ggplot(
@@ -736,10 +815,10 @@ plotSubcellular_sub <- function (
     col_subtype = col_subtype, 
     col_cluster = col_cluster,
     col_x = col_x, 
-    col_y = col_y
+    col_y = col_y, 
+    # sub_type == "" at data_type == "Trend"
+    sub_type = sub_type
   )
-  
-
 }
 
 
@@ -757,16 +836,7 @@ hclassify_trends <- function (
     col_x = NULL, col_y = NULL, tie_method = "none")
   
 {
-  if (is.null(col_subtype)) {
-    res <- tryCatch(
-      classify_trends(df_med = df_med, 
-                      tie_method = tie_method, 
-                      col_fraction = col_fraction, 
-                      col_subtype = col_subtype, 
-                      col_cluster = col_cluster,
-                      col_y = col_y),
-      error = function(e) NULL)
-  } else {
+  if (length(col_subtype) && col_subtype %in% names(df_med)) {
     res <- lapply(split(df_med, df_med[[col_subtype]]), function (dfx) {
       tryCatch(
         classify_trends(df_med = dfx, 
@@ -780,6 +850,15 @@ hclassify_trends <- function (
       dplyr::bind_rows(.id = col_subtype) |>
       dplyr::ungroup() |>
       dplyr::arrange(!!rlang::sym(col_fraction), !!rlang::sym(col_y))
+  } else {
+    res <- tryCatch(
+      classify_trends(df_med = df_med, 
+                      tie_method = tie_method, 
+                      col_fraction = col_fraction, 
+                      col_subtype = col_subtype, 
+                      col_cluster = col_cluster,
+                      col_y = col_y),
+      error = function(e) NULL)
   }
   
   # Currently use the lowest score across all cell states of `col_subtype`
@@ -928,13 +1007,17 @@ classify_trends <- function (df_med = NULL, tie_method = "none",
 }
 
 
-#' Visualization of subcellular results.
+#' Bar plots of median subcellular scores.
 #'
 #' \code{plot_prnSubcellular} plots the subcellular purity of protein
-#' expressions from \code{\link{anal_prnTrend}}.
-#' 
+#' expressions from \code{\link{anal_prnTrend}} or the probabilities from
+#' \link{svmSubcell}.
+#'
 #' @param dat_dir The working directory.
-#' @param levels_subcellular The levels of subcellular fractions.
+#' @param levels_fraction The levels of subcellular fractions.
+#' @param col_subtye For uses with subcellular data. The column key in metadata
+#'   (\code{expt_smry.xlsx}) linking to sample sub-types, e.g., \code{Control,
+#'   Treated}.
 #' @param levels_subtype The levels of sample subtypes, e.g., Control, Treated.
 #' @param pat The pattern of input filenames.
 #' @param ext The extension of input filenames.
@@ -951,7 +1034,8 @@ classify_trends <- function (df_med = NULL, tie_method = "none",
 #'     df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"),
 #'     col_order = Order,
 #'     n_clust = cl,
-#'     levels_subcellular = c("CP", "NP", "ChA"),
+#'     col_subtye = "Type",
+#'     levels_fraction = c("CP", "NP", "ChA"),
 #'     ncol = 4,
 #'     width = !!width,
 #'     height = !!height,
@@ -960,9 +1044,9 @@ classify_trends <- function (df_med = NULL, tie_method = "none",
 #' @export
 plot_prnSubcellular <- function (
     dat_dir = NULL, 
-    col_select = NULL, col_order = NULL, levels_subcellular = NULL, 
-    levels_subtype = NULL, tie_method = "none", qt = .5, 
-    # levels_col_group = NULL, 
+    col_select = NULL, col_order = NULL, 
+    col_fraction = NULL, levels_fraction = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, tie_method = "none", qt = .5, 
     n_clust = NULL, panel_ids = NULL, 
     pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", data_type = "Trend", 
     scale_log2r = TRUE, complete_cases = FALSE, 
@@ -990,8 +1074,10 @@ plot_prnSubcellular <- function (
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
 
   ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order  <- rlang::enexpr(col_order)
+  col_select  <- rlang::enexpr(col_select)
+  col_order   <- rlang::enexpr(col_order)
+  col_fraction <- rlang::enexpr(col_fraction)
+  col_subtype <- rlang::enexpr(col_subtype)
   filepath   <- rlang::enexpr(filepath)
   filename   <- rlang::enexpr(filename)
   df2 <- rlang::enexpr(df2)
@@ -999,11 +1085,13 @@ plot_prnSubcellular <- function (
   # NULL or symbol -> length 0 or 1
   if (!is.character(col_select)) col_select <- as.character(col_select)
   if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
+  if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
   if (!is.character(filepath)) filepath <- as.character(filepath)
   if (!is.character(filename)) filename <- as.character(filename)
   if (!is.character(df2)) df2 <- as.character(df2)
 
-  tie_method <- if (n_subcell_levs <- length(levels_subcellular)) {
+  tie_method <- if (n_subcell_levs <- length(levels_fraction)) {
     if (n_subcell_levs <= 3) {
       "none"
     }
@@ -1034,7 +1122,9 @@ plot_prnSubcellular <- function (
             impute_na = impute_na,
             df = NULL, 
             anal_type = "Subcellular_plot")(
-              levels_subcellular = levels_subcellular, 
+              col_fraction = col_fraction, 
+              levels_fraction = levels_fraction, 
+              col_subtype = col_subtype, 
               levels_subtype = levels_subtype, 
               tie_method = tie_method, 
               n_clust = n_clust, 
@@ -1046,21 +1136,26 @@ plot_prnSubcellular <- function (
 
 
 #' SVM classification of subcellular locations.
-#' 
+#'
 #' @param species Species in one of human, mouse and rat.
 #' @param id Identifier.
+#' @param col_y The column key in \code{df_ref} for training labels.
 #' @param col_compartment The identifier of subcellular compartment.
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath of inputs and outputs.
 #' @param n_clust The number of clusters.
-#' @param levels_subcellular The levels of subcellular fractions.
-#' @param seed A seed for SVm.
-#' @inheritParams anal_prnTrend col_subtype 
+#' @param u_subtypes The unique levels of sample types. A NULL value indicates
+#'   only one subtype.
+#' @param levels_fraction The levels of subcellular fractions.
+#' @param seed A seed for SVM.
+#' @inheritParams anal_prnTrend col_subtype
 svmSubcell <- function (
     species = "human", id = "gene", 
-    col_subtype = NULL, col_compartment = "compartment", 
     dat_dir = NULL, filepath = NULL, n_clust = NULL, 
-    levels_subcellular = 
+    col_compartment = "compartment", col_y = "location", 
+    col_subtype = NULL, levels_subtype = NULL, u_subtypes = NULL, 
+    col_fraction = NULL, 
+    levels_fraction = 
       c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
     seed = 42, ...) 
 {
@@ -1071,28 +1166,77 @@ svmSubcell <- function (
   ## (1) Obtain expression data and reference data
   tempdata <- prepSubcell(
     species = species, id = id, dat_dir = dat_dir, filepath = filepath, 
-    n_clust = n_clust, col_subtype = col_subtype, 
-    levels_subcellular = levels_subcellular)
-  df_expr  <- tempdata$df_expr
-  df_ref   <- tempdata$df_ref
-  saveRDS(df_expr, file.path(filepath, "df_expr.rds"))
+    n_clust = n_clust, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    u_subtypes = u_subtypes, 
+    col_fraction = col_fraction, levels_fraction = levels_fraction)
+  
+  df_exprs <- tempdata[["df_exprs"]]
+  df_ref   <- tempdata[["df_ref"]]
+
+  saveRDS(df_exprs, file.path(filepath, "df_exprs.rds"))
   saveRDS(df_ref, file.path(filepath, "df_ref.rds"))
   rm(list = "tempdata")
+  
+  if (length(u_subtypes) > 1L) {
+    if (!identical(names(df_exprs), u_subtypes)) {
+      stop("Developer: mismatches between expression data and sample types.")
+    }
+  }
 
+  ## (2) Results by sub_types
+  res <- vector("list", length(df_exprs))
+  for (i in seq_along(res)) {
+    res[[i]] <- train_loc_svm(
+      df_expr = df_exprs[[i]], sub_type = u_subtypes[[i]], 
+      df_ref = df_ref, id = id, col_y = col_y, col_subtype = col_subtype, 
+      col_compartment = col_compartment, filepath = filepath, seed = seed)
+  }
+  
+  # if (length(u_subtypes)) names(res) <- u_subtypes
+  
+  res
+}
+
+
+#' Train localization SVM.
+#'
+#' @param df_expr A matrix of expression data, typically normalized intensities
+#'   that summed to one across fractions for each protein.
+#' @param df_ref A reference data frame.
+#' @param id An identifier.
+#' @param col_y The column key in \code{df_ref} for training labels.
+#' @param col_compartment The identifier of subcellular compartment.
+#' @param sub_type A label of data subtype, e.g., "Control".
+#' @param seed A seed for SVM.
+train_loc_svm <- function (
+    df_expr, sub_type = NULL, df_ref, id = "gene", col_y = "location", 
+    col_subtype = NULL, col_compartment = "compartment", filepath = NULL, 
+    seed = 42L, ...)
+{
+  # A placeholder to ensure column presence during tidyverse
+  if (no_subtype <- !length(col_subtype)) col_subtype <- "sample_type_unknown"
+  
   Xmat <- df_expr[df_ref[[id]], ]
   Xmat <- Xmat[match(rownames(Xmat), df_ref[[id]]), ]
   
-  stopifnot(identical(rownames(Xmat), df_ref[[id]]))
+  if (!identical(rownames(Xmat), df_ref[[id]])) {
+    stop("Develepor: mismatches in identifiers of ", id, ".")
+  }
   
-  y_factor <- factor(df_ref$location)
-  df_train <- as.data.frame(Xmat)
-  df_train$location <- y_factor
+  if (!col_y %in% colnames(df_ref)) {
+    stop("The column of Y labels", col_y, " not found in reference data.")
+  }
+  
+  y_factor <- factor(df_ref[[col_y]])
+  df_train <- data.frame(Xmat, check.names = FALSE)
+  df_train[[col_y]] <- y_factor
   class_names <- levels(y_factor)
   
   ## (2) Training
   set.seed(seed)
   svm_model <- e1071::svm(
-    location ~ .,
+    formula = stats::reformulate(".", response = col_y),
     data = df_train,
     kernel = "radial", 
     probability = TRUE, 
@@ -1123,27 +1267,39 @@ svmSubcell <- function (
   }
   
   ## Outputs
+  df_pred    <- tibble::tibble(!!id := names(svm_preds), svm = svm_preds)
   entropies  <- -rowSums(prob_mat * log10(prob_mat))
   scores_loc <- prob_mat * (1 - entropies)
   entropies  <- tibble::tibble(!!id := names(entropies), entropy = entropies)
+  entropies  <- entropies |> dplyr::left_join(df_pred, by = id)
   
   scores_loc <- scores_loc |>
-    data.frame() |>
+    data.frame(check.names = FALSE) |>
     tibble::rownames_to_column(var = id) |> 
     tidyr::pivot_longer(
-      -c(!!id), names_to = col_compartment, values_to = "loc_score")
+      -c(!!rlang::sym(id)), names_to = col_compartment, values_to = "loc_score")
   
   prob_mat <- prob_mat |>
-    data.frame() |>
+    data.frame(check.names = FALSE) |>
     tibble::rownames_to_column(var = id) |> 
     tidyr::pivot_longer(
-      -c(!!id), names_to = col_compartment, values_to = "purity")
+      -c(!!rlang::sym(id)), names_to = col_compartment, values_to = "purity")
   
   ans <- prob_mat |>
     dplyr::left_join(entropies, by = id) |>
     dplyr::left_join(scores_loc, by = c(id, col_compartment))
   
-  readr::write_tsv(ans, file.path(filepath, "svm_probs.tsv"))
+  # Try to later get sub_type from file names
+  if (FALSE) {
+    if (no_subtype) {
+      ans[[col_subtype]] <- NA_character_
+    } else {
+      ans[[col_subtype]] <- sub_type
+    }
+  }
+
+  out_name <- paste0(paste(c("svm_probs", sub_type), collapse = "_"), ".tsv")
+  readr::write_tsv(ans, file.path(filepath, out_name))
   
   list(df_loc_score = ans, df_expr = df_expr)
 }
@@ -1156,12 +1312,16 @@ svmSubcell <- function (
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath of inputs and outputs.
 #' @param key_col The column key where data to be used.
-#' @param levels_subcellular The levels of subcellular fractions.
-#' @inheritParams anal_prnTrend col_subtype 
+#' @param levels_fraction The levels of subcellular fractions.
+#' @param u_subtypes The unique levels of sample types. A NULL value indicates
+#'   only one subtype.
+#' @inheritParams anal_prnTrend col_subtype
 prepSubcell <- function (
     species = "human", id = "gene", dat_dir = NULL, filepath = NULL, 
-    n_clust = NULL, key_col = "log10Int", col_subtype = NULL, 
-    levels_subcellular = 
+    n_clust = NULL, key_col = "log10Int", 
+    col_subtype = NULL, levels_subtype = NULL, u_subtypes = NULL, 
+    col_fraction = NULL, 
+    levels_fraction = 
       c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), ...) 
 {
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
@@ -1175,16 +1335,28 @@ prepSubcell <- function (
     rat = "rn",
     stop("species: ", species, " is not in one of `human`, `mouse` or `rat`.")
   )
-  
+
   df_ref <- local({
     file_db <- paste0("subcell_", abbr_species)
     data(package = "proteoQ", list = file_db, envir = environment())
     df_ref <- get(file_db)
     
-    df_ref <- df_ref |> 
-      dplyr::mutate(location = sub("ERGIC", "ER", location))
+    df_ref <- df_ref |> dplyr::mutate(location = sub("ERGIC", "ER", location))
   })
 
+  if (length(levels_fraction) && 
+      all(levels_fraction %in% c("NP", "CP", "ChA"))) {
+    # No Chromatin-associated class
+    df_ref <- df_ref |>
+      dplyr::mutate(location = dplyr::case_when(
+        location %in% c("Nucleus", "Centrosome") ~ "NP",
+        location %in% c("Cytosol", "Ribosome", "Proteasome", "Stress granule",
+                        "Endosome", "ER", "Golgi", "Lysosome", 
+                        "Mitochondrion", "Peroxisome", "PM") ~ "CP",
+        TRUE ~ NA_character_
+      ))
+  }
+  
   # Find the file names of secondary 'Trend' inputs
   # (dummies: 'scale_log2r' and 'impute_na')
   scale_log2r <- TRUE
@@ -1211,19 +1383,69 @@ prepSubcell <- function (
   } else {
     df <- readr::read_tsv(file.path(filepath, filenames_df2[[1]]))
   }
+
+  vals_g <- df[["group"]]
+  nms_df <- names(df)
   
-  
-  # Check the number of unique values under col_subtype... "sample_type_unknown"
-  if (length(col_subtype)) {
-    
+  if (no_subtype <- !length(col_subtype)) {
+    col_subtype <- "sample_type_unknown"
   }
   
-  df_expr <- make_subcell_expr(
-    df = df, id = id, key_col = key_col, col_subtype = col_subtype, 
-    levels_subcellular = levels_subcellular, 
-    scale = TRUE, match_colnames_to_levels_subcellular = TRUE)
+  pat_frac <- paste0("(", paste(levels_fraction, collapse = "|"), ")$")
+  pat_subtype  <- paste0("^(", paste(levels_subtype, collapse = "|"), ")")
+  
+  if (!col_subtype %in% nms_df) {
+    # df[[col_subtype]] <- sub("_(?:.(?!_))+$", "", vals_g, perl = TRUE)
+    df[[col_subtype]] <- ifelse(
+      grepl(pat_frac, vals_g), sub(pat_frac, "", vals_g), vals_g)
+    
+    df[[col_subtype]] <- ifelse(
+      grepl(pat_subtype, df[[col_subtype]]),
+      sub(paste0( pat_subtype, ".*"), "\\1", df[[col_subtype]]),
+      NA_character_
+    )
+    
+    u_subtypes <- unique(df[[col_subtype]])
+  }
+  
+  # Should not incur
+  # if (!length(col_fraction)) col_fraction <- "fraction..."
 
-  df_ref <- df_ref[df_ref[[id]] %in% rownames(df_expr), ]
+  if (!col_fraction %in% nms_df) {
+    # df[[col_fraction]] <- ifelse(grepl("_", vals_g), sub(".*_", "", vals_g), NA_character_)
+    df[[col_fraction]] <- ifelse(
+      grepl(pat_frac, vals_g),
+      sub(paste0(".*", pat_frac), "\\1", vals_g),
+      NA_character_)
+  }
+
+  # rm(list = c("vals_g", "nms_df", "pat_frac", "pat_subtype"))
+  
+  dfs <- split(df, df[[col_subtype]])
+  
+  # Match the order of levels_subtype
+  if (length(levels_subtype) > 1L) {
+    dfs <- dfs[levels_subtype]
+  }
+  
+  # Normalized intensity (percentages)
+  df_exprs <- lapply(
+    dfs, make_subcell_expr, 
+    id = id, key_col = key_col, levels_fraction = levels_fraction, 
+    scale = TRUE, match_colnames_to_levels_fraction = TRUE)
+  
+  # Check for identical rownames
+  local({
+    if ((n_subtypes <- length(u_subtypes)) > 1L) {
+      for (i in (n_subtypes - 1L)) {
+        if (!identical(rownames(df_exprs[[i]]), rownames(df_exprs[[i+1]]))) {
+          stop("Developer: mismatched rownames.")
+        }
+      }
+    }
+  })
+
+  df_ref <- df_ref[df_ref[[id]] %in% rownames(df_exprs[[1]]), ]
   
   if (!nrow(df_ref)) {
     stop("No reference data retained after ID matching. \n", 
@@ -1232,40 +1454,39 @@ prepSubcell <- function (
   
   df_ref <- df_ref[!is.na(df_ref[[id]]), ]
   
-  list(df_expr = df_expr, df_ref = df_ref, abbr_species = abbr_species, 
-       filenames_df2 = filenames_df2)
+  list(
+    df_exprs = df_exprs, 
+    df_ref = df_ref, 
+    abbr_species = abbr_species, 
+    filenames_df2 = filenames_df2
+  )
 }
 
 
 #' Prepare the matrix of expression data.
-#'
+#' 
+#' One subtype at a time.
+#' 
 #' @param df An input data frame.
 #' @param id An identifier.
 #' @param key_col The column key where values will be used for preparing
 #'   expression data.
 #' @param key_group The column key where group information will be found for
 #'   preparing expression data.
-#' @param levels_subcellular The levels of subcellular fractions.
+#' @param levels_fraction The levels of subcellular fractions.
 #' @param scale Logical; to scale values by rowSums or not.
-#' @param match_colnames_to_levels_subcellular Llogical; to match the column
+#' @param match_colnames_to_levels_fraction Llogical; to match the column
 #'   names of the expression data with the keys defined in
-#'   \code{levels_subcellular} or not.
+#'   \code{levels_fraction} or not.
 make_subcell_expr <- function (
     df = NULL, id = "gene", key_col = "log10Int", key_group = "group", 
-    col_subtype = NULL, 
-    levels_subcellular = 
+    levels_fraction = 
       c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
-    scale = TRUE, match_colnames_to_levels_subcellular = TRUE)
+    scale = TRUE, match_colnames_to_levels_fraction = TRUE)
 {
   if (!key_group %in% colnames(df)) {
     print(head(df))
     stop("Developer: column 'group' not found.")
-  }
-  
-  # Then check if one or multiple values under 'col_subtype'
-  
-  if (!length(col_subtype)) {
-    
   }
   
   df_expr <- df[, c(id, key_group, key_col)]
@@ -1281,14 +1502,14 @@ make_subcell_expr <- function (
   local({
     u_grps <- unique(df_expr[[key_group]])
     n_grps <- length(u_grps)
-    n_levs <- length(levels_subcellular)
+    n_levs <- length(levels_fraction)
     
     if (n_grps > n_levs) {
       stop("The number of groups is different to the number of ", 
            "fraction levels: \n", key_group, ": ", 
            paste(u_grps, collapse = ", "), "\n",
-           "levels_subcellular", ": ", 
-           paste(levels_subcellular, collapse = ", "))
+           "levels_fraction", ": ", 
+           paste(levels_fraction, collapse = ", "))
     }
   })
 
@@ -1307,9 +1528,9 @@ make_subcell_expr <- function (
   }
   
   # Change column names to fraction names
-  if (match_colnames_to_levels_subcellular) {
+  if (match_colnames_to_levels_fraction) {
     colnames(df_expr) <- sapply(colnames(df_expr), function(col) {
-      matched <- levels_subcellular[sapply(levels_subcellular, function(l) {
+      matched <- levels_fraction[sapply(levels_fraction, function(l) {
         # Handle edge case, e.g., colnames '5K' instead of 'XXX...5k'
         grepl(paste0("(^|[^0-9])", l, "$"), col)
       })]
@@ -1317,7 +1538,7 @@ make_subcell_expr <- function (
       if (length(matched) == 1L) matched else col
     })
     
-    df_expr <- df_expr[, levels_subcellular]
+    df_expr <- df_expr[, levels_fraction]
   }
   
   df_expr
@@ -1326,6 +1547,8 @@ make_subcell_expr <- function (
 
 #' Cluster SVM probabilities.
 #'
+#' @param df_prob A data frame of SVM probabilities (under column
+#'   \code{loc_score}).
 #' @param dat_dir The working directory.
 #' @param filepath A filepath for inputs and outputs.
 #' @param id Character string; one of \code{pep_seq}, \code{pep_seq_mod},
@@ -1333,7 +1556,8 @@ make_subcell_expr <- function (
 #' @param n_clust The number of clusters.
 #' @param choice A clustering method.
 cluster_svmprobs <- function (
-    dat_dir = NULL, filepath = NULL, id = "gene", n_clust = NULL, 
+    df_prob = NULL, sub_type = NULL, dat_dir = NULL, filepath = NULL, 
+    id = "gene", n_clust = NULL, 
     choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
     ...) 
 {
@@ -1344,10 +1568,9 @@ cluster_svmprobs <- function (
   choice <- match.arg(choice)
   dots <- rlang::enexprs(...)
   
-  df_prob <- readr::read_tsv(file.path(filepath, "svm_probs.tsv"))
-  
-  df_expr <- local({
-    df_expr <- df_prob[, c(id, "compartment", "loc_score")] |>
+  # Compartment probabilities
+  df_comp <- local({
+    df_comp <- df_prob[, c(id, "compartment", "loc_score")] |>
       tidyr::pivot_wider(
         id_cols = id, 
         names_from = c("compartment"), 
@@ -1355,43 +1578,42 @@ cluster_svmprobs <- function (
         # values_fill = 0, 
       )
     
-    ids <- df_expr[[id]]
-    df_expr <- as.matrix(df_expr[, colnames(df_expr) != id])
-    rownames(df_expr) <- ids
+    ids <- df_comp[[id]]
+    df_comp <- as.matrix(df_comp[, colnames(df_comp) != id])
+    rownames(df_comp) <- ids
     
-    df_expr
+    df_comp
   })
   
   ans_dots <- find_trend_m(
-    dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_expr)
+    dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_comp)
   dots <- ans_dots[["dots"]]
   n_clust <- ans_dots[["n_clust"]]
   rm(list = c("ans_dots"))
   
-  if (FALSE) {
-    fns <- paste0("svmProb_Z_nclust", n_clust)
-    res <- vector("list", length(n_clust))
-    
-    for (i in seq_along(n_clust)) {
-      res[[i]] <- makeTrendRes(
-        fns[[i]], choice = choice, dots = dots, id = id, df_mean_log2r = df_expr)
-      readr::write_tsv(
-        res[[i]], 
-        file.path(filepath, paste0("Protein_svmProb_Z_nclust", i, ".tsv")))
-    }
-  }
-  
   res <- lapply(
     paste0("svmProb_Z_nclust", n_clust), makeTrendRes, 
-    choice = choice, dots = dots, id = id, df_mean_log2r = df_expr)
+    choice = choice, dots = dots, id = id, df_mean_log2r = df_comp)
+  names(res) <- n_clust
+
+  out <- mapply(function (rx, cl) {
+    out_name <- paste0(
+      paste(
+        c(paste0("Protein_svmProb_Z_nclust", cl), 
+          sub_type), 
+        collapse = "_"), 
+      ".tsv")
+    
+    out <- dplyr::left_join(rx, df_prob, by = id)
+    readr::write_tsv(out, file.path(filepath, out_name))
+    
+    out
+  }, res, n_clust, 
+  SIMPLIFY = FALSE)
   
-  mapply(function (rx, cl) {
-    readr::write_tsv(
-      dplyr::left_join(rx, df_prob, by = id), 
-      file.path(filepath, paste0("Protein_svmProb_Z_nclust", cl, ".tsv")))
-  }, res, n_clust)
-  
-  invisible(res)
+  out <- out |> dplyr::bind_rows(.id = "n_clust")
+
+  invisible(out)
 }
 
 
@@ -1409,6 +1631,7 @@ cluster_svmprobs <- function (
 #'   protein for consideration.
 #' @param plot_prob_clusters Logical; an option to plot clusters of
 #'   probabilities.
+#' @param levels_subtype The levels of sample subtypes, e.g., Control, Treated.
 #' @param seed A random seed.
 #' @import ggplot2 RColorBrewer
 #' 
@@ -1417,23 +1640,24 @@ cluster_svmprobs <- function (
 #' classify_subcellular(
 #'   dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36, 
 #'   col_group = "Group", col_order = "Order", col_fraction = "Fraction", 
-#'   levels_subcellular = 
+#'   levels_fraction = 
 #'     c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"))
 #' }
 #' 
 #' @export
 classify_subcellular <- function (
     dat_dir = NULL, filepath = NULL, id = "gene", species = "human", 
-    n_clust = 16:36, levels_subcellular = 
-      c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
-    col_group = NULL, col_order = NULL, col_fraction = NULL, col_subtype = NULL, 
+    n_clust = 16:36, 
+    col_fraction = NULL, levels_fraction = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    col_group = NULL, col_order = NULL, 
     min_prot_n_peps = 2L, plot_prob_clusters = TRUE, seed = 42L, ...) 
 {
+  dots <- rlang::enexprs(...)
+  
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   if (is.null(n_clust)) stop("'n_clust' cannot be NULL.")
-  
-  dots <- rlang::enexprs(...)
 
   ### (1) Generate expression data
   ## Argument with single option and NULL default (quotation marks or not)
@@ -1448,76 +1672,142 @@ classify_subcellular <- function (
   if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
   if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
   
+  no_subtype <- !length(col_subtype)
+  
   ## Argument with single, non-NULL option (with or without quotation mark)
-  # Never NULL (since the default is not NULL)
+  #  (Never NULL since the default is not NULL)
   id <- rlang::as_string(rlang::enexpr(id))
   species <- rlang::as_string(rlang::enexpr(species))
   
   ## Special handling of character vectors
-  levels_subcellular <- rlang::enexpr(levels_subcellular)
-  levels_subcellular <- eval(levels_subcellular)
-  n_levs <- length(levels_subcellular)
-  if (n_levs == 1L) {
-    if (levels_subcellular == "levels_subcellular") {
-      stop("Use 'levels_subcellular = !!levels_subcellular' ", 
-           "instead of 'levels_subcellular = levels_subcellular'.")
+  levels_fraction <- rlang::enexpr(levels_fraction)
+  levels_fraction <- eval(levels_fraction)
+  
+  n_levs <- length(levels_fraction)
+  if (!n_levs) {
+    stop("'levels_fraction' cannot be empty.")
+  } else if (n_levs == 1L) {
+    if (levels_fraction == "levels_fraction") {
+      stop("Use 'levels_fraction = !!levels_fraction' ", 
+           "instead of 'levels_fraction = levels_fraction'.")
     }
     
-    stop("Need more than one level for 'levels_subcellular'.")
+    stop("Need more than one level for 'levels_fraction'.")
   }
   rm(list = "n_levs")
-
-  # Processed log2FC and intensity data
-  # Need `!!` since `anal_prnTrend` is a UI function
-  ans_trend <- anal_prnTrend(
-    col_group = !!col_group, 
-    col_order = !!col_order,
-    col_fraction = !!col_fraction, 
-    col_subtype = !!col_subtype, 
-    cluster_data = FALSE, # to skip clustering steps
-    # iter.max = 250, 
-    n_clust = n_clust, 
-    filter_by_npep = exprs(prot_n_pep >= !!min_prot_n_peps), )
-  df_mean_log2r <- ans_trend[["log2R"]]
-  df_mean_int   <- ans_trend[["Intensity"]]
-
-  ### (2) Generate an SVM probability matrix
-  ans_svm <- svmSubcell(
-    species = species, id = id, dat_dir = dat_dir, filepath = filepath, 
-    col_subtype = col_subtype, col_compartment = "compartment", 
-    levels_subcellular = levels_subcellular, 
-    n_clust = n_clust, seed = seed)
-
-  ### (3) Classify SVM probabilities
-  cluster_svmprobs(
-    dat_dir = dat_dir, filepath = filepath, id = id, n_clust = n_clust, 
-    iter.max = 250)
   
-  ### (4) Optional: Plot clusters of SVM probabilities
-  if (plot_prob_clusters) {
-    plotTrend(id = id, 
-              dat_dir = dat_dir, col_group = NULL, col_order = NULL, 
-              label_scheme_sub = NULL, anal_type = "svmProb", 
-              pat = "svmProb_[ONZ]_.*nclust\\d+\\.tsv$", ext = "tsv",  
-              n_clust = n_clust, panel_ids = NULL, show_panel_ids = TRUE, 
-              group_data_by = "ratio", scale_log2r = TRUE, 
-              complete_cases = FALSE, impute_na = FALSE, 
-              df2 = NULL, filepath = filepath, 
-              filename = "Protein_svmProb_line_Z.png", theme = NULL, 
-              ncol = 8, ymin = 0, ymax = 1, limitsize = FALSE, )
+  levels_subtype <- eval(rlang::enexpr(levels_subtype))
+  
+  n_subtypes <- length(levels_subtype)
+  if (n_subtypes == 1L) {
+    if (levels_subtype == "levels_subtype") {
+      stop("Use 'levels_subtype = !!levels_subtype' ", 
+           "instead of 'levels_subtype = levels_subtype'.")
+    }
   }
 
-  ### (5) Classify subcellular compartments by medium statistics
+  if (n_subtypes && no_subtype) {
+    stop("Defined 'levels_subtype' but not 'col_subtype'.")
+  }
+  
+  if (length(levels_fraction) && 
+      all(levels_fraction %in% c("NP", "CP", "ChA"))) {
+    warning("Levels 'ChA' not available for supervised learning and dropped.")
+  }
+
+  # Obtain aggregated log2FC and intensity data
+  # Need `!!` since `anal_prnTrend` is a UI function
+  
+  # temporary bypassing
+  if (TRUE) {
+    ans_trend <- anal_prnTrend(
+      col_group = !!col_group, 
+      col_order = !!col_order,
+      col_fraction = !!col_fraction, 
+      col_subtype = !!col_subtype, 
+      cluster_data = FALSE, # to skip clustering steps
+      n_clust = n_clust, 
+      filter_by_npep = exprs(prot_n_pep >= !!min_prot_n_peps), )
+    df_mean_log2r <- ans_trend[["log2R"]]
+    df_mean_int   <- ans_trend[["Intensity"]]
+  }
+
+  ### (2) Generate an SVM probability matrix
+  label_scheme <- load_ls_group(dat_dir)
+  u_subtypes   <- if (no_subtype) NULL else unique(label_scheme[[col_subtype]])
+  
+  ans_svm <- svmSubcell(
+    species = species, id = id, dat_dir = dat_dir, filepath = filepath, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    col_compartment = "compartment", 
+    col_fraction = col_fraction, levels_fraction = levels_fraction, 
+    u_subtypes = u_subtypes, n_clust = n_clust, seed = seed)
+  svm_probs <- lapply(ans_svm, `[[`, "df_loc_score")
+  df_exprs  <- lapply(ans_svm, `[[`, "df_expr")
+  names(df_exprs) <- names(svm_probs) <- u_subtypes
+
+  ### (3) Classify SVM probabilities
+  # ans_cl: list by sub_types
+  #  list of data frames by n_clust
+  if (TRUE) {
+    # Not `mapply` since u_subtypes can be NULL
+    ans_cl <- vector("list", length(svm_probs))
+    for (i in seq_along(svm_probs)) {
+      ans_cl[[i]] <- cluster_svmprobs(
+        df_prob = svm_probs[[i]], sub_type = u_subtypes[[i]], dat_dir = dat_dir, 
+        filepath = filepath, id = id, n_clust = n_clust, iter.max = 250) 
+      # ans_cl[[i]] <- ans_cl[[i]] |> dplyr::bind_rows()
+    }
+    names(ans_cl) <- u_subtypes
+    
+    ans_cl <- ans_cl |>
+      dplyr::bind_rows(.id = if (no_subtype) NULL else col_subtype)
+    
+    # Postpone this during plotting
+    if (FALSE) {
+      if (no_subtype) {
+        # col_subtype <- "sample_type_unknown"
+        # ans_cl[[col_subtype]] <- NA
+      } else {
+        ans_cl <- ans_cl |>
+          dplyr::mutate(
+            !!col_subtype := 
+              factor(.data[[col_subtype]], levels = levels_subtype))
+      }
+    }
+    
+  }
+
+  ### (4) Classify subcellular compartments by medium statistics
   plot_prnSubcellular(
     col_order = "colnames",
+    col_subtype = !!col_subtype, 
     q = .5, 
     ncol = 4,
-    pat = "svmProb_[ONZ]_.*nclust\\d+\\.tsv$", 
+    pat = "svmProb_[ONZ]_.*nclust\\d+.*\\.tsv$", 
     ext = "tsv", 
     data_type = "svmProb", 
     limitsize = FALSE,
     make_plot = TRUE, 
   )
+  
+  ### (5) Optional: Plot clusters of SVM probabilities
+  if (plot_prob_clusters) {
+    plotTrend(
+      id = id, 
+      dat_dir = dat_dir, col_group = NULL, col_order = NULL, 
+      label_scheme_sub = NULL, anal_type = "svmProb", 
+      pat = "svmProb_[ONZ]_.*nclust\\d+\\_{0,1}.*\\.tsv$", ext = "tsv",  
+      n_clust = n_clust, panel_ids = NULL, show_panel_ids = TRUE, 
+      group_data_by = "ratio", scale_log2r = TRUE, 
+      complete_cases = FALSE, impute_na = FALSE, 
+      df2 = NULL, filepath = filepath, 
+      filename = "Protein_svmProb_line_Z.png", theme = NULL, 
+      ncol = 8, ymin = 0, ymax = 1, limitsize = FALSE, )
+  }
+
+  ### (6) Combine multiple sub_types
+  
 }
 
 
@@ -1529,8 +1819,8 @@ classify_subcellular <- function (
 #' @param df_expr A matrix of expression data.
 #' @param id An identifier.
 #' @param n_clust Not used. The number of clusters.
-#' @param levels_subcell_compartments The factor levels of subcellular
-#'   compartments. Set \code{levels_subcell_compartments = NULL} for automatic
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
 #'   determination.
 #' @param df2 Not used. The names of secondary input files.
 #' @param filepath A file path of inputs and outputs.
@@ -1549,52 +1839,79 @@ classify_subcellular <- function (
 #' @export
 plot_prnSubcell_UMAP <- function (
     dat_dir = NULL, df_expr = NULL, id = "gene", n_clust = 16:36, 
-    levels_subcell_compartments = c(
+    levels_ref_compartments = c(
       "Cytosol", "Nucleus", "ER", "PM", "Mitochondrion", "Golgi", "Lysosome",
-      "Ribosome", "Stress.granule", "Proteasome", "Peroxisome", "Centrosome", 
+      "Ribosome", "Stress granule", "Proteasome", "Peroxisome", "Centrosome", 
       "Endosome", "Unknown"), 
-    col_subtype = NULL, df2 = NULL, filepath = NULL, filename = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    df2 = NULL, filepath = NULL, filename = NULL, 
     ext = "png", wrap_facets = TRUE, seed = 123, ...) 
 {
   dots <- rlang::enexprs(...)
+  
   if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   
   ## Find input `df2` of SVM probabilities
   fns_svmprob <- find_trend_df2(
-    df2 = df2, n_clust = NULL, pat = "Protein_svmProb_Z_nclust\\d+", 
+    df2 = df2, n_clust = NULL, 
+    pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
     ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
   
   if (!length(fns_svmprob)) {
-    warning("No SVM probability results found.", " Run 'anal_prnTrend' first.")
+    warning("No SVM results found.")
     return(NULL)
   }
   
   ## Load classification results
-  df <- readr::read_tsv(file.path(filepath, fns_svmprob[[1]]))
+  # sub_types <- stringr::str_match(fns_svmprob, "_nclust\\d+[_]{0,1}(.*)\\.tsv$")[, 2]
+  sub_types <- sub(paste0(".*_nclust\\d+[_]{0,1}(.*)\\.", "tsv"), "\\1", fns_svmprob)
+  
+  # lapply crashed sometime
+  df <- local({
+    if (!length(mts <- match(levels_subtype, sub_types))) {
+      mts <- seq_along(fns_svmprob)
+    }
+    
+    filepaths <- file.path(filepath, fns_svmprob[mts])
+    dfs <- vector("list", length(filepaths))
+    for (i in seq_along(filepaths)) {
+      dfs[[i]] <- readr::read_tsv(filepaths[[i]])
+    }
+    
+    df <- dplyr::bind_rows(dfs)
+  })
   
   ## Compile subcellular factor levels
-  possibles <- unique(df$compartment)
+  if (!length(levels_ref_compartments)) {
+    levels_ref_compartments <- local({
+      univ <- unique(df$compartment)
+      levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
+      levs <- c(levs, univ[!univ %in% levs], "Unknown")
+    })
+  }
   
+  print(paste("The levels of 'levels_ref_compartments': ", 
+              paste(levels_ref_compartments, collapse = ", ")))
+
   df <- df |>
-    dplyr::select(dplyr::one_of(id, "sub_location")) |>
+    dplyr::select(dplyr::one_of(id, "sub_location", col_subtype)) |>
     dplyr::filter(!is.na(sub_location)) |>
     unique()
   
-  if (!length(levels_subcell_compartments)) {
-    levels_subcell_compartments <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
-    levels_missing <- possibles[!possibles %in% levels_subcell_compartments]
-    levels_subcell_compartments <- c(levels_subcell_compartments, levels_missing)
-    levels_subcell_compartments <- c(levels_subcell_compartments, "Unknown")
-  } else {
-    levels_missing <- NULL
+  if (length(levels_ref_compartments)) {
+    df <- df |>
+      dplyr::mutate(
+        sub_location = factor(sub_location, levels = levels_ref_compartments))
   }
-  
-  rm(list = c("possibles", "levels_missing"))
-  
-  df <- df |>
-    dplyr::mutate(
-      sub_location = factor(sub_location, levels = levels_subcell_compartments))
+
+  if (length(col_subtype) && length(levels_subtype) && 
+      col_subtype %in% names(df)) {
+    df <- df |>
+      dplyr::mutate(
+        !!col_subtype := 
+          factor(!!rlang::sym(col_subtype), levels = levels_subtype), )
+  }
   
   if (is.null(filename)) {
     fn_prefix <- paste0(tools::file_path_sans_ext(fns_svmprob[[1]]), "_umap")
@@ -1605,81 +1922,77 @@ plot_prnSubcell_UMAP <- function (
     fn_suffix <- tools::file_ext(filename)
   }
   
-  ## Load the matrix of normalized intensity across fractions
-  # Recompile df_expr from scratch
-  if (FALSE) {
-    df_expr <- local({
-      filenames_df2 <- tryCatch(
-        find_trend_df2(
-          df2 = NULL, n_clust = n_clust, scale_log2r = TRUE, 
-          impute_na = FALSE, filepath = filepath), 
-        error = function (e) NULL)
-      
-      if (length(filenames_df2)) {
-        df_trend <- readr::read_tsv(file.path(filepath, filenames_df2[[1]]))
-        col_fraction <- df_trend[["col_fraction"]][[1]]
-        col_subtype <- df_trend[["col_subtype"]][[1]]
-        key_col <- "log10Int"
-        
-        df_trend <- df_trend |>
-          dplyr::select(dplyr::one_of(c(id, col_fraction, key_col)))
-        
-        levels_subcellular <- unique(df_trend[[col_fraction]])
-        
-        df_expr <- make_subcell_expr(
-          df = df_trend, id = id, key_col = key_col, key_group = col_fraction, 
-          levels_subcellular = levels_subcellular, col_subtype = col_subtype, 
-          scale = TRUE, match_colnames_to_levels_subcellular = TRUE)
-      } else {
-        df_expr <- NULL
-      }
-      
-      df_expr
-    })
-    
-    if (isnull(df_expr)) {
-      if (file.exists(fn_expr <- file.path(filepath, "df_expr.rds"))) {
-        df_expr <- readRDS(fn_expr)
-      } else {
-        warning("Expression file not found: ", file.path(filepath, "df_expr.rds"))
-        return(NULL)
-      }
-    }
-  }
-  
-  if (file.exists(fn_expr <- file.path(filepath, "df_expr.rds"))) {
-    df_expr <- readRDS(fn_expr)
+  ## Load the matrices of normalized intensities
+  #  (see also 'prepSubcell' and 'make_subcell_expr')
+  if (file.exists(fn_expr <- file.path(filepath, "df_exprs.rds"))) {
+    df_exprs  <- readRDS(fn_expr)
+    sub_types <- names(df_exprs)
   } else {
-    warning("Expression file not found: ", file.path(filepath, "df_expr.rds"))
+    warning("Expression file not found: ", file.path(filepath, "df_exprs.rds"))
     return(NULL)
   }
   rm(list = "fn_expr")
   
-  df_umap <- local({
-    set.seed(seed)
+  set.seed(seed)
+  df_umap <- mapply(function (df_expr, sub_type) {
     res_umap <- umap::umap(df_expr)
     df_umap  <- res_umap$layout[, 1:2]
     colnames(df_umap) <- paste0("UMAP", 1:2)
     rownames(df_umap) <- rownames(df_expr)
     df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
-    readr::write_tsv(df_umap, file.path(filepath, "umap.tsv"))
     
+    if (length(col_subtype)) {
+      df_umap[[col_subtype]] <- sub_type
+    }
+    
+    readr::write_tsv(
+      df_umap, file.path(filepath, paste0("umap_", sub_type, ".tsv")))
     df_umap
-  })
+  }, df_exprs, sub_types, SIMPLIFY = FALSE) |>
+    dplyr::bind_rows()
   
-  df_plot <- tibble::tibble(df_umap) |>
-    dplyr::left_join(df[, c("gene", "sub_location")], by = id)
-  
+  # Join predicted 'sub_location'
+  df_plot <- tibble::tibble(df_umap)
+  if (length(col_subtype)) {
+    df_plot <- df_plot |>
+      dplyr::left_join(df[, c(id, "sub_location", col_subtype)], 
+                       by = c(id, col_subtype))
+  } else {
+    df_plot <- df_plot |>
+      dplyr::left_join(df[, c(id, "sub_location")], by = id)
+  }
+
   df_plot <- df_plot |>
     dplyr::mutate(
       sub_location = as.character(sub_location), 
       sub_location = ifelse(is.na(sub_location), "Unknown", sub_location), 
-      sub_location = factor(sub_location, levels = levels_subcell_compartments), ) |>
+      sub_location = factor(sub_location, levels = levels_ref_compartments)) |>
     unique()
   
-  my_colors <- colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))(
-    length(levels(df_plot$sub_location)))
-  
+  my_colors <- local({
+    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
+                     "#FFFF33", "#A65628", "#F781BF")
+    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF")
+    last_color  <- "#999999"
+    
+    n_comps <- length(levels_ref_compartments)
+    
+    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
+      rng_colors <- 1:(n_comps - 1L)
+    } else {
+      rng_colors <- 1:n_comps
+    }
+
+    my_colors <- c(set1_colors, add_colors)[rng_colors]
+    my_colors <- c(my_colors, last_color)
+    
+    if (any(is.na(my_colors))) {
+      warning("More compartments than the number of colors.")
+    }
+    
+    my_colors
+  })
+
   ncol   <- dots$ncol
   nrow   <- dots$nrow
   size   <- dots$size
@@ -1688,7 +2001,7 @@ plot_prnSubcell_UMAP <- function (
   height <- dots$height
   dpi    <- dots$dpi
   
-  n_subtypes <- 1L # temporary
+  n_subtypes <- length(levels_subtype)
   
   if (is.null(nrow))  nrow <- 1
   if (is.null(width))  width <- n_subtypes * 8 / nrow + 2
@@ -1743,11 +2056,26 @@ plot_prnSubcell_UMAP <- function (
       color = guide_legend(override.aes = list(size = 3, alpha = 1))
     )
   
-  if (wrap_facets) {
-    p <- p + 
-      facet_wrap(~ sub_location, ncol = ncol, labeller = label_value, drop = FALSE)
+  if (n_subtypes > 1L) {
+    if (wrap_facets) {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_subtype), sub_location), 
+          ncol = ncol, labeller = label_value)
+    } else {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_subtype)),
+          ncol = ncol, labeller = label_value, )
+    }
+  } else {
+    if (wrap_facets) {
+      p <- p + 
+        facet_wrap(
+          ~ sub_location, ncol = ncol, labeller = label_value, drop = FALSE)
+    }
   }
-  
+
   ggsave(file.path(filepath, paste0(fn_prefix, ".", fn_suffix)), 
          width = width, height = height, dpi = dpi)
   

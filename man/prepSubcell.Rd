@@ -12,8 +12,10 @@ prepSubcell(
   n_clust = NULL,
   key_col = "log10Int",
   col_subtype = NULL,
-  levels_subcellular = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K",
-    "SN"),
+  levels_subtype = NULL,
+  u_subtypes = NULL,
+  col_fraction = NULL,
+  levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
   ...
 )
 }
@@ -28,12 +30,17 @@ prepSubcell(
 
 \item{key_col}{The column key where data to be used.}
 
-\item{col_subtype}{Temporarily applied only to subcellular data analysis.
-Character string to a column key in \code{expt_smry.xlsx} indicating sample
-subtypes linked to subcellular fractions. This is needed, e.g., when each
-subcellular fraction contain multiple subtypes of control, treated etc.}
+\item{col_subtype}{Only applicable to subcellular data analysis for assessing
+sub-group fraction purity etc. Character string to a column key in
+\code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+fractions. This is needed, e.g., when each subcellular fraction contain
+multiple subtypes of control, treated etc. and purity will be asssessed
+independently.}
 
-\item{levels_subcellular}{The levels of subcellular fractions.}
+\item{u_subtypes}{The unique levels of sample types. A NULL value indicates
+only one subtype.}
+
+\item{levels_fraction}{The levels of subcellular fractions.}
 }
 \description{
 Prepare subcellular data.

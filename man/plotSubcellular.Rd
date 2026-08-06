@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{plotSubcellular}
 \alias{plotSubcellular}
-\title{Subcellular plots.}
+\title{Bar plots of median subcellular statistics.}
 \usage{
 plotSubcellular(
   id = "gene",
@@ -10,7 +10,9 @@ plotSubcellular(
   col_group = NULL,
   col_order = NULL,
   col_cluster = "cluster",
-  levels_subcellular = NULL,
+  col_fraction = NULL,
+  levels_fraction = NULL,
+  col_subtype = NULL,
   levels_subtype = NULL,
   tie_method = "none",
   label_scheme_sub = NULL,
@@ -52,7 +54,7 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_cluster}{The column key of cluster nodes.}
 
-\item{levels_subcellular}{The levels of subcellular fractions.}
+\item{levels_fraction}{The levels of subcellular fractions.}
 
 \item{tie_method}{The method to handle ties.}
 
@@ -121,5 +123,5 @@ the height of plot; \cr \code{color}, the color of lines; \cr \code{alpha},
 the transparency of lines.}
 }
 \description{
-Subcellular plots.
+Bar plots of median subcellular statistics.
 }

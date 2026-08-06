@@ -5,14 +5,15 @@
 \title{Plots trends at a given \code{n_clust}.}
 \usage{
 plotTrend_sub(
-  df2,
-  custom_prefix,
-  fn_prefix,
-  fn_suffix,
-  df,
-  id,
+  df2 = NULL,
+  custom_prefix = "",
+  fn_prefix = "Protein_Trend_line_Z",
+  fn_suffix = "png",
+  df = NULL,
+  id = "gene",
   col_group = NULL,
   col_order = NULL,
+  levels_group = NULL,
   complete_cases = FALSE,
   panel_ids = NULL,
   show_panel_ids = TRUE,
@@ -54,6 +55,11 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{levels_group}{The factor levels of the values under the column 'group'
+in trend outputs for ordering on the X-axis. If not NULL, the levels will
+overwrite the order specified by the combination of \code{col_order} and
+\code{group}.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

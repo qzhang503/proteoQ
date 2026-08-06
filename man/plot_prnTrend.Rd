@@ -8,6 +8,7 @@ plot_prnTrend(
   dat_dir = NULL,
   col_select = NULL,
   col_order = NULL,
+  levels_group = NULL,
   n_clust = NULL,
   panel_ids = NULL,
   show_panel_ids = TRUE,
@@ -37,6 +38,11 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{levels_group}{The factor levels of the values under the column 'group'
+in trend outputs for ordering on the X-axis. If not NULL, the levels will
+overwrite the order specified by the combination of \code{col_order} and
+\code{group}.}
 
 \item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
 \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
@@ -93,8 +99,7 @@ the transparency of lines.}
 \item{p_outlier}{A type-I error in outlier assessment.}
 }
 \description{
-Plots the trends of protein expressions from
-\code{\link{anal_prnTrend}}.
+Plots the trends of protein expressions from \code{\link{anal_prnTrend}}.
 }
 \details{
 The function reads \code{Protein_Trend_[...].txt} files under the

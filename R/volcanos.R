@@ -432,14 +432,14 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
         impute_na = impute_na)
       
       df <- res_subcell[["df"]]
-      col_subcellular <- res_subcell[["col_subcellular"]]
+      col_fraction <- res_subcell[["col_fraction"]]
       col_subtype <- res_subcell[["col_subtype"]]
       col_subgroup <- res_subcell[["col_group"]]
       rm(list = "res_subcell")
       
       ans_fr <- check_gspa_subcellular(
         fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme, 
-        col_subcellular = col_subcellular, col_group = col_subgroup)
+        col_fraction = col_fraction, col_group = col_subgroup)
       subcell_frac <- ans_fr[["frac"]]
       subcell_grps <- ans_fr[["grp"]]
       rm(list = "ans_fr")
@@ -899,7 +899,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
       
       df <- res_subcell[["df"]]
       # df_trend <- res_subcell[["df_trend"]]
-      col_subcellular <- res_subcell[["col_subcellular"]]
+      col_fraction <- res_subcell[["col_fraction"]]
       col_subtype <- res_subcell[["col_subtype"]]
       col_subgroup <- res_subcell[["col_group"]]
       # path_trend <- res_subcell[["path_trend"]]
@@ -907,7 +907,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
       
       ans_fr <- check_gspa_subcellular(
         fml_nm = fml_nm, dat_dir = dat_dir, label_scheme_sub = label_scheme, 
-        col_subcellular = col_subcellular, col_group = col_subgroup)
+        col_fraction = col_fraction, col_group = col_subgroup)
       subcell_frac <- ans_fr[["frac"]]
       subcell_grps <- ans_fr[["grp"]]
       rm(list = "ans_fr")

@@ -9,11 +9,9 @@ make_subcell_expr(
   id = "gene",
   key_col = "log10Int",
   key_group = "group",
-  col_subtype = NULL,
-  levels_subcellular = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K",
-    "SN"),
+  levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
   scale = TRUE,
-  match_colnames_to_levels_subcellular = TRUE
+  match_colnames_to_levels_fraction = TRUE
 )
 }
 \arguments{
@@ -27,14 +25,14 @@ expression data.}
 \item{key_group}{The column key where group information will be found for
 preparing expression data.}
 
-\item{levels_subcellular}{The levels of subcellular fractions.}
+\item{levels_fraction}{The levels of subcellular fractions.}
 
 \item{scale}{Logical; to scale values by rowSums or not.}
 
-\item{match_colnames_to_levels_subcellular}{Llogical; to match the column
+\item{match_colnames_to_levels_fraction}{Llogical; to match the column
 names of the expression data with the keys defined in
-\code{levels_subcellular} or not.}
+\code{levels_fraction} or not.}
 }
 \description{
-Prepare the matrix of expression data.
+One subtype at a time.
 }

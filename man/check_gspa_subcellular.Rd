@@ -8,7 +8,7 @@ check_gspa_subcellular(
   fml_nm = NULL,
   dat_dir = NULL,
   label_scheme_sub,
-  col_subcellular = NULL,
+  col_fraction = NULL,
   col_group = NULL
 )
 }
@@ -18,6 +18,13 @@ check_gspa_subcellular(
 \item{dat_dir}{The working directory.}
 
 \item{label_scheme_sub}{Metadata.}
+
+\item{col_fraction}{Only applicable to subcellular data analysis for
+  assessing fraction purity etc. Character string to a column key in
+  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+  subcellular location score at the \code{NULL} default.
+
+  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be

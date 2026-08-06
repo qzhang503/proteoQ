@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{plotSubcellular_sub}
 \alias{plotSubcellular_sub}
-\title{Plots trends at a given \code{n_clust}.}
+\title{Plots median trends at a given \code{n_clust}.}
 \usage{
 plotSubcellular_sub(
   df2 = NULL,
@@ -14,11 +14,13 @@ plotSubcellular_sub(
   col_group = NULL,
   col_order = NULL,
   col_cluster = "cluster",
+  col_fraction = NULL,
+  levels_fraction = NULL,
+  col_subtype = NULL,
+  levels_subtype = NULL,
   data_type = "Trend",
   pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
   ext = "txt",
-  levels_subcellular = NULL,
-  levels_subtype = NULL,
   tie_method = "none",
   qt = 0.5,
   complete_cases = FALSE,
@@ -63,13 +65,13 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_cluster}{The column key of cluster nodes.}
 
+\item{levels_fraction}{The levels of subcellular fractions.}
+
 \item{data_type}{The type of data, either intensity or log2FC.}
 
 \item{pat}{The pattern of secondary files (df2).}
 
 \item{ext}{The filename extension.}
-
-\item{levels_subcellular}{The levels of subcellular fractions.}
 
 \item{tie_method}{The method to handle ties.}
 
@@ -95,5 +97,6 @@ will be applied.}
 \item{dots}{Variable arguments.}
 }
 \description{
-Plots trends at a given \code{n_clust}.
+Input data include results from \link{anal_prnTrend} at \code{is_subcellular
+= TRUE} or the probabilities from \link{svmSubcell}.
 }

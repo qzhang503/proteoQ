@@ -287,6 +287,7 @@ analTrend <- function (
   df_mean_log2r[is.na(df_mean_log2r)] <- 0.0
   df_mean_int[is.na(df_mean_int)] <- 0.0
   
+  ## Obtain aggregated data only
   if (!cluster_data) {
     df_mean_log2r |>
       tibble::rownames_to_column(id) |>
@@ -359,7 +360,7 @@ analTrend <- function (
   df_mean_int <- df_mean_int |>
     tibble::rownames_to_column(id)
   
-  if (ok_frac_purity <- !is.null(df_frac_purity)) {
+  if (ok_frac_purity <- length(df_frac_purity)) {
     df_frac_purity <- df_frac_purity |>
       tibble::rownames_to_column(id) |>
       tidyr::pivot_longer(-!!id, names_to = "group", values_to = "purity") |>
@@ -374,14 +375,15 @@ analTrend <- function (
       tibble::rownames_to_column(id) |>
       tidyr::pivot_longer(-!!id, names_to = "sub_type", values_to = "entropy")
     
-    # Should not occur with the addition of a placeholder 'col_subtype'
-    if (is.null(col_subtype)) {
+    if (length(col_subtype)) {
+      df_entropy <- df_entropy |>
+        tidyr::unite(uid_ent, !!id, sub_type, sep = ".", remove = TRUE)
+    } else {
+      # Should not occur with the addition of a placeholder 'col_subtype' with 
+      # values of 'sample_type_unknown'
       df_entropy <- df_entropy |>
         dplyr::rename(uid_ent := !!id) |>
         dplyr::select(-dplyr::one_of("sub_type"))
-    } else {
-      df_entropy <- df_entropy |>
-        tidyr::unite(uid_ent, !!id, sub_type, sep = ".", remove = TRUE)
     }
   }
   
@@ -413,15 +415,13 @@ analTrend <- function (
       outi[["uid"]] <- NA_character_
     }
     
-    # Param file 'anal_prnTrend.rda' overwritten by the latest call ->
-    # embedded col_group etc. for self-containness
     outi <- outi |>
       dplyr::select(-dplyr::one_of(c("uid", "uid_ent"))) |> 
       dplyr::left_join(df[, c(id, "species")], by = id)
     
     outi <- outi |>
       dplyr::mutate(log2FC = round(log2FC, digits = 2L), 
-                    log10Int =round(log10Int, digits = 2L))
+                    log10Int = round(log10Int, digits = 2L))
     
     saveRDS(
       list(data = outi, 
@@ -430,9 +430,15 @@ analTrend <- function (
            sc_lookup = sc_lookup), 
       file.path(filepath, paste0(sub("\\.txt", "", filename[[i]]), ".rds")))
     
+    # Param file 'anal_prnTrend.rda' overwritten by the latest call ->
+    # embedded col_group etc. for selfcontainness.
+    # 
+    # But isn't the new column "group" contains the grouping info?
+    # However, it doesn't know how to link to col_order for group ordering.
+    # 
+    # Maybe later define a new argument of levels_group or x_order...
     outi <- outi |>
-      dplyr::mutate(col_group = col_group, 
-                    col_order = col_order, )
+      dplyr::mutate(col_group = col_group, col_order = col_order, )
     
     if (!is.null(col_fraction)) {
       outi <- outi |>
@@ -830,6 +836,7 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
                             pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", 
                             ext = "txt", scale_log2r = TRUE, impute_na = FALSE)
 {
+  # Need to match ext more extensively later...
   
   ins <- list.files(path = filepath, pattern = pat)
   
@@ -837,7 +844,15 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
     stop("No inputs under ", filepath)
   }
   
-  if (!length(df2)) {
+  if (length(df2)) {
+    if (length(non_exists <- df2[!df2 %in% ins])) {
+      stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
+    }
+    
+    if (!length(df2)) {
+      stop("File(s) not found under ", filepath)
+    }
+  } else {
     if (grepl("Trend_[ONZ]_", pat)) {
       ins <- 
         if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
@@ -856,7 +871,7 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
     } else if (!length(ins)) {
       stop("No inputs found.")
     }
-
+    
     if (is.null(n_clust)) {
       df2 <- ins
     } else {
@@ -876,14 +891,12 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
              " at n_clust = ", paste0(n_clust, collapse = ","))
       }
     }    
-  } else {
-    if (length(non_exists <- df2[!df2 %in% ins])) {
-      stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
-    }
+  }
+  
+  if (!length(df2)) {
     
-    if (!length(df2)) {
-      stop("File(s) not found under ", filepath)
-    }
+  } else {
+    
   }
   
   df2
@@ -906,7 +919,7 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>% %T>% %$% %<>%
 plotTrend <- function(id = "gene", dat_dir = NULL, anal_type = "Trend", 
-                      col_group = NULL, col_order = NULL, 
+                      col_group = NULL, col_order = NULL, levels_group = NULL, 
                       label_scheme_sub = NULL, data_type = "ratio", 
                       pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
                       n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
@@ -921,12 +934,12 @@ plotTrend <- function(id = "gene", dat_dir = NULL, anal_type = "Trend",
     dat_dir <- get_gl_dat_dir()
   }
   
+  # Try to skip metadata later but specify the X-axis order by levels_group
   if (anal_type == "Trend") {
     if (!nrow(label_scheme_sub)) {
       stop("Empty metadata.")
     }
   } else {
-    # label_scheme_sub <- load_ls_group(dat_dir)
     label_scheme_sub <- NULL
   }
   
@@ -997,6 +1010,7 @@ plotTrend <- function(id = "gene", dat_dir = NULL, anal_type = "Trend",
       # col_order = rlang::enexpr(col_order), 
       col_group = col_group, 
       col_order = col_order, 
+      levels_group = levels_group, 
       complete_cases = complete_cases, 
       panel_ids = panel_ids, 
       show_panel_ids = show_panel_ids, 
@@ -1023,32 +1037,33 @@ plotTrend <- function(id = "gene", dat_dir = NULL, anal_type = "Trend",
 #' @inheritParams plotTrend
 #' @importFrom magrittr %>% %T>% 
 #' @import dplyr ggplot2 RColorBrewer
-plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id, 
-                           col_group = NULL, col_order = NULL, 
-                           complete_cases = FALSE, panel_ids = NULL, 
-                           show_panel_ids = TRUE, group_data_by = "ratio", 
-                           filepath = NULL, ext = "txt", 
-                           label_scheme_sub = NULL, 
-                           theme = NULL, dots = NULL)
+plotTrend_sub <- function (
+    df2 = NULL, custom_prefix = "", fn_prefix = "Protein_Trend_line_Z", 
+    fn_suffix = "png", df = NULL, id = "gene", 
+    col_group = NULL, col_order = NULL, levels_group = NULL, 
+    complete_cases = FALSE, panel_ids = NULL, 
+    show_panel_ids = TRUE, group_data_by = "ratio", 
+    filepath = NULL, ext = "txt", label_scheme_sub = NULL, 
+    theme = NULL, dots = NULL)
 {
   options(warn = 1L)
-
+  
   n <- sub(paste0(".*_nclust(\\d+)[^\\d]*\\.", ext, "$"), "\\1", df2) |>
     as.numeric()
-
+  
   out_nm <- paste0(custom_prefix, fn_prefix, "_nclust", n, ".", fn_suffix)
   src_path <- file.path(filepath, df2)
   
   df <- tryCatch(
     readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
     error = function(e) NA)
-
+  
   if (!is.null(dim(df))) {
     message(paste("File loaded:", src_path))
   } else {
     stop(paste("Non-exist file or directory:", src_path))
   }
-
+  
   df <- df |>
     dplyr::mutate(cluster = as.integer(cluster))
   
@@ -1116,21 +1131,17 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
   arrange2_dots <- lang_dots[grepl("^arrange2_", names(lang_dots))]
   dots          <- dots[!dots %in% c(filter2_dots, arrange2_dots)]
   
-  # (x) 'anal_prnTrend.rda' overwritten with the latest call ->
-  #     embedded 'col_group' etc. into the trend analysis output
-  # (x) may use timestamp later or call from corresponding .rds
-  col_group <- df[["col_group"]][1]
-  col_order <- df[["col_order"]][1]
-  
   ## Custom data matrix
   if (is.null(label_scheme_sub)) {
     y_label <- "Score"
     col_y <- "loc_score"
     col_x <- "compartment"
-
-    p <- ggplot(data = df,
-                mapping = aes(x = !!rlang::sym(col_x), y = !!rlang::sym(col_y), 
-                              group = !!rlang::sym(id))) +
+    
+    p <- ggplot(
+      data = df,
+      mapping = aes(x = !!rlang::sym(col_x), 
+                    y = !!rlang::sym(col_y), 
+                    group = !!rlang::sym(id))) +
       geom_line(colour = color, alpha = alpha) + 
       scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
       labs(title = "", x = "", y = y_label) +
@@ -1160,40 +1171,47 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
     return(NULL)
   } 
   
+  # (x) 'anal_prnTrend.rda' overwritten with the latest call ->
+  #     embedded 'col_group' etc. into the trend analysis output
+  # (x) may use timestamp later or call from corresponding .rds
+  
   ## Default Trend data
-  levs <- label_scheme_sub |>
-    dplyr::arrange(!!rlang::sym(col_order)) |>
-    dplyr::select(!!rlang::sym(col_group)) |>
-    unique() |>
-    unlist()
+  if (!length(levels_group)) {
+    levels_group <- local({
+      col_group <- df[["col_group"]][1]
+      col_order <- df[["col_order"]][1]
+      
+      levels_group <- label_scheme_sub |>
+        dplyr::arrange(!!rlang::sym(col_order)) |>
+        dplyr::pull(!!rlang::sym(col_group)) |> 
+        unique()
+    })
+  }
   
   local({
-    levs_df  <- levels(df$group)
-    mis_levs <- levs_df[!levs_df %in% levs]
+    levs_df  <- levels(df[["group"]])
+    mis_levs <- levs_df[!levs_df %in% levels_group]
     
     if (length(mis_levs)) {
       if (length(mis_levs) > 12L) 
         mis_levs <- c(mis_levs[1:12], "...")
       
-      stop("\n--- Mismatches in data levels ---\n\n", 
-           "Levels in `", df2, "`:\n",
-           paste(mis_levs, collapse = ", "), 
-           "\n\n", 
-           "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
-           paste(levs, collapse = ", "), "\n\n", 
-           "??? Check for consistency in the setting of ", 
-           "`anal_prnTrend(col_group = ...)` ", 
-           "and `plot_prnTrend(col_group = ...)` for file `", 
-           df2, "`.")
+      stop(
+        "\n--- Mismatches in data levels ---\n\n", 
+        "Levels in `", df2, "`:\n", paste(mis_levs, collapse = ", "), "\n\n", 
+        "Levels by `levels_group:\n", paste(levels_group, collapse = ", "), "\n\n", 
+        "??? Check for consistency in the setting of ", 
+        "`anal_prnTrend(col_group = ...)` ", 
+        "and `plot_prnTrend(col_group = ...)` for file `", df2, "`.")
     }
   })
 
   df <- df |>
-    dplyr::filter(group %in% levs) |>
+    dplyr::filter(group %in% levels_group) |>
     filters_in_call(!!!filter2_dots) |>
     arrangers_in_call(!!!arrange2_dots) |>
-    dplyr::mutate(group = factor(group, levels = levs))
-
+    dplyr::mutate(group = factor(group, levels = levels_group))
+  
   if (complete_cases) {
     df <- df[complete.cases(df), ]
   }
@@ -1221,7 +1239,7 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
       dx
     }) |>
       dplyr::bind_rows()
-
+    
     ymin <- 0
     ymax <- 100
   }
@@ -1244,7 +1262,7 @@ plotTrend_sub <- function (df2, custom_prefix, fn_prefix, fn_suffix, df, id,
         strip.background = element_blank(),
         plot.subtitle = element_blank())
   }
-
+  
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
   
   rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(out_nm)),
@@ -1379,16 +1397,18 @@ anal_pepTrend <- function (
 #' @inheritParams prnHM
 #' @inheritParams prnSig
 #' @param dat_dir The current working directory.
-#' @param col_fraction Only applied to subcellular data analysis. Character
-#'   string to a column key in \code{expt_smry.xlsx} indicating subcellular
-#'   fractions. No calculation of subcellular location score at the \code{NULL}
-#'   default.
+#' @param col_fraction Only applicable to subcellular data analysis for
+#'   assessing fraction purity etc. Character string to a column key in
+#'   \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+#'   subcellular location score at the \code{NULL} default.
 #'
-#'   Suggest the corresponding column key \code{Subcellular} in metadata.
-#' @param col_subtype Temporarily applied only to subcellular data analysis.
-#'   Character string to a column key in \code{expt_smry.xlsx} indicating sample
-#'   subtypes linked to subcellular fractions. This is needed, e.g., when each
-#'   subcellular fraction contain multiple subtypes of control, treated etc.
+#'   Suggest, e.g., the corresponding column key \code{Fraction} in metadata.
+#' @param col_subtype Only applicable to subcellular data analysis for assessing
+#'   sub-group fraction purity etc. Character string to a column key in
+#'   \code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+#'   fractions. This is needed, e.g., when each subcellular fraction contain
+#'   multiple subtypes of control, treated etc. and purity will be asssessed
+#'   independently.
 #' @param cluster_data Logical; to cluster data or not. The default is
 #'   \code{TRUE}. Set \code{cluster_data = FALSE} To return only aggregated
 #'   log2Ratio and intensity data without further clustering.
@@ -1597,10 +1617,9 @@ anal_prnTrend <- function (
 #' @rdname anal_prnTrend
 #' @export
 plot_pepTrend <- function (
-    dat_dir = NULL, col_select = NULL, col_order = NULL, n_clust = NULL, 
-    panel_ids = NULL, show_panel_ids = TRUE, 
-    scale_log2r = TRUE, complete_cases = FALSE, 
-    impute_na = FALSE, 
+    dat_dir = NULL, col_select = NULL, col_order = NULL, levels_group = NULL, 
+    n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
+    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     df2 = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
 {
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
@@ -1626,14 +1645,17 @@ plot_pepTrend <- function (
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order  <- rlang::enexpr(col_order)
-  filename   <- rlang::enexpr(filename)
-  df2 <- rlang::enexpr(df2)
+  col_select    <- rlang::enexpr(col_select)
+  col_order     <- rlang::enexpr(col_order)
+  levels_group  <- rlang::enexpr(levels_group)
+  filename      <- rlang::enexpr(filename)
+  df2           <- rlang::enexpr(df2)
+  
   
   # NULL or symbol -> length 0 or 1
   if (!is.character(col_select)) col_select <- as.character(col_select)
   if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(levels_group)) levels_group <- as.character(levels_group)
   if (!is.character(filename)) filename <- as.character(filename)
   if (!is.character(filepath)) filepath <- as.character(filepath)
   if (!is.character(df2)) df2 <- as.character(df2)
@@ -1668,6 +1690,7 @@ plot_pepTrend <- function (
             complete_cases = complete_cases, 
             impute_na = impute_na,
             anal_type = "Trend_line")(
+              levels_group = levels_group, 
               n_clust = n_clust, 
               panel_ids = panel_ids, 
               show_panel_ids = show_panel_ids, 
@@ -1679,8 +1702,7 @@ plot_pepTrend <- function (
 
 #'Visualization of trend results.
 #'
-#'Plots the trends of protein expressions from
-#'\code{\link{anal_prnTrend}}.
+#'Plots the trends of protein expressions from \code{\link{anal_prnTrend}}.
 #'
 #'The function reads \code{Protein_Trend_[...].txt} files under the
 #'\code{.../Protein/Trend} directory.
@@ -1696,6 +1718,10 @@ plot_pepTrend <- function (
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnCorr_logFC
 #'@inheritParams prnHist
+#'@param levels_group The factor levels of the values under the column 'group'
+#'  in trend outputs for ordering on the X-axis. If not NULL, the levels will
+#'  overwrite the order specified by the combination of \code{col_order} and
+#'  \code{group}.
 #'@param df2 Character vector or string; the name(s) of secondary data file(s).
 #'  An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 #'  \code{df} generates secondary files such as
@@ -1794,10 +1820,9 @@ plot_pepTrend <- function (
 #'
 #'@export
 plot_prnTrend <- function (
-    dat_dir = NULL, col_select = NULL, col_order = NULL, n_clust = NULL, 
-    panel_ids = NULL, show_panel_ids = TRUE, 
-    scale_log2r = TRUE, complete_cases = FALSE, 
-    impute_na = FALSE, 
+    dat_dir = NULL, col_select = NULL, col_order = NULL, levels_group = NULL,
+    n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
+    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     df2 = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
 {
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
@@ -1823,14 +1848,16 @@ plot_prnTrend <- function (
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
 
   ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order  <- rlang::enexpr(col_order)
-  filename   <- rlang::enexpr(filename)
-  df2 <- rlang::enexpr(df2)
-  
+  col_select    <- rlang::enexpr(col_select)
+  col_order     <- rlang::enexpr(col_order)
+  levels_group  <- rlang::enexpr(levels_group)
+  filename      <- rlang::enexpr(filename)
+  df2           <- rlang::enexpr(df2)
+
   # NULL or symbol -> length 0 or 1
   if (!is.character(col_select)) col_select <- as.character(col_select)
   if (!is.character(col_order)) col_order <- as.character(col_order)
+  if (!is.character(levels_group)) levels_group <- as.character(levels_group)
   if (!is.character(filename)) filename <- as.character(filename)
   if (!is.character(filepath)) filepath <- as.character(filepath)
   if (!is.character(df2)) df2 <- as.character(df2)
@@ -1865,6 +1892,7 @@ plot_prnTrend <- function (
             complete_cases = complete_cases, 
             impute_na = impute_na,
             anal_type = "Trend_line")(
+              levels_group = levels_group, 
               n_clust = n_clust, 
               panel_ids = panel_ids, 
               show_panel_ids = show_panel_ids, 

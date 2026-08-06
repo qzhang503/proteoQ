@@ -54,6 +54,7 @@ plot_pepTrend(
   dat_dir = NULL,
   col_select = NULL,
   col_order = NULL,
+  levels_group = NULL,
   n_clust = NULL,
   panel_ids = NULL,
   show_panel_ids = TRUE,
@@ -89,17 +90,19 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{col_fraction}{Only applied to subcellular data analysis. Character
-  string to a column key in \code{expt_smry.xlsx} indicating subcellular
-  fractions. No calculation of subcellular location score at the \code{NULL}
-  default.
+\item{col_fraction}{Only applicable to subcellular data analysis for
+  assessing fraction purity etc. Character string to a column key in
+  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
+  subcellular location score at the \code{NULL} default.
 
-  Suggest the corresponding column key \code{Subcellular} in metadata.}
+  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
 
-\item{col_subtype}{Temporarily applied only to subcellular data analysis.
-Character string to a column key in \code{expt_smry.xlsx} indicating sample
-subtypes linked to subcellular fractions. This is needed, e.g., when each
-subcellular fraction contain multiple subtypes of control, treated etc.}
+\item{col_subtype}{Only applicable to subcellular data analysis for assessing
+sub-group fraction purity etc. Character string to a column key in
+\code{expt_smry.xlsx} indicating sample subtypes linked to subcellular
+fractions. This is needed, e.g., when each subcellular fraction contain
+multiple subtypes of control, treated etc. and purity will be asssessed
+independently.}
 
 \item{cluster_data}{Logical; to cluster data or not. The default is
 \code{TRUE}. Set \code{cluster_data = FALSE} To return only aggregated

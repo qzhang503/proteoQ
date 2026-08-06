@@ -5,6 +5,8 @@
 \title{Cluster SVM probabilities.}
 \usage{
 cluster_svmprobs(
+  df_prob = NULL,
+  sub_type = NULL,
   dat_dir = NULL,
   filepath = NULL,
   id = "gene",
@@ -14,6 +16,9 @@ cluster_svmprobs(
 )
 }
 \arguments{
+\item{df_prob}{A data frame of SVM probabilities (under column
+\code{loc_score}).}
+
 \item{dat_dir}{The working directory.}
 
 \item{filepath}{A filepath for inputs and outputs.}
