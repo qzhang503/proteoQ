@@ -10,6 +10,7 @@ classify_subcellular(
   id = "gene",
   species = "human",
   n_clust = 16:36,
+  levels_group = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
   col_subtype = NULL,
@@ -35,6 +36,9 @@ identifying the database of reference markers.}
 
 \item{n_clust}{The number of clusters.}
 
+\item{levels_group}{The levels of data group for ordering on the X-axis in
+visualization.}
+
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
@@ -51,12 +55,40 @@ probabilities.}
 A wrapper of classifying subcellular locations.
 }
 \examples{
-\dontrun{
+\donttest{
+dat_dir <- "my/working/directory"
+
+# The names of organelle compartments can be either (1) coincide with or (2) 
+# different to sample fractions.
+
+## (1) Sample fractions coincide with organelle compartments
+levels_fraction <- c("CP", "NP", "ChA")
+levels_subtype <- c("Veh", "TG")
+
+# c("Veh_CP", "TG_CP", "Veh_NP", "TG_NP", "Veh_ChA", "TG_ChA")
+levels_group <- load_ls_group(dat_dir = dat_dir) |>
+  dplyr::arrange_at("Order") |>
+  dplyr::pull("Group") |>
+  unique()
+
+# 'levels_group' can be either users' provided or deduced automatically.
 classify_subcellular(
-  dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36, 
-  col_group = "Group", col_order = "Order", col_fraction = "Fraction", 
-  levels_fraction = 
+  dat_dir = dat_dir, id = "gene", species = "human", n_clust = 16:36,
+  col_group = "Group", levels_group = levels_group,
+  col_fraction = "Fraction", levels_fraction = levels_fraction,
+  col_subtype = "Type", levels_subtype = levels_subtype)
+
+## (2) Sample fractions are different to organelle compartments
+data("subcell_mm")
+compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
+levels_group <- compartments # Assume one 'subtype'
+
+classify_subcellular(
+  dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36,
+  col_group = "Group", # for group summarization of raw expression data
+  levels_group = levels_group, # for the order on the X-axis in visualization
+  col_fraction = "Fraction", # for preparation of summarized expression data
+  levels_fraction = # to replace the colnames of summarized expression data
     c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"))
 }
-
 }

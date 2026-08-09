@@ -6,6 +6,7 @@
 \usage{
 plot_prnSubcellular(
   dat_dir = NULL,
+  levels_group = NULL,
   col_select = NULL,
   col_order = NULL,
   col_fraction = NULL,
@@ -32,6 +33,8 @@ plot_prnSubcellular(
 }
 \arguments{
 \item{dat_dir}{The working directory.}
+
+\item{levels_group}{The levels of data groups.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
@@ -134,17 +137,22 @@ expressions from \code{\link{anal_prnTrend}} or the probabilities from
 \link{svmSubcell}.
 }
 \examples{
-if (FALSE) {
-  cl <- 16; width = 10; height = 7.5;
-  plot_prnSubcellular(
-    df2 = paste0("Protein_Trend_Z_nclust", cl, ".txt"),
-    col_order = Order,
-    n_clust = cl,
-    col_subtye = "Type",
-    levels_fraction = c("CP", "NP", "ChA"),
-    ncol = 4,
-    width = !!width,
-    height = !!height,
-  )
+\donttest{
+# c("Veh_CP", "TG_CP", "Veh_NP", "TG_NP", "Veh_ChA", "TG_ChA")
+levels_group <- load_ls_group(dat_dir = dat_dir) |>
+  dplyr::arrange_at("Order") |>
+  dplyr::pull("Group") |>
+  unique()
+
+levels_fraction <- c("CP", "NP", "ChA")
+levels_subtype <- c("Veh", "TG")
+
+# Automatic deduction of 'levels_group' or overruled with custom orders
+plot_prnSubcellular(
+  # levels_group = levels_group, 
+  col_fraction = "Fraction", levels_fraction = levels_fraction, 
+  col_subtype = "Type", levels_subtype = levels_subtype, 
+  ncol = 4, limitsize = FALSE, 
+)
 }
 }

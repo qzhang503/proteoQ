@@ -28,12 +28,11 @@
 # load_fasta
 # calc_avgpep
 #
-# $foo.R
-# 
-#
 # $funs.R
-# # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -490,6 +489,7 @@
 # threshold_subcell_by_int
 # plot_prnSubcellular_UMAP
 # plotSubcellular_sub
+# make_subcell_plot
 # hclassify_trends
 # classify_trends
 # plot_prnSubcellular
@@ -499,6 +499,7 @@
 # make_subcell_expr
 # cluster_svmprobs
 # classify_subcellular
+# check_subcell
 # plot_prnSubcell_UMAP
 # update_subcellular
 # hupdate_subcellular

@@ -4736,6 +4736,7 @@ write_excel_wb <- function (df, sheetName = "Setup", dat_dir = NULL, filename)
 #' @param prefer_group Logical; if TRUE, prefer label_scheme_group over
 #'   label_scheme etc.
 #' @inheritParams load_expts
+#' @export
 load_ls_group <- function (dat_dir, filename = "label_scheme", prefer_group = TRUE) 
 {
   filename <- rlang::as_string(rlang::enexpr(filename))

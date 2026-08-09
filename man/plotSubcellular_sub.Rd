@@ -14,6 +14,7 @@ plotSubcellular_sub(
   col_group = NULL,
   col_order = NULL,
   col_cluster = "cluster",
+  levels_group = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
   col_subtype = NULL,
@@ -64,6 +65,11 @@ the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_cluster}{The column key of cluster nodes.}
+
+\item{levels_group}{The factor levels of the values under the column 'group'
+in trend outputs for ordering on the X-axis. If not NULL, the levels will
+overwrite the order specified by the combination of \code{col_order} and
+\code{group}.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
 

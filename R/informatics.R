@@ -818,6 +818,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   else if (anal_type == "Subcellular_plot") {
     function(n_clust = NULL, panel_ids = NULL, data_type = "Trend", 
              pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
+             levels_group = NULL, 
              col_fraction = NULL, levels_fraction = NULL, 
              col_subtype = NULL, levels_subtype = NULL, 
              tie_method = "none", qt = .5, make_plot = TRUE, theme = NULL, 
@@ -825,6 +826,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
       plotSubcellular(
         df2 = df2,
         id = id,
+        levels_group = levels_group, 
         col_group = col_group,
         col_order = col_order, # "colnames"
         col_fraction = col_fraction, 

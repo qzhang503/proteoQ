@@ -6,6 +6,7 @@
 \usage{
 plot_prnSubcellular_UMAP(
   df2 = NULL,
+  id = "gene",
   levels_fraction = NULL,
   levels_subtype = NULL,
   key_subcellular = "location_slim3",
@@ -25,6 +26,8 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 \code{Protein_Trend_Z_nclust6.txt} etc. See also \code{\link{prnHist}} for
 the description of a primary \code{df}; \code{\link{normPSM}} for the lists
 of \code{df} and \code{df2}.}
+
+\item{id}{An identifier.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
 

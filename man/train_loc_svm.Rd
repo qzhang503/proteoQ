@@ -33,6 +33,9 @@ that summed to one across fractions for each protein.}
 
 \item{seed}{A seed for SVM.}
 }
+\value{
+Two lists of (1) SVM probablity matrix and (2) expression data.
+}
 \description{
 Train localization SVM.
 }

@@ -206,7 +206,7 @@ analTrend <- function (
     impute_na = FALSE, p_outlier = .05, filepath = NULL, 
     filename = NULL, anal_type = "Trend", ...) 
 {
-  options(warn = 1L)
+  # options(warn = 1L)
   
   if (length(col_fraction)) {
     if (is.null(label_scheme_sub[[col_fraction]])) {
@@ -218,17 +218,15 @@ analTrend <- function (
         stop("Column '", col_subtype, "' not found in metadata.")
       }
     } else {
-      col_subtype <- "sample_type_unknown"
-      label_scheme_sub[[col_subtype]] <- "unknown"
+      label_scheme_sub[[col_subtype <- "sample_type_unknown"]] <- "unknown"
       
       warning("Need specification of 'col_subtype' in label_scheme for ", 
               "subcellular analysis.\n", 
-              "Added placeholder column ", col_subtype)
+              "Added a placeholder column '", col_subtype, "'.")
     }
   } else {
     if (length(col_subtype)) {
-      stop("Defined 'col_subtype' but not 'col_fraction'.")
-      # col_subtype <- character()
+      stop("'col_subtype' defined but not 'col_fraction'.")
     }
   }
   
@@ -287,7 +285,7 @@ analTrend <- function (
   df_mean_log2r[is.na(df_mean_log2r)] <- 0.0
   df_mean_int[is.na(df_mean_int)] <- 0.0
   
-  ## Obtain aggregated data only
+  ## Early return if to obtain aggregated data only
   if (!cluster_data) {
     df_mean_log2r |>
       tibble::rownames_to_column(id) |>
@@ -304,15 +302,7 @@ analTrend <- function (
   fn_suffix <- tools::file_ext(basename(filename))
   fn_prefix <- tools::file_path_sans_ext(filename)
   
-  if (is.null(n_clust)) {
-    gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
-    n_clust  <- cluster::maxSE(
-      f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
-    rm(list = "gap_stat")
-    
-    message("Set `n_clust` to ", n_clust, ".")
-    fn_prefix <- paste0(fn_prefix, n_clust)
-  } else {
+  if (length(n_clust)) {
     if (!all(n_clust >= 2L)) {
       stop("All 'n_clust' need to be >= 2.")
     }
@@ -320,8 +310,16 @@ analTrend <- function (
     if (!(all(n_clust %% 1 == 0L))) {
       stop("All 'n_clust' need to be integers.")
     }
+  } else {
+    gap_stat <- cluster::clusGap(df_mean_log2r, kmeans, 10, B = 100)
+    n_clust  <- cluster::maxSE(
+      f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
+    rm(list = "gap_stat")
+    
+    message("Set `n_clust` to ", n_clust, ".")
+    fn_prefix <- paste0(fn_prefix, n_clust)
   }
-  
+
   ans_dots <- find_trend_m(
     dots, choice = choice, n_clust = n_clust, df_mean_log2r = df_mean_log2r)
   dots <- ans_dots[["dots"]]
@@ -332,15 +330,16 @@ analTrend <- function (
     tempdata <- df_mean_log2r
   } else {
     tempdata <- lapply(split(df_mean_int, rownames(df_mean_int)), function (v) {
-      minv  <- min(v, na.rm = TRUE)
-      maxv  <- max(v, na.rm = TRUE)
+      minv <- min(v, na.rm = TRUE)
+      maxv <- max(v, na.rm = TRUE)
       
       if (minv == maxv) {
-        ans <- rep_len(0.0, length(v)) # 50.0
+        rep_len(0.0, length(v))
       } else {
-        ans <- (v - minv) / (maxv - minv) * 100
+        (v - minv) / (maxv - minv) * 100
       }
     })
+    
     tempdata <- do.call(rbind, tempdata)
   }
 
@@ -349,8 +348,7 @@ analTrend <- function (
   rm(list = "tempdata")
   
   ## Outputs
-  df_mean_log2r <- df_mean_log2r |>
-    tibble::rownames_to_column(id)
+  df_mean_log2r <- tibble::rownames_to_column(df_mean_log2r, id)
   
   df_mean_int_long <- log10(df_mean_int) |>
     tibble::rownames_to_column(id) |>
@@ -836,27 +834,32 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
                             pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", 
                             ext = "txt", scale_log2r = TRUE, impute_na = FALSE)
 {
-  # Need to match ext more extensively later...
-  
   ins <- list.files(path = filepath, pattern = pat)
-  
+
   if (!length(ins)) {
-    stop("No inputs under ", filepath)
+    stop("No matched input files under ", filepath)
+  }
+
+  if (length(ext) && nchar(ext)) {
+    ins <- ins[tools::file_ext(ins) == ext]
+    
+    if (!length(ins)) {
+      stop("No matched extention of '", ext, "' under path: ", filepath)
+    }
   }
   
   if (length(df2)) {
     if (length(non_exists <- df2[!df2 %in% ins])) {
-      stop("Missing trend file(s): ", paste(non_exists, collapse = ", "))
+      stop("File(s) not found: ", paste(non_exists, collapse = ", "))
     }
-    
-    if (!length(df2)) {
-      stop("File(s) not found under ", filepath)
-    }
+    rm(list = "non_exists")
   } else {
     if (grepl("Trend_[ONZ]_", pat)) {
-      ins <- 
-        if (impute_na) ins[grepl("_impNA", ins)] else ins[!grepl("_impNA", ins)]
-      
+      ins <- if (impute_na)
+        ins[grepl("_impNA", ins)]
+      else 
+        ins[!grepl("_impNA", ins)]
+
       ins <- if (is.na(scale_log2r))
         ins[grepl("_Trend_O_", ins)]
       else if (scale_log2r)
@@ -865,23 +868,27 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
         ins[grepl("_Trend_N_", ins)]
       
       if (!length(ins)) {
-        stop("No inputs correspond to impute_na = ", impute_na, 
-             ", scale_log2r = ", scale_log2r)
+        stop("No input files correspond to impute_na = ", impute_na, ", 
+             scale_log2r = ", scale_log2r)
       }
     } else if (!length(ins)) {
-      stop("No inputs found.")
+      stop("No input files found.")
     }
     
-    if (is.null(n_clust)) {
-      df2 <- ins
-    } else {
-      stopifnot(all(n_clust >= 2L), all(n_clust %% 1 == 0L))
+    if (length(n_clust)) {
+      if (!all(n_clust >= 2L)) {
+        stop("Values of 'n_clust' need to be greater or equal to 2.")
+      }
       
+      if (!all(n_clust %% 1 == 0L)) {
+        stop("Values of 'n_clust' need to be integers.")
+      }
+
       possibles <- 
         sub(paste0(".*_nclust(\\d+)[^\\d]*\\.", ext, "$"), "\\1", ins) |>
-        as.numeric() %>% 
-        `names<-`(ins)
-      
+        as.integer() |> 
+        setNames(ins)
+
       n_clust2 <- n_clust[n_clust %in% possibles]
       df2 <- names(possibles[possibles %in% n_clust2])
       
@@ -890,13 +897,9 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
              ", scale_log2r = ", scale_log2r, 
              " at n_clust = ", paste0(n_clust, collapse = ","))
       }
+    } else {
+      df2 <- ins
     }    
-  }
-  
-  if (!length(df2)) {
-    
-  } else {
-    
   }
   
   df2
@@ -1579,7 +1582,7 @@ anal_prnTrend <- function (
   if (!is.character(df)) df <- as.character(df)
   if (!is.character(filepath)) filepath <- as.character(filepath)
   if (!is.character(filename)) filename <- as.character(filename)
-  
+
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()

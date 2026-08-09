@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{cluster_svmprobs}
 \alias{cluster_svmprobs}
-\title{Cluster SVM probabilities.}
+\title{Cluster SVM probabilities for a given sample subtype.}
 \usage{
 cluster_svmprobs(
   df_prob = NULL,
@@ -31,5 +31,5 @@ cluster_svmprobs(
 \item{choice}{A clustering method.}
 }
 \description{
-Cluster SVM probabilities.
+Cluster SVM probabilities for a given sample subtype.
 }
