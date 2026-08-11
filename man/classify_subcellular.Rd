@@ -18,7 +18,7 @@ classify_subcellular(
   col_group = NULL,
   col_order = NULL,
   min_prot_n_peps = 2L,
-  plot_prob_clusters = TRUE,
+  make_plot = TRUE,
   seed = 42L,
   ...
 )
@@ -44,10 +44,11 @@ visualization.}
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
 protein for consideration.}
 
-\item{plot_prob_clusters}{Logical; an option to plot clusters of
-probabilities.}
+\item{make_plot}{Logical; an option to plot clusters of probabilities.}
 
 \item{seed}{A random seed.}
+
+\item{...}{Additional arguments.}
 
 \item{choice}{A clustering method.}
 }

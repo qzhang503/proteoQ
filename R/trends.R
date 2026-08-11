@@ -206,8 +206,6 @@ analTrend <- function (
     impute_na = FALSE, p_outlier = .05, filepath = NULL, 
     filename = NULL, anal_type = "Trend", ...) 
 {
-  # options(warn = 1L)
-  
   if (length(col_fraction)) {
     if (is.null(label_scheme_sub[[col_fraction]])) {
       stop("Column '", col_fraction, "' not found in metadata.")
@@ -285,16 +283,16 @@ analTrend <- function (
   df_mean_log2r[is.na(df_mean_log2r)] <- 0.0
   df_mean_int[is.na(df_mean_int)] <- 0.0
   
+  df_mean_log2r |>
+    tibble::rownames_to_column(id) |>
+    readr::write_tsv(file.path(filepath, "Protein_log2FC_summary.tsv"))
+  
+  df_mean_int |>
+    tibble::rownames_to_column(id) |>
+    readr::write_tsv(file.path(filepath, "Protein_Intensity_summary.tsv"))
+  
   ## Early return if to obtain aggregated data only
   if (!cluster_data) {
-    df_mean_log2r |>
-      tibble::rownames_to_column(id) |>
-      readr::write_tsv(file.path(filepath, "Protein_log2FC_summary.tsv"))
-    
-    df_mean_int |>
-      tibble::rownames_to_column(id) |>
-      readr::write_tsv(file.path(filepath, "Protein_Intensity_summary.tsv"))
-    
     return(list(log2R = df_mean_log2r, Intensity = df_mean_int))
   }
 
@@ -438,12 +436,12 @@ analTrend <- function (
     outi <- outi |>
       dplyr::mutate(col_group = col_group, col_order = col_order, )
     
-    if (!is.null(col_fraction)) {
+    if (length(col_fraction)) {
       outi <- outi |>
         dplyr::mutate(col_fraction = col_fraction, )
     }
     
-    if (!is.null(col_subtype)) {
+    if (length(col_subtype)) {
       outi <- outi |>
         dplyr::mutate(col_subtype = col_subtype, )
     }
@@ -453,7 +451,7 @@ analTrend <- function (
     out[[i]] <- outi
   }
   
-  if ((!is.null(sc_lookup)) && is.data.frame(sc_lookup)) {
+  if ((length(sc_lookup)) && is.data.frame(sc_lookup)) {
     readr::write_tsv(sc_lookup, file.path(filepath, "subcellular_lookup.tsv"))
   }
   
@@ -640,14 +638,14 @@ calc_subcell_frac <- function (
     dfR = NULL, dfI = NULL, label_scheme_sub = NULL, col_group = "Group", 
     col_fraction = "Subcellular", col_subtype = NULL) 
 {
-  if (is.null(col_fraction)) {
+  if (!length(col_fraction)) {
     return(NULL)
   }
   
   # Should not incur with the placeholders: 
   #  col_subtype <- "sample_type_unknown" and 
   #  label_scheme_sub[[col_subtype]] <- "unknown"
-  if (is.null(col_subtype)) {
+  if (!length(col_subtype)) {
     purities   <- dfI / rowSums(dfI, na.rm = TRUE)
     entropies  <- -rowSums(purities * log10(purities))
     scores_loc <- purities * (1 - entropies)
@@ -1201,8 +1199,10 @@ plotTrend_sub <- function (
       
       stop(
         "\n--- Mismatches in data levels ---\n\n", 
-        "Levels in `", df2, "`:\n", paste(mis_levs, collapse = ", "), "\n\n", 
-        "Levels by `levels_group:\n", paste(levels_group, collapse = ", "), "\n\n", 
+        "Levels in `", df2, "`:\n", paste(mis_levs, collapse = ", "), 
+        "\n\n", 
+        "Levels by `levels_group:\n", paste(levels_group, collapse = ", "), 
+        "\n\n", 
         "??? Check for consistency in the setting of ", 
         "`anal_prnTrend(col_group = ...)` ", 
         "and `plot_prnTrend(col_group = ...)` for file `", df2, "`.")
@@ -1311,20 +1311,6 @@ anal_pepTrend <- function (
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
               function (x) check_formalArgs(anal_prnTrend, !!x))
   
-  # force(choice); force(group_data_by);
-  # force(col_select); force(col_group); force(col_order); force(col_fraction);
-  # force(col_subtype); force(df); force(filepath); force(filename); 
-  
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
-  group_data_by <- rlang::enexpr(group_data_by)
-  group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
-  checkdots_analTrend(choice, ...)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-  
   id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
@@ -1337,28 +1323,50 @@ anal_pepTrend <- function (
     id <- "pep_seq_mod"
   }
   
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  
+  # force(choice); force(group_data_by);
+  # force(col_select); force(col_group); force(col_order); force(col_fraction);
+  # force(col_subtype); force(df); force(filepath); force(filename); 
+  
+  if (TRUE) {
+    ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+    choice <- rlang::enexpr(choice)
+    choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
+    group_data_by <- rlang::enexpr(group_data_by)
+    group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
+  } else {
+    choice <- match.arg(choice)
+    group_data_by <- match.arg(group_data_by)
+  }
+  
+  checkdots_analTrend(choice, ...)
+  
+  if (TRUE) {
+    ## Argument with single, non-NULL option (with or without quotation mark)
+    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
+    
+    ## Argument with single option and NULL default (quotation marks or not)
+    col_select   <- rlang::enexpr(col_select)
+    col_group    <- rlang::enexpr(col_group)
+    col_order    <- rlang::enexpr(col_order)
+    col_fraction <- rlang::enexpr(col_fraction)
+    col_subtype  <- rlang::enexpr(col_subtype)
+    df <- rlang::enexpr(df)
+    filepath <- rlang::enexpr(filepath)
+    filename <- rlang::enexpr(filename)
+    
+    # NULL default: length(0); symbol -> length(1)
+    if (!is.character(col_select)) col_select <- as.character(col_select)
+    if (!is.character(col_group)) col_group <- as.character(col_group)
+    if (!is.character(col_order)) col_order <- as.character(col_order)
+    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
+    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
+    if (!is.character(df)) df <- as.character(df)
+    if (!is.character(filepath)) filepath <- as.character(filepath)
+    if (!is.character(filename)) filename <- as.character(filename)
+  }
 
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select   <- rlang::enexpr(col_select)
-  col_group    <- rlang::enexpr(col_group)
-  col_order    <- rlang::enexpr(col_order)
-  col_fraction <- rlang::enexpr(col_fraction)
-  col_subtype  <- rlang::enexpr(col_subtype)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-  if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
@@ -1540,16 +1548,6 @@ anal_prnTrend <- function (
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
               function (x) check_formalArgs(anal_prnTrend, !!x))
   
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
-  group_data_by <- rlang::enexpr(group_data_by)
-  group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
-  checkdots_analTrend(choice, ...)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-
   id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
@@ -1560,28 +1558,51 @@ anal_prnTrend <- function (
   if (is.na(id)) {
     id <- "gene"
   }
-
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select   <- rlang::enexpr(col_select)
-  col_group    <- rlang::enexpr(col_group)
-  col_order    <- rlang::enexpr(col_order)
-  col_fraction <- rlang::enexpr(col_fraction)
-  col_subtype  <- rlang::enexpr(col_subtype)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
   
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-  if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
+  
+  ###
+  # try(force(choice, env = environment()))
+  # try(force(group_data_by))
+  ###
+  
+  if (TRUE) {
+    ## Argument with multi-options -> non-NULL default, (quotation marks or not)
+    choice <- rlang::enexpr(choice)
+    choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
+    group_data_by <- rlang::enexpr(group_data_by)
+    group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
+  } else {
+    choice <- match.arg(choice)
+    group_data_by <- match.arg(group_data_by)
+  }
+  
+  checkdots_analTrend(choice, ...)
+  
+  if (TRUE) {
+    ## 1. Argument with single, non-NULL option (with or without quotation mark)
+    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
+    
+    ## Argument with single option and NULL default (quotation marks or not)
+    col_select   <- rlang::enexpr(col_select)
+    col_group    <- rlang::enexpr(col_group)
+    col_order    <- rlang::enexpr(col_order)
+    col_fraction <- rlang::enexpr(col_fraction)
+    col_subtype  <- rlang::enexpr(col_subtype)
+    df <- rlang::enexpr(df)
+    filepath <- rlang::enexpr(filepath)
+    filename <- rlang::enexpr(filename)
+    
+    # NULL default: length(0); symbol -> length(1)
+    if (!is.character(col_select)) col_select <- as.character(col_select)
+    if (!is.character(col_group)) col_group <- as.character(col_group)
+    if (!is.character(col_order)) col_order <- as.character(col_order)
+    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
+    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
+    if (!is.character(df)) df <- as.character(df)
+    if (!is.character(filepath)) filepath <- as.character(filepath)
+    if (!is.character(filename)) filename <- as.character(filename)
+  }
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
@@ -1645,24 +1666,25 @@ plot_pepTrend <- function (
     id <- "pep_seq_mod"
   }
   
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select    <- rlang::enexpr(col_select)
-  col_order     <- rlang::enexpr(col_order)
-  levels_group  <- rlang::enexpr(levels_group)
-  filename      <- rlang::enexpr(filename)
-  df2           <- rlang::enexpr(df2)
-  
-  
-  # NULL or symbol -> length 0 or 1
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(levels_group)) levels_group <- as.character(levels_group)
-  if (!is.character(filename)) filename <- as.character(filename)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(df2)) df2 <- as.character(df2)
-  
+  if (TRUE) {
+    ## Argument with single option and NULL default (quotation marks or not)
+    col_select    <- rlang::enexpr(col_select)
+    col_order     <- rlang::enexpr(col_order)
+    levels_group  <- rlang::enexpr(levels_group)
+    filename      <- rlang::enexpr(filename)
+    df2           <- rlang::enexpr(df2)
+    
+    # NULL or symbol -> length 0 or 1
+    if (!is.character(col_select)) col_select <- as.character(col_select)
+    if (!is.character(col_order)) col_order <- as.character(col_order)
+    if (!is.character(levels_group)) levels_group <- as.character(levels_group)
+    if (!is.character(filename)) filename <- as.character(filename)
+    if (!is.character(filepath)) filepath <- as.character(filepath)
+    if (!is.character(df2)) df2 <- as.character(df2)
+  }
+
   if (file.exists(fn_pars <- file.path(dat_dir, "Calls/anal_pepTrend.rda"))) {
     load(file = fn_pars)
     
@@ -1848,23 +1870,25 @@ plot_prnTrend <- function (
     id <- "gene"
   }
   
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select    <- rlang::enexpr(col_select)
-  col_order     <- rlang::enexpr(col_order)
-  levels_group  <- rlang::enexpr(levels_group)
-  filename      <- rlang::enexpr(filename)
-  df2           <- rlang::enexpr(df2)
+  if (TRUE) {
+    ## Argument with single option and NULL default (quotation marks or not)
+    col_select    <- rlang::enexpr(col_select)
+    col_order     <- rlang::enexpr(col_order)
+    levels_group  <- rlang::enexpr(levels_group)
+    filename      <- rlang::enexpr(filename)
+    df2           <- rlang::enexpr(df2)
+    
+    # NULL or symbol -> length 0 or 1
+    if (!is.character(col_select)) col_select <- as.character(col_select)
+    if (!is.character(col_order)) col_order <- as.character(col_order)
+    if (!is.character(levels_group)) levels_group <- as.character(levels_group)
+    if (!is.character(filename)) filename <- as.character(filename)
+    if (!is.character(filepath)) filepath <- as.character(filepath)
+    if (!is.character(df2)) df2 <- as.character(df2)
+  }
 
-  # NULL or symbol -> length 0 or 1
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(levels_group)) levels_group <- as.character(levels_group)
-  if (!is.character(filename)) filename <- as.character(filename)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(df2)) df2 <- as.character(df2)
-  
   if (file.exists(fn_pars <- file.path(dat_dir, "Calls/anal_prnTrend.rda"))) {
     load(file = fn_pars)
     

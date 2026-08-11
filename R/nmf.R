@@ -4,7 +4,6 @@
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import dplyr purrr  
-#' @importFrom Biobase ExpressionSet 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, 

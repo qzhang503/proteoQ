@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -217,6 +218,14 @@
 # normSD
 # fitKernelDensity
 # nmix_params
+#
+# $others.R
+# prep_bandle
+# calc_bandle
+# anal_bandle
+# confu_bandle
+# confu_bandle_by_frac
+# plot_bandle
 #
 # $outliers.R
 # locate_outliers
@@ -496,9 +505,11 @@
 # svmSubcell
 # train_loc_svm
 # prepSubcell
+# hmake_subcell_expr
 # make_subcell_expr
 # cluster_svmprobs
 # classify_subcellular
+# classify_subcellular_unsupervised
 # check_subcell
 # plot_prnSubcell_UMAP
 # update_subcellular
