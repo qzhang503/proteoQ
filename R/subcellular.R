@@ -223,6 +223,7 @@ threshold_subcell_by_int <- function (df, id = "gene", col_fraction = NULL,
 plot_prnSubcellular_UMAP <- function (
     df2 = NULL, id = "gene", levels_fraction = NULL, levels_subtype = NULL, 
     key_subcellular = "location_slim3", key_col = "loc_score", 
+    levels_ref_compartments = c("CP", "NP", "ChA"), 
     filename_ref = NULL, scale_log2r = TRUE, impute_na = FALSE, 
     filename = NULL, seed = 42, ...) 
 {
@@ -292,16 +293,23 @@ plot_prnSubcellular_UMAP <- function (
         values_fill = 0, )
   }
 
-  set.seed(seed)
-  res_umap <- umap::umap(df_expr[, !colnames(df_expr) == "gene", drop = FALSE])
-  umap_df <- res_umap$layout[, 1:2]
-  colnames(umap_df) <- paste0("UMAP", 1:2)
-  rownames(umap_df) <- df_expr$gene
-  umap_df <- tibble::rownames_to_column(data.frame(umap_df), "gene")
-
-  readr::write_tsv(
-    umap_df, file.path(filepath, paste0(fn_prefix, "_", key_col, ".tsv")))
-
+  file_umap <- file.path(filepath, paste0(fn_prefix, "_", key_col, ".tsv"))
+  
+  if (file.exists(file_umap)) {
+    umap_df <- readr::read_tsv(file_umap)
+  } else {
+    set.seed(seed)
+    res_umap <- umap::umap(df_expr[, !colnames(df_expr) == "gene", drop = FALSE])
+    umap_df <- res_umap$layout[, 1:2]
+    colnames(umap_df) <- paste0("UMAP", 1:2)
+    rownames(umap_df) <- df_expr$gene
+    umap_df <- tibble::rownames_to_column(data.frame(umap_df), "gene")
+    
+    readr::write_tsv(umap_df, file_umap)
+    
+    umap_df
+  }
+  
   ## Plot of predicted subcellular results
   ok_subtypes <- sort(unique(df[[col_subtype]]))
   
@@ -357,9 +365,8 @@ plot_prnSubcellular_UMAP <- function (
       !!col_fraction := 
         factor(!!rlang::sym(col_fraction), levels = levels_fraction),
       sub_location = 
-        factor(sub_location, levels = levels_fraction),
-    )
-  
+        factor(sub_location, levels = levels_fraction),)
+
   # Special handling of
   # gene  Veh_CP TG_CP TG_ChA TG_NP Veh_NP Veh_ChA
   # ALG9     0.2     0      0     0  0.209       0
@@ -370,9 +377,35 @@ plot_prnSubcellular_UMAP <- function (
   df_plot <- df |>
     dplyr::left_join(umap_df, by = "gene") |> 
     dplyr::filter(!is.na(sub_location))
-
+  
+  my_colors <- local({
+    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
+                     "#FFFF33", "#A65628", "#F781BF")
+    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
+                     "#99d8c9", "#fee6ce")
+    last_color  <- "#999999"
+    
+    n_comps <- length(levels_ref_compartments)
+    
+    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
+      rng_colors <- 1:(n_comps - 1L)
+    } else {
+      rng_colors <- 1:n_comps
+    }
+    
+    my_colors <- c(set1_colors, add_colors)[rng_colors]
+    my_colors <- c(my_colors, last_color)
+    
+    if (any(is.na(my_colors))) {
+      warning("More compartments than the number of colors.")
+    }
+    
+    my_colors
+  })
+  
   p <- ggplot(df_plot, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
     geom_point(shape = 46, alpha = alpha, size = size) +
+    scale_color_manual(values = my_colors, drop = FALSE) + 
     guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
     theme_bw() +
     labs(
@@ -1893,7 +1926,8 @@ classify_subcellular <- function (
 #' }
 #' @export
 classify_subcellular_unsupervised <- function (
-    dat_dir = NULL, filepath = NULL, id = "gene", species = "human", 
+    dat_dir = NULL, filepath = NULL, col_select = NULL, 
+    id = "gene", species = "human", 
     n_clust = 16:36, levels_group = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
@@ -1910,14 +1944,16 @@ classify_subcellular_unsupervised <- function (
   
   if (TRUE) {
     ## Argument with single option and NULL default (quotation marks or not)
-    col_group    <- rlang::enexpr(col_group)
+    col_select   <- rlang::enexpr(col_select)
     col_order    <- rlang::enexpr(col_order)
+    col_group    <- rlang::enexpr(col_group)
     col_fraction <- rlang::enexpr(col_fraction)
     col_subtype  <- rlang::enexpr(col_subtype)
-    
+
     # At NULL default: length(0); at symbol -> length(1)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
+    if (!is.character(col_select)) col_select <- as.character(col_select)
     if (!is.character(col_order)) col_order <- as.character(col_order)
+    if (!is.character(col_group)) col_group <- as.character(col_group)
     if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
     if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
     
@@ -1937,9 +1973,12 @@ classify_subcellular_unsupervised <- function (
     levels_fraction = levels_fraction, levels_subtype = levels_subtype, 
     col_subtype = col_subtype)
   
+  # label_scheme_sub <- label_scheme %>% dplyr::filter(!is.na(!!rlang::sym(col_select)))
+  
   ### (1) Obtain aggregated expression data  
   # Need `!!` since `anal_prnTrend` is a UI function
   anal_prnTrend(
+    col_select = !!col_select, 
     col_group = !!col_group, 
     col_order = !!col_order,
     col_fraction = !!col_fraction, 
@@ -1952,6 +1991,7 @@ classify_subcellular_unsupervised <- function (
   if (make_plot) {
     try(
       plot_prnTrend(
+        col_select = !!col_select,
         levels_group = !!levels_group, 
         col_order = !!col_order,
         ymax = 10, 
@@ -1964,6 +2004,7 @@ classify_subcellular_unsupervised <- function (
   
   ### (3) Classify subcellular
   plot_prnSubcellular(
+    col_select = !!col_select, 
     levels_group = levels_group, 
     col_order = !!col_order, 
     col_fraction = !!col_fraction, levels_fraction = levels_fraction, 
@@ -2039,8 +2080,8 @@ plot_prnSubcell_UMAP <- function (
       "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome", 
       "Ribosome", "Centrosome", "P_body", "Stress_granule"), 
     col_subtype = NULL, levels_subtype = NULL, 
-    df2 = NULL, filepath = NULL, filename = NULL, 
-    ext = "png", wrap_facets = TRUE, seed = 123, ...) 
+    df2 = NULL, filepath = NULL, filename = NULL, ext = "png", use_cache = TRUE, 
+    wrap_facets = TRUE, seed = 123, ...) 
 {
   dots <- rlang::enexprs(...)
   
@@ -2131,24 +2172,32 @@ plot_prnSubcell_UMAP <- function (
   }
   rm(list = "fn_expr")
   
-  set.seed(seed)
-  df_umap <- mapply(function (df_expr, sub_type) {
-    res_umap <- umap::umap(df_expr)
-    df_umap  <- res_umap$layout[, 1:2]
-    colnames(df_umap) <- paste0("UMAP", 1:2)
-    rownames(df_umap) <- rownames(df_expr)
-    df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
-    
-    if (length(col_subtype)) {
-      df_umap[[col_subtype]] <- sub_type
-    }
-    
-    readr::write_tsv(
-      df_umap, file.path(filepath, paste0("umap_", sub_type, ".tsv")))
-    df_umap
-  }, df_exprs, sub_types, SIMPLIFY = FALSE) |>
-    dplyr::bind_rows()
+  file_umaps <- file.path(filepath, paste0("umap_", sub_types, ".tsv"))
   
+  if (use_cache && all(file.exists(file_umaps))) {
+    df_umap <- lapply(file_umaps, readr::read_tsv) |>
+      dplyr::bind_rows()
+  } else {
+    set.seed(seed)
+    
+    df_umap <- mapply(function (df_expr, sub_type, file_umap) {
+      res_umap <- umap::umap(df_expr)
+      df_umap  <- res_umap$layout[, 1:2]
+      colnames(df_umap) <- paste0("UMAP", 1:2)
+      rownames(df_umap) <- rownames(df_expr)
+      df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
+      
+      if (length(col_subtype)) {
+        df_umap[[col_subtype]] <- sub_type
+      }
+      
+      readr::write_tsv(df_umap, file_umap)
+      
+      df_umap
+    }, df_exprs, sub_types, file_umaps, SIMPLIFY = FALSE) |>
+      dplyr::bind_rows()
+  }
+
   # Join predicted 'sub_location'
   df_plot <- tibble::tibble(df_umap)
   if (length(col_subtype)) {

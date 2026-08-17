@@ -4,14 +4,15 @@
 \alias{gen_randoms}
 \title{Generate random intensity values.}
 \usage{
-gen_randoms(n = 3L, mu = 0, sigma = 1.8, seed = NULL)
+gen_randoms(n = 3L, mu = 5, sigma = 1.8, seed = NULL)
 }
 \arguments{
 \item{n}{The number of random values.}
 
-\item{mu}{The mean.}
+\item{mu}{The mean (log10_baseline intensity).}
 
-\item{sigma}{The standard deviation.}
+\item{sigma}{The standard deviation (slope of log10_variance versus
+log10_intensity).}
 
 \item{seed}{A seed for reproducible random number generations.}
 }

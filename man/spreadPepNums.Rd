@@ -12,7 +12,8 @@ spreadPepNums(
   ok_lfq = FALSE,
   group_psm_by = "pep_seq_mod",
   group_pep_by = "gene",
-  engine = "mz"
+  engine = "mz",
+  calc_ratios = FALSE
 )
 }
 \arguments{

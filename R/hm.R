@@ -368,14 +368,15 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
       length(unique(label_scheme_sub[[col_order]])) > 1L) {
     
     plot_orders <- label_scheme_sub |>
-      dplyr::select(Sample_ID, !!col_order) |>
-      dplyr::filter(!is.na(!!col_order)) |>
+      dplyr::select(dplyr::one_of(c("Sample_ID", col_order))) |>
+      dplyr::filter(!is.na(.data[[col_order]])) |>
       unique() |>
-      dplyr::arrange(!!col_order)
+      dplyr::arrange_at(col_order)
     
     if (nrow(plot_orders) != length(sample_ids)) {
       stop("The number of entries under `", rlang::as_string(col_order), 
-           "` is different to the number of selected samples.")
+           "` is different to the number of selected samples.\n", 
+           "Choose a 'col_select' that matches 'col_order'.")
     }
     
     plot_sids <- plot_orders$Sample_ID

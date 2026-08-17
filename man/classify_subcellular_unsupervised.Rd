@@ -7,6 +7,7 @@
 classify_subcellular_unsupervised(
   dat_dir = NULL,
   filepath = NULL,
+  col_select = NULL,
   id = "gene",
   species = "human",
   n_clust = 16:36,

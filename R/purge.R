@@ -301,7 +301,7 @@ psm_mpurge <- function (file, dat_dir = NULL, group_psm_by = "pep_seq",
                         gsub("_PSM_N.txt", "_sd.png", file))
   
   quiet_out <- purrr::quietly(sd_violin)(df = df, 
-                                         id = !!group_psm_by, 
+                                         id = group_psm_by, 
                                          filepath = filepath, 
                                          width = width, 
                                          height = height, 
@@ -721,15 +721,15 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   filepath <- file.path(dat_dir, "Peptide/log2FC_cv/purged", filename)
   
   quiet_out <- purrr::quietly(sd_violin)(df = df, 
-                                         id = !!group_pep_by, 
+                                         id = group_pep_by, 
                                          filepath = filepath, 
                                          width = width, 
                                          height = height, 
                                          type = "log2_R", 
                                          adjSD = FALSE, 
                                          is_psm = FALSE, 
-                                         col_select = !!col_select, 
-                                         col_order = !!col_order, 
+                                         col_select = col_select, 
+                                         col_order = col_order, 
                                          theme = theme, 
                                          !!!dots)
 }

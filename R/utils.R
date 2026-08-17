@@ -2952,8 +2952,6 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
     label_scheme_sub$new_id <- label_scheme_sub$Sample_ID
   }
 
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
   if (rlang::is_missing(width)) width <- 8

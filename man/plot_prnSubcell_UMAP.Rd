@@ -18,6 +18,7 @@ plot_prnSubcell_UMAP(
   filepath = NULL,
   filename = NULL,
   ext = "png",
+  use_cache = TRUE,
   wrap_facets = TRUE,
   seed = 123,
   ...

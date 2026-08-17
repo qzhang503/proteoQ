@@ -2231,6 +2231,8 @@ splitPSM_ma <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                       ifelse(grepl("Phospho", pep_var_mod), pep_locdiff, NA_real_))
   }
   
+  df <- annot_signal_peps(df)
+  
   # (2.1) annotate proteins
   df <- df %>% 
     annotPrn(fasta, entrez) %>%  
@@ -7351,6 +7353,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     df
   })
   
+  df <- annot_signal_peps(df)
+  
   # (2.1a) annotate proteins
   df <- df %>% 
     dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) %>% 
@@ -8236,6 +8240,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::filter(prot_acc != "") %>% 
     { if (rm_craps && "Protein" %in% names(.)) 
       dplyr::filter(., !grepl("\\|.*\\|$", Protein)) else . } 
+  
+  df <- annot_signal_peps(df)
   
   # (2.1a) annotate proteins
   df <- df %>% 
@@ -9445,6 +9451,8 @@ splitPSM_mz <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         pep_phospho_locdiff = 
           ifelse(grepl("Phospho", pep_vmod), pep_locdiff, NA_real_))
   }
+  
+  df <- annot_signal_peps(df)
   
   # (2.1) annotate proteins
   df <- annotPrn(df, fasta, entrez)

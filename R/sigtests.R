@@ -746,18 +746,17 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
   oths <- !grps %in% g
   dfRc <- dfsR[oths]
   dfIc <- dfsI[oths]
-  rm(list = "oths")
-  
+
   # At least one group with >= 3 values from the complementary
   okc <- lapply(dfIc, function (x) {
     rowSums(!is.na(x), na.rm = TRUE) >= 3L
   }) |>
     purrr::reduce(`|`)
   
-  n_col <- ncol(dfIg)
+  n_col   <- ncol(dfIg)
   all_nas <- rowSums(is.na(dfIg)) == n_col
-  okc_a <- all_nas & okc
-  okc_b <- all_nas & !okc
+  okc_a   <- all_nas & okc
+  okc_b   <- all_nas & !okc
   
   # For 'sigTest', info borrowed from sub universe defined by formulas;
   # For 'analTrend', info borrows from the whole universe
@@ -781,7 +780,7 @@ himpute_baseline <- function (dfRg, dfIg, g, b, dfsR, dfsI, grps) {
 }
 
 
-#' Imputation baseline intensities.
+#' Imputation of baseline intensities.
 #'
 #' The values of log2Ratios are derived accordingly.
 #'
@@ -893,7 +892,7 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
   gl_min <- max(
     min(dfI, na.rm = TRUE), 
     quantile(dfI, perc_baseline_intensity, na.rm = TRUE), 
-    abs_baselne_intensity
+    abs_baselne_intensity # about 3% quantile
   )
   log10_gl_min <- log10(gl_min)
   
@@ -967,7 +966,8 @@ sep_data_by_group <- function (elements, dfR, dfI, sids, key_col, label_scheme)
 #'   protein.
 #' @param y A data frame of intensities. Each column correspondes to a sample.
 #' @inheritParams prnSig
-find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5) {
+find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5)
+{
   lx <- log10(x)
   ly <- log10(y)
   oks <- !(is.na(lx) | is.infinite(lx))
@@ -977,7 +977,7 @@ find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5) {
   oks2 <- ybar >= log10(abs_baselne_intensity)
   lx <- lx[oks2]
   ybar <- ybar[oks2]
-  # plot(lx ~ ybar)
+  
   if (FALSE) {
     ggplot(data.frame(x = lx, y = ybar), aes(x = x, y = y)) + 
       geom_point(size = .1) + 
@@ -986,37 +986,40 @@ find_baseline_slope <- function (x, y, abs_baselne_intensity = 1E5) {
       scale_x_continuous(limits = c(6, 18)) +
       annotate("text", 
                x = Inf, y = -Inf, 
-               label = paste0("rho == ", 
-                              round(cor(lx, ybar, use = "complete.obs"), 3)),
+               label = paste0("rho == ", round(cor(lx, ybar, use = "complete.obs"), 3)),
                parse = TRUE, 
                hjust = 1.1, vjust = -0.5) +
       labs(title = NULL, 
-           x = expression("Within-group variance ("*log[10]*")"), 
-           y = expression("Intensity ("*log[10]*")")) +
+           x = expression("Within-group mean intensity ("*log[10]*")"), 
+           y = expression("Within-group variance ("*log[10]*")"), ) +
       theme_bw()
     
-    ggsave("~/intensity_variance_plot.png", width = 4, height = 4)
+    ggsave(file.path(dat_dir, "var_to_ybar.png"), width = 4, height = 4)
   }
+  
   coef(lm(lx ~ ybar))[[2]]
 }
 
 
 #' Generate random intensity values.
-#' 
+#'
 #' @param n The number of random values.
-#' @param mu The mean.
-#' @param sigma The standard deviation.
+#' @param mu The mean (log10_baseline intensity).
+#' @param sigma The standard deviation (slope of log10_variance versus
+#'   log10_intensity).
 #' @param seed A seed for reproducible random number generations.
 #' @importFrom magrittr %>%
-gen_randoms <- function (n = 3L, mu = 0, sigma = 1.8, seed = NULL)
+gen_randoms <- function (n = 3L, mu = 5.0, sigma = 1.8, seed = NULL)
 {
   if (!is.null(seed)) set.seed(seed)
   
-  x <- NULL
+  x  <- NULL
+  nx <- length(x)
   
-  while(length(x) < n) {
-    x <- c(x, rnorm(n - length(x), mean = mu, sd = sigma))
+  while(nx < n) {
+    x <- c(x, rnorm(n - nx, mean = mu, sd = sigma))
     x <- x[abs(x - mu) <= 2 * sigma]
+    nx <- length(x)
   }
   
   x

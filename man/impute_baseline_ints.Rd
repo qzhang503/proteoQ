@@ -2,7 +2,7 @@
 % Please edit documentation in R/sigtests.R
 \name{impute_baseline_ints}
 \alias{impute_baseline_ints}
-\title{Imputation baseline intensities.}
+\title{Imputation of baseline intensities.}
 \usage{
 impute_baseline_ints(
   dfsR,

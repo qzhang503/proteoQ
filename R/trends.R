@@ -530,6 +530,7 @@ prepTrend <- function (
   })
 
   if (impute_group_na) {
+    # Baseline Estimation
     ans1 <- base_sigtest_y(
       dfR = dfR, dfI = dfI, elements = ugrps, key_col = col_group, 
       label_scheme_sub_sub = label_scheme_sub, seed = 1234L)
@@ -1068,15 +1069,17 @@ plotTrend_sub <- function (
   df <- df |>
     dplyr::mutate(cluster = as.integer(cluster))
   
-  if (is.null(panel_ids)) {
-    df <- df |>
-      dplyr::mutate(cluster = factor(cluster))
-  } else {
+  n_panels <- length(panel_ids)
+  if (n_panels) {
     df <- df |>
       dplyr::filter(cluster %in% panel_ids) |>
       dplyr::mutate(cluster = factor(cluster, levels = panel_ids))
+  } else {
+    df <- df |>
+      dplyr::mutate(cluster = factor(cluster))
+    n_panels <- n
   }
-  
+
   ymin    <- eval(dots$ymin, envir = rlang::caller_env())
   ymax    <- eval(dots$ymax, envir = rlang::caller_env())
   ybreaks <- eval(dots$ybreaks, envir = rlang::caller_env())
@@ -1098,12 +1101,12 @@ plotTrend_sub <- function (
   if (is.null(ncol)) {
     if (is.null(nrow)) {
       ncol <- 4L
-      nrow <- ceiling(n / ncol)
+      nrow <- ceiling(n_panels / ncol)
     } else {
-      ncol <- ceiling(n / nrow)
+      ncol <- ceiling(n_panels / nrow)
     }
   } else {
-    nrow <- ceiling(n / ncol)
+    nrow <- ceiling(n_panels / ncol)
   }
   
   dots$ymin <- NULL

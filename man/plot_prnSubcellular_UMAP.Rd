@@ -11,6 +11,7 @@ plot_prnSubcellular_UMAP(
   levels_subtype = NULL,
   key_subcellular = "location_slim3",
   key_col = "loc_score",
+  levels_ref_compartments = c("CP", "NP", "ChA"),
   filename_ref = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,

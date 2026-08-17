@@ -1334,7 +1334,8 @@ calcLFQPepInts <- function (df, filelist, group_psm_by)
 #' @param group_pep_by Groups peptides by.
 spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L, 
                            ok_lfq = FALSE, group_psm_by = "pep_seq_mod", 
-                           group_pep_by = "gene", engine = "mz") 
+                           group_pep_by = "gene", engine = "mz", 
+                           calc_ratios = FALSE) 
 {
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
@@ -1428,8 +1429,8 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
       dplyr::ungroup() |>
       dplyr::mutate(TMT_Set = as.integer(TMT_Set), )
     
-    # if not to use the default peptide table from engines such as MSFragger...
-    if (FALSE) {
+    # need to pass argument `use_mf_pep`
+    if (calc_ratios) {
       df_num <- local({
         dfR <- df_num |>
           tidyr::pivot_wider(names_from = TMT_Set, values_from = I000) 
@@ -1457,12 +1458,12 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
           dplyr::mutate(N_log2_R000 = log2_R000, ) |>
           dplyr::arrange(TMT_Set)
       })
+    } else {
+      df_num <- df_num |>
+        dplyr::mutate(N_I000 = I000, sd_log2_R000 = NA_real_, 
+                      log2_R000 = NA_real_, N_log2_R000 = NA_real_) |>
+        dplyr::arrange(TMT_Set)
     }
-    
-    df_num <- df_num |>
-      dplyr::mutate(N_I000 = I000, sd_log2_R000 = NA_real_, 
-                    log2_R000 = NA_real_, N_log2_R000 = NA_real_) |>
-      dplyr::arrange(TMT_Set)
   }
   
   ## (2) add spectrum counts at protein levels to the peptide table
@@ -2239,7 +2240,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
       df_num <- spreadPepNums(
         df = df, dat_dir = dat_dir, basenames = basenames, tmt_plex = tmt_plex, 
         ok_lfq = FALSE, group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-        engine = engine)
+        engine = engine, calc_ratios = TRUE)
     }
   }
   else { # no MS1-based LFQ by Mascot and use spectrum counts
@@ -3825,16 +3826,16 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     dplyr::select(group_pep_by, grep("^I[0-9]{3}[NC]{0,1}", names(df)))
   prot_ints <- switch(
     method_pep_prn, 
-    median = aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
-    mean = aggrNums(mean)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-    lfq_all = aggrNums(sum)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
+    median = aggrNums(median)(prot_ints, group_pep_by, na.rm = TRUE),
+    mean = aggrNums(mean)(prot_ints, group_pep_by, na.rm = TRUE), 
+    lfq_all = aggrNums(sum)(prot_ints, group_pep_by, na.rm = TRUE),
     lfq_max = aggrTopn(sum)(prot_ints, 1, na.rm = TRUE), 
-    lfq_top_2_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 2, na.rm = TRUE), 
+    lfq_top_2_sum = aggrTopn(sum)(prot_ints, group_pep_by, 2, na.rm = TRUE), 
     # with LFQ, e.g., for histogram color coding
-    lfq_top_3_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 3, na.rm = TRUE),
-    top_3_mean = TMT_top_n(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-    weighted_mean = tmt_wtmean(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-    aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE))
+    lfq_top_3_sum = aggrTopn(sum)(prot_ints, group_pep_by, 3, na.rm = TRUE),
+    top_3_mean = TMT_top_n(prot_ints, group_pep_by, na.rm = TRUE), 
+    weighted_mean = tmt_wtmean(prot_ints, group_pep_by, na.rm = TRUE), 
+    aggrNums(median)(prot_ints, group_pep_by, na.rm = TRUE))
   
   if (use_spec_counts) { # derive log2FCs from summed spec counts
     prot_log2rs <- prot_ints |>
@@ -3846,7 +3847,7 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
     prot_log2rs <- df |>
       dplyr::select(group_pep_by, grep("^log2_R[0-9]{3}[NC]{0,1}", nms))
     prot_log2rs <- 
-      aggrNums(median)(prot_log2rs, !!rlang::sym(group_pep_by), na.rm = TRUE)
+      aggrNums(median)(prot_log2rs, group_pep_by, na.rm = TRUE)
   }
 
   if (impute_prot_na) {
@@ -3931,11 +3932,11 @@ calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc",
 
   df_num <- switch(
     method_pep_prn, 
-    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE),
-    mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-    top_3_mean = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-    weighted_mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
-    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+    median = aggrNums(median)(df_num, id, na.rm = TRUE),
+    mean = aggrNums(mean)(df_num, id, na.rm = TRUE), 
+    top_3_mean = TMT_top_n(df_num, id, na.rm = TRUE), 
+    weighted_mean = tmt_wtmean(df_num, id, na.rm = TRUE), 
+    aggrNums(median)(df_num, id, na.rm = TRUE))
   
   invisible(df_num)
 }
@@ -5522,16 +5523,16 @@ makeProtSpn <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     method_pep_prn <- "median"
     prot_ints <- switch(
       method_pep_prn, 
-      median = aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
-      mean = aggrNums(mean)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-      lfq_all = aggrNums(sum)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE),
+      median = aggrNums(median)(prot_ints, group_pep_by, na.rm = TRUE),
+      mean = aggrNums(mean)(prot_ints, group_pep_by, na.rm = TRUE), 
+      lfq_all = aggrNums(sum)(prot_ints, group_pep_by, na.rm = TRUE),
       lfq_max = aggrTopn(sum)(prot_ints, 1, na.rm = TRUE), 
-      lfq_top_2_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 2, na.rm = TRUE), 
+      lfq_top_2_sum = aggrTopn(sum)(prot_ints, group_pep_by, 2, na.rm = TRUE), 
       # with LFQ, e.g., for histogram color coding
-      lfq_top_3_sum = aggrTopn(sum)(prot_ints, !!rlang::sym(group_pep_by), 3, na.rm = TRUE),
-      top_3_mean = TMT_top_n(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-      weighted_mean = tmt_wtmean(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE), 
-      aggrNums(median)(prot_ints, !!rlang::sym(group_pep_by), na.rm = TRUE))
+      lfq_top_3_sum = aggrTopn(sum)(prot_ints, group_pep_by, 3, na.rm = TRUE),
+      top_3_mean = TMT_top_n(prot_ints, group_pep_by, na.rm = TRUE), 
+      weighted_mean = tmt_wtmean(prot_ints, group_pep_by, na.rm = TRUE), 
+      aggrNums(median)(prot_ints, group_pep_by, na.rm = TRUE))
     
     
     df <- df |>
@@ -5666,6 +5667,34 @@ aggrLCMS_DIANN <- function (df)
   }
   
   dplyr::bind_cols(df[, !cols, drop = FALSE], ans)
+}
+
+
+#' Annotate signal peptides.
+#' 
+#' @param df A data frame.
+annot_signal_peps <- function (df)
+{
+  rows <- grepl("\\.\\d+$", df[["prot_acc"]])
+  
+  if (sum(rows)) {
+    df[["pep_is_signal"]] <- FALSE
+    dfx <- df[rows, ]
+    dfx[["pep_is_signal"]] <- TRUE
+    dfx[["prot_acc"]] <- gsub("\\.\\d+$", "", dfx[["prot_acc"]])
+    
+    if ("prot_accs" %in% names(dfx)) {
+      dfx[["prot_accs"]] <- gsub("\\.[0-9]{3}", "", dfx[["prot_accs"]])
+    }
+
+    if ("genes" %in% names(dfx)) {
+      dfx[["genes"]] <- gsub("\\.[0-9]{3}", "", dfx[["genes"]])
+    }
+
+    df[rows, ] <- dfx
+  }
+  
+  df
 }
 
 
