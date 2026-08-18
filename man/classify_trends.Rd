@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{classify_trends}
 \alias{classify_trends}
-\title{Classify trends.}
+\title{Classify trends for one value of \code{col_subtype}.}
 \usage{
 classify_trends(
   df_med = NULL,
@@ -37,5 +37,5 @@ multiple subtypes of control, treated etc. and purity will be asssessed
 independently.}
 }
 \description{
-Classify trends.
+Classify trends for one value of \code{col_subtype}.
 }

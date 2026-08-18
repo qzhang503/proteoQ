@@ -100,8 +100,8 @@ plotSubcellular <- function(
     hclassify_trends, 
     col_subtype = col_subtype, 
     col_fraction = col_fraction, 
-    col_group = rlang::enexpr(col_group), 
-    col_order = rlang::enexpr(col_order), 
+    col_group = col_group, 
+    col_order = col_order, 
     col_cluster = col_cluster, 
     col_x = col_x, 
     col_y = col_y, 
@@ -950,7 +950,7 @@ hclassify_trends <- function (
 }
 
 
-#' Classify trends.
+#' Classify trends for one value of \code{col_subtype}.
 #' 
 #' @param col_y The column name of Y values for summarization.
 #' @param col_cluster The column key of cluster nodes.

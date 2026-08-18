@@ -343,7 +343,7 @@ analTrend <- function (
 
   res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
                    id = id, df_mean_log2r = tempdata)
-  rm(list = "tempdata")
+  # rm(list = "tempdata")
   
   ## Outputs
   df_mean_log2r <- tibble::rownames_to_column(df_mean_log2r, id)
@@ -515,19 +515,14 @@ prepTrend <- function (
     !!col_order := label_scheme_sub[[col_order]],))
 
   ## Data aggregation by groups
-  mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
-  grps  <- label_scheme_sub[[col_group]][mts]
-  ugrps <- unique(grps)
-  ugrps <- ugrps[!is.na(ugrps)]
-  sids  <- label_scheme_sub[["Sample_ID"]]
+  dfN <- count_non_na(
+    dfR = dfR, dfI = dfI, 
+    label_scheme_sub = label_scheme_sub, 
+    col_group = col_group)
   
-  dfN <- local({
-    dfsI <- sep_data_by_group(
-      elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
-      label_scheme = label_scheme_sub) |>
-      lapply(`[[`, "Intensity")
-    do.call(cbind, lapply(dfsI, function (x) rowSums(!is.na(x))))
-  })
+  grps  <- attr(dfN, "grps")
+  ugrps <- attr(dfN, "ugrps")
+  sids  <- attr(dfN, "sids")
 
   if (impute_group_na) {
     # Baseline Estimation

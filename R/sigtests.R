@@ -20,25 +20,20 @@ rowVars <- function (x, na.rm = TRUE)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) 
 {
-  if (is.null(cols)) 
-    cols <- 1:ncol(df)
-  
+  if (is.null(cols)) {
+    cols <- seq_len(ncol(df))
+  }
+
   if (length(cols) > 1L) {
-    df <- df %>% 
-      dplyr::select(cols) %>% 
-      dplyr::mutate(Variance = rowVars(.), 
-                    rowname = rownames(.)) 
-    
-    Quantile <- quantile(df$Variance, probs = var_cutoff, na.rm = TRUE)
-    
-    df <- df %>%
-      dplyr::filter(Variance >= pmax(Quantile, 1E-3)) %>%
-      tibble::remove_rownames() %>% 
-      tibble::column_to_rownames() %>% 
-      dplyr::select(-Variance)
+    df  <- df[, cols]
+    rvs <- rowVars(df)
+
+    qt <- quantile(rvs, probs = var_cutoff, na.rm = TRUE)
+    rows <- rvs >= pmax(qt, 1E-3)
+    df <- df[rows & !is.na(rows), ]
   }
   
-  invisible(df)
+  df
 }
 
 
@@ -225,38 +220,56 @@ my_padj <- function(df_pval, pval_cutoff)
 
 
 #' Model summary
-#' 
+#'
+#' @param contr_nms Lists of contrast names, e.g., \code{c("B-A", "C-A")} or
+#'   \code{c("(A_X-B_X)-(A_Y-B_Y)", "(C_X-B_X)-(C_Y-B_Y)")}.
+#' @param groups_sub A subset of group names within a contrast name, e.g.,
+#'   \code{c("A", "B")} or \code{c("A_X", "B_X", "A_Y", "B_Y")}.
+#' @param dfN A count matrix of numbers of measured values under each group of
+#'   samples.
 #' @param pvals A data frame of pVal
 #' @param log2rs A data frame of log2FC
 #' @inheritParams prnSig
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, 
-                       padj_method = "BH") 
+#' @importFrom magrittr %>% %T>% %$% %<>%
+lm_summary <- function(
+    pvals, log2rs, dfN = NULL, contr_nms = NULL, groups_sub = NULL, 
+    pval_cutoff = 1, logFC_cutoff = 0, padj_method = "BH") 
 {
+  # ugrps <- colnames(dfN)
   nms <- rownames(pvals)
   
+  # At least one sample group contains >= 2 measured value
+  pass_counts <- lapply(groups_sub, function (group_sub) {
+    dfN_sub <- dfN[, group_sub, drop = FALSE]
+    rowSums(dfN_sub > 1, na.rm = TRUE) > 0
+  })
+
   pass_pvals <- lapply(pvals, `<=`, pval_cutoff)
   pass_fcs   <- lapply(log2rs, function (x) abs(x) >= log2(logFC_cutoff))
-  pass_both  <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
-    purrr::map(~ ifelse(!.x, NA, .x))
+  
+  pass_all <- vector("list", length(pass_pvals))
+  for (i in seq_along(pass_pvals)) {
+    pass_all_i <- 
+      Reduce(`&`, list(pass_pvals[[i]], pass_fcs[[i]], pass_counts[[i]]))
+    pass_all_i <- ifelse(pass_all_i, pass_all_i, NA) # Convert FALSE -> NA
+    pass_all[[i]] <- pass_all_i
+  }
+
+  pvals <- pvals %>%
+    purrr::map2(pass_all, `*`)
   
   res_padj <- pvals %>%
-    purrr::map2(pass_both, `*`) %>%
     purrr::map(~ p.adjust(.x, padj_method)) %>%
     data.frame(check.names = FALSE) %>%
     `names<-`(gsub("pVal", "adjP", colnames(.))) %>%
     `rownames<-`(nms) %>%
-    tibble::rownames_to_column() %>% 
-    dplyr::bind_cols(pvals, .) %>%
-    # dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2L) %>%
-    # dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2L) %>% 
+    tibble::rownames_to_column()
+  
+  res_padj <- dplyr::bind_cols(pvals, res_padj) %>%
     tibble::remove_rownames() %>% 
     tibble::column_to_rownames()
-  
+
   log2rs <- log2rs %>%
-    # to_linfc() %>%
-    # `colnames<-`(gsub("log2Ratio", "FC", names(.))) %>%
-    # dplyr::bind_cols(log2rs, .) %>%
     dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2L) %>%
     `rownames<-`(nms)
   
@@ -303,21 +316,20 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   fml_ops     <- prepFml(formula, label_scheme_sub, ...)
   elements    <- fml_ops$elements
   contr_mat   <- fml_ops$contr_mat
+  contr_nms   <- colnames(contr_mat)
   design      <- fml_ops$design
   key_col     <- fml_ops$key_col
   random_vars <- fml_ops$random_vars
-  # NULL if no nested structure
-  sub_contrs  <- fml_ops$sub_contrs
+  sub_contrs  <- fml_ops$sub_contrs # NULL if no nested structure
   label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
   
   local({
-    col_nms <- colnames(contr_mat)
-    if (length(dups <- which(duplicated(col_nms)))) {
+    if (length(dups <- which(duplicated(contr_nms)))) {
       stop("Duplicated contrasts found: ", 
-           paste(col_nms[dups], collapse = ", "))
+           paste(contr_nms[dups], collapse = ", "))
     }
     
-    ss <- (colSums(design) == 1)
+    ss <- colSums(design) == 1
     if (length(bads <- ss[ss])) 
       warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
               " under `", formula, "`.")
@@ -348,6 +360,39 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   # Need to test the partial imputation at mixed effect modeling...
   ###
   
+  dfN <- count_non_na(
+    dfR = dfR, dfI = dfI, label_scheme_sub = label_scheme_sub, 
+    col_group = key_col)
+  grps <- attr(dfN, "grps")
+  ugrps <- attr(dfN, "ugrps")
+  dfsR <- attr(dfN, "dfsR")
+  dfsI <- attr(dfN, "dfsI")
+  
+  # Unnested, unique contrast: 
+  #  "TG_NP-Veh_NP", "TG_CP-Veh_CP", "TG_ChA-Veh_ChA"
+  u_contrs <- if (is.null(sub_contrs)) {
+    unique(contr_nms)
+  } else {
+    unique(unlist(sub_contrs, recursive = FALSE))
+  }
+  
+  # Unnested, unique pairs of contrast: 
+  # [[1]] "TG_NP", "Veh_NP"; [[2]] "TG_CP", "Veh_CP"; [[3]] "TG_ChA", "Veh_ChA"
+  pairs_sub <- lapply(u_contrs, find_contrast_elements)
+  
+  # Subset of sample IDs within each pairs_sub
+  sids_sub  <- lapply(pairs_sub, function (x) {
+    label_scheme_sub_sub |>
+      dplyr::filter(.data[[key_col]] %in% x) |>
+      dplyr::pull("Sample_ID")
+  })
+
+  # [1] "TG_NP"  "Veh_NP" "TG_CP"  "Veh_CP"
+  # [1] "TG_ChA"  "Veh_ChA" "TG_NP"   "Veh_NP" 
+  # [1] "TG_ChA"  "Veh_ChA" "TG_CP"   "Veh_CP" 
+  groups_sub <- lapply(contr_nms, find_contrast_elements)
+  groups_sub <- lapply(groups_sub, unique)
+
   if (impute_group_na && !is.null(dfI)) {
     dfI[dfI < 1.0] <- 1.0
     
@@ -359,7 +404,6 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     dfsR <- ans_base_y[["log2R"]]
     dfsI <- ans_base_y[["Intensity"]]
     ys_base <- ans_base_y[["baseline"]]
-    rm(list = "ans_base_y")
 
     mapply(function (x, y) {
       if (!identical(rownames(x), rownames(y))) {
@@ -371,30 +415,25 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       }
     }, dfsR, dfsI)
 
-    if (is.null(sub_contrs)) {
+    if (is.null(sub_contrs)) { # no nested contrast
       ans2 <- impute_baseline_ints(
         dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
         ys_base = ys_base, sample_ids = sids)
       dfI <- ans2[["Intensity"]]
       dfR <- ans2[["log2R"]]
-      rm(list = "ans2")
-      
       dfI <- dfI[, sids, drop = FALSE]
       dfR <- dfR[, sids, drop = FALSE]
-    }
-    else {
-      u_contrs  <- unique(unlist(sub_contrs, recursive = FALSE))
-      pairs_sub <- lapply(u_contrs, find_contrast_elements)
-      sids_sub  <- lapply(pairs_sub, function (x) {
-        label_scheme_sub_sub |>
-          dplyr::filter(.data[[key_col]] %in% x) |>
-          dplyr::pull("Sample_ID")
-      })
-      
+      rm(list = "ans2")
+    } else {
       for (i in seq_along(pairs_sub)) {
+        # Sample pairs and IDs within an inner parentheses of a nested structure
         pairi <- pairs_sub[[i]]
         sidsi <- sids_sub[[i]]
         
+        # Information borrowing is strictly under the sample space defined 
+        #  inside the parentheses 
+        # E.g., the same group of TG_CP will be imputed differently based on its 
+        #  counterpart
         ans2 <- impute_baseline_ints(
           dfsR = dfsR[pairi], 
           dfsI = dfsI[pairi], 
@@ -412,14 +451,13 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
         dfsR <- lapply(tempi, `[[`, "log2R")
       }
       
-      rm(list = c("ans2", "tempi", "pairi", "sidsi", "sids_sub", "pairs_sub", 
-                  "u_contrs"))
+      rm(list = c("ans2", "tempi", "pairi", "sidsi"))
       
       dfI <- dfI[, sids, drop = FALSE]
       dfR <- dfR[, sids, drop = FALSE]
     }
-
     
+    rm(list = c("ans_base_y", "ys_base"))
   }
 
   local({
@@ -436,115 +474,37 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     design_random <- label_scheme_sub_sub[[random_vars[1]]] 
     corfit <- duplicateCorrelation(dfR, design = design, block = design_random)
     
-    fit <- suppressWarnings(
-      lmFit(dfR, design = design, 
-            block = design_random, 
-            correlation = corfit$consensus) |>
-        contrasts.fit(contr_mat) |>
-        eBayes()
-    )
-  } 
-  else {
-    fit <- suppressWarnings(
-      lmFit(dfR, design = design) |>
-        contrasts.fit(contr_mat) |>
-        eBayes()
-    )
+    fit <- lmFit(dfR, design = design, 
+                 block = design_random, 
+                 correlation = corfit$consensus) |>
+      contrasts.fit(contr_mat) |>
+      eBayes() |>
+      suppressWarnings()
+  } else {
+    fit <- lmFit(dfR, design = design) |>
+      contrasts.fit(contr_mat) |>
+      eBayes() |> 
+      suppressWarnings()
   }
   
   print(design)
   print(contr_mat)
   
   ## limma
-  log2rs <- data.frame(fit$coefficients, check.names = FALSE) %>%
-    `names<-`(paste0("log2Ratio (", names(.), ")"))
+  log2rs <- data.frame(fit$coefficients, check.names = FALSE)
+  pvals  <- data.frame(fit$p.value, check.names = FALSE)
+  names(log2rs) <- paste0("log2Ratio (", names(log2rs), ")")
+  names(pvals)  <- paste0("pVal (", names(pvals), ")")
   
-  pvals <- data.frame(fit$p.value, check.names = FALSE) %>%
-    `names<-`(paste0("pVal (", names(.), ")"))
-  
-  res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method)
-  
-  if (method %in% c("lmer", "lme", "lm")) {
-    fml_rhs <- gsub("\\[.*\\]", "", formula) %>% .[length(.)]
-    new_formula <- as.formula(paste("log2Ratio", "~", fml_rhs))
-    
-    contr_mat_lm <- t(contr_mat) %>%
-      MASS::ginv() %>%
-      `colnames<-`(colnames(contr_mat)) %>%
-      `rownames<-`(rownames(contr_mat))
-    
-    names(dimnames(contr_mat_lm)) <- c("Levels", "Contrasts")
-    contr_mat_lm <- list(Cdn = contr_mat_lm) %>% `names<-`(key_col)
-    
-    smpl_levels <- names(dfR)
-    contr_levels <- attributes(contr_mat_lm[[key_col]])$dimnames$Contrasts
-    
-    df_lm <- dfR %>%
-      tibble::rownames_to_column(id) %>%
-      tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
-      dplyr::left_join(
-        label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
-        by = "Sample_ID") %>%
-      dplyr::select(which(not_all_NA(.))) %>%
-      dplyr::group_by(.data[[id]]) %>%
-      tidyr::nest()
-    
-    if (length(random_vars)) {
-      if (!requireNamespace("broom.mixed", quietly = TRUE)) {
-        stop("\n============================================================", 
-             "\nNeed package \"broom.mixed\" for this function to work.",
-             "\n============================================================")
-      }
-      
-      if (!requireNamespace("lmerTest", quietly = TRUE)) {
-        stop("\n============================================================", 
-             "\nNeed package \"lmerTest\" for this function to work.",
-             "\n============================================================")
-      }
-      
-      res_lm <- df_lm %>%
-        dplyr::mutate(
-          model = purrr::map(data, 
-                             ~ lmerTest::lmer(data = .x, formula = new_formula, 
-                                              contrasts = contr_mat_lm))) %>%
-        dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
-        tidyr::unnest(glance, keep_empty = TRUE) %>% 
-        dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
-        dplyr::select(-c("group", "effect", "estimate", "std.error", "statistic", "df")) %>%
-        dplyr::mutate(term = gsub(key_col, "", term)) %>% 
-        dplyr::select(-data, -model) %>% 
-        dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
-        tidyr::spread(term , p.value) %>%
-        `rownames<-`(NULL) %>% 
-        tibble::column_to_rownames(id) %>%
-        `names<-`(paste0("pVal (", names(.), ")")) %>%
-        lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
-    } 
-    else {
-      if (!requireNamespace("broom", quietly = TRUE)) {
-        stop("\n============================================================", 
-             "\nNeed package \"broom\" for this function to work.",
-             "\n============================================================")
-      }
-      
-      res_lm <- df_lm %>%
-        dplyr::mutate(model = purrr::map(data, ~ lm(data = .x, formula = new_formula,
-                                                    contrasts = contr_mat_lm))) %>%
-        dplyr::mutate(glance = purrr::map(model, broom::tidy)) %>%
-        tidyr::unnest(glance, keep_empty = TRUE) %>%	
-        dplyr::filter(!grepl("Intercept", term)) %>%
-        dplyr::select(-c("std.error", "estimate", "statistic")) %>% 
-        dplyr::mutate(term = gsub(key_col, "", term)) %>% 
-        dplyr::select(-data, -model) %>% 
-        dplyr::mutate(term = factor(term, levels = contr_levels))	%>% 
-        tidyr::spread(term , p.value)	%>% 
-        `rownames<-`(NULL) %>% 
-        tibble::column_to_rownames(id) %>%
-        `names<-`(paste0("pVal (", names(.), ")"))  %>% 
-        lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
-    }
+  if (!identical(rownames(dfN), rownames(pvals))) {
+    stop("Developer: check for mismatches.")
   }
+
+  res_lm <- lm_summary(
+    pvals = pvals, log2rs = log2rs, dfN = dfN, 
+    contr_nms = contr_nms, groups_sub = groups_sub, 
+    pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+    padj_method = padj_method)
   
   bads <- df_nms[!df_nms[[id]] %in% rownames(res_lm), ] |>
     tibble::column_to_rownames(var = id)
@@ -719,11 +679,12 @@ sigTest <- function(df, id, label_scheme_sub,
     write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
                 col.names = TRUE, row.names = FALSE)
 
-  wb <- createWorkbook("proteoQ")
-  addWorksheet(wb, sheetName = "Results")
+  wb <- openxlsx::createWorkbook("proteoQ")
+  openxlsx::addWorksheet(wb, sheetName = "Results")
   openxlsx::writeData(wb, sheet = "Results", tempdata)
-  saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
-               overwrite = TRUE) 
+  openxlsx::saveWorkbook(
+    wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
+    overwrite = TRUE) 
   
   invisible(df_op)
 }
@@ -940,7 +901,8 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
 #' @param sids Sample IDs.
 #' @param key_col The name of a key column.
 #' @param label_scheme Metadata.
-sep_data_by_group <- function (elements, dfR, dfI, sids, key_col, label_scheme)
+sep_data_by_group <- function (
+    elements, dfR = NULL, dfI = NULL, sids, key_col, label_scheme)
 {
   ans <- lapply(elements, function (x) {
     sids_sub <- label_scheme |>
@@ -948,15 +910,66 @@ sep_data_by_group <- function (elements, dfR, dfI, sids, key_col, label_scheme)
       dplyr::pull(Sample_ID)
     
     oks <- sids %in% sids_sub
-    dfR_sub <- dfR[, oks, drop = FALSE]
-    dfI_sub <- dfI[, oks, drop = FALSE]
     
+    if (is.null(dfR)) {
+      dfR_sub <- NULL
+    } else {
+      dfR_sub <- dfR[, oks, drop = FALSE]
+    }
+    
+    if (is.null(dfI)) {
+      dfI_sub <- NULL
+    } else {
+      dfI_sub <- dfI[, oks, drop = FALSE]
+    }
+
     list(log2R = dfR_sub, Intensity = dfI_sub)
   })
+  
   names(ans) <- elements
   
   ans
 }
+
+
+#' Count the number of non-NA values under each contrast group.
+#' 
+#' @param dfR Data frame of log2Ratios.
+#' @param dfI Data frame of intensities.
+#' @param col_group Character string to a column key in \code{expt_smry.xlsx}.
+#'  Samples corresponding to non-empty entries under \code{col_group} will be
+#'  used for sample grouping in the indicated analysis. At the NULL default, the
+#'  column key \code{Group} will be used. No data annotation by groups will be
+#'  performed if the fields under the indicated group column is empty.
+#' @param key_col The name of a key column.
+#' @param label_scheme_sub Metadata.
+count_non_na <- function (dfR = NULL, dfI = NULL, label_scheme_sub = NULL, 
+                          col_group = "Group")
+{
+  mts   <- match(colnames(dfR), label_scheme_sub[["Sample_ID"]])
+  grps  <- label_scheme_sub[[col_group]][mts]
+  ugrps <- unique(grps)
+  ugrps <- ugrps[!is.na(ugrps)]
+  sids  <- label_scheme_sub[["Sample_ID"]]
+  
+  ans <- sep_data_by_group(
+    elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
+    label_scheme = label_scheme_sub)
+  
+  dfsR <- lapply(ans, `[[`, "log2R")
+  dfsI <- lapply(ans, `[[`, "Intensity")
+  
+  dfN  <- do.call(cbind, lapply(dfsI, function (x) rowSums(!is.na(x))))
+  
+  attr(dfN, "grps")  <- grps
+  attr(dfN, "ugrps") <- ugrps
+  attr(dfN, "sids")  <- sids
+  attr(dfN, "dfsR")  <- dfsR
+  attr(dfN, "dfsI")  <- dfsI
+  
+  dfN
+}
+
 
 #' Helper of \link{base_sigtest_y}.
 #'
@@ -1066,7 +1079,14 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   method <- rlang::enexpr(method)
   method <- if (length(method) > 1L) "limma" else as.character(method)
-  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+  
+  if (length(method) != 1L) {
+    stop("The length of 'method' need to be one.")
+  }
+  
+  if (method %in% c("lmer", "lme", "lm")) {
+    stop("Method depreciated: '", method, "'.")
+  }
   
   # replace NA other than mice imputation
   # (only for sigTest)
@@ -1289,7 +1309,14 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   method <- rlang::enexpr(method)
   method <- if (length(method) > 1L) "limma" else as.character(method)
-  stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
+  
+  if (length(method) != 1L) {
+    stop("The length of 'method' need to be one.")
+  }
+  
+  if (method %in% c("lmer", "lme", "lm")) {
+    stop("Method depreciated: '", method, "'.")
+  }
 
   # replace NA other than mice imputation
   # (only for sigTest)

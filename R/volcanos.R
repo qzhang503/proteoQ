@@ -32,13 +32,11 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", id_gspa = "entrez",
   
   stopifnot(is.numeric(topn_labels), topn_labels >= 0L)
   
-  # force(id)
-  # id <- rlang::as_string(rlang::enexpr(id))
+  rownames(df) <- df[[id]]
+  df <- df |>
+    dplyr::select(
+      !dplyr::matches("I[0-9]{3}|log2_R[0-9]{3}|^.*\\.FC \\(.*\\)$"))
 
-  df <- df %>%
-    `rownames<-`(.[, id]) %>%
-    dplyr::select(-grep("I[0-9]{3}|log2_R[0-9]{3}|^.*\\.FC \\(.*\\)$", names(.)))
-  
   dots <- rlang::enexprs(...)
   
   dots <- concat_fml_dots(
@@ -215,8 +213,6 @@ byfml_volcano <- function (fml_nm = NULL, gspval_cutoff, gslogFC_cutoff, topn_gs
                            complete_cases = FALSE, impute_na = FALSE, 
                            highlights = NULL, grids = NULL, theme = NULL, ...) 
 {
-  # force(id)
-  # id  <- rlang::as_string(rlang::enexpr(id))
   pat <- paste0("^", fml_nm, "\\.")
   
   df <- df |>
@@ -898,11 +894,11 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
         impute_na = impute_na)
       
       df <- res_subcell[["df"]]
-      # df_trend <- res_subcell[["df_trend"]]
-      col_fraction <- res_subcell[["col_fraction"]]
-      col_subtype <- res_subcell[["col_subtype"]]
-      col_subgroup <- res_subcell[["col_group"]]
-      # path_trend <- res_subcell[["path_trend"]]
+      # df_trend_long <- res_subcell[["df_trend_long"]]
+      col_fraction  <- res_subcell[["col_fraction"]]
+      col_subtype   <- res_subcell[["col_subtype"]]
+      col_subgroup  <- res_subcell[["col_group"]]
+      # path_trend  <- res_subcell[["path_trend"]]
       rm(list = "res_subcell")
       
       ans_fr <- check_gspa_subcellular(
@@ -1191,6 +1187,23 @@ plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL,
   # ensure the same levels between "Levels" and "newLevels"
   Levels <- levels(dfw_sub$Contrast)
   
+  if (is_subcellular) {
+    dfw_sub <- local({
+      groups <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
+      nas <- sapply(1:nrow(dfw_sub), function(i) {
+        v1 <- dfw_sub[i, groups[i, 1]]
+        v2 <- dfw_sub[i, groups[i, 2]]
+        (is.na(v1) || v1 == 0) && (is.na(v2) || v2 == 0)
+        # (is.na(v1) || v1 == 0) || (is.na(v2) || v2 == 0)
+      })
+      
+      dfw_sub$pVal[nas] <- NA_real_
+      dfw_sub$log2Ratio[nas] <- NA_real_
+      
+      dfw_sub
+    })
+  }
+
   dfw_sub <- dfw_sub |>
     dplyr::arrange(Contrast, pVal) |>
     dplyr::group_by(Contrast) |>

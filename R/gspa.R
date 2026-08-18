@@ -407,30 +407,33 @@ add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene",
            "Run 'plot_prnSubcellular' first.")
     }
     
-    df_trend <- 
-      df_trend[, c("gene", "loc_score", "sub_location", "group")] |>
+    # Replace log2FC with 0 for proteins not belonging to a given fraction
+    df_trend_long <- 
+      df_trend[, c(group_pep_by, "loc_score", "sub_location", "group")] |>
       dplyr::filter(!is.na(sub_location)) |>
       dplyr::arrange(gene) |>
-      unique() |>
+      unique() 
+    
+    df_trend <- df_trend_long |>
       tidyr::pivot_wider(
-        id_cols = "gene", 
+        id_cols = group_pep_by, 
         names_from = c("group"), 
         values_from = "loc_score",
-        values_fill = 0, 
-      )
-    
+        values_fill = 0, )
+
     df <- df |>
-      dplyr::left_join(df_trend, by = "gene")
+      dplyr::left_join(df_trend, by = group_pep_by)
   } else {
     df_trend <- NULL
     col_fraction <- NULL
     col_subtype <- NULL
     col_group <- NULL
+    df_trend_long <- NULL
   }
   
-  list(df = df, df_trend = df_trend, col_fraction = col_fraction, 
-       col_subtype = col_subtype, col_group = col_group, 
-       path_trend = path_trend)
+  list(df = df, df_trend = df_trend, df_trend_long = df_trend_long, 
+       col_fraction = col_fraction, col_subtype = col_subtype, 
+       col_group = col_group, path_trend = path_trend)
 }
 
 
@@ -492,7 +495,6 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
     stop("All values are NA under the column `entrez` in the input data.")
   }
 
-  id   <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   fmls <- dots[grepl("^\\s*~", dots)]
   
@@ -539,7 +541,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   }
 
   res_subcell <- add_subcell(
-    df= df, dat_dir = dat_dir, group_pep_by = "gene", 
+    df= df, dat_dir = dat_dir, group_pep_by = id, 
     is_subcellular = is_subcellular, scale_log2r = scale_log2r, 
     impute_na = impute_na)
   
@@ -1233,9 +1235,10 @@ prep_gspa <- function(df = NULL, id = NULL,
     df <- df[purrr::reduce(df[, subcell_grps, drop = FALSE], `|`), ]
   }
   
-  df <- df %>% 
-    dplyr::select(id, grep("^pVal|^adjP|^log2Ratio", names(.))) %>% 
-    dplyr::mutate(!!id := as.character(.[[id]]))
+  df <- df |>
+    dplyr::select(dplyr::all_of(id), 
+                  dplyr::matches("^pVal|^adjP|^log2Ratio")) |>
+    dplyr::mutate(!!id := as.character(.data[[id]]))
   
   if (use_adjP) {
     df <- df |>
@@ -1247,8 +1250,8 @@ prep_gspa <- function(df = NULL, id = NULL,
       dplyr::select(-dplyr::matches("adjP"))
   }
   
-  contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
-    gsub("^log2Ratio\\s+\\(|\\)$", "", .)
+  contrast_groups <- gsub("^log2Ratio\\s+\\(|\\)$", "", 
+                          names(df[grep("^log2Ratio\\s+\\(", names(df))]))
   
   pvals <- df |>
     dplyr::select(-dplyr::matches("^log2Ratio\\s+\\(")) |>

@@ -4,7 +4,14 @@
 \alias{sep_data_by_group}
 \title{Helper: separate data by contrast groups.}
 \usage{
-sep_data_by_group(elements, dfR, dfI, sids, key_col, label_scheme)
+sep_data_by_group(
+  elements,
+  dfR = NULL,
+  dfI = NULL,
+  sids,
+  key_col,
+  label_scheme
+)
 }
 \arguments{
 \item{elements}{Elements of contrasts.}

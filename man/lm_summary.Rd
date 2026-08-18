@@ -4,12 +4,30 @@
 \alias{lm_summary}
 \title{Model summary}
 \usage{
-lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method = "BH")
+lm_summary(
+  pvals,
+  log2rs,
+  dfN = NULL,
+  contr_nms = NULL,
+  groups_sub = NULL,
+  pval_cutoff = 1,
+  logFC_cutoff = 0,
+  padj_method = "BH"
+)
 }
 \arguments{
 \item{pvals}{A data frame of pVal}
 
 \item{log2rs}{A data frame of log2FC}
+
+\item{dfN}{A count matrix of numbers of measured values under each group of
+samples.}
+
+\item{contr_nms}{Lists of contrast names, e.g., \code{c("B-A", "C-A")} or
+\code{c("(A_X-B_X)-(A_Y-B_Y)", "(C_X-B_X)-(C_Y-B_Y)")}.}
+
+\item{groups_sub}{A subset of group names within a contrast name, e.g.,
+\code{c("A", "B")} or \code{c("A_X", "B_X", "A_Y", "B_Y")}.}
 
 \item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
 with \code{pVals} smaller than the threshold will be excluded from multiple
