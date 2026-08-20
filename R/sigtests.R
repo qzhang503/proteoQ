@@ -361,7 +361,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   ###
   
   dfN <- count_non_na(
-    dfR = dfR, dfI = dfI, label_scheme_sub = label_scheme_sub, 
+    dfR = dfR, dfI = dfI, label_scheme_sub = label_scheme_sub_sub, 
     col_group = key_col)
   grps <- attr(dfN, "grps")
   ugrps <- attr(dfN, "ugrps")
@@ -564,8 +564,7 @@ sigTest <- function(df, id, label_scheme_sub,
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
                    logical(1L)))
   
-  dots   <- rlang::enexprs(...)
-  
+  dots         <- rlang::enexprs(...)
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
   filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
   arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
@@ -574,7 +573,7 @@ sigTest <- function(df, id, label_scheme_sub,
   dots         <- dots[purrr::map_lgl(dots, is_formula)]
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
-    # need the assignment; otherwise when `load`, the object is named `dots`
+    # need the assignment; otherwise when `load()`, the object is named `dots`
     pepSig_formulas <- dots
     save(pepSig_formulas, 
          file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
@@ -605,10 +604,11 @@ sigTest <- function(df, id, label_scheme_sub,
   dfI <- tempdata[["Intensity"]]
   rm(list = "tempdata")
   
-  # in case of all-NA sample columns being removed
+  # In case of all-NA sample columns being removed from dfR
   label_scheme_sub <- label_scheme_sub |> 
     dplyr::filter(Sample_ID %in% colnames(dfR))
   
+  # Mostly likely won't incur this
   dfR <- local({
     if ((!impute_na) && method_replace_na == "min") {
       row_mins <- apply(dfR, 1, FUN = min, na.rm = TRUE)
@@ -631,7 +631,8 @@ sigTest <- function(df, id, label_scheme_sub,
     dfR
   })
 
-  # `complete_cases` depends on lm contrasts
+  # Significance test by each formula
+  # Partial missing value imputation depends on lm contrasts
   df_op <- lapply(dots, function (formula) model_onechannel(
     dfR = dfR, dfI = dfI, id = id, formula = formula, 
     label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 

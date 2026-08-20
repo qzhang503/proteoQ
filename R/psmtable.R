@@ -7955,9 +7955,17 @@ pad_mf_channels <- function(file = NULL, prob_co = .99, ...)
   df <- df |>
     dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
   
+  # Backward compatible
   pat <- "^Intensity .*_[0-9]{3}[NC]{0,1}"
   cols_int <- grepl(pat, names(df))
   this_plex <- sum(cols_int)
+  
+  # v22.0
+  if (!this_plex) {
+    pat <- "^sample-\\d+$"
+    cols_int <- grepl(pat, names(df))
+    this_plex <- sum(cols_int)
+  }
   
   if (!this_plex) { # LFQ
     df <- df |>
@@ -8146,6 +8154,9 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (1.1) row filtration, column padding and psm file combinations
   # (make also `RAW_File`, I000 or I126 etc.)
   df <- purrr::map(filelist, pad_mf_channels, prob_co = prob_co, !!!filter_dots)
+  df <- dplyr::bind_rows(df)
+  # columns after "Mapped Proteins" and before "RAW_File": 
+  # With v22.0, TMT columns become: "sample-01", "sample-02"...
   ok_tmt <- tmt_plex && (sum(grepl("^I.*[0-9]{3}[NC]{0,1}", names(df))) > 1L)
   
   # to use reference columns instead of df[["I126"]]...
@@ -8194,12 +8205,11 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     }
   }
   
-  # (1.2.1) 
+  # (1.2.1)
+  
 
   # (1.2.2) add ratio columns
   if (ok_tmt) {
-    df <- dplyr::bind_rows(df)
-    
     df <- sweep(df[, find_int_cols(tmt_plex), drop = FALSE], 
                 1, df[["I126"]], "/") %>% 
       `colnames<-`(gsub("I", "R", names(.))) %>% 
@@ -8210,8 +8220,6 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   } 
   else {
     # timsTOF
-    df <- dplyr::bind_rows(df)
-    
     if (!"I000" %in% (nms_df <- names(df))) {
       if ("Intensity" %in% nms_df)
         df$I000 <- df$Intensity

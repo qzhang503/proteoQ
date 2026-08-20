@@ -7,7 +7,7 @@
 check_gspa_subcellular(
   fml_nm = NULL,
   dat_dir = NULL,
-  label_scheme_sub,
+  label_scheme_sub = NULL,
   col_fraction = NULL,
   col_group = NULL
 )

@@ -2330,20 +2330,234 @@ plot_prnSubcell_UMAP <- function (
 }
 
 
+#' Update subcellular protein or peptide tables by contrast.
+#' 
+#' A contrast can be nested.
+#' 
+#' @param contr_elements Contrast elements.
+#' @param contr_nm Contrast names.
+#' @param df A data frame.
+update_subell_by_contr <- function (
+    contr_elements = NULL, contr_nm = NULL, df = NULL)
+{
+  nas <- local({
+    dfx <- data.frame(df[, contr_elements], check.names = FALSE)
+    
+    nas <- sapply(1:nrow(dfx), function(i) {
+      vals <- dfx[i, ]
+      # any(is.na(vals) | vals == 0)
+      all(is.na(vals) | vals == 0)
+    })
+  })
+  
+  df <- local({
+    cnms <- colnames(df)
+    # No special characters
+    cols <- grepl(paste0("\\(", contr_nm, "\\)$"), cnms)
+    
+    # Contains special characters such as parentheses
+    if (!any(cols)) {
+      cols <- grepl(paste0("(", contr_nm, ")"), cnms, fixed = TRUE)
+    }
+    
+    if (!any(cols)){
+      warning("Data column not found.")
+      return(df)
+    }
+    
+    dfw <- df[, cols, drop = FALSE]
+    dfw[nas, ] <- NA_real_
+    df[, cols] <- dfw
+    
+    df
+  })
+  
+  df
+}
+
+
+#' Update subcellular protein or peptide tables by formula.
+#' 
+#' There can be multiple contrasts under a formula.
+#' 
+#' @param fml_nm Formula name.
+#' @param fml Formula.
+#' @param df A data frame.
+#' @param label_scheme_sub Metadata.
+update_subcell_by_fml <- function (
+    fml_nm = NULL, fml = NULL, df = NULL, label_scheme_sub = NULL)
+{
+  fml_ops     <- prepFml(fml, label_scheme_sub)
+  elements    <- fml_ops[["elements"]]
+  contr_mat   <- fml_ops[["contr_mat"]]
+  sub_contrs  <- fml_ops[["sub_contrs"]] # NULL if no nested structure
+  # label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
+  
+  if (FALSE && !is.null(sub_contrs)) {
+    return(df)
+  }
+  
+  contr_nms   <- colnames(contr_mat)
+  
+  contrs_elements <- if (is.null(sub_contrs)) {
+    strsplit(contr_nms, "-")
+  } else {
+    lapply(sub_contrs, function (x) unique(unlist(strsplit(x, "-"))))
+  }
+  
+  for (i in seq_along(contr_nms)) {
+    contr_nm <- contr_nms[[i]]
+    contr_elements <- contrs_elements[[i]]
+    
+    df <- update_subell_by_contr(
+      contr_elements = contr_elements, contr_nm = contr_nm, df = df)
+  }
+  
+  df
+}
+
+
+#' Update subcellular protein or peptide tables.
+#'
+#' @param df Automatically determined: a data frame from
+#'   \code{Protein_pVals.txt} or \code{Peptide_pVals.txt}.
+#' @param dat_dir The working directory.
+#' @param data_type The type of data in either \code{Protein} or \code{Peptide}.
+#' @param filepath Automatically determined: the fiepath to \code{Protein} or
+#'   \code{Peptide} table.
+#' @param fml_nms Automatically determined: the formula names used in
+#'   \code{prnSig} or \code{pepSig}.
+#' @param label_scheme_sub Automatically determined: metadata.
+update_subcell <- function (
+    df = NULL, data_type = c("Protein", "Peptide"), 
+    dat_dir = NULL, filepath = NULL, fml_nms = NULL, label_scheme_sub = NULL, 
+    ...)
+{
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  data_type <- match.arg(data_type)
+  filename  <- paste0(data_type, "_pVals.txt")
+  
+  group_psm_by <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  
+  if (is.na(group_psm_by)) {
+    group_psm_by <- tryCatch(
+      match_call_arg(makePepDIANN, group_psm_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(group_psm_by)) {
+    group_psm_by <- "pep_seq_mod"
+  }
+  
+  group_pep_by <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  
+  if (is.na(group_pep_by)) {
+    group_pep_by <- tryCatch(
+      match_call_arg(makePepDIANN, group_psm_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(group_pep_by)) {
+    group_pep_by <- "gene"
+  }
+  
+  if (is.null(filepath)) {
+    filepath <- file.path(dat_dir, data_type, "Model")
+  }
+  
+  if (is.null(df)) {
+    df <- readr::read_tsv(file.path(filepath, filename))
+  }
+  
+  if (is.null(label_scheme_sub)) {
+    label_scheme_sub <- load_ls_group(dat_dir = dat_dir)
+  }
+  
+  dots <- rlang::enexprs(...)
+  
+  dots <- concat_fml_dots(
+    fmls = dots[grepl("^\\s*~", dots)], 
+    fml_nms = fml_nms, 
+    dots = dots[!grepl("^\\s*~", dots)], )
+  
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  select_dots  <- lang_dots[grepl("^select_", names(lang_dots))]
+  dots         <- dots[!dots %in% c(filter_dots, arrange_dots, select_dots)]
+  
+  df <- df |>
+    filters_in_call(!!!filter_dots) |>
+    arrangers_in_call(!!!arrange_dots)
+  
+  rm(list = c("filter_dots", "arrange_dots", "select_dots"))
+  
+  fmls <- dots[grepl("^\\s*~", dots)]
+  dots <- dots[!names(dots) %in% names(fmls)]
+  
+  fml_nms <- names(df) %>% 
+    .[grepl("pVal", .)] %>% 
+    gsub("(.*)\\.pVal.*", "\\1", .) %>% 
+    unique() %>% 
+    .[. %in% names(fmls)]
+  
+  fmls <- fmls[names(fmls) %in% fml_nms]
+  fml_nms <- fml_nms[map_dbl(fml_nms, function (x) which(x == names(fmls)))]
+  
+  if (!length(fml_nms)) {
+    stop("No formula (names) matched to those in 'pepSig' or 'prnSig'.")
+  }
+  
+  ## Add subcellular specificity
+  nms_df <- colnames(df)
+  
+  res_subcell <- add_subcell(
+    df= df, dat_dir = dat_dir, group_pep_by = group_pep_by, 
+    is_subcellular = TRUE, scale_log2r = TRUE, impute_na = FALSE)
+  df <- res_subcell[["df"]]
+  col_fraction <- res_subcell[["col_fraction"]]
+  col_subtype <- res_subcell[["col_subtype"]]
+  col_subgroup <- res_subcell[["col_group"]]
+  rm(list = "res_subcell")
+  
+  for (i in seq_along(fml_nms)) {
+    fml_nm <- fml_nms[[i]]
+    fml <- fmls[[i]]
+    
+    df <- update_subcell_by_fml(
+      fml_nm = fml_nm, fml = fml, df = df, label_scheme_sub = label_scheme_sub)
+  }
+  
+  df <- df[, names(df) %in% nms_df]
+  
+  path_out <- file.path(dat_dir, data_type, "Model", filename)
+  readr::write_tsv(df, path_out)
+  
+  invisible(df)
+}
+
+
 #' Update protein tables of \code{Protein.txt} etc. by subcellular locations.
 #' 
 #' Not used.
 #' 
 #' @param id Identifier.
 #' @inheritParams anal_prnTrend
-update_subcellular <- function (id = "gene", impute_na = FALSE, 
-                                scale_log2r = TRUE, ...) 
+update_subcellular <- function (id = "gene", dat_dir = NULL, filepath = NULL, 
+                                impute_na = FALSE, scale_log2r = TRUE, ...) 
 {
-  dots <- rlang::enexprs(...)
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
   
-  dat_dir  <- get_gl_dat_dir()
-  filepath <- file.path(dat_dir, "Protein", "trend")
+  if (is.null(filepath)) {
+    filepath <- file.path(dat_dir, "Protein", "trend")
+  }
   
+  dots     <- rlang::enexprs(...)
   label_scheme_sub <- load_ls_group(dat_dir)
   
   ## Find input `df2`
@@ -2406,6 +2620,7 @@ hupdate_subcellular <- function (df_trend, dat_dir, id = "gene",
     cols_pep <- grepl(paste0(pats, collapse = "|"), colnames(df_pep))
     rows_prn <- !df_prn[[id]] %in% gns
     rows_pep <- !df_pep[[id]] %in% gns
+    
     df_prn[rows_prn, cols_prn] <- NA_real_
     df_pep[rows_pep, cols_pep] <- NA_real_
   }

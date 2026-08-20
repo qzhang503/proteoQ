@@ -1168,29 +1168,32 @@ lm_gspa <- function(df, min_size = 10L, min_delta = 4L, gsscore_cutoff = 5.0,
 #' @param label_scheme_sub Metadata.
 #' @inheritParams anal_prnTrend
 check_gspa_subcellular <- function (
-    fml_nm = NULL, dat_dir = NULL, label_scheme_sub, col_fraction = NULL, 
-    col_group = NULL) {
-  
+    fml_nm = NULL, dat_dir = NULL, label_scheme_sub = NULL, 
+    col_fraction = NULL, col_group = NULL) 
+{
   if (is.null(col_fraction)) {
     return(NULL)
   }
   
-  if (!file.exists(fn_fml <- file.path(dat_dir, "Calls/prnSig_formulas.rda"))) {
+  fn_fml <- file.path(dat_dir, "Calls/prnSig_formulas.rda")
+  
+  if (!file.exists(fn_fml)) {
     return(NULL)
   }
   
   load(file = fn_fml)
   
-  fml_ops <- prepFml(prnSig_formulas[[fml_nm]], label_scheme_sub)
+  fml_ops  <- prepFml(prnSig_formulas[[fml_nm]], label_scheme_sub)
+  key_col  <- fml_ops[["key_col"]]
   elements <- fml_ops[["elements"]]
-  key_col <- fml_ops$key_col
-  
-  rows <- label_scheme_sub[[key_col]] %in% elements
+
+  rows  <- label_scheme_sub[[key_col]] %in% elements
   fracs <- unique(label_scheme_sub[[col_fraction]][rows])
-  grps <- unique(label_scheme_sub[[col_group]][rows])
+  grps  <- unique(label_scheme_sub[[col_group]][rows])
   
   list(frac = fracs, grp = grps)
 }
+
 
 #' Helper of GSPA
 #' 

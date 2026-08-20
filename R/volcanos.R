@@ -415,8 +415,6 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL,
                         scale_log2r = TRUE, impute_na = FALSE, 
                         ...)
 {
-  # force(id)
-  # id    <- rlang::as_string(rlang::enexpr(id))
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
@@ -894,10 +892,10 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
         impute_na = impute_na)
       
       df <- res_subcell[["df"]]
-      # df_trend_long <- res_subcell[["df_trend_long"]]
       col_fraction  <- res_subcell[["col_fraction"]]
       col_subtype   <- res_subcell[["col_subtype"]]
       col_subgroup  <- res_subcell[["col_group"]]
+      # df_trend_long <- res_subcell[["df_trend_long"]]
       # path_trend  <- res_subcell[["path_trend"]]
       rm(list = "res_subcell")
       
@@ -908,6 +906,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
       subcell_grps <- ans_fr[["grp"]]
       rm(list = "ans_fr")
       
+      # e.g., "Veh_CP"  "TG_CP"   "Veh_NP"  "TG_NP"   "Veh_ChA" "TG_ChA" 
       subcell_grps <- subcell_grps[subcell_grps %in% colnames(df)]
       
       # len == 1L -> single subcellular; any score > 0 -> TRUE, present
@@ -994,9 +993,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, id = "gene",
                                      p_val = col_double(),
                                      q_val = col_double(),
                                      log2fc = col_double())), 
-    error = function(e) NA
-  )
-  
+    error = function(e) NA)
+
   # filtered by ...
   if (is.null(gset_ids)) {
     if ("pass" %in% names(gsea_res)) {
@@ -1189,16 +1187,39 @@ plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL,
   
   if (is_subcellular) {
     dfw_sub <- local({
-      groups <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
-      nas <- sapply(1:nrow(dfw_sub), function(i) {
-        v1 <- dfw_sub[i, groups[i, 1]]
-        v2 <- dfw_sub[i, groups[i, 2]]
-        (is.na(v1) || v1 == 0) && (is.na(v2) || v2 == 0)
-        # (is.na(v1) || v1 == 0) || (is.na(v2) || v2 == 0)
-      })
-      
-      dfw_sub$pVal[nas] <- NA_real_
-      dfw_sub$log2Ratio[nas] <- NA_real_
+      if (FALSE) {
+        contrs_elements <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
+        
+        nas <- sapply(1:nrow(dfw_sub), function(i) {
+          v1 <- dfw_sub[i, contrs_elements[i, 1]]
+          v2 <- dfw_sub[i, contrs_elements[i, 2]]
+          (is.na(v1) || v1 == 0) && (is.na(v2) || v2 == 0)
+          # (is.na(v1) || v1 == 0) || (is.na(v2) || v2 == 0)
+        })
+      } else {
+        sub_contrs <- regmatches(
+          dfw_sub$Contrast, 
+          gregexpr("(?<=\\().*?(?=\\))", dfw_sub$Contrast, perl = TRUE))
+        
+        if (!any(lengths(sub_contrs))) {
+          sub_contrs <- NULL
+          contrs_elements <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
+        } else {
+          contrs_elements <- lapply(sub_contrs, function (x) unique(unlist(strsplit(x, "-"))))
+        }
+        
+        nas <- sapply(1:nrow(dfw_sub), function(i) {
+          vals <- dfw_sub[i, contrs_elements[[i]]]
+          all(is.na(vals) | vals == 0)
+        })
+      }
+
+      # [x] Nullify pVal and log2Ratio if not any of the proteins belong to 
+      #  the sample groups defined by `Contrast`
+      # [x] For example, a protein can have significant pVal under a contrast 
+      #  simply due to random association to a fraction 
+      dfw_sub[["pVal"]][nas] <- NA_real_
+      dfw_sub[["log2Ratio"]][nas] <- NA_real_
       
       dfw_sub
     })

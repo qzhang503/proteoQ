@@ -4,10 +4,21 @@
 \alias{update_subcellular}
 \title{Update protein tables of \code{Protein.txt} etc. by subcellular locations.}
 \usage{
-update_subcellular(id = "gene", impute_na = FALSE, scale_log2r = TRUE, ...)
+update_subcellular(
+  id = "gene",
+  dat_dir = NULL,
+  filepath = NULL,
+  impute_na = FALSE,
+  scale_log2r = TRUE,
+  ...
+)
 }
 \arguments{
 \item{id}{Identifier.}
+
+\item{dat_dir}{The current working directory.}
+
+\item{filepath}{Use system default.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
