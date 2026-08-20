@@ -1187,32 +1187,25 @@ plot_gspa_volcano <- function (gt, gsets = "go_sets", gsea_res = NULL,
   
   if (is_subcellular) {
     dfw_sub <- local({
-      if (FALSE) {
-        contrs_elements <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
-        
-        nas <- sapply(1:nrow(dfw_sub), function(i) {
-          v1 <- dfw_sub[i, contrs_elements[i, 1]]
-          v2 <- dfw_sub[i, contrs_elements[i, 2]]
-          (is.na(v1) || v1 == 0) && (is.na(v2) || v2 == 0)
-          # (is.na(v1) || v1 == 0) || (is.na(v2) || v2 == 0)
-        })
+      sub_contrs <- regmatches(
+        dfw_sub$Contrast, 
+        gregexpr("(?<=\\().*?(?=\\))", dfw_sub$Contrast, perl = TRUE))
+      
+      if (!any(lengths(sub_contrs))) {
+        sub_contrs <- NULL
+        contrs_elements <- 
+          do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
       } else {
-        sub_contrs <- regmatches(
-          dfw_sub$Contrast, 
-          gregexpr("(?<=\\().*?(?=\\))", dfw_sub$Contrast, perl = TRUE))
-        
-        if (!any(lengths(sub_contrs))) {
-          sub_contrs <- NULL
-          contrs_elements <- do.call(rbind, strsplit(as.character(dfw_sub$Contrast), "-"))
-        } else {
-          contrs_elements <- lapply(sub_contrs, function (x) unique(unlist(strsplit(x, "-"))))
-        }
-        
-        nas <- sapply(1:nrow(dfw_sub), function(i) {
-          vals <- dfw_sub[i, contrs_elements[[i]]]
-          all(is.na(vals) | vals == 0)
-        })
+        contrs_elements <- 
+          lapply(sub_contrs, function (x) unique(unlist(strsplit(x, "-"))))
+        contrs_elements <- do.call(rbind, contrs_elements)
       }
+      
+      nas <- sapply(1:nrow(dfw_sub), function(i) {
+        vals <- dfw_sub[i, contrs_elements[i, ]]
+        # any(is.na(vals) | vals == 0)
+        all(is.na(vals) | vals == 0)
+      })
 
       # [x] Nullify pVal and log2Ratio if not any of the proteins belong to 
       #  the sample groups defined by `Contrast`
