@@ -7,10 +7,12 @@
 plotNMFmeta(
   id,
   rank,
+  annot_cols = NULL,
+  annot_colnames = NULL,
   label_scheme_sub,
-  scale_log2r,
-  complete_cases,
-  impute_na,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
   df,
   df2,
   filepath,
@@ -25,6 +27,14 @@ plotNMFmeta(
 
 \item{rank}{Numeric vector; the factorization rank(s) in
 \code{\link[NMF]{nmf}}. The default is c(4:8)}
+
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
+the top of the indicated plot. The default is NULL without column
+annotation.}
+
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}

@@ -12,6 +12,7 @@ pepVol(
   impute_na = FALSE,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -30,6 +31,7 @@ prnVol(
   impute_na = FALSE,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -63,6 +65,8 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
 \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -92,8 +96,8 @@ varargs for the format.}
 
 \item{grids}{An integer or integer vector for subset visualization of
 contrasts within a group. For example with a group of three contrasts,
-\code{grids = 2:3} will hide the first grid from displaying. At the
-NULL default, all available grids will be shown.}
+\code{grids = 2:3} will hide the first grid from displaying. At the NULL
+default, all available grids will be shown.}
 
 \item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
@@ -328,15 +332,16 @@ prnGSPAMap(
  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
- analysis by protein significance pVals \cr \code{\link{prnGSPAMap}} for mapping
- GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
- and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
- set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
- online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
- visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
- visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
- visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
- visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ analysis by protein significance pVals \cr \code{\link{prnGSPAMap}} for
+ mapping GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for
+ heat map and network visualization of GSPA results \cr \code{\link{prnGSVA}}
+ for gene set variance analysis \cr \code{\link{prnGSEA}} for data
+ preparation for online GSEA. \cr \code{\link{pepMDS}} and
+ \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+ \code{\link{prnPCA}} for PCA visualization \cr \code{\link{pepLDA}} and
+ \code{\link{prnLDA}} for LDA visualization \cr \code{\link{pepHM}} and
+ \code{\link{prnHM}} for heat map visualization \cr
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
  correlation plots \cr \code{\link{anal_prnTrend}} and
  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr

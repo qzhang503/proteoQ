@@ -8,7 +8,7 @@ hupdate_subcellular(
   df_trend,
   dat_dir,
   id = "gene",
-  label_scheme_sub,
+  label_scheme_sub = NULL,
   col_fraction = NULL,
   col_subtype = NULL
 )
@@ -18,7 +18,7 @@ hupdate_subcellular(
 
 \item{dat_dir}{The working directory.}
 
-\item{id}{Identifier.}
+\item{id}{A protein identifier.}
 
 \item{label_scheme_sub}{Metadata.}
 

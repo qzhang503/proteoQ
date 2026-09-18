@@ -16,11 +16,13 @@ byfml_volcano(
   id_gspa = "entrez",
   filepath,
   filename,
-  adjP,
+  adjP = TRUE,
   topn_labels,
-  anal_type,
-  show_sig,
+  add_id_table = TRUE,
+  anal_type = "Volcano",
+  show_sig = FALSE,
   show_passed_only = TRUE,
+  show_gspa_cutoff_lines = TRUE,
   gsets = NULL,
   gset_ids = NULL,
   is_subcellular = FALSE,
@@ -29,6 +31,7 @@ byfml_volcano(
   impute_na = FALSE,
   highlights = NULL,
   grids = NULL,
+  use_gl_bg = FALSE,
   theme = NULL,
   ...
 )
@@ -106,6 +109,8 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
@@ -119,6 +124,9 @@ Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 
 \item{show_passed_only}{Logical; if TRUE, only visualize pathways that have
 passed a significant threshold.}
+
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
 
 \item{gsets}{The gene sets.}
 
@@ -143,8 +151,10 @@ varargs for the format.}
 
 \item{grids}{An integer or integer vector for subset visualization of
 contrasts within a group. For example with a group of three contrasts,
-\code{grids = 2:3} will hide the first grid from displaying. At the
-NULL default, all available grids will be shown.}
+\code{grids = 2:3} will hide the first grid from displaying. At the NULL
+default, all available grids will be shown.}
+
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

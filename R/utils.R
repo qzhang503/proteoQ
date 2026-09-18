@@ -28,8 +28,8 @@ prepDM <- function(df = NULL, dat_dir = NULL, id = "pep_seq",
     stop("Zero row of data after subsetting.")
   }
   
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
+  # force(id)
+  # id <- rlang::as_string(rlang::enexpr(id))
   
   if (anal_type %in% c("ESGAGE", "GSVA")) {
     id <- "entrez"

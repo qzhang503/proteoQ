@@ -14,6 +14,7 @@ fullVolcano(
   filename = NULL,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   highlights = NULL,
   grids = NULL,
   is_subcellular = FALSE,
@@ -62,13 +63,15 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{highlights}{A list of entries for highlighting. See also \code{filter_}
 varargs for the format.}
 
 \item{grids}{An integer or integer vector for subset visualization of
 contrasts within a group. For example with a group of three contrasts,
-\code{grids = 2:3} will hide the first grid from displaying. At the
-NULL default, all available grids will be shown.}
+\code{grids = 2:3} will hide the first grid from displaying. At the NULL
+default, all available grids will be shown.}
 
 \item{is_subcellular}{Logical; does data contain subcellular specificity.}
 

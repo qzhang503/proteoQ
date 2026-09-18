@@ -20,13 +20,16 @@ pepGSPAMap(
   fml_nms = NULL,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   show_sig = "none",
   show_passed_only = TRUE,
   gspval_cutoff = 0.05,
   gslogFC_cutoff = log2(1.2),
   topn_gsets = Inf,
   theme = NULL,
+  use_gl_bg = FALSE,
   is_subcellular = FALSE,
+  show_gspa_cutoff_lines = TRUE,
   ...
 )
 
@@ -47,11 +50,14 @@ prnGSPAMap(
   fml_nms = NULL,
   adjP = FALSE,
   topn_labels = 20L,
+  add_id_table = TRUE,
   show_sig = "none",
   show_passed_only = TRUE,
   gspval_cutoff = 0.01,
   gslogFC_cutoff = log2(1.2),
+  show_gspa_cutoff_lines = TRUE,
   topn_gsets = .Machine$integer.max,
+  use_gl_bg = FALSE,
   theme = NULL,
   ...
 )
@@ -74,8 +80,8 @@ custom data bases, follow the same format of list as \code{GO} or
 
 \item{grids}{An integer or integer vector for subset visualization of
 contrasts within a group. For example with a group of three contrasts,
-\code{grids = 2:3} will hide the first grid from displaying. At the
-NULL default, all available grids will be shown.}
+\code{grids = 2:3} will hide the first grid from displaying. At the NULL
+default, all available grids will be shown.}
 
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
@@ -123,6 +129,8 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{show_sig}{Character string indicating the type of significance values
 to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
@@ -163,7 +171,12 @@ threshold is allowed by supplying a vector of absolute values in
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
 will be applied.}
 
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
+
 \item{is_subcellular}{Logical; does data contain subcellular specificity.}
+
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row
 filtration against data in a primary file linked to \code{df}. See also

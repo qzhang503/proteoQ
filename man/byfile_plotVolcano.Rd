@@ -14,13 +14,16 @@ byfile_plotVolcano(
   filename = NULL,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   anal_type = "Volcano",
   gsets = NULL,
   gset_ids = NULL,
   is_subcellular = FALSE,
+  show_gspa_cutoff_lines = TRUE,
   scale_log2r = TRUE,
   impute_na = FALSE,
   highlights = NULL,
+  use_gl_bg = FALSE,
   theme = NULL,
   ...
 )
@@ -68,6 +71,8 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
@@ -81,6 +86,9 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 
 \item{is_subcellular}{Logical; does data contain subcellular specificity.}
 
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At
 \code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
@@ -91,6 +99,8 @@ will be used. The default is FALSE.}
 
 \item{highlights}{A list of entries for highlighting. See also \code{filter_}
 varargs for the format.}
+
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,

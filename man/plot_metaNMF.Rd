@@ -8,7 +8,7 @@ plot_metaNMF(
   col_select = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
-  impute_na = TRUE,
+  impute_na = FALSE,
   df = NULL,
   df2 = NULL,
   filepath = NULL,

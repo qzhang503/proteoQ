@@ -5,22 +5,23 @@
 \title{Helper of making plots of subcellular scores.}
 \usage{
 make_subcell_plot(
-  df,
   df_med,
-  col_cluster,
-  col_x,
-  col_y,
-  col_fraction,
-  panel_ids,
-  cl_id,
-  filepath,
-  out_nm,
+  n_clust,
+  col_cluster = "cluster",
+  col_x = "group",
+  col_y = "loc_score",
+  levels_group = NULL,
+  col_fraction = "Fraction",
+  levels_fraction = NULL,
+  panel_ids = NULL,
+  cl_id = NULL,
+  filepath = NULL,
+  out_nm = NULL,
+  theme = NULL,
   ...
 )
 }
 \arguments{
-\item{df}{A data frame.}
-
 \item{df_med}{A data frame of median summarization.}
 
 \item{col_cluster}{The column key of \code{cluster}.}
@@ -29,7 +30,11 @@ make_subcell_plot(
 
 \item{col_y}{The column key of Y-axis.}
 
+\item{levels_group}{The levels of groups.}
+
 \item{col_fraction}{The column key of subcellular fractions.}
+
+\item{levels_fraction}{The levels of fractions.}
 
 \item{panel_ids}{The subset of panel_ids for visualization.}
 
@@ -38,6 +43,8 @@ make_subcell_plot(
 \item{filepath}{An output filepath.}
 
 \item{out_nm}{An output filename.}
+
+\item{theme}{The theme of plot.}
 
 \item{...}{Additional parameters for aesthetics.}
 }

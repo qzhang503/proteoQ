@@ -36,7 +36,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
              breaks = !!breaks, 
              !!!dots))
   
-  rlang::eval_bare(ph_call, env = caller_env())
+  rlang::eval_bare(ph_call, env = rlang::caller_env())
 }
 
 
@@ -398,6 +398,23 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
     dplyr::select(dplyr::matches(paste0("^", type_int, "[0-9]{3}[NC]{0,1} \\(")))
   names(df_int) <- sub("^N_I[0-9]{3}[NC]{0,1} \\((.*)\\)$", "\\1", names(df_int))
   df_int <- df_int[, plot_sids, drop = FALSE]
+  
+  # Brighten contrasts in relative to missing values
+  if (FALSE) {
+    df_log2r_x <- local({
+      nas_int <- is.na(df_int)
+      df_int[nas_int] <- min(df_int, na.rm = TRUE) / 5
+      
+      df_log2r_x <- sweep(df_int, 1, rowMeans(df_int, na.rm = TRUE), "/") |>
+        log2()
+      
+      df_log2r_x[nas_int] <- NA_real_
+      
+      df_log2r_x
+    })
+    
+    df_log2r <- df_lgr <- df_log2r_x
+  }
 
   if (cluster_rows) {
     d <- stats::dist(df_lgr, method = clustering_distance_rows, p = p_dist_rows)
@@ -982,7 +999,7 @@ pepHM <- function (dat_dir = NULL,
 #'  argument in \link[pheatmap]{pheatmap}.
 #'@param annot_col_levels The levels of annot_cols. For example, at
 #'  \code{annot_cols = c("Color", "Shape")}, the corresponding levels are
-#'  \code{annot_col_levels = list{Color = c("A", "B"), Shape = c("X", "Y")}}.
+#'  \code{annot_col_levels = list(Color = c("A", "B"), Shape = c("X", "Y"))}.
 #'@param annot_row_levels Not yet used. The levels of annot_rows.
 #'@param add_prot_id Logical; only for \link{pepHM}. Append protein identifiers
 #'  to peptide sequences.

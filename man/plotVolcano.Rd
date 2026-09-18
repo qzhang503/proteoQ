@@ -11,9 +11,11 @@ plotVolcano(
   id_gspa = "entrez",
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   anal_type = "Volcano",
   gspval_cutoff = 0.05,
   gslogFC_cutoff = log2(1.2),
+  show_gspa_cutoff_lines = TRUE,
   topn_gsets = Inf,
   show_sig = "none",
   show_passed_only = TRUE,
@@ -26,6 +28,7 @@ plotVolcano(
   is_subcellular = FALSE,
   filepath = NULL,
   filename = NULL,
+  use_gl_bg = FALSE,
   theme = NULL,
   highlights = NULL,
   grids = NULL,
@@ -63,6 +66,8 @@ The default is FALSE.}
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
 
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
+
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
@@ -83,6 +88,9 @@ visualization. The default magnitude is \code{log2(1.2) } for all formulas
 matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
+
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
 
 \item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered
   by increasing \code{pVal} for visualization. The default is to use all
@@ -146,6 +154,8 @@ extension is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
+
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
@@ -156,8 +166,8 @@ varargs for the format.}
 
 \item{grids}{An integer or integer vector for subset visualization of
 contrasts within a group. For example with a group of three contrasts,
-\code{grids = 2:3} will hide the first grid from displaying. At the
-NULL default, all available grids will be shown.}
+\code{grids = 2:3} will hide the first grid from displaying. At the NULL
+default, all available grids will be shown.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

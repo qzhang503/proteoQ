@@ -31,5 +31,7 @@ update_subcell(
 \item{label_scheme_sub}{Automatically determined: metadata.}
 }
 \description{
-Update subcellular protein or peptide tables.
+Nullify pVals for proteins found but not belonging to a subcellular fraction.
+Intensity fields of \code{I[0-9]{3}} and log2Ratio files of
+\code{[NZ]{0,1}_log2R} remains intact.
 }

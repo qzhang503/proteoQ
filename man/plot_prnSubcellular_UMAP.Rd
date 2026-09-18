@@ -9,12 +9,14 @@ plot_prnSubcellular_UMAP(
   id = "gene",
   levels_fraction = NULL,
   levels_subtype = NULL,
+  dat_dir = NULL,
+  filepath = NULL,
   key_subcellular = "location_slim3",
   key_col = "loc_score",
   levels_ref_compartments = c("CP", "NP", "ChA"),
-  filename_ref = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
+  filename_ref = NULL,
   filename = NULL,
   seed = 42,
   ...
@@ -34,13 +36,14 @@ of \code{df} and \code{df2}.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
+\item{dat_dir}{The current working directory.}
+
+\item{filepath}{The file path to Trend data.}
+
 \item{key_subcellular}{The key of subcellular compartments from the reference
 data.}
 
 \item{key_col}{The column key where its values are used for UMAP.}
-
-\item{filename_ref}{Optional; a file name with prepending path to a reference
-subcellular annotation file, e.g., UniProt and GO intersection.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with
@@ -51,6 +54,9 @@ files are matched under given conditions.}
 \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
 \code{_impNA} in name will be taken. An error will be thrown if no files are
 matched under given conditions.}
+
+\item{filename_ref}{Optional; a file name with prepending path to a reference
+subcellular annotation file, e.g., UniProt and GO intersection.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}

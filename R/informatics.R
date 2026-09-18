@@ -216,7 +216,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     dat_dir <- get_gl_dat_dir()
   }
   
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, filename = "label_scheme")
   
   if (is.null(label_scheme[[col_select]])) {
     stop("Column \'", rlang::as_string(col_select), "\' not found.")
@@ -353,7 +353,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                     "Histogram", "Corrplot",
                     "Model", "Volcano", "Trend", "NMF", "NMF_meta", 
                     "GSPA", "mapGSPA",
-                    "GSVA", "GSEA", "String", "LDA", "Outlier", 
+                    "GSVA", "GSEA", "String", "LDA", "Outlier", "Transloc", 
                     "KinSub")
   
   use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "Subcellular_plot", 
@@ -667,6 +667,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   } 
   else if (anal_type == "Volcano") {
     function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, theme = NULL, 
+             add_id_table = TRUE, 
              highlights = NULL, grids = NULL, is_subcellular = FALSE, ...) {
       
       plotVolcano(df = df,
@@ -691,6 +692,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                   filepath = filepath,
                   filename = paste0(fn_prefix, ".", fn_suffix),
                   highlights = highlights, 
+                  add_id_table = add_id_table, 
                   grids = grids, 
                   theme = theme,
                   ...)
@@ -698,9 +700,12 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   } 
   else if (anal_type == "mapGSPA") {
     function(fml_nms = NULL, gset_ids = NULL, grids = NULL, adjP = FALSE, 
-             topn_labels = 20, gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
+             topn_labels = 20, add_id_table = TRUE, 
+             gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
+             show_gspa_cutoff_lines = TRUE, 
              topn_gsets = Inf, show_sig = "none", show_passed_only = TRUE, 
-             gset_nms = "go_sets", theme = NULL, is_subcellular = FALSE, ...) {
+             gset_nms = "go_sets", theme = NULL, use_gl_bg = FALSE, 
+             is_subcellular = FALSE, ...) {
       
       plotVolcano(df = df,
                   df2 = df2,
@@ -711,6 +716,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                   anal_type = anal_type,
                   gspval_cutoff = gspval_cutoff,
                   gslogFC_cutoff = gslogFC_cutoff,
+                  show_gspa_cutoff_lines = show_gspa_cutoff_lines, 
                   topn_gsets = topn_gsets,
                   show_sig = show_sig,
                   show_passed_only = show_passed_only, 
@@ -724,7 +730,9 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                   filepath = filepath,
                   filename = paste0(fn_prefix, ".", fn_suffix),
                   highlights = NULL, 
+                  add_id_table = add_id_table, 
                   grids = grids, 
+                  use_gl_bg = use_gl_bg, 
                   theme = theme,
                   ...)
     }
@@ -755,6 +763,20 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                 ...)
     }
   } 
+  else if (anal_type == "Transloc") {
+    function (min_n_per_group = 3L, group_pep_by = "gene") {
+      analTransloc(
+        df = df, 
+        id = id, 
+        dat_dir = dat_dir, 
+        col_select = rlang::as_string(col_select), 
+        col_group = rlang::as_string(col_group),
+        col_order = rlang::as_string(col_order),
+        label_scheme_sub = label_scheme_sub,
+        min_n_per_group = min_n_per_group, 
+      )
+    }
+  }
   else if (anal_type == "Outlier") {
     function(p_outlier = .05, min_n = 3L, min_n_per_group = 3L, 
              p_contrast = .01, p_type = "adjP", contr_pairs = NULL, 
@@ -854,11 +876,11 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   else if (anal_type == "NMF") {
     function(rank = NULL, nrun = 50, seed = NULL, ...) {
       analNMF(df = df,
-              id = !!id,
+              id = id,
               rank = rank,
               nrun = nrun,
               seed = seed,
-              col_group = !!col_group,
+              col_group = col_group,
               label_scheme_sub = label_scheme_sub,
               scale_log2r = scale_log2r,
               complete_cases = complete_cases,
@@ -870,9 +892,10 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "NMF_con") {
-    function(rank = NULL, ...) {
+    function(rank = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
       plotNMFCon(df2 = df2,
-                 id = !!id,
+                 id = id,
+                 annot_cols = annot_cols, annot_colnames = annot_colnames, 
                  rank = rank,
                  label_scheme_sub = label_scheme_sub,
                  scale_log2r = scale_log2r,
@@ -884,9 +907,10 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "NMF_coef") {
-    function(rank = NULL, ...) {
+    function(rank = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
       plotNMFCoef(df2 = df2,
-                  id = !!id,
+                  id = id,
+                  annot_cols = annot_cols, annot_colnames = annot_colnames, 
                   rank = rank,
                   label_scheme_sub = label_scheme_sub,
                   scale_log2r = scale_log2r,
@@ -898,10 +922,11 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "NMF_meta") {
-    function(rank = NULL, ...) {
+    function(rank = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
       plotNMFmeta(df = df,
                   df2 = df2,
-                  id = !!id,
+                  id = id,
+                  annot_cols = annot_cols, annot_colnames = annot_colnames, 
                   rank = rank,
                   label_scheme_sub = label_scheme_sub,
                   scale_log2r = scale_log2r,
@@ -930,6 +955,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                scale_log2r = scale_log2r,
                complete_cases = complete_cases,
                impute_na = impute_na,
+               dat_dir = dat_dir,
                filepath = filepath,
                filename = paste0(fn_prefix, ".txt"),
                gset_nms = gset_nms,
@@ -1114,7 +1140,8 @@ find_pri_df <- function (dat_dir = NULL, anal_type = "Model", df = NULL,
     paste0("not found. \n", 
            "Run functions of PSM, peptide and protein normalization first.")
   err_msg3 <- 
-    paste0("not found. \n", 
+    paste0("n
+           ot found. \n", 
            "Impute NA values with ", 
            "`pepImp()` or `prnImp()` or set `impute_na = FALSE`.")
   err_msg4 <- 
@@ -1213,7 +1240,7 @@ find_pri_df <- function (dat_dir = NULL, anal_type = "Model", df = NULL,
                 "for `filter_` varargs.")
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "UMAP", "EucDist", 
                                 "Trend", "Outlier", "NMF", "NMF_meta",
-                                "GSVA", "Corrplot", "String", "LDA", 
+                                "GSVA", "Corrplot", "String", "LDA", "Transloc", 
                                 "KinSub")) { # optional impute_na and possible pVals
       if (impute_na) {
         if (file.exists(fn_imp_p)) 

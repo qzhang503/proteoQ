@@ -7,6 +7,10 @@
 check_dixon_outliers(x, y = NULL, p = 0.05, p_co = 0.01)
 }
 \arguments{
+\item{x}{A numeric vector.}
+
+\item{y}{A second vector, e.g., p-values.}
+
 \item{p}{A type-I error tolerance.}
 }
 \description{

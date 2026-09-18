@@ -13,20 +13,23 @@ gsVolcano(
   gsets = NULL,
   gset_ids = NULL,
   id_gspa = "entrez",
-  theme = NULL,
   fml_nm = NULL,
   filepath = NULL,
   filename = NULL,
   adjP = FALSE,
   topn_labels = 20,
+  add_id_table = TRUE,
   show_sig = "none",
   show_passed_only = TRUE,
   gspval_cutoff = 1e-06,
   gslogFC_cutoff = log2(1.2),
+  show_gspa_cutoff_lines = TRUE,
   topn_gsets = Inf,
   is_subcellular = FALSE,
   scale_log2r = TRUE,
   impute_na = FALSE,
+  theme = NULL,
+  use_gl_bg = FALSE,
   ...
 )
 }
@@ -64,11 +67,6 @@ sets.}
 \item{id_gspa}{Character string; the ID type used in GSPA. The default is
 \code{entrez}.}
 
-\item{theme}{A
-\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
-i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
-will be applied.}
-
 \item{fml_nm}{A character string; the name of \code{fml}.}
 
 \item{filepath}{A file path to output results. By default, it will be
@@ -87,6 +85,8 @@ The default is FALSE.}
 \item{topn_labels}{A non-negative integer; the top-n species for labeling in a
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
+
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
 
 \item{show_sig}{Character string indicating the type of significance values
 to be shown with \code{\link{prnGSPAMap}}. The default is \code{"none"}.
@@ -111,6 +111,9 @@ matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
+
 \item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered
   by increasing \code{pVal} for visualization. The default is to use all
   available entries.
@@ -132,6 +135,13 @@ be used.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
+
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

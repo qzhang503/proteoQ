@@ -957,6 +957,8 @@ check_outliers <- function(x, y = NULL, p = 5E-2, min_n = 3L, p_co = 1E-2)
 
 #' Check the existence of an outlier using Dixon's method.
 #' 
+#' @param x A numeric vector.
+#' @param y A second vector, e.g., p-values.
 #' @param p A type-I error tolerance.
 check_dixon_outliers <- function (x, y = NULL, p = 5E-2, p_co = 1E-2)
 {
@@ -981,7 +983,11 @@ check_dixon_outliers <- function (x, y = NULL, p = 5E-2, p_co = 1E-2)
     return(m)
   }
   
-  if (y[[m]] <= p_co) {
+  if (is.na(ym <- y[[m]])) {
+    return(0L)
+  }
+  
+  if (ym <= p_co) {
     return(m)
   } else {
     return(0L)
@@ -1010,7 +1016,11 @@ check_rosner_outliers <- function (x, y = NULL, k = 1L, p = 5E-2, p_co = 1E-2)
     return(m)
   }
   
-  if (y[m] <= p_co) {
+  if (is.na(ym <- y[m])) {
+    return(0L)
+  }
+  
+  if (ym <= p_co) {
     return(m)
   }
   

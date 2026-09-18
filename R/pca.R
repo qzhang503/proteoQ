@@ -41,24 +41,17 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   }
   
   dots <- rlang::enexprs(...)
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
   
-  filter_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  arrange_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^arrange_", names(.))]
-  
-  dots <- dots %>% 
-    .[! . %in% c(filter_dots, arrange_dots)]
-  
-  anal_dots <- dots %>% 
-    .[names(.) %in% c("x", "retx", "center", "scale.", "tol", "rank.")]
+  anal_dots <- dots[names(dots) %in% 
+                      c("x", "retx", "center", "scale.", "tol", "rank.")]
   
   fml_dots <- dots[purrr::map_lgl(dots, is_formula)]
   
-  dots <- dots %>% .[! . %in% c(anal_dots, fml_dots)]
+  dots <- dots[!dots %in% c(anal_dots, fml_dots)]
   
   if (!is.null(anal_dots$scale.)) {
     if (type == "obs") {
@@ -122,16 +115,108 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   df <- res$pca
   
-  if (!(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))) {
-    df <- local({
-      df <- df |>
-        dplyr::arrange(!!col_order)
-      levs <- unique(df[[col_group]])
-      df <- df |>
-        dplyr::mutate(!!col_group := factor(!!col_group, levels = levs))
-    })
+  if (ok_col_group <- length(col_group) && col_group != ".") {
+    levels_group <- unique(df[[col_group]])
+    if (!length(levels_group)) ok_col_group <- FALSE
+  } else {
+    levels_group <- NULL
   }
   
+  if (ok_col_color <- length(col_color) && col_color != ".") {
+    levels_color <- unique(df[[col_color]])
+    if (!length(levels_color)) ok_col_color <- FALSE
+  } else {
+    levels_color <- NULL
+  }
+  
+  if (ok_col_fill <- length(col_fill) && col_fill != ".") {
+    levels_fill <- unique(df[[col_fill]])
+    if (!length(levels_fill)) ok_col_fill <- FALSE
+  } else {
+    levels_fill <- NULL
+  }
+  
+  if (ok_col_shape <- length(col_shape) && col_shape != ".") {
+    levels_shape <- unique(df[[col_shape]])
+    if (!length(levels_shape)) ok_col_shape <- FALSE
+  } else {
+    levels_shape <- NULL
+  }
+  
+  if (ok_col_alpha <- length(col_alpha) && col_alpha != ".") {
+    levels_alpha <- unique(df[[col_alpha]])
+    if (!length(levels_alpha)) ok_col_alpha <- FALSE
+  } else {
+    levels_alpha <- NULL
+  }
+  
+  if (ok_col_size <- length(col_size) && col_size != ".") {
+    levels_size <- unique(df[[col_size]])
+    if (!length(levels_size)) ok_col_size <- FALSE
+  } else {
+    levels_size <- NULL
+  }
+  
+  if (ok_col_order <- length(col_order) && col_order != ".") {
+    levels_order <- unique(df[[col_order]])
+    if (!length(levels_order)) ok_col_order <- FALSE
+  } else {
+    levels_order <- NULL
+  }
+  
+  # !(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))
+  if (ok_col_order) {
+    df <- df |> dplyr::arrange(!!rlang::sym(col_order))
+    
+    if (ok_col_group) {
+      levels_group <- unique(df[[col_group]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_group := factor(!!rlang::sym(col_group), levels = levels_group))
+    }
+    
+    if (ok_col_color) {
+      levels_color <- unique(df[[col_color]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_color := factor(!!rlang::sym(col_color), levels = levels_color))
+    }
+    
+    if (ok_col_fill) {
+      levels_fill <- unique(df[[col_fill]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_fill := factor(!!rlang::sym(col_fill), levels = levels_fill))
+    }
+    
+    if (ok_col_shape) {
+      levels_shape <- unique(df[[col_shape]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_shape := factor(!!rlang::sym(col_shape), levels = levels_shape))
+    }
+    
+    if (ok_col_size) {
+      levels_size <- unique(df[[col_size]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_size := factor(!!rlang::sym(col_size), levels = levels_size))
+    }
+    
+    if (ok_col_alpha) {
+      levels_alpha <- unique(df[[col_alpha]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_alpha := factor(!!rlang::sym(col_alpha), levels = levels_alpha))
+    }
+  }
+
   # key `Label` used in `geom_lower_text()`
   df$Label <- if ("Sample_ID" %in% names(df)) 
     df$Sample_ID
@@ -287,7 +372,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     text_size = 2
   }
   
-  fix_args <- list(colour = "darkgray", 
+  fix_args <- list(colour = NA, # colour = "darkgray", 
                    fill = NA, 
                    shape = dot_shape,
                    size = dot_size, 
@@ -296,7 +381,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     .[!is.na(.)]
   
   fix_args$stroke <- dot_stroke
-  
+  fix_args <- fix_args[!names(fix_args) %in% names(mapping_var)]
+
   # --- set up axis labels ---
   if (is.null(anal_dots$center)) {
     col_labs <-

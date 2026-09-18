@@ -29,8 +29,11 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -309,6 +312,7 @@
 # makePepSpn
 # makeProtSpn
 # aggrLCMS_DIANN
+# annot_signal_peps
 #
 # $prntable.R
 # standPrn
@@ -463,6 +467,8 @@
 # impute_baseline_ints
 # base_sigtest_y
 # sep_data_by_group
+# count_non_na
+# make_dfn
 # find_baseline_slope
 # gen_randoms
 # pepSig
@@ -505,6 +511,13 @@
 # classify_subcellular_unsupervised
 # check_subcell
 # plot_prnSubcell_UMAP
+# update_subell_by_contr
+# update_subcell_by_fml
+# update_subcell
+# find_bad_transloc
+# find_from_to_transloc
+# update_subcell_metrics
+# make_transloc_scatter
 # update_subcellular
 # hupdate_subcellular
 #

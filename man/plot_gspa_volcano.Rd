@@ -14,6 +14,8 @@ plot_gspa_volcano(
   id_gspa = "entrez",
   show_sig = "none",
   topn_labels = 20L,
+  show_gspa_cutoff_lines = TRUE,
+  add_id_table = TRUE,
   xco = 1.2,
   yco = 0.05,
   pval_cutoff = 0.05,
@@ -25,6 +27,7 @@ plot_gspa_volcano(
   x_label = NULL,
   y_label = NULL,
   theme = NULL,
+  use_gl_bg = FALSE,
   myPalette = c("#377EB8", "#E41A1C"),
   dots
 )
@@ -48,6 +51,11 @@ Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \item{topn_labels}{A non-negative integer; the top-n species for labeling in a
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
+
+\item{show_gspa_cutoff_lines}{Logical; to show GSPA protein cut-off lines or
+not.}
+
+\item{add_id_table}{Logical; add ID tables to the visualization or not.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
@@ -73,6 +81,8 @@ of \code{id} in the \code{call}.}
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2} theme,
 i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
 will be applied.}
+
+\item{use_gl_bg}{Logical; if TRUE, use the global data as the background.}
 }
 \description{
 Volcano plots of protein \code{log2FC} under given gene sets

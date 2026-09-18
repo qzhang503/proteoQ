@@ -12,6 +12,7 @@ gspaTest(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  dat_dir = NULL,
   filepath = NULL,
   filename = NULL,
   gset_nms = "go_sets",
@@ -61,6 +62,9 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

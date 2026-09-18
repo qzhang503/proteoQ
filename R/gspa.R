@@ -80,6 +80,7 @@ pepGSPA <- function (dat_dir = NULL,
   info_anal(df = df, 
             id = id, 
             id_gspa = id_gspa, 
+            dat_dir = dat_dir,
             filepath = filepath, 
             filename = filename, 
             scale_log2r = scale_log2r, 
@@ -343,6 +344,7 @@ prnGSPA <- function (
   info_anal(df = df, 
             id = id, 
             id_gspa = id_gspa, 
+            dat_dir = dat_dir,
             filepath = filepath, 
             filename = filename, 
             scale_log2r = scale_log2r, 
@@ -452,17 +454,17 @@ add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene",
 #'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% is_greater_than not 
-gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez", 
-                     label_scheme_sub = NULL, 
-                     scale_log2r = TRUE, complete_cases = FALSE, 
-                     impute_na = FALSE,filepath = NULL, filename = NULL, 
-                     gset_nms = "go_sets", var_cutoff = 0.5, 
-                     pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1), 
-                     gspval_cutoff = 1E-2, is_subcellular = FALSE, 
-                     min_size = 6L, max_size = .Machine$integer.max, 
-                     min_delta = 5L, min_greedy_size = 1L, use_adjP = FALSE, 
-                     method = "mean", anal_type = "GSPA", ...) 
+gspaTest <- function(
+    df = NULL, id = "gene", id_gspa = "entrez", label_scheme_sub = NULL, 
+    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+    dat_dir = NULL,filepath = NULL, filename = NULL, 
+    gset_nms = "go_sets", var_cutoff = 0.5, 
+    pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+    gsscore_cutoff = 5.0, gslogFC_cutoff = log2(1), 
+    gspval_cutoff = 1E-2, is_subcellular = FALSE, 
+    min_size = 6L, max_size = .Machine$integer.max, 
+    min_delta = 5L, min_greedy_size = 1L, use_adjP = FALSE, 
+    method = "mean", anal_type = "GSPA", ...) 
 {
   # `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
   # Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name, 
@@ -481,20 +483,20 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
                      min_greedy_size), 
                    rlang::is_double, logical(1L)))
   
-  dat_dir  <- get_gl_dat_dir()
+  if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
   
   if (!nrow(label_scheme_sub)) {
     stop("Empty metadata.")
   }
-
+  
   if (!"entrez" %in% names(df)) {
     stop("Column \"entrez\" not found.")
   }
-
+  
   if (all(is.na(df[["entrez"]]))) {
     stop("All values are NA under the column `entrez` in the input data.")
   }
-
+  
   dots <- rlang::enexprs(...)
   fmls <- dots[grepl("^\\s*~", dots)]
   
@@ -508,7 +510,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
   select_dots  <- lang_dots[grepl("^select_", names(lang_dots))]
   dots         <- dots[!dots %in% c(filter_dots, arrange_dots, select_dots)]
-
+  
   df <- df |>
     filters_in_call(!!!filter_dots) |>
     arrangers_in_call(!!!arrange_dots)
@@ -516,13 +518,13 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   if (!nrow(df)) {
     stop("No data available after row filtration.")
   }
-
+  
   if (id_gspa == "entrez" && 
       "entrez" %in% names(df) 
       && !is.integer(df[["entrez"]])) {
     df[["entrez"]] <- as.integer(df[["entrez"]])
   }
-
+  
   species <- unique(df$species) %>% .[!is.na(.)] %>% as.character()
   gsets   <- load_dbs(gset_nms = gset_nms, species = species, id = id_gspa)
   
@@ -534,12 +536,12 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   
   fmls <- fmls[names(fmls) %in% fml_nms]
   fml_nms <- fml_nms[fml_nms %in% names(fmls)]
-
+  
   if (!length(fml_nms)) {
     stop("No formula matached; ", 
          "compare the formula name(s) with those in \"prnSig(..)\"")
   }
-
+  
   res_subcell <- add_subcell(
     df= df, dat_dir = dat_dir, group_pep_by = id, 
     is_subcellular = is_subcellular, scale_log2r = scale_log2r, 
@@ -551,7 +553,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   col_subtype <- res_subcell[["col_subtype"]]
   col_group <- res_subcell[["col_group"]]
   path_trend <- res_subcell[["path_trend"]]
-
+  
   # Note: wrong number of arguments to '>' at devtools building of a package
   # (https://github.com/Mouse-Imaging-Centre/RMINC/issues/226)
   col_ind <- fml_nms %>% 
@@ -564,7 +566,7 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
   if (!sum(col_ind)) {
     stop("No matching columns found for the given formula(s).")
   }
-
+  
   switch(anal_type,
          GSPA = purrr::pwalk(
            list(fml = fmls, 
@@ -579,26 +581,26 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
                 min_delta = min_delta, 
                 min_greedy_size = min_greedy_size, 
                 method = method), 
-         fml_gspa, 
-         df = df, 
-         col_ind = col_ind, 
-         id = id, 
-         id_gspa = id_gspa,
-         df_trend = df_trend, 
-         is_subcellular = is_subcellular, 
-         col_fraction = col_fraction, 
-         col_subtype = col_subtype, 
-         col_group = col_group, 
-         gsets = gsets, 
-         dat_dir = dat_dir, 
-         label_scheme_sub = label_scheme_sub, 
-         complete_cases = complete_cases, 
-         scale_log2r = scale_log2r,
-         impute_na = impute_na, 
-         filepath = filepath, 
-         filename = filename, 
-         use_adjP = use_adjP, 
-         !!!filter_dots), 
+           fml_gspa, 
+           df = df, 
+           col_ind = col_ind, 
+           id = id, 
+           id_gspa = id_gspa,
+           df_trend = df_trend, 
+           is_subcellular = is_subcellular, 
+           col_fraction = col_fraction, 
+           col_subtype = col_subtype, 
+           col_group = col_group, 
+           gsets = gsets, 
+           dat_dir = dat_dir, 
+           label_scheme_sub = label_scheme_sub, 
+           complete_cases = complete_cases, 
+           scale_log2r = scale_log2r,
+           impute_na = impute_na, 
+           filepath = filepath, 
+           filename = filename, 
+           use_adjP = use_adjP, 
+           !!!filter_dots), 
          
          GSEA = purrr::pwalk(
            list(fml = fmls, 
@@ -611,17 +613,17 @@ gspaTest <- function(df = NULL, id = "gene", id_gspa = "entrez",
                 gslogFC_cutoff = gslogFC_cutoff, 
                 min_size = min_size, 
                 max_size = max_size), 
-         fml_gsea, 
-         df = df, 
-         col_ind = col_ind, 
-         id = id, 
-         gsets = gsets, 
-         label_scheme_sub = label_scheme_sub, 
-         complete_cases = complete_cases, 
-         scale_log2r = scale_log2r, 
-         filepath = filepath, 
-         filename = filename, 
-         !!!dots), 
+           fml_gsea, 
+           df = df, 
+           col_ind = col_ind, 
+           id = id, 
+           gsets = gsets, 
+           label_scheme_sub = label_scheme_sub, 
+           complete_cases = complete_cases, 
+           scale_log2r = scale_log2r, 
+           filepath = filepath, 
+           filename = filename, 
+           !!!dots), 
          stop("Unhandled task.")
   )
   
@@ -941,8 +943,6 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
   
   # data "already" ordered by entrez, contrast and then valence: "neg", "pos"
   dfw <- df |>
-    # dplyr::arrange(entrez, contrast, valence) |>
-    # dplyr::group_by(contrast, valence) |>
     dplyr::filter(!is.na(log2Ratio), !is.na(p_val)) |>
     dplyr::mutate(n = dplyr::n())
 
@@ -953,13 +953,12 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
       dplyr::filter(n > 0L)
   }
   
-  # "unique" can change order: 
+  # It is actually 'unique' but 'unique' can change order: 
   # unique(dfw[, c("contrast", "valence", "n")]) |> dplyr::arrange(contrast, valence)
-  delta_n <- dfw |>
+  valence_n <- dfw |>
     dplyr::summarise(n = mean(n, na.rm = TRUE)) |>
-    # dplyr::slice_head(n = 1L) |> 
-    # dplyr::select(c("contrast", "valence", "n")) |>
-    # dplyr::ungroup() |> 
+    # dplyr::select(-dplyr::one_of(c(id_gspa, "p_val", "log2Ratio"))) |>
+    # dplyr::slice(1) |> 
     tidyr::pivot_wider(
       names_from = contrast, 
       values_from = n, 
@@ -967,17 +966,17 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
     dplyr::arrange(valence) |>
     dplyr::select(-valence)
 
-  if (nrow(delta_n) == 1L) {
-    ok_min_n <- rep_len(TRUE, ncol(delta_n))
-    names(ok_min_n) <- colnames(delta_n)
+  if (nrow(valence_n) == 1L) {
+    ok_min_n <- rep_len(TRUE, ncol(valence_n))
+    names(ok_min_n) <- colnames(valence_n)
   } else {
-    min_n <- sapply(delta_n, min)
-    max_n <- sapply(delta_n, max)
+    min_n <- sapply(valence_n, min)
+    max_n <- sapply(valence_n, max)
     ok_min_n <- (min_n <= max_low_n) | 
-      (max_n / min_n >= 4. & min_n <= 2 * max_low_n)
+      (max_n / min_n >= 4 & min_n <= 2 * max_low_n)
   }
 
-  delta_p <- dfw |>
+  valence_p <- dfw |>
     dplyr::summarise(p_val = sum(p_val, na.rm = TRUE)) |>
     tidyr::pivot_wider(
       names_from = contrast, 
@@ -986,7 +985,7 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
     dplyr::arrange(valence) |>
     dplyr::select(-valence)
 
-  delta_fc <- dfw |>
+  valence_fc <- dfw |>
     # dplyr::summarise(log2Ratio = median(log2Ratio, na.rm = TRUE)) |>
     dplyr::summarise(log2Ratio = sum(log2Ratio, na.rm = TRUE)) |>
     tidyr::pivot_wider(
@@ -997,49 +996,48 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
     dplyr::select(-valence)
   
   # mean statistics
-  # delta_sc <- tibble::tibble(abs(delta_p  * log2(delta_n + 1L)/2))
-  delta_sc <- tibble::tibble(delta_p / log2(delta_n + 2L)) # sum statistics
+  # valence_sc <- tibble::tibble(abs(valence_p  * log2(valence_n + 1L)/2))
+  valence_sc <- tibble::tibble(valence_p / log2(valence_n + 2L)) # sum statistics
 
-  if (nrow(delta_p) == 2L) {
-    delta_p1  <- delta_p[2, , drop = FALSE]  - delta_p[1, , drop = FALSE]
+  if (nrow(valence_p) == 2L) {
+    delta_p  <- valence_p[2, , drop = FALSE]  - valence_p[1, , drop = FALSE]
   } else {
     # all pos or all neg
-    delta_p1  <- delta_p[1, , drop = FALSE]
+    delta_p  <- valence_p[1, , drop = FALSE]
   }
   
-  if (nrow(delta_fc) == 2L) {
+  if (nrow(valence_fc) == 2L) {
     if (bi_direction) {
-      delta_fc1 <- 
-        delta_fc[2, , drop = FALSE] - delta_fc[1, , drop = FALSE]
+      delta_fc <- valence_fc[2, , drop = FALSE] - valence_fc[1, , drop = FALSE]
     }
     else {
-      delta_fc1 <- 
-        abs(delta_fc[2, , drop = FALSE]) - abs(delta_fc[1, , drop = FALSE])
+      delta_fc <- 
+        abs(valence_fc[2, , drop = FALSE]) - abs(valence_fc[1, , drop = FALSE])
     }
   } else {
-    delta_fc1 <- delta_fc[1, , drop = FALSE]
+    delta_fc <- valence_fc[1, , drop = FALSE]
   }
   
-  if (nrow(delta_n) == 2L) {
-    delta_n1  <- delta_n[2, , drop = FALSE]  - delta_n[1, , drop = FALSE]
+  if (nrow(valence_n) == 2L) {
+    delta_n  <- valence_n[2, , drop = FALSE]  - valence_n[1, , drop = FALSE]
   } else {
-    delta_n1  <- delta_n[1, , drop = FALSE]
+    delta_n  <- valence_n[1, , drop = FALSE]
   }
   
-  if (nrow(delta_sc) == 2L) {
-    delta_sc1 <- delta_sc[2, , drop = FALSE] - delta_sc[1, , drop = FALSE]
+  if (nrow(valence_sc) == 2L) {
+    delta_sc <- valence_sc[2, , drop = FALSE] - valence_sc[1, , drop = FALSE]
   } else {
-    delta_sc1 <- delta_sc[1, , drop = FALSE]
+    delta_sc <- valence_sc[1, , drop = FALSE]
   }
 
-  delta_fc1 <- delta_fc1 / delta_n1
+  delta_fc <- delta_fc / delta_n
   
-  passes <- sign(delta_sc1) == sign(delta_n1) & 
-    # (abs(delta_p1) >= -log10(gspval_cutoff) | abs(delta_sc1) >= gsscore_cutoff) & 
-    abs(delta_sc1) >= gsscore_cutoff & 
+  passes <- sign(delta_sc) == sign(delta_n) & 
+    # (abs(delta_p) >= -log10(gspval_cutoff) | abs(delta_sc) >= gsscore_cutoff) & 
+    abs(delta_sc) >= gsscore_cutoff & 
     ok_min_n & 
-    abs(delta_n1) >= min_delta & 
-    abs(delta_fc1) >= gslogFC_cutoff
+    abs(delta_n) >= min_delta & 
+    abs(delta_fc) >= gslogFC_cutoff
   
   ## pad missing contrast(s)
   levs <- levels(df$contrast)
@@ -1050,28 +1048,28 @@ ok_min_size <- function (df, min_size = 10L, min_delta = 4L, max_low_n = 3L,
       for (i in seq_along(missing_nms)) {
         nmi <- missing_nms[i]
         passes    <- dplyr::bind_cols(!!nmi := FALSE, passes)
-        delta_p1  <- dplyr::bind_cols(!!nmi := -log10(p_x), delta_p1)
-        delta_fc1 <- dplyr::bind_cols(!!nmi := 0.0, delta_fc1)
-        delta_n1  <- dplyr::bind_cols(!!nmi := 0L, delta_n1)
-        delta_sc1 <- dplyr::bind_cols(!!nmi := 0.0, delta_sc1)
+        delta_p  <- dplyr::bind_cols(!!nmi := -log10(p_x), delta_p)
+        delta_fc <- dplyr::bind_cols(!!nmi := 0.0, delta_fc)
+        delta_n  <- dplyr::bind_cols(!!nmi := 0L, delta_n)
+        delta_sc <- dplyr::bind_cols(!!nmi := 0.0, delta_sc)
       }
     }
     
     passes   <- passes[, levs, drop = FALSE]
-    delta_p1  <- delta_p1[, levs, drop = FALSE]
-    delta_fc1 <- delta_fc1[, levs, drop = FALSE]
-    delta_n1  <- delta_n1[, levs, drop = FALSE]
-    delta_sc1 <- delta_sc1[, levs, drop = FALSE]
+    delta_p  <- delta_p[, levs, drop = FALSE]
+    delta_fc <- delta_fc[, levs, drop = FALSE]
+    delta_n  <- delta_n[, levs, drop = FALSE]
+    delta_sc <- delta_sc[, levs, drop = FALSE]
   }
   
   # Outputs
   ans <- dplyr::bind_cols(
     contrast = colnames(passes), 
     pass     = as.vector(t(passes)), 
-    pVal     = abs(as.vector(t(delta_p1))), 
-    log2Ratio = as.vector(t(delta_fc1)), 
-    # n  = abs(as.vector(t(delta_n1))), 
-    score = abs(as.vector(t(delta_sc1))), )
+    pVal     = abs(as.vector(t(delta_p))), 
+    log2Ratio = as.vector(t(delta_fc)), 
+    # n  = abs(as.vector(t(delta_n))), 
+    score = abs(as.vector(t(delta_sc))), )
 
   ans <- ans |>
     dplyr::mutate(contrast = factor(contrast, levels = levels(df$contrast))) |>
@@ -1229,8 +1227,9 @@ prep_gspa <- function(df = NULL, id = NULL,
     rm_pval_whitespace()
   
   # Exclude rows that are all zeros in localization scores under the fraction
-  # subcell_grps are from prnSig under the same subcellular fraction and 
-  # some of them may not be used in anal_prnTrend
+  # 'subcell_grps' are from 'prnSig' under the same subcellular fraction, e.g., 
+  #  TG_CP, TG_NP, ...
+  # It is possible that some of them are not be used in 'anal_prnTrend'.
   subcell_grps <- subcell_grps[subcell_grps %in% colnames(df)]
   
   # len == 1L -> single subcellular; any score > 0 -> TRUE, present

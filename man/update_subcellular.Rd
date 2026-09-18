@@ -8,39 +8,23 @@ update_subcellular(
   id = "gene",
   dat_dir = NULL,
   filepath = NULL,
-  impute_na = FALSE,
   scale_log2r = TRUE,
+  impute_na = FALSE,
   ...
 )
 }
 \arguments{
-\item{id}{Identifier.}
+\item{id}{Protein identifier.}
 
 \item{dat_dir}{The current working directory.}
 
-\item{filepath}{Use system default.}
+\item{filepath}{The filepath to trend data.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
+\item{scale_log2r}{Not used. Logical; scale log2Ratio values or not.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE. At
-\code{scale_log2r = NA}, the raw \code{log2FC} without normalization will
-be used.}
+\item{impute_na}{Not used. Loigcal; impute missing values or not.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row
-filtration against data in a primary file linked to \code{df}. See also
-\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}}
-for the format of \code{arrange_} statements. \cr \cr Additional arguments
-for \link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
-\link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
-\link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
-\code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With
-\link[e1071]{cmeans}, \code{m} is according to Schwaemmle and Jensen if not
-provided; \cr \code{x} is disabled with input data being determined
-automatically.}
+\item{...}{Additional parameters.}
 }
 \description{
 Not used.

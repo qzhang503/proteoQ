@@ -158,7 +158,7 @@ annotation.}
 
 \item{annot_col_levels}{The levels of annot_cols. For example, at
 \code{annot_cols = c("Color", "Shape")}, the corresponding levels are
-\code{annot_col_levels = list{Color = c("A", "B"), Shape = c("X", "Y")}}.}
+\code{annot_col_levels = list(Color = c("A", "B"), Shape = c("X", "Y"))}.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
 input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values under

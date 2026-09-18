@@ -327,17 +327,22 @@ plot_marks_by_pq <- function (
 #' @param work_dir A parent working directory. 
 #' @param sub_grp A sub group.
 #' @param dat_dir A working directory.
+#' @param filename_ref Reference file name of UniProt and GO.
+#' @param filename_hpa Reference file name of HPA.
 #' @import ggplot2
 plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL, 
                          df_sc = NULL, subgrp_prefix = "", 
-                         filename_ref = NULL, key_up_go = "location_slim3", 
+                         filename_ref = NULL, filename_hpa = NULL, 
+                         key_up_go = "location_slim3", 
                          df_markers = NULL, 
                          key_col = c("log2FC", "log10Int"), 
                          pred_type = "bandle", col_subtype = "Type",  
                          col_fraction = "Fraction", 
                          levels_subtype = NULL, levels_group = NULL, 
                          ext = "png", ncol = 3, remove_tethers = TRUE, 
-                         use_cache = TRUE, is_hpa = FALSE)
+                         use_cache = TRUE, is_hpa = FALSE, 
+                         width_p = NULL, height_p = NULL, 
+                         width_px = NULL, height_px = NULL)
 {
   key_col <- match.arg(key_col)
   col_x <- "group"
@@ -345,8 +350,9 @@ plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL,
   if (is.null(df)) {
     df <- readr::read_tsv(
       file.path(dat_dir, "Protein", "Trend", 
-                paste0(subgrp_prefix, "Protein_Trend_Z_nclust32.txt")))
-    
+                paste0(subgrp_prefix, "Protein_Trend_Z_nclust32.txt"))) |>
+      dplyr::filter(.data[[col_x]] %in% levels_group)
+
     df <- df |>
       dplyr::mutate(
         !!col_x := factor(!!rlang::sym(col_x), levels = levels_group), 
@@ -520,66 +526,42 @@ plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL,
   
   ## Map to the reference of UniProt + GO
   ok_ref <- (!is.null(filename_ref)) && file.exists(filename_ref)
-  if (ok_ref) {
-    df_ref <- local({
-      df_ref <- readr::read_tsv(file.path(filename_ref))
-      
-      if ("HPA" %in% colnames(df_ref)) {
-        if (is_hpa) {
-          df_ref <- df_ref |>
-            dplyr::filter(source == "HPA")
-        } else {
-          df_ref <- df_ref |>
-            dplyr::filter(source != "HPA")
-          
-          if (use_intersect <- TRUE) {
-            df_ref <- local({
-              dfs <- split(df_ref, df_ref$source)
-              gns <- lapply(dfs, `[[`, "gene")
-              gns <- purrr::reduce(gns, intersect)
-              
-              df_ref <- df_ref |> 
-                dplyr::filter(gene %in% gns)
-            })
-          }
-        }
-      }
-
-      df_ref <- df_ref[, c("gene", key_up_go)] |>
-        unique() |>
-        dplyr::filter(gene %in% unique(df$gene))
-      
-      df_ref <- df_ref |> 
-        dplyr::filter(!is.na(.data[[key_up_go]])) |>
-        dplyr::left_join(
-          df_pq |> dplyr::select(-dplyr::one_of("sub_location")), by = id)
-      
-      df_ref <- df_ref |>
-        dplyr::select(dplyr::one_of(
-          c(id, "UMAP1", "UMAP2", key_up_go, col_subtype))) |>
-        unique() |>
-        dplyr::mutate(
-          !!col_subtype := 
-            factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
-          !!key_up_go := 
-            factor(!!rlang::sym(key_up_go), levels = levels_fraction),) |> 
-        dplyr::filter(!is.na(!!rlang::sym(col_subtype)))
-    })
-  }
   
+  df_ref <- prep_ref_db(
+    filename_ref = filename_ref, id = id, df = df, df_pq = df_pq, 
+    key_up_go = key_up_go, col_subtype = col_subtype, 
+    levels_subtype = levels_subtype, is_hpa = FALSE)
+  
+  if (is.null(filename_hpa)) {
+    df_hpa <- NULL
+  } else {
+    df_hpa <- prep_ref_db(
+      filename_ref = filename_hpa, id = id, df = df, df_pq = df_pq, 
+      key_up_go = key_up_go, col_subtype = col_subtype, 
+      levels_subtype = levels_subtype, is_hpa = TRUE)
+  }
+    
   if (ok_ref) {
-    df_plots <- list(df_ref, df_pq, df_bandle, ans_confu)
-    key_col_pred <- c("location_slim3","sub_location", bandle_pred_col, bandle_pred_col)
-    out_nm_type <- c("Ref", "proteoQ", pred_type, "confusion")
+    df_plots <- list(df_ref, df_hpa, df_pq, df_bandle, ans_confu)
+    key_col_pred <- c("location_slim3", "location_slim3", "sub_location", 
+                      bandle_pred_col, bandle_pred_col)
+    out_nm_type  <- c("Ref", "HPA", "proteoQ", pred_type, "confusion")
   } else {
     df_plots <- list(df_pq, df_bandle, ans_confu)
     key_col_pred <- c("sub_location", bandle_pred_col, bandle_pred_col)
     out_nm_type <- c("proteoQ", pred_type, "confusion")
   }
+  
+  df_plot_all <- vector("list", length(df_plots))
 
   for (i in seq_along(df_plots)) {
-    out_nm_i <- out_nm_type[[i]]
     df_plot <- df_plots[[i]]
+    
+    if (is.null(df_plot) || !nrow(df_plot)) {
+      next
+    }
+    
+    out_nm_i <- out_nm_type[[i]]
     key_col_pred_i <- key_col_pred[[i]]
     
     df_plot <- df_plot |>
@@ -597,7 +579,9 @@ plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL,
       n_frac <- length(unique(df_plot[[key_col_pred_i]]))
     }
 
-    if (n_frac < 1L) n_frac <- 1L 
+    if (n_frac < 1L) n_frac <- 1L
+    
+    df_plot_all[[i]] <- df_plot |> dplyr::mutate(Source = out_nm_i)
     
     p <- ggplot(df_plot, aes(x = UMAP1, y = UMAP2, 
                                    color = !!rlang::sym(key_col_pred_i))) +
@@ -621,14 +605,18 @@ plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL,
         panel.grid = element_blank()
       )
     
-    px <- p + 
-      facet_wrap(
-        vars(!!rlang::sym(col_subtype)), 
-        ncol = n_subtype, 
-        labeller = labeller(.default = label_value, .multi_line = FALSE))
-    
+    if (n_subtype == 1L) {
+      px <- p
+    } else {
+      px <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_subtype)), 
+          ncol = n_subtype, 
+          labeller = labeller(.default = label_value, .multi_line = FALSE))
+    }
+
     # No Fraction info from Bandle results; use confusion plot instead
-    if (!out_nm_i %in% c("bandle", "Ref")) {
+    if (!out_nm_i %in% c("bandle", "Ref", "HPA")) {
       p <- p + 
         facet_wrap(
           vars(!!rlang::sym(col_subtype), !!rlang::sym(col_fraction)), 
@@ -645,37 +633,195 @@ plot_bandle <- function (id = "gene", dat_dir, sub_dir, db_path, df = NULL,
     n_grids <- n_frac * n_subtype
     
     # PNG, wrapped by subtype only
+    out_path <- file.path(dat_dir, "Protein", "Bandle")
+    
+    if (is.null(width_px)) {
+      width_px <- n_subtype * 2 + 1
+    }
+    if (is.null(height_px)) {
+      height_px <- 2 + .333
+    }
+    if (is.null(width_p)) {
+      width_p <- n_frac * 2 + 1
+    }
+    if (is.null(height_p)) {
+      height_p <- n_subtype * 2 + .4
+    }
+    
     ggsave(plot = px, 
-           file.path(dat_dir, "Protein", "Bandle", 
+           file.path(out_path, 
                      paste0(sub_dir, "_", key_col, "_umap_by_", out_nm_i, 
                             "_combined", ".", "png")), 
-           width = n_subtype * 2 + 1, height = 2 + .333, 
+           width = width_px, height = height_px, 
            dpi = 1200)
     
     ggsave(plot = p, 
            file.path(
-             dat_dir, "Protein", "Bandle", 
+             out_path, 
              paste0(sub_dir, "_", key_col, "_umap_by_", out_nm_i, ".", "png")), 
-           width = n_frac * 2 + 1, height = n_subtype * 2 + .4, 
+           width = width_p, height = height_p, 
            dpi = 1200)
     
     # pdf
     ggsave(plot = px, 
-           file.path(dat_dir, "Protein", "Bandle", 
+           file.path(out_path, 
                      paste0(sub_dir, "_", key_col, "_umap_by_", out_nm_i, 
                             "_combined", ".", "pdf")), 
            # width = width_px * 1.25, height = height_px * 1.25, 
-           width = (n_subtype * 2 + 1) * 1.25, height = (2 + .333) * 1.25, 
+           width = width_px, height = height_px, 
            dpi = 1200)
     
     ggsave(plot = p, 
            file.path(
-             dat_dir, "Protein", "Bandle", 
+             out_path, 
              paste0(sub_dir, "_", key_col, "_umap_by_", out_nm_i, ".", "pdf")), 
            # width = width_p, height = height_p, 
-           width = (n_frac * 2 + 1) * 1.25, height = (n_subtype * 2 + .4) * 1.25, 
+           width = width_p, height = height_p, 
            dpi = 1200)
   }
+  
+  df_plot_all <- df_plot_all |>
+    dplyr::bind_rows()
+  
+  readr::write_tsv(df_plot_all, file.path(out_path, "results_combined.tsv"))
+}
+
+
+#' Plot combined data
+#' 
+plot_combined <- function (
+    dat_dir, filepath = file.path(dat_dir, "Protein", "Bandle"), 
+    filename = "results_combined.tsv", out_name = "umap_all_sources.png", ...)
+{
+  dots <- rlang::enexprs(...)
+  lang_dots     <- dots[unlist(lapply(dots, is.language))]
+  filter2_dots  <- lang_dots[grepl("^filter2_", names(lang_dots))]
+  arrange2_dots <- lang_dots[grepl("^arrange2_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter2_dots, arrange2_dots)]
+  
+  df <- readr::read_tsv(file.path(filepath, filename))
+  
+  df <- df |>
+    proteoQ:::filters_in_call(!!!filter2_dots) |>
+    proteoQ:::arrangers_in_call(!!!arrange2_dots)
+
+  df <- df |>
+    dplyr::mutate(
+      Source = dplyr::case_when(
+        Source == "Ref" ~ "UP_GO", 
+        Source == "proteoQ" ~ "This work", 
+        Source == "bandle" ~ "BANDLE", 
+        Source == "HPA" ~ "HPA", 
+        TRUE                   ~ "Other"
+      )
+    )
+  
+  df <- df |> dplyr::filter(!Source %in% "Other")
+  
+  df <- local({
+    dfs <- split(df, df$Source)
+    
+    dfs[["This work"]][["location_"]] <- dfs[["This work"]][["sub_location"]]
+    dfs[["BANDLE"]][["location_"]] <- dfs[["BANDLE"]][["pred_bandle"]]
+    dfs[["UP_GO"]][["location_"]] <- dfs[["UP_GO"]][["location_slim3"]]
+    dfs[["HPA"]][["location_"]] <- dfs[["HPA"]][["location_slim3"]]
+    
+    df <- dfs |> dplyr::bind_rows()
+    
+    df <- df |> dplyr::mutate(
+      Source = factor(Source, levels = c("This work", "BANDLE", "HPA", "UP_GO")),
+      location_ = factor(location_, levels = c("CP", "NP", "ChA")), )
+  })
+  
+  p <- ggplot(df, aes(x = UMAP1, y = UMAP2, color = location_)) +
+    geom_point(shape = 46, alpha = .5, size = .02) +
+    scale_color_manual(
+      values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A"),
+      breaks = c("CP", "NP", "ChA")
+    ) +
+    guides(color = guide_legend(
+      override.aes = list(size = 3, shape = 16, alpha = 1))) +
+    theme_bw() +
+    labs(
+      title = NULL,
+      x = "UMAP 1",
+      y = "UMAP 2",
+      color = "Subcellular\nLocation"
+    ) +
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      legend.title = element_blank(),
+      panel.grid = element_blank()
+    ) + 
+    facet_wrap(~ Source, ncol = 2, labeller = label_value)
+  
+  ggsave(plot = p, 
+         file.path(filepath, "umap_all.pdf"), width = 7, height = 5.8, dpi = 1200)
+  
+  ggsave(plot = p, 
+         file.path(filepath, "umap_all.png"), width = 7, height = 5.8, dpi = 1200)
+}
+
+
+
+#' Prepare reference data.
+#' 
+#' @param filename_ref Reference file name of UniProt and GO, or HPA.
+#' @param id An identifier.
+#' @param df A data frame for subsetting of genes.
+#' @param df_pq A data frame of proteoQ results.
+#' @param key_up_go The column key of subcellular annotations.
+#' @param col_subtype The column of sample sub types.
+#' @param levels_subtype The levels of subtypes.
+#' @param is_hpa Logical; is the data type HPA.
+#' @param use_intercept Logical; use the intercept of UniProt and GO or not.
+prep_ref_db <- function (
+    filename_ref, id = "gene", df = NULL, df_pq = NULL, 
+    key_up_go = "location_slim3", col_subtype = "Type", levels_subtype = NULL, 
+    is_hpa = FALSE, use_intersect = TRUE)
+{
+  df_ref <- readr::read_tsv(file.path(filename_ref))
+  
+  if ("HPA" %in% colnames(df_ref)) {
+    if (is_hpa) {
+      df_ref <- df_ref |> dplyr::filter(source == "HPA")
+    } else {
+      df_ref <- df_ref |> dplyr::filter(source != "HPA")
+      
+      if (use_intersect) {
+        df_ref <- local({
+          dfs <- split(df_ref, df_ref$source)
+          gns <- lapply(dfs, `[[`, "gene")
+          gns <- purrr::reduce(gns, intersect)
+          
+          df_ref <- df_ref |> 
+            dplyr::filter(gene %in% gns)
+        })
+      }
+    }
+  }
+  
+  df_ref <- df_ref[, c("gene", key_up_go)] |>
+    unique() |>
+    dplyr::filter(gene %in% unique(df$gene))
+  
+  df_ref <- df_ref |> 
+    dplyr::filter(!is.na(.data[[key_up_go]])) |>
+    dplyr::left_join(
+      df_pq |> dplyr::select(-dplyr::one_of("sub_location")), by = id)
+  
+  df_ref <- df_ref |>
+    dplyr::select(dplyr::one_of(
+      c(id, "UMAP1", "UMAP2", key_up_go, col_subtype))) |>
+    unique() |>
+    dplyr::mutate(
+      !!col_subtype := 
+        factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
+      !!key_up_go := 
+        factor(!!rlang::sym(key_up_go), levels = levels_fraction),) |> 
+    dplyr::filter(!is.na(!!rlang::sym(col_subtype)))
+  
+  df_ref
 }
 
 

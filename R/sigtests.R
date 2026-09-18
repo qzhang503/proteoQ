@@ -365,6 +365,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     col_group = key_col)
   grps <- attr(dfN, "grps")
   ugrps <- attr(dfN, "ugrps")
+  n_ugrps <- length(ugrps)
   dfsR <- attr(dfN, "dfsR")
   dfsI <- attr(dfN, "dfsI")
   
@@ -378,7 +379,18 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   
   # Unnested, unique pairs of contrast: 
   # [[1]] "TG_NP", "Veh_NP"; [[2]] "TG_CP", "Veh_CP"; [[3]] "TG_ChA", "Veh_ChA"
+  # Each pair_sub defines the scope of partial imputation.
   pairs_sub <- lapply(u_contrs, find_contrast_elements)
+  
+  # Under the same formula: 
+  # if the same group occurred multiple times in pairs_sub (multiple contrast), 
+  #  the last imputation will be used for the group with the current setup.
+  # A use of different formulas can avoid this.
+  if (sum(lengths(pairs_sub)) > n_ugrps) {
+    warning(
+      "Duplicated groups in \n", pairs_sub, 
+      "\nPartial imputation from the last occurance will be used.")
+  }
   
   # Subset of sample IDs within each pairs_sub
   sids_sub  <- lapply(pairs_sub, function (x) {
@@ -427,6 +439,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     } else {
       for (i in seq_along(pairs_sub)) {
         # Sample pairs and IDs within an inner parentheses of a nested structure
+        # e .g., C_ChA-A_ChA in "(C_ChA-A_ChA)-(C_NP-A_NP)"
         pairi <- pairs_sub[[i]]
         sidsi <- sids_sub[[i]]
         
@@ -969,6 +982,59 @@ count_non_na <- function (dfR = NULL, dfI = NULL, label_scheme_sub = NULL,
   attr(dfN, "dfsI")  <- dfsI
   
   dfN
+}
+
+
+#' Makes \code{dfN} matrix.
+#' 
+#' Count the number of measures under each sample group.
+#' 
+#' @param dat_dir The current working directory.
+#' @param col_group The column key in metadata linked to the information of
+#'   sample groups.
+make_dfn <- function (dat_dir = NULL, col_group = "Group", ...)
+{
+  anal_type <- "Trend"
+  scale_log2r <- TRUE
+  impute_na <- FALSE
+  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  
+  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg(makeProtDIANN, group_pep_by), 
+      error = function(e) NA)
+  }
+  
+  if (is.na(id)) {
+    id <- "gene"
+  }
+  
+  if (length(id) != 1L || !id %in% c("prot_acc", "gene")) {
+    stop("Value of 'id' need to be one of 'prot_acc', 'gene'.")
+  }
+  
+  df <- find_pri_df(dat_dir = dat_dir, anal_type = anal_type, 
+                    id = id, impute_na = impute_na)
+  
+  label_scheme_sub <- load_ls_group(dat_dir)
+  
+  tempdata <- df |>
+    # filters_in_call(!!!filter_dots) |>
+    # arrangers_in_call(!!!arrange_dots) |>
+    prepDM(dat_dir = dat_dir, id = id, scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub[["Sample_ID"]], anal_type = "Trend", 
+           rm_allna = TRUE)
+  dfR <- tempdata[["log2R"]]
+  dfI <- tempdata[["Intensity"]]
+  rm(list = "tempdata")
+  
+  dfN <- count_non_na(
+    dfR = dfR, dfI = dfI, 
+    label_scheme_sub = label_scheme_sub, 
+    col_group = col_group)
 }
 
 

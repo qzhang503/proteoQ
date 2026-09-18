@@ -60,64 +60,66 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if (complete_cases) df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   
   dots <- rlang::enexprs(...)
+  lang_dots    <- dots[unlist(lapply(dots, is.language))]
+  filter_dots  <- lang_dots[grepl("^filter_", names(lang_dots))]
+  arrange_dots <- lang_dots[grepl("^arrange_", names(lang_dots))]
+  dots <- dots[!dots %in% c(filter_dots, arrange_dots)]
   
-  filter_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  arrange_dots <- dots %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^arrange_", names(.))]
-  
-  dots <- dots %>% 
-    .[! . %in% c(filter_dots, arrange_dots)]
-  
-  anal_dots <- dots %>% 
-    .[names(.) %in% c("d", "k", "eig", "add", "x.ret", "list.", # cmdscale
-                      "y", "maxit", "trace", "tol", # isoMDS
-                      "x", "method", "diag", "upper", "p", "m")] # dist
-  
-  dots <- dots %>% 
-    .[! . %in% anal_dots]
-  
+  anal_dots <- dots[names(dots) %in% 
+                      c("d", "k", "eig", "add", "x.ret", "list.", # cmdscale
+                        "y", "maxit", "trace", "tol",             # isoMDS
+                        "x", "method", "diag", "upper", "p", "m") # dist
+                    ]
+
+  dots <- dots[!dots %in% anal_dots]
+
   # (1) overwriting args: to this <- from `cmdscale`
   # ... NA ...
   
   # (2) excluded formalArgs: 
-  if (!is.null(anal_dots[["x"]])) 
-    warning("Argument `x` in `dist()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["diag"]])) 
-    warning("Argument `diag` in `dist()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["upper"]])) 
-    warning("Argument `upper` in `dist()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["m"]])) 
-    warning("Argument `m` in `dist()` not used.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["d"]])) 
-    warning("Distance object `d` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["eig"]])) 
-    warning("Argument `eig` in `cmdscale()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["x.ret"]])) 
-    warning("Argument `x.ret` in `cmdscale()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["list."]])) 
-    warning("Argument `list.` in `cmdscale()` automated.", call. = FALSE)
-  
-  if (!is.null(anal_dots[["y"]])) 
-    warning("Argument `y` in `isoMDS()` automated.", call. = FALSE)
-  
+  if (!is.null(anal_dots[["x"]])) {
+    warning("Argument `x` in `dist()` automated.")
+  }
+
+  if (!is.null(anal_dots[["diag"]])) {
+    warning("Argument `diag` in `dist()` automated.")
+  }
+
+  if (!is.null(anal_dots[["upper"]])) {
+    warning("Argument `upper` in `dist()` automated.")
+  }
+
+  if (!is.null(anal_dots[["m"]])) {
+    warning("Argument `m` in `dist()` not used.")
+  }
+
+  if (!is.null(anal_dots[["d"]])) {
+    warning("Distance object `d` automated.")
+  }
+
+  if (!is.null(anal_dots[["eig"]])) {
+    warning("Argument `eig` in `cmdscale()` automated.")
+  }
+
+  if (!is.null(anal_dots[["x.ret"]])) {
+    warning("Argument `x.ret` in `cmdscale()` automated.")
+  }
+
+  if (!is.null(anal_dots[["list."]])) {
+    warning("Argument `list.` in `cmdscale()` automated.")
+  }
+
+  if (!is.null(anal_dots[["y"]])) {
+    warning("Argument `y` in `isoMDS()` automated.")
+  }
+
   # note that `method`, `k`, `p` already in main arguments
-  anal_dots <- anal_dots %>% 
-    .[! names(.) %in% c("x", "method", "diag", "upper", "p", "m")]
-  anal_dots <- anal_dots %>% 
-    .[! names(.) %in% c("d", "k", "eig", "x.ret", "list.")] # "add",
-  anal_dots <- anal_dots %>% 
-    .[! names(.) %in% c("y")] # "maxit", "trace", "tol"
+  anal_dots <- anal_dots[!names(anal_dots) %in% 
+                           c("x", "method", "diag", "upper", "p", "m")]
+  anal_dots <- anal_dots[!names(anal_dots) %in% 
+                           c("d", "k", "eig", "x.ret", "list.")] # "add",
+  anal_dots <- anal_dots[!names(anal_dots) %in% 
+                           c("y")] # "maxit", "trace", "tol"
   
   # (3) conversion: expr to character string
   # ... NA ...
@@ -125,12 +127,12 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   # (4) overwriting from this -> to `cmdscale` defaults
   # ... NA ...
   
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  fn_suffix <- tools::file_ext(filename)
   
-  df <- df %>%
-    filters_in_call(!!!filter_dots) %>%
-    arrangers_in_call(!!!arrange_dots) %>%
+  df <- df |>
+    filters_in_call(!!!filter_dots) |>
+    arrangers_in_call(!!!arrange_dots) |>
     scoreMDS(
       id = id,
       label_scheme_sub = label_scheme_sub,
@@ -148,22 +150,114 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
+
+  if (ok_col_group <- length(col_group) && col_group != ".") {
+    levels_group <- unique(df[[col_group]])
+    if (!length(levels_group)) ok_col_group <- FALSE
+  } else {
+    levels_group <- NULL
+  }
   
-  if (!(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))) {
-    df <- local({
+  if (ok_col_color <- length(col_color) && col_color != ".") {
+    levels_color <- unique(df[[col_color]])
+    if (!length(levels_color)) ok_col_color <- FALSE
+  } else {
+    levels_color <- NULL
+  }
+  
+  if (ok_col_fill <- length(col_fill) && col_fill != ".") {
+    levels_fill <- unique(df[[col_fill]])
+    if (!length(levels_fill)) ok_col_fill <- FALSE
+  } else {
+    levels_fill <- NULL
+  }
+  
+  if (ok_col_shape <- length(col_shape) && col_shape != ".") {
+    levels_shape <- unique(df[[col_shape]])
+    if (!length(levels_shape)) ok_col_shape <- FALSE
+  } else {
+    levels_shape <- NULL
+  }
+  
+  if (ok_col_alpha <- length(col_alpha) && col_alpha != ".") {
+    levels_alpha <- unique(df[[col_alpha]])
+    if (!length(levels_alpha)) ok_col_alpha <- FALSE
+  } else {
+    levels_alpha <- NULL
+  }
+  
+  if (ok_col_size <- length(col_size) && col_size != ".") {
+    levels_size <- unique(df[[col_size]])
+    if (!length(levels_size)) ok_col_size <- FALSE
+  } else {
+    levels_size <- NULL
+  }
+  
+  if (ok_col_order <- length(col_order) && col_order != ".") {
+    levels_order <- unique(df[[col_order]])
+    if (!length(levels_order)) ok_col_order <- FALSE
+  } else {
+    levels_order <- NULL
+  }
+
+  # !(all(is.null(df[[col_order]])) || all(is.null(df[[col_group]])))
+  if (ok_col_order) {
+    df <- df |> dplyr::arrange(!!rlang::sym(col_order))
+    
+    if (ok_col_group) {
+      levels_group <- unique(df[[col_group]])
+      
       df <- df |>
-        dplyr::arrange(!!col_order)
-      levs <- unique(df[[col_group]])
+        dplyr::mutate(
+          !!col_group := factor(!!rlang::sym(col_group), levels = levels_group))
+    }
+    
+    if (ok_col_color) {
+      levels_color <- unique(df[[col_color]])
+      
       df <- df |>
-        dplyr::mutate(!!col_group := factor(!!col_group, levels = levs))
-    })
+        dplyr::mutate(
+          !!col_color := factor(!!rlang::sym(col_color), levels = levels_color))
+    }
+    
+    if (ok_col_fill) {
+      levels_fill <- unique(df[[col_fill]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_fill := factor(!!rlang::sym(col_fill), levels = levels_fill))
+    }
+    
+    if (ok_col_shape) {
+      levels_shape <- unique(df[[col_shape]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_shape := factor(!!rlang::sym(col_shape), levels = levels_shape))
+    }
+    
+    if (ok_col_size) {
+      levels_size <- unique(df[[col_size]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_size := factor(!!rlang::sym(col_size), levels = levels_size))
+    }
+    
+    if (ok_col_alpha) {
+      levels_alpha <- unique(df[[col_alpha]])
+      
+      df <- df |>
+        dplyr::mutate(
+          !!col_alpha := factor(!!rlang::sym(col_alpha), levels = levels_alpha))
+    }
   }
   
   # key `Label` used in `geom_lower_text()`
   df$Label <- if ("Sample_ID" %in% names(df)) 
     df$Sample_ID
   else if (id %in% names(df)) 
-    df$df[[id]]
+    df[[id]]
   else 
     df[, 1, drop = FALSE]
   
@@ -242,7 +336,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   rm(list = c("max_dim"))
   
-  # --- set up aes ---
+  ## Set up aes
   if ((length(col_color)) && col_color == ".") col_color <- NULL
   if ((length(col_fill)) && col_fill == ".") col_fill <- NULL
   if ((length(col_shape)) && col_shape == ".") col_shape <- NULL
@@ -291,16 +385,16 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     }
   })
   
-  fix_args <- list(colour = "darkgray", 
+  fix_args <- list(colour = NA, # "darkgray", 
                    fill = NA, 
                    shape = 21, 
                    size = 4, 
-                   alpha = 0.9) %>%
-    .[names(.) %in% names(mapping_fix)] %>%
-    .[!is.na(.)]
-  
+                   alpha = 0.9)
+  fix_args <- fix_args[names(fix_args) %in% names(mapping_fix)]
+  fix_args <- fix_args[!is.na(fix_args)]
   fix_args$stroke <- 0.5
-  
+  fix_args <- fix_args[!names(fix_args) %in% names(mapping_var)]
+
   # --- set up axis labels ---
   col_labs <- cols %>% gsub("\\.", " ", .)
   

@@ -5,13 +5,14 @@
 \title{Helper of Preparing the matrix of expression data.}
 \usage{
 hmake_subcell_expr(
-  df,
+  df = NULL,
+  label_scheme_sub = NULL,
   id = "gene",
   key_col = "log10Int",
   col_subtype = NULL,
   levels_subtype = NULL,
-  levels_fraction = NULL,
-  match_colnames_to_levels_fraction = TRUE
+  col_fraction = NULL,
+  levels_fraction = NULL
 )
 }
 \arguments{
@@ -23,10 +24,6 @@ hmake_subcell_expr(
 expression data.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
-
-\item{match_colnames_to_levels_fraction}{Llogical; to match the column
-names of the expression data with the keys defined in
-\code{levels_fraction} or not.}
 }
 \description{
 Helper of Preparing the matrix of expression data.

@@ -277,8 +277,7 @@ analTrend <- function (
   label_scheme_sub <- res$label_scheme_sub
   fcts <- res$fcts
   dots <- res$dots
-  rm(list = "res")
-  
+
   ## Can have NaN if only select a subset of input data
   df_mean_log2r[is.na(df_mean_log2r)] <- 0.0
   df_mean_int[is.na(df_mean_int)] <- 0.0
@@ -293,7 +292,7 @@ analTrend <- function (
   
   ## Early return if to obtain aggregated data only
   if (!cluster_data) {
-    return(list(log2R = df_mean_log2r, Intensity = df_mean_int))
+    return(list(log2R = df_mean_log2r, Intensity = df_mean_int, res = res))
   }
 
   ## Analysis
@@ -678,12 +677,28 @@ calc_subcell_frac <- function (
   }
 
   entropies <- lapply(purities, function (x) {
+    x[x == 0] <- 1E-4
     -rowSums(x * log10(x))
   })
   
-  scores_loc <- mapply(function (df, y) {
-    df * (1 - y)
+  scores_loc <- mapply(function (p, y) {
+    p * (1 - y)
   }, purities, entropies, SIMPLIFY = FALSE, USE.NAMES = TRUE)
+  
+  scores_loc <- lapply(scores_loc, function (x) {
+    x[x < 1E-3] <- 0.0
+    x
+  })
+  
+  purities <- lapply(purities, function (x) {
+    x[x < 1E-3] <- 0.0
+    x
+  })
+  
+  entropies <- lapply(entropies, function (x) {
+    x[x < 1E-3] <- 0.0
+    x
+  })
   
   # OK to have low entropy and low purity since entropy is an "average" across 
   # all fractions whereas purity pertains to a fraction
@@ -1587,9 +1602,9 @@ anal_prnTrend <- function (
     col_order    <- rlang::enexpr(col_order)
     col_fraction <- rlang::enexpr(col_fraction)
     col_subtype  <- rlang::enexpr(col_subtype)
-    df <- rlang::enexpr(df)
-    filepath <- rlang::enexpr(filepath)
-    filename <- rlang::enexpr(filename)
+    # df <- rlang::enexpr(df)
+    # filepath <- rlang::enexpr(filepath)
+    # filename <- rlang::enexpr(filename)
     
     # NULL default: length(0); symbol -> length(1)
     if (!is.character(col_select)) col_select <- as.character(col_select)
@@ -1597,9 +1612,9 @@ anal_prnTrend <- function (
     if (!is.character(col_order)) col_order <- as.character(col_order)
     if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
     if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-    if (!is.character(df)) df <- as.character(df)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(filename)) filename <- as.character(filename)
+    # if (!is.character(df)) df <- as.character(df)
+    # if (!is.character(filepath)) filepath <- as.character(filepath)
+    # if (!is.character(filename)) filename <- as.character(filename)
   }
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
