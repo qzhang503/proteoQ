@@ -1545,39 +1545,30 @@ prepSubcell <- function (
     df <- readr::read_tsv(file.path(filepath, filenames_df2[[1]]))
   }
 
-  vals_g <- df[["group"]]
-  nms_df <- names(df)
+  if (no_subtype <- !length(col_subtype)) {
+    label_scheme_sub[[col_subtype <- "sample_type_unknown"]] <- "unknown"
+  }
   
-  if (no_subtype <- !length(col_subtype)) col_subtype <- "sample_type_unknown"
+  sc_lookup <- label_scheme_sub |>
+    dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
+    unique() |> 
+    dplyr::rename(Sample_ID := col_group)
+
+  rows <- match(df[["group"]], sc_lookup[["Sample_ID"]])
   
-  pat_frac <- paste0("(", paste(levels_fraction, collapse = "|"), ")$")
-  pat_subtype  <- paste0("^(", paste(levels_subtype, collapse = "|"), ")")
-  
-  if (!col_subtype %in% nms_df) {
-    df[[col_subtype]] <- ifelse(
-      grepl(pat_frac, vals_g), sub(pat_frac, "", vals_g), vals_g)
-    
-    df[[col_subtype]] <- ifelse(
-      grepl(pat_subtype, df[[col_subtype]]),
-      sub(paste0( pat_subtype, ".*"), "\\1", df[[col_subtype]]),
-      NA_character_
-    )
-    
-    # Value: "" if 'no_subtype' 
-    u_subtypes <- unique(df[[col_subtype]])
+  if (!col_subtype %in% names(df)) {
+    df <- dplyr::bind_cols(df, sc_lookup[rows, col_subtype])
+    u_subtypes <- unique(df[[col_subtype]]) # Value: "" if 'no_subtype' 
   }
   
   # Should not incur
   # if (!length(col_fraction)) col_fraction <- "fraction..."
 
-  if (!col_fraction %in% nms_df) {
-    df[[col_fraction]] <- ifelse(
-      grepl(pat_frac, vals_g),
-      sub(paste0(".*", pat_frac), "\\1", vals_g),
-      NA_character_)
+  if (!col_fraction %in% names(df)) {
+    df <- dplyr::bind_cols(df, sc_lookup[rows, col_fraction])
   }
 
-  # rm(list = c("vals_g", "nms_df", "pat_frac", "pat_subtype"))
+  rm(list = c("rows"))
   
   dfs <- split(df, df[[col_subtype]])
   
@@ -1587,12 +1578,9 @@ prepSubcell <- function (
   }
   
   # Normalized intensity (percentages)
-  sc_lookup <- label_scheme_sub |>
-    dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
-    unique() |>
-    dplyr::rename(Sample_ID := col_group)
-  
   df_exprs <- vector("list", length(dfs))
+  names(df_exprs) <- names(dfs)
+  
   for (i in seq_along(dfs)) {
     df_expr <- make_subcell_expr(
       df = dfs[[i]], id = id, key_col = key_col, 
