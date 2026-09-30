@@ -41,26 +41,9 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   if (is.null(fasta)) 
     stop("Path(s) to fasta file(s) not found.")
   
-  group_psm_by <- rlang::enexpr(group_psm_by)
-  
-  if (group_psm_by == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
-    group_psm_by <- "pep_seq"
-  } 
-  else {
-    group_psm_by <- rlang::as_string(group_psm_by)
-    stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
-  }
-  
-  group_pep_by <- rlang::enexpr(group_pep_by)
-  
-  if (group_pep_by == rlang::expr(c("prot_acc", "gene"))) {
-    group_pep_by <- "prot_acc"
-  } 
-  else {
-    group_pep_by <- rlang::as_string(group_pep_by)
-    stopifnot(group_pep_by %in% c("prot_acc", "gene"))
-  }
-  
+  group_psm_by <- match.arg(group_psm_by)
+  group_pep_by <- match.arg(group_pep_by)
+
   dir.create(file.path(dat_dir, "PSM/cache"), 
              recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM/rprt_int/raw"), 
@@ -87,10 +70,8 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
     stop("Unknow data type or missing data files.", call. = FALSE)
   }
   
-  pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
-  
-  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
-  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
+  pep_unique_by <- match.arg(pep_unique_by)
+
   reload_expts()
   
   rmPSMHeaders()
@@ -103,9 +84,10 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   filepath <- file.path(dat_dir, "PSM/cache")
   filelist = list.files(path = filepath, pattern = "^F[0-9]{6}_hdr_rm.csv$")
   
-  if (!length(filelist)) 
+  if (!length(filelist)) {
     stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
-  
+  }
+
   lapply(filelist, procTMT0) %>% unlist()
 }
 
@@ -218,37 +200,30 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
   
   dir.create(file.path(filepath), recursive = TRUE, showWarnings = FALSE)
   
-  id <- rlang::enexpr(id)
-  df <- rlang::enexpr(df)
-  df_meta <- rlang::enexpr(df_meta)
+  if (is.null(df)) stop("Data file `df` cannot be NULL.")
+  if (is.null(df_meta)) stop("Metadata file `df_meta` cannot be NULL.")
+  if (is.null(id)) stop("Column key `id` cannot be NULL.")
+  if (is.null(filepath)) stop("`filepath` cannot be NULL.")
+  if (is.null(filename)) stop("`filename` cannot be NULL.")
 
-  if (is.null(df)) stop("Data file `df` cannot be NULL.", call. = FALSE)
-  if (is.null(df_meta)) stop("Metadata file `df_meta` cannot be NULL.", call. = FALSE)
-  if (is.null(id)) stop("Column key `id` cannot be NULL.", call. = FALSE)
-  if (is.null(filepath)) stop("`filepath` cannot be NULL.", call. = FALSE)
-  if (is.null(filename)) stop("`filename` cannot be NULL.", call. = FALSE)
-
-  id <- rlang::as_string(id)
-  df <- rlang::as_string(df)
-  df_meta <- rlang::as_string(df_meta)
-  
   message("Use the default sheet name `Sheet1` for metadata Excel.")
   
   df_path <- file.path(filepath, df)
   if (file.exists(df_path)) {
     df <- readr::read_tsv(df_path)
   } else {
-    stop("File not found: ", df_path, call. = FALSE)
+    stop("File not found: ", df_path)
   }
   
   df_meta_path <- file.path(filepath, df_meta)
   if (file.exists(df_meta_path)) {
-    df_meta <- readxl::read_excel(df_meta_path) %>% dplyr::filter(rowSums(!is.na(.)) > 0)
+    df_meta <- readxl::read_excel(df_meta_path) %>% 
+      dplyr::filter(rowSums(!is.na(.)) > 0)
     sample_ids <- df_meta$Sample_ID
   } else {
     if (is.null(sample_ids)) {
-      stop("Provide sample IDs under either column `Sample_ID` in the Excel indicated by `df_meta` 
-           or in the vector of `sample_ids`.", call. = FALSE)
+      stop("Provide sample IDs under either column Sample_ID in the Excel", 
+           " indicated by df_meta or in the vector of sample_ids.")
     }
   }
 
@@ -329,7 +304,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
     filters_in_call(!!!filter2_dots) %>% 
     arrangers_in_call(!!!arrange2_dots)
   
-  if (nrow(df) == 0) stop("No rows available after data filtratin.", call. = FALSE)
+  if (nrow(df) == 0) stop("No rows available after data filtratin.")
   
   df <- df %>%
     dplyr::filter(!is.na(.[[id]])) %>% 
@@ -346,19 +321,19 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
     colnames(annotation_col) <- annot_colnames
   }
   
-  if (is.null(annot_rows)) {
-    annotation_row <- NA
+  annotation_row <- if (is.null(annot_rows)) {
+    NA
   } else {
-    annotation_row <- df %>% dplyr::select(annot_rows) %>% data.frame(check.names = FALSE)
+    df %>% dplyr::select(annot_rows) %>% data.frame(check.names = FALSE)
   }
   
   # column annotations
-  if (is.null(dots$annotation_colors)) {
-    annotation_colors <- setHMColor(annotation_col)
+  annotation_colors <- if (is.null(dots$annotation_colors)) {
+    setHMColor(annotation_col)
   } else if (is.na(dots$annotation_colors)) {
-    annotation_colors <- NA
+    NA
   } else {
-    annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
+    eval(dots$annotation_colors, envir = rlang::caller_env())
   }
   
   if (complete_cases) {

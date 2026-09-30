@@ -15,23 +15,23 @@ scale_log2r <- TRUE
 ## base (proteins, with sample order supervision)
 anal_prnTrend(
   impute_na = FALSE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
 )
 
 ## against selected samples
 anal_prnTrend(
-  col_select = BI,
+  col_select = "BI",
   impute_na = FALSE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
-  filename = sel.txt,
+  filename = "sel.txt",
 )
 
 ## row filtration (proteins)
 anal_prnTrend(
   impute_na = FALSE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
@@ -39,11 +39,11 @@ anal_prnTrend(
 ## manual m degree of fuzziness (proteins)
 anal_prnTrend(
   impute_na = FALSE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
   filter_prots = exprs(prot_n_pep >= 2),
   m = 1.5,
-  filename = my_m.txt,
+  filename = "my_m.txt",
 )
 
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
@@ -64,7 +64,7 @@ prnSig(impute_na = FALSE)
 # (`W16_vs_W2.pVal (W16-W2)` now a column key)
 anal_prnTrend(
   impute_na = FALSE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
@@ -91,7 +91,7 @@ prnSig(impute_na = TRUE)
 
 anal_prnTrend(
   impute_na = TRUE,
-  col_order = Order,
+  col_order = "Order",
   n_clust = c(5:6), 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
@@ -103,26 +103,26 @@ anal_prnTrend(
 # ===================================
 ## base (proteins, no NA imputation) 
 plot_prnTrend(
-  col_order = Order, 
+  col_order = "Order", 
 )
 
 # at specific cluster ID(s)
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)
 plot_prnTrend(
   impute_na = FALSE, 
-  col_order = Order,
+  col_order = "Order",
   filter2_by_clusters = exprs(cluster == 5),
   width = 8, 
   height = 10,
-  filename = cl5.png,
+  filename = "cl5.png",
 )
 
 # manual selection of secondary input data file(s)
 # may be used for optimizing individual plots
 plot_prnTrend(
   df2 = c("Protein_Trend_Z_nclust5.txt"),
-  col_order = Order, 
-  filename = n5.png,
+  col_order = "Order", 
+  filename = "n5.png",
 )
 
 # manual secondary input(s) at specific rank(s)
@@ -140,15 +140,15 @@ plot_prnTrend(
 # also save as pdf
 plot_prnTrend(
   impute_na = TRUE,
-  col_order = Order,
-  filename = my.pdf,
+  col_order = "Order",
+  filename = "my.pdf",
 )
 
 ## against selected samples
 plot_prnTrend(
-  col_order = Order, 
-  col_select = BI,
-  filename = bi.png,
+  col_order = "Order", 
+  col_select = "BI",
+  filename = "bi.png",
 )
 
 ## custom theme
@@ -182,20 +182,20 @@ my_trend_theme <- theme_bw() + theme(
 )
 
 plot_prnTrend(
-  col_order = Order, 
-  col_select = BI,
+  col_order = "Order", 
+  col_select = "BI",
   theme = my_trend_theme,
-  filename = my_theme.png,
+  filename = "my_theme.png",
 )
 
 ## no grouping 
 # each sample under column `Select` forms its own group
 anal_prnTrend(
-  col_group = Select,
-  col_order = Order,
+  col_group = "Select",
+  col_order = "Order",
   n_clust = 6, 
   filter_prots = exprs(prot_n_pep >= 2),
-  filename = sample_ids_as_groups.txt,
+  filename = "sample_ids_as_groups.txt",
 )
 
 plot_prnTrend(
@@ -207,11 +207,11 @@ plot_prnTrend(
 
 ## grouped by column `Term_2` in metadata
 anal_prnTrend(
-  col_group = Term_2,
-  col_order = Order,
+  col_group = "Term_2",
+  col_order = "Order",
   n_clust = 6, 
   filter_prots = exprs(prot_n_pep >= 2),
-  filename = term_2_grouping.txt,
+  filename = "term_2_grouping.txt",
 )
 
 plot_prnTrend(
@@ -236,5 +236,4 @@ cluego(
   species = c(mouse = "Mus Musculus"), 
   n_clust = c(3:4)
 )
-
 }

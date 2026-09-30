@@ -261,7 +261,7 @@ scale_log2r <- TRUE
 
 # peptides, all samples
 pepPCA(
-  col_select = Select, 
+  col_select = "Select", 
   filter_peps_by = exprs(pep_n_psm >= 3),
   show_ids = FALSE, 
   filename = "peps_rowfil.png",
@@ -269,9 +269,9 @@ pepPCA(
 
 # peptides, samples under column `BI`
 pepPCA(
-  col_select = BI, 
-  col_shape = Shape,   
-  col_color = Alpha, 
+  col_select = "BI", 
+  col_shape = "Shape",   
+  col_color = "Alpha", 
   filter_peps_by = exprs(pep_n_psm >= 10),
   show_ids = FALSE, 
   filename = "peps_rowfil_colsel.png",
@@ -279,8 +279,8 @@ pepPCA(
 
 # proteins
 prnPCA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filename = "prns_rowfil.png",
@@ -289,7 +289,7 @@ prnPCA(
 # subset by mean deviation values
 # deviations to means may not be symmetric;
 prnPCA(
-  col_select = Select, 
+  col_select = "Select", 
   filter_peps_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
   show_ids = FALSE, 
   filename = "subset_by_mean_dev.png",
@@ -297,15 +297,15 @@ prnPCA(
 
 # proteins, custom palette
 prnPCA(
-  col_shape = Shape,
-  color_brewer = Set1,
+  col_shape = "Shape",
+  color_brewer = "Set1",
   show_ids = FALSE,
   filename = "my_palette.png",
 )
 
 # proteins, by features
 prnPCA(
-  type = feats,
+  type = "feats",
   scale_log2r = TRUE,
   filename = "by_feats.png",
 )
@@ -327,22 +327,22 @@ prnSig(impute_na = FALSE)
 
 # (`W16_vs_W2.pVal (W16-W2)` now a column key)
 prnPCA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 # analogous peptides
 prnPCA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 ## additional row filtration by pVals (proteins, impute_na = TRUE)
@@ -366,23 +366,23 @@ prnSig(impute_na = TRUE)
 
 prnPCA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png, 
+  filename = "filpvals_impna.png", 
 )
 
 # analogous peptides
 pepPCA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png,
+  filename = "filpvals_impna.png",
 )
 
 ## a higher dimension
@@ -390,21 +390,21 @@ pepPCA(
   show_ids = FALSE,
   rank. = 5, 
   dimension = 3,
-  filename = d3.pdf,
+  filename = "d3.pdf",
 )
 
 prnPCA(
   show_ids = TRUE,
   rank. = 4, 
   dimension = 3,
-  filename = d3.png,
+  filename = "d3.png",
 )
 
 prnPCA(
-  type = feats,
+  type = "feats",
   rank. = 4, 
   dimension = 3,
-  filename = feat_d3.png,
+  filename = "feat_d3.png",
 )
 
 # show ellipses
@@ -412,20 +412,20 @@ prnPCA(
 prnPCA(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Color, 
+  col_group = "Color", 
   rank. = 4, 
   dimension = 3,
-  filename = d3_labs.png,
+  filename = "d3_labs.png",
 )
 
 # (column `expt_smry.xlsx::Shape` codes `WHIMs`.)
 prnPCA(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Shape, 
+  col_group = "Shape", 
   rank. = 4, 
   dimension = 3,
-  filename = d3_whims.png,
+  filename = "d3_whims.png",
 )
 
 ## custom theme
@@ -452,18 +452,18 @@ my_theme <- theme_bw() + theme(
 
 pepPCA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   theme = my_theme, 
-  filename = my_theme.png,
+  filename = "my_theme.png",
 )
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnPCA(filename = foo.png)
+res <- prnPCA(filename = "foo.png")
 
 # names(res)
 
@@ -490,7 +490,6 @@ prnPCA(
 )  
 }
 }
-
 }
 \seealso{
 \emph{Metadata} \cr

@@ -6,36 +6,56 @@
 \usage{
 plot_prnSubcell_UMAP(
   dat_dir = NULL,
-  df_expr = NULL,
+  label_scheme = NULL,
+  col_group = NULL,
+  df_umap = NULL,
   id = "gene",
   n_clust = 16:36,
+  key_col = c("log2FC", "log10Int"),
+  pred_col = "sub_location",
+  method = c("unsupervised", "supervised"),
   levels_ref_compartments = c("Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin",
     "Lysosome", "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome",
     "Ribosome", "Centrosome", "P_body", "Stress_granule"),
+  reorder_ref_levels = TRUE,
+  col_fraction = NULL,
+  levels_fraction = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
   ext = "png",
-  use_cache = TRUE,
+  use_cache = FALSE,
+  overwrite_umap_res = FALSE,
   wrap_facets = TRUE,
-  seed = 123,
+  break_width = 5,
+  hide_grids = TRUE,
+  drop = FALSE,
+  seed = 42,
   ...
 )
 }
 \arguments{
 \item{dat_dir}{The current working directory.}
 
-\item{df_expr}{A matrix of expression data.}
+\item{df_umap}{A matrix UMAP coordinates.}
 
 \item{id}{An identifier.}
 
 \item{n_clust}{Not used. The number of clusters.}
 
-\item{levels_ref_compartments}{The factor levels of subcellular
-compartments. Set \code{levels_ref_compartments = NULL} for automatic
-determination.}
+\item{key_col}{The key column where the values being used for UMAP.}
+
+\item{pred_col}{The prediction column.}
+
+\item{method}{The method of subcellular classification.}
+
+\item{levels_ref_compartments}{The factor levels of subcellular compartments.
+Set \code{levels_ref_compartments = NULL} for automatic determination.}
+
+\item{reorder_ref_levels}{Not used. Logical; if TRUE, reorder reference
+levles by the decreasing of category counts.}
 
 \item{df2}{Not used. The names of secondary input files.}
 
@@ -45,9 +65,13 @@ determination.}
 
 \item{ext}{An extension of output filename.}
 
+\item{overwrite_umap_res}{Logical; rewrite UMAP result files or not.}
+
 \item{wrap_facets}{Wrap facets or not.}
 
 \item{seed}{A seed for umap.}
+
+\item{df_expr}{A matrix of expression data.}
 }
 \description{
 Inputs are expression data of normalized intensities.

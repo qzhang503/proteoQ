@@ -133,6 +133,7 @@ mergePep(cut_points = c(mean_lint = seq(4, 7, .5)))
 # `10^prot_icover - 1` comparable to emPAI
 mergePep(cut_points = c(prot_icover = seq(0, 1, .25)))
 }
+
 }
 \seealso{
 \emph{Metadata} \cr \code{\link{load_expts}} for metadata

@@ -7,7 +7,7 @@
 rm_fully_empty_tmt_sets(
   df,
   frac_smry = NULL,
-  TMT_plex = 0L,
+  tmt_plex = 0L,
   dat_dir = NULL,
   ext = NULL
 )
@@ -18,7 +18,7 @@ rm_fully_empty_tmt_sets(
 \item{frac_smry}{A character string to a \code{.xlsx} file containing peptide
 fractionation summary. The default is \code{frac_smry.xlsx}.}
 
-\item{TMT_plex}{The multiplexity of TMT.}
+\item{tmt_plex}{The multiplexity of TMT.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}

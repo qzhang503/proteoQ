@@ -300,12 +300,12 @@ prnHM(
 # Approach 1:
 prnHM(hc_method_rows = "ward.D2", ...)
 
-# Or
-prnHM(hc_method_rows = ward.D2, ...)
+# Depreciated
+# prnHM(hc_method_rows = ward.D2, ...)
 
 # Or
 my_hc_method_rows <- "ward.D2"
-prnHM(hc_method_rows = !!my_hc_method_rows, ...)
+prnHM(hc_method_rows = my_hc_method_rows, ...)
 
 # Rows ordered by kinase classes then by gene names
 # (error if `normPSM(annot_kinases = FALSE, ...)`)
@@ -532,7 +532,7 @@ pepHM(
 
 # Selected samples
 pepHM(
-  col_select = BI_1, 
+  col_select = "BI_1", 
   xmin = -2,
   xmax = 2,
   xmargin = 0.1,
@@ -573,8 +573,8 @@ lapply(genes, function (gene) {
     width = 18,
     height = 12,
     arrange_pep = exprs(pep_start, pep_end), 
-    filter_sp = exprs(gene == !!gn), 
-    filename = !!paste0(gene, ".png"),
+    filter_sp = exprs(gene == gn), 
+    filename = paste0(gene, ".png"),
   )
 })
 
@@ -615,7 +615,7 @@ prnHM(
   fontsize_row = 3, 
   cellwidth = 14, 
   filter_sp = exprs(species == "human"), 
-  filename = custom.png,
+  filename = "custom.png",
 )
 }
 

@@ -38,16 +38,10 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      center_features, scale_features),
                    rlang::is_logical, logical(1L)))
   
-  if (!nrow(label_scheme_sub))
+  if (!nrow(label_scheme_sub)) {
     stop("Empty metadata not allowed.")
-  
-  col_group <- rlang::enexpr(col_group)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
-  
+  }
+
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
   if (complete_cases) 
@@ -55,11 +49,9 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
-    warning("No ellipses at `type = feats`.", 
-            call. = FALSE)
+    warning("No ellipses at `type = feats`.")
   }
   
-  id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% 
@@ -121,7 +113,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     filters_in_call(!!!filter_dots) %>%
     arrangers_in_call(!!!arrange_dots) %>%
     scoreLDA(
-      id = !!id,
+      id = id,
       label_scheme_sub = label_scheme_sub,
       anal_type = anal_type,
       scale_log2r = scale_log2r,
@@ -130,7 +122,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       choice = choice, 
       method = method,
       type = type,
-      col_group = !!col_group,
+      col_group = col_group,
       folds = folds,
       out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")),
       !!!anal_dots)
@@ -147,38 +139,39 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
   nms <- names(df)
   
-  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-  
-  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-  
-  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-  
-  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-  
-  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% nms)
-    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
-  
+  if (col_color != "Color" || !col_color %in% nms) {
+    assign(paste0("map_", tolower(col_color)), "X")
+  }
+    
+  if (col_fill != "Fill"  || !col_fill %in% nms) {
+    assign(paste0("map_", tolower(col_fill)), "X")
+  }
+
+  if (col_shape != "Shape" || !col_shape %in% nms) {
+    assign(paste0("map_", tolower(col_shape)), "X")
+  }
+
+  if (col_size != "Size" || !col_size %in% nms) {
+    assign(paste0("map_", tolower(col_size)), "X")
+  }
+
+  if (col_alpha != "Alpha" || !col_alpha %in% nms) {
+    assign(paste0("map_", tolower(col_alpha)), "X")
+  }
+
   if (!is.na(map_color)) col_color <- NULL
   if (!is.na(map_fill)) col_fill <- NULL
   if (!is.na(map_shape)) col_shape <- NULL
   if (!is.na(map_size)) col_size <- NULL
   if (!is.na(map_alpha)) col_alpha <- NULL
   
-  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", "nms"))
+  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha", 
+              "nms"))
   suppressWarnings(rm(list = c("map_.")))
   
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
-  if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
-  
-  size_manual <- eval_bare(size_manual, env = caller_env())
-  shape_manual <- eval_bare(shape_manual, env = caller_env())
-  alpha_manual <- eval_bare(alpha_manual, env = caller_env())
+  size_manual <- eval_bare(size_manual, env = rlang::caller_env())
+  shape_manual <- eval_bare(shape_manual, env = rlang::caller_env())
+  alpha_manual <- eval_bare(alpha_manual, env = rlang::caller_env())
   
   proteoq_pca_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
@@ -223,31 +216,26 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   rm(list = c("max_dim"))
   
   # --- set up aes ---
-  if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
-    col_color <- NULL
-  if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
-    col_fill <- NULL
-  if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
-    col_shape <- NULL
-  if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
-    col_size <- NULL
-  if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
-    col_alpha <- NULL
+  if ((!is.null(col_color)) && col_color == ".") col_color <- NULL
+  if ((!is.null(col_fill)) && col_fill == ".") col_fill <- NULL
+  if ((!is.null(col_shape)) && col_shape == ".") col_shape <- NULL
+  if ((!is.null(col_size)) && col_size == ".") col_size <- NULL
+  if ((!is.null(col_alpha)) && col_alpha == ".") col_alpha <- NULL
   
   if (dimension > 2L) {
-    mapping <- ggplot2::aes(colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
+    mapping <- ggplot2::aes(colour = !!rlang::sym(col_color), 
+                            fill = !!rlang::sym(col_fill), 
+                            shape = !!rlang::sym(col_shape),
+                            size = !!rlang::sym(col_size), 
+                            alpha = !!rlang::sym(col_alpha))
   } 
   else {
     mapping <- ggplot2::aes(x = LD1, y = LD2,
-                            colour = !!col_color, 
-                            fill = !!col_fill, 
-                            shape = !!col_shape,
-                            size = !!col_size, 
-                            alpha = !!col_alpha)
+                            colour = !!rlang::sym(col_color), 
+                            fill = !!rlang::sym(col_fill), 
+                            shape = !!rlang::sym(col_shape),
+                            size = !!rlang::sym(col_size), 
+                            alpha = !!rlang::sym(col_alpha))
   }
   
   idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
@@ -372,9 +360,11 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     check_ggplot_aes(p)
     
     if (show_ellipses) {
-      if (anyNA(label_scheme_sub[[col_group]]))
-        warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx")
-      
+      if (anyNA(label_scheme_sub[[col_group]])) {
+        warning("(Partial) NA aesthetics under column `", col_group, 
+                "` in expt_smry.xlsx")
+      }
+
       p <- p + ggplot2::stat_ellipse(
         data = df,
         aes(x = LD1, y = LD2, fill = !!rlang::sym(col_group)),
@@ -419,9 +409,9 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   }
   
   ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
-  rlang::eval_tidy(rlang::quo(ggsave(filename = 
-                                       file.path(filepath, gg_imgname(filename)),
-                                     plot = p, !!!ggsave_dots)))
+  rlang::eval_tidy(
+    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
+                      plot = p, !!!ggsave_dots)))
   
   invisible(res)
 }
@@ -443,15 +433,14 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       folds, out_file, ...) 
 {
   dots <- rlang::enexprs(...)
-  id <- rlang::as_string(rlang::enexpr(id))
-  col_group <- rlang::enexpr(col_group)
 
-  if (rlang::as_string(col_group) == "Select")
+  if (rlang::as_string(col_group) == "Select") {
     stop("Specify a `col_group` column other than `Select.`")
+  }
 
   df_orig <- df
 
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
+  df <- prepDM(df = df, id = id, scale_log2r = scale_log2r,
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type, 
                rm_allna = TRUE) %>%
     .$log2R
@@ -459,8 +448,9 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
   nms <- names(df)
   n_rows <- nrow(df)
 
-  if (n_rows <= 50L)
+  if (n_rows <= 50L) {
     stop("Need 50 or more data rows for LDA.")
+  }
 
   label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
 
@@ -474,7 +464,7 @@ scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
       message("Class labels according to the column `", col_group, 
               "` in metadata file.")
 
-      dm_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
+      dm_t <- df_t %>% dplyr::select(-dplyr::one_of(col_group))
 
       dm_t <- if (scale_features)
         scale(dm_t, center = center_features, scale = TRUE)
@@ -553,62 +543,38 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   
   check_dots(c("id", "df2", "anal_type"), ...)
 
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "lda" else rlang::as_string(choice)
+  method <- match.arg(method)
+  type <- match.arg(type)
 
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "moment" else rlang::as_string(method)
-  
-  type <- rlang::enexpr(type)
-  type <- if (length(type) > 1L) "obs" else rlang::as_string(type)
   stopifnot(type %in% c("obs", "feats"))
   
-  id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
+  id <- match_call_arg("normPSM", group_psm_by)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
-
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
-  shape_manual <- rlang::enexpr(shape_manual)
-  alpha_manual <- rlang::enexpr(alpha_manual)
-
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-
   reload_expts()
 
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group = col_group,
+            col_color = col_color, 
+            col_fill = col_fill,
+            col_shape = col_shape, 
+            col_size = col_size, 
+            col_alpha = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer = fill_brewer,
+            size_manual = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "LDA")(choice = choice, 
                                method = method,
                                type = type, 
@@ -736,88 +702,64 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-prnLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
-                    col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,
-                    color_brewer = NULL, fill_brewer = NULL,
-                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
-                    choice = c("lda"), 
-                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                    center_features = TRUE, scale_features = TRUE,
-                    show_ids = TRUE, show_ellipses = FALSE,
-                    type = c("obs", "feats"), 
-                    method = c("moment", "mle", "mve"), 
-                    dimension = 2, folds = 1,
-                    df = NULL, filepath = NULL, filename = NULL,
-                    theme = NULL, 
-                    
-                    formula = NULL, data = NULL, 
-                    x = NULL, grouping = NULL, 
-                    prior = NULL, subset = NULL, CV = NULL, 
-                    na.action = NULL, nu = NULL, 
-                    ...) {
-
+prnLDA <- function (
+    col_select = NULL, col_group = NULL, col_color = NULL,
+    col_fill = NULL, col_shape = NULL, col_size = NULL, 
+    col_alpha = NULL, color_brewer = NULL, fill_brewer = NULL,
+    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
+    choice = c("lda"), 
+    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
+    center_features = TRUE, scale_features = TRUE,
+    show_ids = TRUE, show_ellipses = FALSE,
+    type = c("obs", "feats"), 
+    method = c("moment", "mle", "mve"), 
+    dimension = 2, folds = 1,
+    df = NULL, filepath = NULL, filename = NULL,
+    theme = NULL, 
+    
+    formula = NULL, data = NULL, 
+    x = NULL, grouping = NULL, 
+    prior = NULL, subset = NULL, CV = NULL, 
+    na.action = NULL, nu = NULL, 
+    ...) {
+  
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
 
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "lda" else rlang::as_string(choice)
-
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "moment" else rlang::as_string(method)
-
-  type <- rlang::enexpr(type)
-  type <- if (length(type) > 1L) "obs" else rlang::as_string(type)
+  method <- match.arg(method)
+  type <- match.arg(type)
   stopifnot(type %in% c("obs", "feats"))
-
-  id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1L)
-
+  
+  id <- match_call_arg("normPSM", group_pep_by)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_color <- rlang::enexpr(col_color)
-  col_fill <- rlang::enexpr(col_fill)
-  col_shape <- rlang::enexpr(col_shape)
-  col_size <- rlang::enexpr(col_size)
-  col_alpha <- rlang::enexpr(col_alpha)
-
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer <- rlang::enexpr(fill_brewer)
-  size_manual <- rlang::enexpr(size_manual)
-  shape_manual <- rlang::enexpr(shape_manual)
-  alpha_manual <- rlang::enexpr(alpha_manual)
-
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-
   reload_expts()
-
-  info_anal(id = !!id,
-            col_select = !!col_select, 
-            col_group = !!col_group,
-            col_color = !!col_color, 
-            col_fill = !!col_fill,
-            col_shape = !!col_shape, 
-            col_size = !!col_size, 
-            col_alpha = !!col_alpha,
-            color_brewer = !!color_brewer, 
-            fill_brewer = !!fill_brewer,
-            size_manual = !!size_manual, 
-            shape_manual = !!shape_manual, 
-            alpha_manual = !!alpha_manual,
+  
+  info_anal(id = id,
+            col_select = col_select, 
+            col_group = col_group,
+            col_color = col_color, 
+            col_fill = col_fill,
+            col_shape = col_shape, 
+            col_size = col_size, 
+            col_alpha = col_alpha,
+            color_brewer = color_brewer, 
+            fill_brewer = fill_brewer,
+            size_manual = size_manual, 
+            shape_manual = shape_manual, 
+            alpha_manual = alpha_manual,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "LDA")(choice = choice, 
                                method = method,
                                type = type, 

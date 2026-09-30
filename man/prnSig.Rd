@@ -190,12 +190,12 @@ pepVol()
 # Approach 1:
 prnSig(method = "lm")
 
-# Approach 2:
+# Approach 2: depreciated
 prnSig(method = lm)
 
 # Appproach 3:
 my_method <- "lm"
-prnSig(method = !!my_method)
+prnSig(method = my_method)
 
 ## Proteins (formulae matched to `pepSig` by default)
 prnSig()
@@ -253,7 +253,7 @@ pepSig(
 
 prnSig(
   impute_na = TRUE,
-  method = lm,
+  method = "lm",
 )
 
 pepVol()

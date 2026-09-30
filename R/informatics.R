@@ -56,23 +56,6 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
                       "Choose a different key value.")
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
   
-  force(col_select); force(col_group); force(col_order); force(col_color);
-  force(col_fill); force(col_shape); force(col_size); force(col_alpha);
-  force(col_benchmark); force(col_fraction); force(col_subtype); 
-
-  # character(0) or character(1)
-  col_select <- rlang::enexpr(col_select)
-  col_group  <- rlang::enexpr(col_group)
-  col_order  <- rlang::enexpr(col_order)
-  col_color  <- rlang::enexpr(col_color)
-  col_fill   <- rlang::enexpr(col_fill)
-  col_shape  <- rlang::enexpr(col_shape)
-  col_size   <- rlang::enexpr(col_size)
-  col_alpha  <- rlang::enexpr(col_alpha)
-  col_benchmark <- rlang::enexpr(col_benchmark)
-  col_fraction  <- rlang::enexpr(col_fraction)
-  col_subtype   <- rlang::enexpr(col_subtype)
-
   # Set up default column keys
   if (!length(col_select)) col_select <- "Select"
   if (!length(col_group)) col_group  <- "Group"
@@ -114,74 +97,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     col_benchmark <- "."
   }
   
-  if (FALSE) {
-    col_select <- if (length(col_select)) {
-      rlang::sym(col_select)
-    } else {
-      rlang::expr(Select)
-    }
-    
-    col_group <- if (length(col_group)) {
-      rlang::sym(col_group)
-    } else {
-      rlang::expr(Group)
-    }
-    
-    col_order <- if (length(col_order)) {
-      rlang::sym(col_order)
-    } else {
-      rlang::expr(Order)
-    }
-    
-    col_color <- if (!length(col_color)) {
-      rlang::expr(Color)
-    } else if(is.na(col_color)) {
-      rlang::sym(".")
-    } else {
-      rlang::sym(col_color)
-    }
-    
-    col_fill <- if (!length(col_fill)) {
-      rlang::expr(Fill)
-    } else if(is.na(col_fill)) {
-      rlang::sym(".")
-    } else {
-      rlang::sym(col_fill)
-    }
-    
-    col_shape <- if (!length(col_shape)) {
-      rlang::expr(Shape)
-    } else if(is.na(col_shape)) {
-      rlang::sym(".")
-    } else {
-      rlang::sym(col_shape)
-    }
-    
-    col_size <- if (!length(col_size)) {
-      rlang::expr(Size)
-    } else if(is.na(col_size)) {
-      rlang::sym(".")
-    } else {
-      rlang::sym(col_size)
-    }
-    
-    col_alpha <- if (!length(col_alpha)) {
-      rlang::expr(Alpha)
-    } else if(is.na(col_alpha)) {
-      rlang::sym(".")
-    } else {
-      rlang::sym(col_alpha)
-    }
-    
-    col_benchmark <- if (!length(col_benchmark)) {
-      rlang::expr(Benchmark)
-    } else {
-      rlang::sym(col_benchmark)
-    }
-  }
-  
   sid_char <- "Sample_ID"
-  # sid_expr <- rlang::sym(sid_char)
   if (col_select == sid_char) stop(err_msg1)
   if (col_group  == sid_char) stop(err_msg1)
   if (col_order  == sid_char) stop(err_msg1)
@@ -205,13 +121,6 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   if (length(color_brewer)) color_brewer <- as.character(color_brewer)
   if (length(fill_brewer))  fill_brewer  <- as.character(fill_brewer)
 
-  force(df); force(df2); force(filepath); force(filename); 
-  
-  df  <- rlang::enexpr(df)
-  df2 <- rlang::enexpr(df2)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
   }
@@ -278,9 +187,6 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     # warning("No samples under column \"", rlang::as_string(col_benchmark), "\".")
   }
   
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
-  
   if (length(id) != 1L) {
     stop("'id' must be one of 'pep_seq', 'pep_seq_mod', 'prot_acc' or 'gene'.")
   }
@@ -294,8 +200,6 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
          "c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")")
   }
 
-  # anal_type <- rlang::as_string(rlang::enexpr(anal_type))
-  
   if (!length(filepath)) {
     filepath <- if (grepl("Trend|Subcellular", anal_type)) {
       file.path(dat_dir, data_type, "Trend")
@@ -371,7 +275,6 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   }
   
   if (anal_type %in% use_sec_data) {
-    # df2 <- rlang::eval_bare(df2, env = rlang::current_env())
     vararg_secmsg(id = id, anal_type = anal_type)
   } else {
     df2 <- NULL
@@ -494,20 +397,20 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
              center_features = TRUE, scale_features = TRUE,
              theme = NULL, ...) {
       plotUMAP(df = df,
-              id = !!id,
+              id = id,
               label_scheme_sub = label_scheme_sub,
               dimension = dimension,
               folds = folds,
               type = type,
-              col_group = !!col_group,
-              col_order = !!col_order, 
-              col_color = !!col_color,
-              col_fill = !!col_fill,
-              col_shape = !!col_shape,
-              col_size = !!col_size,
-              col_alpha = !!col_alpha,
-              color_brewer = !!color_brewer,
-              fill_brewer = !!fill_brewer,
+              col_group = col_group,
+              col_order = col_order, 
+              col_color = col_color,
+              col_fill = col_fill,
+              col_shape = col_shape,
+              col_size = col_size,
+              col_alpha = col_alpha,
+              color_brewer = color_brewer,
+              fill_brewer = fill_brewer,
               size_manual = size_manual,
               shape_manual = shape_manual,
               alpha_manual = alpha_manual,
@@ -526,7 +429,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   else if (anal_type == "EucDist") {
     function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
       plotEucDist(df = df,
-                  id = !!id,
+                  id = id,
                   label_scheme_sub = label_scheme_sub,
                   adjEucDist = adjEucDist,
                   scale_log2r = scale_log2r,
@@ -991,7 +894,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
              gset_nms = "go_sets", var_cutoff = .5,
              pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
       gsvaTest(df = df,
-               id = !!id,
+               id = id,
                label_scheme_sub = label_scheme_sub,
                filepath = filepath,
                filename = paste0(fn_prefix, ".txt"),
@@ -1012,7 +915,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     function(gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 1E-2, 
              logFC_cutoff = log2(1.1), ...) {
       gspaTest(df = df,
-               id = !!id,
+               id = id,
                label_scheme_sub = label_scheme_sub,
                scale_log2r = scale_log2r,
                complete_cases = complete_cases,
@@ -1038,7 +941,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   else if (anal_type == "String") {
     function(db_nms = NULL, score_cutoff = .7, ...) {
       stringTest(df = df,
-                 id = !!id,
+                 id = id,
                  label_scheme_sub = label_scheme_sub,
                  db_nms = db_nms,
                  score_cutoff = score_cutoff,
@@ -1067,7 +970,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
              nu = NULL, 
              ...) {
       plotLDA(df = df,
-              id = !!id,
+              id = id,
               label_scheme_sub = label_scheme_sub,
               choice = choice, 
               method = method,
@@ -1076,14 +979,14 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
               folds = folds,
               show_ids = show_ids,
               show_ellipses = show_ellipses,
-              col_group = !!col_group,
-              col_color = !!col_color,
-              col_fill = !!col_fill,
-              col_shape = !!col_shape,
-              col_size = !!col_size,
-              col_alpha = !!col_alpha,
-              color_brewer = !!color_brewer,
-              fill_brewer = !!fill_brewer,
+              col_group = col_group,
+              col_color = col_color,
+              col_fill = col_fill,
+              col_shape = col_shape,
+              col_size = col_size,
+              col_alpha = col_alpha,
+              color_brewer = color_brewer,
+              fill_brewer = fill_brewer,
               size_manual = size_manual,
               shape_manual = shape_manual,
               alpha_manual = alpha_manual,
@@ -1112,7 +1015,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
   else if (anal_type == "KinSub") {
     function(db_nms = NULL, match_orgs = TRUE, ...) {
       KinSubTest(df = df,
-                 id = !!id,
+                 id = id,
                  label_scheme_sub = label_scheme_sub,
                  db_nms = db_nms,
                  match_orgs = match_orgs, 
@@ -1149,19 +1052,11 @@ find_pri_df <- function (dat_dir = NULL, anal_type = "Model", df = NULL,
   err_msg5 <- 
     "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
 
-  # anal_type <- rlang::as_string(rlang::enexpr(anal_type))
-  # id <- rlang::as_string(rlang::enexpr(id))
-
-  force(anal_type); force(id); force(df)
-  # anal_type <- rlang::enexpr(anal_type)
-  # id <- rlang::enexpr(id)
-  # df <- rlang::enexpr(df)
-  
   if (length(df)) {
-    # df <- rlang::as_string(df)
-    if (anal_type == "Model") 
+    if (anal_type == "Model") {
       stop("Use default file name.")
-    
+    }
+
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       src_path <- file.path(dat_dir, "Peptide/Model", df)
       
@@ -1288,10 +1183,6 @@ find_pri_df <- function (dat_dir = NULL, anal_type = "Model", df = NULL,
 #' @inheritParams info_anal
 vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) 
 {
-  force(id); force(anal_type)
-  # id <- rlang::as_string(rlang::enexpr(id))
-  # anal_type <- rlang::as_string(rlang::enexpr(anal_type))
-
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     if (anal_type == "Trend_line") {
       message("Secondary column keys in `Trend/[...]Peptide_Trend_{NZ}[_impNA][...].txt` ", 

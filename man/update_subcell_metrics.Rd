@@ -10,7 +10,6 @@ update_subcell_metrics(
   filepath = NULL,
   files = NULL,
   col_select = NULL,
-  col_group = NULL,
   col_order = NULL,
   levels_subtype = NULL,
   scale_log2r = TRUE,
@@ -27,11 +26,8 @@ update_subcell_metrics(
 
 \item{files}{The filenames to protein \code{Trend} results.}
 
-\item{col_select}{The column key in metadata linked to the information of
-sample being selected.}
-
-\item{col_group}{The column key in metadata linked to the information of
-sample groups.}
+\item{col_select}{Not used. The column key in metadata linked to the
+information of sample being selected.}
 
 \item{levels_subtype}{The levels of sample subtypes.}
 
@@ -41,6 +37,12 @@ sample groups.}
 
 \item{...}{Additional arguments.}
 
+\item{col_group}{The column key in metadata linked to the information of
+  sample groups.
+
+  Not used since its values can be changed from run to run by users. To
+  decide, use the first values under the column \code{"col_group"}.}
+
 \item{col_oder}{The column key in metadata linked to the information of
 sample orders.}
 
@@ -48,7 +50,9 @@ sample orders.}
 sample subcellular fractions.}
 
 \item{col_subtype}{The column key in metadata linked to the information of
-sample subtypes or treatment conditions.}
+sample subtypes or treatment conditions.
+
+Not used. See also parameter \code{col_group}.}
 }
 \description{
 Also update trend results under sub directory \code{subcell_update}.

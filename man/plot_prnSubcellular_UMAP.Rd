@@ -11,6 +11,7 @@ plot_prnSubcellular_UMAP(
   levels_subtype = NULL,
   dat_dir = NULL,
   filepath = NULL,
+  col_group = "Group",
   key_subcellular = "location_slim3",
   key_col = "loc_score",
   levels_ref_compartments = c("CP", "NP", "ChA"),
@@ -39,6 +40,12 @@ of \code{df} and \code{df2}.}
 \item{dat_dir}{The current working directory.}
 
 \item{filepath}{The file path to Trend data.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{key_subcellular}{The key of subcellular compartments from the reference
 data.}

@@ -286,7 +286,7 @@ scale_log2r <- TRUE
 ## peptides
 # all samples
 pepMDS(
-  col_select = Select, 
+  col_select = "Select", 
   filter_peps_by = exprs(pep_n_psm >= 10),
   show_ids = FALSE, 
   filename = "peps_rowfil.png",
@@ -294,9 +294,9 @@ pepMDS(
 
 # selected samples
 pepMDS(
-  col_select = BI, 
-  col_shape = Shape,   
-  col_color = Alpha, 
+  col_select = "BI", 
+  col_shape = "Shape",   
+  col_color = "Alpha", 
   filter_peps_by = exprs(pep_n_psm >= 10),
   show_ids = FALSE, 
   filename = "peps_rowfil_colsel.png",
@@ -308,7 +308,7 @@ pepMDS(
 # use `col_alpha = NA`
 # (the same applies to other aesthetics, and PCA and LDA)
 pepMDS(
-  col_select = Select, 
+  col_select = "Select", 
   col_alpha = NA, 
   filter_peps_by = exprs(pep_n_psm >= 10),
   show_ids = FALSE, 
@@ -318,8 +318,8 @@ pepMDS(
 
 ## proteins
 prnMDS(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filename = "prns_rowfil.png",
@@ -327,8 +327,8 @@ prnMDS(
 
 # custom palette
 prnMDS(
-  col_shape = Shape,
-  color_brewer = Set1,
+  col_shape = "Shape",
+  color_brewer = "Set1",
   show_ids = FALSE,
   filename = "my_palette.png",
 )
@@ -350,22 +350,22 @@ prnSig(impute_na = FALSE)
 
 # (`W16_vs_W2.pVal (W16-W2)` now a column key)
 prnMDS(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 # analogous peptides
 pepMDS(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 ## additional row filtration by pVals (proteins, impute_na = TRUE)
@@ -389,38 +389,38 @@ prnSig(impute_na = TRUE)
 
 prnMDS(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png, 
+  filename = "filpvals_impna.png", 
 )
 
 # analogous peptides
 pepMDS(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png,
+  filename = "filpvals_impna.png",
 )
 
 ## show ellipses
 prnMDS(
   show_ellipses = TRUE,
-  col_group = Shape, 
+  col_group = "Shape", 
   show_ids = FALSE,
-  filename = ellipses_by_whims.png,
+  filename = "ellipses_by_whims.png",
 )
 
 prnMDS(
   show_ellipses = TRUE,
-  col_group = Color, 
+  col_group = "Color", 
   show_ids = FALSE,
-  filename = ellipses_by_labs.png,
+  filename = "ellipses_by_labs.png",
 )
 
 ## a higher dimension
@@ -428,14 +428,14 @@ pepMDS(
   show_ids = FALSE,
   k = 5, 
   dimension = 3,
-  filename = d3.pdf,
+  filename = "d3.pdf",
 )
 
 prnMDS(
   show_ids = TRUE,
   k = 4, 
   dimension = 3,
-  filename = d3.png,
+  filename = "d3.png",
 )
 
 # show ellipses
@@ -443,20 +443,20 @@ prnMDS(
 prnMDS(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Color, 
+  col_group = "Color", 
   k = 4, 
   dimension = 3,
-  filename = d3_labs.png,
+  filename = "d3_labs.png",
 )
 
 # (column `expt_smry.xlsx::Shape` codes `WHIMs`.)
 prnMDS(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Shape, 
+  col_group = "Shape", 
   k = 4, 
   dimension = 3,
-  filename = d3_whims.png,
+  filename = "d3_whims.png",
 )
 
 
@@ -465,7 +465,7 @@ prnMDS(
 prnMDS(
   show_ids = TRUE, 
   dist_co = log2(4),
-  filename = where_are_the_large_diffs.png,
+  filename = "where_are_the_large_diffs.png",
 )
 
 
@@ -493,18 +493,18 @@ my_mds_theme <- theme_bw() + theme(
 
 pepMDS(
   impute_na = FALSE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   theme = my_mds_theme,
-  filename = my_theme.png,
+  filename = "my_theme.png",
 )
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnMDS(filename = foo.png)
+res <- prnMDS(filename = "foo.png")
 
 p_fil <- ggplot(res, aes(x = Coordinate.1, y = Coordinate.2)) +
   geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 

@@ -292,7 +292,7 @@ scale_log2r <- TRUE
 # peptides, all samples
 # (implicit `col_group = Group`)
 pepLDA(
-  col_select = Select, 
+  col_select = "Select", 
   filter_peps_by = exprs(pep_n_psm >= 3),
   show_ids = FALSE, 
   filename = "peps_rowfil.png",
@@ -300,9 +300,9 @@ pepLDA(
 
 # peptides, samples under column `BI`
 pepLDA(
-  col_select = BI, 
-  col_shape = Shape,   
-  col_color = Alpha, 
+  col_select = "BI", 
+  col_shape = "Shape",   
+  col_color = "Alpha", 
   filter_peps_by = exprs(pep_n_psm >= 10),
   show_ids = FALSE, 
   filename = "peps_rowfil_colsel.png",
@@ -310,8 +310,8 @@ pepLDA(
 
 # proteins
 prnLDA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filename = "prns_rowfil.png",
@@ -328,8 +328,8 @@ prnLDA(
 
 # proteins, custom palette
 prnLDA(
-  col_shape = Shape,
-  color_brewer = Set1,
+  col_shape = "Shape",
+  color_brewer = "Set1",
   show_ids = FALSE,
   filename = "my_palette.png",
 )
@@ -351,22 +351,22 @@ prnSig(impute_na = FALSE)
 
 # (`W16_vs_W2.pVal (W16-W2)` now a column key)
 prnLDA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 # analogous peptides
 prnLDA(
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 ## additional row filtration by pVals (proteins, impute_na = TRUE)
@@ -390,36 +390,36 @@ prnSig(impute_na = TRUE)
 
 prnLDA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png, 
+  filename = "filpvals_impna.png", 
 )
 
 # analogous peptides
 pepLDA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png,
+  filename = "filpvals_impna.png",
 )
 
 ## a higher dimension
 pepLDA(
   show_ids = FALSE,
   dimension = 3,
-  filename = d3.pdf,
+  filename = "d3.pdf",
 )
 
 prnLDA(
   show_ids = TRUE,
   dimension = 3,
-  filename = d3.png,
+  filename = "d3.png",
 )
 
 # show ellipses
@@ -427,18 +427,18 @@ prnLDA(
 prnLDA(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Color, 
+  col_group = "Color", 
   dimension = 3,
-  filename = d3_labs.png,
+  filename = "d3_labs.png",
 )
 
 # (column `expt_smry.xlsx::Shape` codes `WHIMs`.)
 prnLDA(
   show_ids = FALSE,
   show_ellipses = TRUE,
-  col_group = Shape, 
+  col_group = "Shape", 
   dimension = 3,
-  filename = d3_whims.png,
+  filename = "d3_whims.png",
 )
 
 ## custom theme
@@ -465,18 +465,18 @@ my_theme <- theme_bw() + theme(
 
 pepLDA(
   impute_na = TRUE,
-  col_color = Color,
-  col_shape = Shape,
+  col_color = "Color",
+  col_shape = "Shape",
   show_ids = FALSE,
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   theme = my_theme, 
-  filename = my_theme.png,
+  filename = "my_theme.png",
 )
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnLDA(filename = foo.png)
+res <- prnLDA(filename = "foo.png")
 
 # names(res)
 
@@ -503,8 +503,8 @@ ggsave(file.path(dat_dir, "Protein/LDA/my_ggplot2_fil.png"))
 
 \dontrun{
 pepLDA(
-  col_group = sample_ids_other_than_groups,
-  col_select = Select, 
+  col_group = "sample_ids_other_than_groups",
+  col_select = "Select", 
   filter_peps_by = exprs(pep_n_psm >= 3),
   show_ids = FALSE, 
   filename = "peps_rowfil.png",
@@ -512,7 +512,7 @@ pepLDA(
   
 # by features not available
 prnLDA(
-  type = feats,
+  type = "feats",
   scale_log2r = TRUE,
   filename = "by_feats.png",
 )

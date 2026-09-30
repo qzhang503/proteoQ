@@ -4,7 +4,12 @@
 \alias{update_subell_by_contr}
 \title{Update subcellular protein or peptide tables by contrast.}
 \usage{
-update_subell_by_contr(contr_elements = NULL, contr_nm = NULL, df = NULL)
+update_subell_by_contr(
+  contr_elements = NULL,
+  contr_nm = NULL,
+  df = NULL,
+  FUN = all
+)
 }
 \arguments{
 \item{contr_elements}{Contrast elements.}
@@ -12,6 +17,8 @@ update_subell_by_contr(contr_elements = NULL, contr_nm = NULL, df = NULL)
 \item{contr_nm}{Contrast names.}
 
 \item{df}{A data frame.}
+
+\item{FUN}{A logical function of \code{all} or \code{any}.}
 }
 \description{
 A contrast can be nested.

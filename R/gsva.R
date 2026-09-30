@@ -117,21 +117,23 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   err_msg1 <- 
     "Argument `expr`, `gset.idx.list` and `annotation` determined automatically.\n"
   
-  if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
-    stop(err_msg1, call. = FALSE)
-  
+  if (any(names(rlang::enexprs(...)) %in% 
+          c("expr", "gset.idx.list", "annotation"))) {
+    stop(err_msg1)
+  }
+
   dat_dir <- get_gl_dat_dir()
   
   dir.create(file.path(dat_dir, "Protein/GSVA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
+    match_call_arg("normPSM", group_pep_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -144,17 +146,11 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  lm_method <- rlang::as_string(rlang::enexpr(lm_method))
-  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
-  
   dots <- rlang::enexprs(...)
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots[!names(dots) %in% names(fmls)]
   
-  if (rlang::is_empty(fmls)) {
+  if (!length(fmls)) {
     fml_file <-  file.path(dat_dir, "Calls/prnSig_formulas.rda")
     
     if (file.exists(fml_file)) {
@@ -175,11 +171,11 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   # Sample selection criteria:
   #   !is_reference under "Reference"
   #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            id = id, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
@@ -212,28 +208,28 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   dat_dir <- get_gl_dat_dir()
   
   if (!requireNamespace("GSVA", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"GSVA\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"GSVA\")", 
-         "\n====================================================================",
-         call. = FALSE)
+         "\n=================================================================",)
   }
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, 
                    logical(1L)))
   
-  if (!nrow(label_scheme_sub))
-    stop("Empty metadata not allowed.")
+  if (!nrow(label_scheme_sub)) {
+    stop("Empty metadata.")
+  }
 
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   gsets <- load_dbs(gset_nms = gset_nms, species = species, id = id)
   
-  if (!length(gsets))
+  if (!length(gsets)) {
     stop("Empty gene sets not allowed.")
+  }
 
-  id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
   fmls <- dots %>% .[grepl("^\\s*~", .)]
@@ -254,8 +250,9 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   dots <- dots %>% 
     .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  if (!length(fmls))
-    stop("Formula(s) of contrasts not available.", call. = FALSE)
+  if (!length(fmls)) {
+    stop("Formula(s) of contrasts not available.")
+  }
 
   # `complete_cases` depends on lm contrasts
   df <- df %>% 
@@ -327,10 +324,10 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     dplyr::select(-which(names(.) %in% names(qvals))) %>%
     tibble::rownames_to_column("term") %>%
     dplyr::right_join(qvals, by = "term") %T>% 
-    write.table(file.path(filepath, 
-                          paste0(gsub("\\..*$", "", 
-                                      gsub("\\..*$", "", filename)), "_pVals.txt")), 
-                sep = "\t", col.names = TRUE, row.names = FALSE)
+    write.table(file.path(
+      filepath, 
+      paste0(gsub("\\..*$", "", gsub("\\..*$", "", filename)), "_pVals.txt")), 
+      sep = "\t", col.names = TRUE, row.names = FALSE)
 }
 
 

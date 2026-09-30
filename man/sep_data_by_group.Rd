@@ -10,7 +10,8 @@ sep_data_by_group(
   dfI = NULL,
   sids,
   key_col,
-  label_scheme
+  label_scheme,
+  sid_col = "Sample_ID"
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ sep_data_by_group(
 \item{key_col}{The name of a key column.}
 
 \item{label_scheme}{Metadata.}
+
+\item{sid_col}{Sample ID column.}
 }
 \description{
 Helper: separate data by contrast groups.

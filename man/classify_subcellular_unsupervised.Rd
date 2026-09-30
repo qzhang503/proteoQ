@@ -7,16 +7,17 @@
 classify_subcellular_unsupervised(
   dat_dir = NULL,
   filepath = NULL,
-  col_select = NULL,
+  label_scheme = NULL,
   id = "gene",
   species = "human",
   n_clust = 16:36,
+  col_group = NULL,
   levels_group = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
-  col_group = NULL,
+  col_select = NULL,
   col_order = NULL,
   min_prot_n_peps = 2L,
   make_plot = TRUE,
@@ -28,6 +29,8 @@ classify_subcellular_unsupervised(
 \item{dat_dir}{The working directory.}
 
 \item{filepath}{A filepath for inputs and outputs.}
+
+\item{label_scheme}{The metadata generated from \link{load_expts}.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}

@@ -132,42 +132,21 @@ standPrn <- function (dat_dir = NULL, method_align = c("MC", "MGKernel"),
   
   reload_expts()
   
-  method_align <- rlang::enexpr(method_align)
-  method_align <- rlang::enexpr(method_align)
-  method_align <- if (length(method_align) > 1L) "MC" else as.character(method_align)
-  
-  if (FALSE) {
-    if (method_align == rlang::expr(c("MC", "MGKernel"))) {
-      method_align <- "MC"
-    } 
-    else {
-      method_align <- rlang::as_string(method_align)
-      stopifnot(method_align %in% c("MC", "MGKernel"), 
-                length(method_align) == 1)
-    }
-  }
-
-  range_log2r <- prep_range(range_log2r)
-  range_int <- prep_range(range_int)
+  method_align <- match.arg(method_align)
+  range_log2r  <- prep_range(range_log2r)
+  range_int    <- prep_range(range_int)
 
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   pep_id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
 
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))
 
-  col_select <- rlang::enexpr(col_select)
-  col_select <- if (is.null(col_select)) 
-    rlang::expr(Sample_ID) 
-  else 
-    rlang::sym(col_select)
-  col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
-
-  col_group <- rlang::enexpr(col_group)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
   if (!length(col_select)) col_select <- "Sample_ID"
+  if (!length(col_group)) col_group <- "Group"
+  col_select <- parse_col_select(col_select, label_scheme)
 
   dots <- rlang::enexprs(...)
 

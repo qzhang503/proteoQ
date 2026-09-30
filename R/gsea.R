@@ -185,8 +185,8 @@ prnGSEA <- function (gset_nms = "go_sets",
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSEA/log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  id <- match_call_arg("normPSM", group_pep_by)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -195,10 +195,6 @@ prnGSEA <- function (gset_nms = "go_sets",
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, 
                    logical(1L)))
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
   
   dots <- rlang::enexprs(...)
   
@@ -218,14 +214,14 @@ prnGSEA <- function (gset_nms = "go_sets",
   message("`prnGSEA` compiles data for online GSEA; ", 
           "parameter \"gset_nms\" not currently used.")
   
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
+            id = id, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             anal_type = "GSEA")(gset_nms = "go_sets", 
                                 var_cutoff = var_cutoff, 
                                 pval_cutoff = pval_cutoff, 
@@ -248,26 +244,26 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
                       filepath, filename, ...) 
 {
   dots <- rlang::enexprs(...)
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   NorZ_ratios <- find_NorZ(scale_log2r)
   
   df <- local({
     ids <- df %>% 
-      prep_gspa(id = !!id, 
+      prep_gspa(id = id, 
                 fml_nm = fml_nm, 
                 col_ind = col_ind, 
                 pval_cutoff = pval_cutoff, 
                 logFC_cutoff = logFC_cutoff, 
-                use_adjP = FALSE) %>% 
-      dplyr::select(id) %>% 
-      unlist() %>% 
+                use_adjP = FALSE) |>
+      dplyr::select(id) |>
+      unlist() |>
       unique()
     
-    df <- df %>% dplyr::filter(!!sym(id) %in% ids)
+    df <- df |> dplyr::filter(.data[[id]] %in% ids)
     
-    if (!nrow(df))
+    if (!nrow(df)) {
       stop("Empty data not allowed.")
+    }
 
     ids <- df %>% 
       `rownames<-`(.[[id]]) %>% 
@@ -277,11 +273,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
       unlist() %>% 
       unique()
     
-    df <- df %>% dplyr::filter(!!sym(id) %in% ids)
+    df <- df %>% dplyr::filter(.data[[id]] %in% ids)
     
     # No `lm` so `complete_cases` applied to all samples in label_scheme_sub
-    if (complete_cases)
+    if (complete_cases) {
       df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+    }
 
     df
   })
@@ -292,7 +289,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   }
   
   df_log2r <- df %>% 
-    prepDM(id = !!id, 
+    prepDM(id = id, 
            scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, 
            anal_type = "GSEA", 

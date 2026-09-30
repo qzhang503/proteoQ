@@ -327,8 +327,8 @@ Other (Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
 ## additional examples
 # Mascot
 normPSM(
-  group_psm_by = pep_seq_mod,
-  group_pep_by = prot_acc,
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "prot_acc",
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
@@ -339,8 +339,8 @@ normPSM(
 
 # MaxQuant
 normPSM(
-  group_psm_by = pep_seq_mod,
-  group_pep_by = prot_acc,
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "prot_acc",
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   corrected_int = TRUE,
@@ -352,8 +352,8 @@ normPSM(
 
 # MSFragger
 normPSM(
-  group_psm_by = pep_seq_mod,
-  group_pep_by = prot_acc,
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "prot_acc",
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
 
@@ -363,8 +363,8 @@ normPSM(
 
 # Spectrum Mill
 normPSM(
-  group_psm_by = pep_seq_mod,
-  group_pep_by = prot_acc,
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "prot_acc",
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
@@ -389,14 +389,14 @@ library(org.Hs.eg.db)
 library(org.Mm.eg.db)
 
 library(proteoQ)
-Ref2Entrez(species = human)
-Ref2Entrez(species = mouse)
+Ref2Entrez(species = "human")
+Ref2Entrez(species = "mouse")
 
 # see also Uni2Entrez(...) for Uniprot to Entrez lookups
 
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   entrez = c("~/proteoQ/dbs/entrez/refseq_entrez_hs.rds", 

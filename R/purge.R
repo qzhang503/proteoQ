@@ -438,8 +438,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   
   stopifnot(
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
@@ -647,8 +647,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   
   stopifnot(
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 

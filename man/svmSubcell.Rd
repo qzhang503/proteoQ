@@ -10,10 +10,11 @@ svmSubcell(
   dat_dir = NULL,
   filepath = NULL,
   label_scheme_sub = NULL,
+  df_ref = NULL,
   n_clust = NULL,
-  col_compartment = "compartment",
   col_y = "location",
   col_group = NULL,
+  levels_group = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   u_subtypes = NULL,
@@ -32,9 +33,9 @@ svmSubcell(
 
 \item{filepath}{The filepath of inputs and outputs.}
 
-\item{n_clust}{The number of clusters.}
+\item{df_ref}{A data frame of reference markers.}
 
-\item{col_compartment}{The identifier of subcellular compartment.}
+\item{n_clust}{The number of clusters.}
 
 \item{col_y}{The column key in \code{df_ref} for training labels.}
 

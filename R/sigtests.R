@@ -913,15 +913,17 @@ base_sigtest_y <- function(dfR, dfI, elements = NULL, key_col = NULL,
 #' @param dfR Data frame of log2Ratios.
 #' @param dfI Data frame of intensities.
 #' @param sids Sample IDs.
+#' @param sid_col Sample ID column.
 #' @param key_col The name of a key column.
 #' @param label_scheme Metadata.
 sep_data_by_group <- function (
-    elements, dfR = NULL, dfI = NULL, sids, key_col, label_scheme)
+    elements, dfR = NULL, dfI = NULL, sids, key_col, label_scheme, 
+    sid_col = "Sample_ID")
 {
   ans <- lapply(elements, function (x) {
     sids_sub <- label_scheme |>
       dplyr::filter(.data[[key_col]] %in% x) |>
-      dplyr::pull(Sample_ID)
+      dplyr::pull(sid_col)
     
     oks <- sids %in% sids_sub
     
@@ -1000,11 +1002,11 @@ make_dfn <- function (dat_dir = NULL, col_group = "Group", ...)
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -1135,8 +1137,9 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -1144,9 +1147,8 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   # force(df); force(filepath); force(filename); 
   
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "limma" else as.character(method)
-  
+  method <- match.arg(method)
+
   if (length(method) != 1L) {
     stop("The length of 'method' need to be one.")
   }
@@ -1157,20 +1159,11 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   
   # replace NA other than mice imputation
   # (only for sigTest)
-  method_replace_na <- rlang::enexpr(method_replace_na)
-  method_replace_na <- if (length(method_replace_na) > 1L) "none" else as.character(method_replace_na)
-  stopifnot(method_replace_na %in% c("none", "min"), length(method_replace_na) == 1L)
+  method_replace_na <- match.arg(method_replace_na)
+  stopifnot(method_replace_na %in% c("none", "min"), 
+            length(method_replace_na) == 1L)
 
   ## Argument with single, non-NULL option (with or without quotation mark)
-  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()
@@ -1365,7 +1358,8 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -1374,9 +1368,8 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   # force(df); force(filepath); force(filename); force(padj_method); 
   
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "limma" else as.character(method)
-  
+  method <- match.arg(method)
+
   if (length(method) != 1L) {
     stop("The length of 'method' need to be one.")
   }
@@ -1387,20 +1380,10 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
 
   # replace NA other than mice imputation
   # (only for sigTest)
-  method_replace_na <- rlang::enexpr(method_replace_na)
-  method_replace_na <- if (length(method_replace_na) > 1L) "none" else as.character(method_replace_na)
-  stopifnot(method_replace_na %in% c("none", "min"), length(method_replace_na) == 1L)
+  method_replace_na <- match.arg(method_replace_na)
+  stopifnot(method_replace_na %in% c("none", "min"), 
+            length(method_replace_na) == 1L)
   
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
-
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()

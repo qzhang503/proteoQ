@@ -224,7 +224,7 @@ threshold_subcell_by_int <- function (df, id = "gene", col_fraction = NULL,
 #' @inheritParams plot_prnSubcellular
 plot_prnSubcellular_UMAP <- function (
     df2 = NULL, id = "gene", levels_fraction = NULL, levels_subtype = NULL, 
-    dat_dir = NULL, filepath = NULL, 
+    dat_dir = NULL, filepath = NULL, col_group = "Group", 
     key_subcellular = "location_slim3", key_col = "loc_score", 
     levels_ref_compartments = c("CP", "NP", "ChA"), 
     scale_log2r = TRUE, impute_na = FALSE, 
@@ -240,12 +240,6 @@ plot_prnSubcellular_UMAP <- function (
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   label_scheme_sub <- load_ls_group(dat_dir = dat_dir)
   
-  ## Special handling of character vectors
-  if (FALSE) {
-    levels_fraction <- eval(rlang::enexpr(levels_fraction))
-    levels_subtype <- eval(rlang::enexpr(levels_subtype))
-  }
-
   ## Find input `df2`
   df2 <- find_trend_df2(
     df2 = df2, n_clust = NULL, scale_log2r = scale_log2r, 
@@ -291,7 +285,8 @@ plot_prnSubcellular_UMAP <- function (
   # ALG9     0.2     0      0     0  0.209       0
   if (key_col == "log10Int") {
     df_expr <- hmake_subcell_expr(
-      df = df, label_scheme_sub = label_scheme_sub, id = id, key_col = key_col, 
+      df = df, label_scheme_sub = label_scheme_sub, id = id, 
+      key_col = key_col, key_group = col_group, 
       col_subtype = col_subtype, levels_subtype = levels_subtype, 
       col_fraction = col_fraction, levels_fraction = levels_fraction)
     
@@ -304,13 +299,13 @@ plot_prnSubcellular_UMAP <- function (
     readr::write_tsv(df_expr, file.path(filepath, "df_expr_int.tsv"))
     saveRDS(df_expr, file.path(filepath, "df_expr_int.rds"))
   } else {
-    df_expr <- df[, c(id, key_col, "sub_location", "group")] |>
+    df_expr <- df[, c(id, key_col, "sub_location", col_group)] |>
       dplyr::filter(!is.na(sub_location)) |>
       dplyr::arrange_at(id) |>
       unique() |>
       tidyr::pivot_wider(
         id_cols = id, 
-        names_from = c("group"), 
+        names_from = col_group, 
         values_from = key_col,
         values_fill = 0, )
     
@@ -323,16 +318,18 @@ plot_prnSubcellular_UMAP <- function (
   if (file.exists(file_umap)) {
     umap_df <- readr::read_tsv(file_umap)
   } else {
-    set.seed(seed)
-    res_umap <- umap::umap(df_expr[, !colnames(df_expr) == "gene", drop = FALSE])
-    umap_df <- res_umap$layout[, 1:2]
-    colnames(umap_df) <- paste0("UMAP", 1:2)
-    rownames(umap_df) <- df_expr$gene
-    umap_df <- tibble::rownames_to_column(data.frame(umap_df), "gene")
-    
-    readr::write_tsv(umap_df, file_umap)
-    
-    umap_df
+    umap_df <- local({
+      set.seed(seed)
+      res_umap <- umap::umap(df_expr[, !colnames(df_expr) == id, drop = FALSE])
+      umap_df <- res_umap$layout[, 1:2]
+      colnames(umap_df) <- paste0("UMAP", 1:2)
+      rownames(umap_df) <- df_expr$gene
+      umap_df <- tibble::rownames_to_column(data.frame(umap_df), id)
+      
+      # readr::write_tsv(umap_df, file_umap)
+      
+      umap_df
+    })
   }
   
   ## Plot of predicted subcellular results
@@ -643,7 +640,7 @@ plotSubcellular_sub <- function (
     dots = NULL)
 {
   ## (1) Load input data
-  col_x <- "group"
+  col_x <- col_group
   col_y <- "loc_score"
   cl_id <- as.integer(sub(paste0(".*_nclust(\\d+)[^\\d]*\\.", ext), "\\1", df2))
 
@@ -814,8 +811,11 @@ plotSubcellular_sub <- function (
   if (make_plot) {
     try(
       make_subcell_plot(
-        df_med = df_med, col_cluster = col_cluster, 
-        col_x = col_x, col_y = col_y, col_fraction = col_fraction, 
+        df_med = df_med, n_clust = n_clust, col_cluster = col_cluster, 
+        levels_group = levels_group, 
+        col_x = col_x, col_y = col_y, 
+        col_fraction = col_fraction, levels_fraction = levels_fraction, 
+        color_fractions = NULL, theme = NULL, 
         panel_ids = panel_ids, cl_id = cl_id, 
         filepath = filepath, out_nm = out_nm, !!!dots)
     )
@@ -841,6 +841,7 @@ plotSubcellular_sub <- function (
 #' @param levels_group The levels of groups.
 #' @param col_fraction The column key of subcellular fractions.
 #' @param levels_fraction The levels of fractions.
+#' @param color_fractions The color scheme of fractions.
 #' @param panel_ids The subset of panel_ids for visualization.
 #' @param cl_id A cluster ID.
 #' @param filepath An output filepath.
@@ -849,8 +850,9 @@ plotSubcellular_sub <- function (
 #' @param ... Additional parameters for aesthetics.
 make_subcell_plot <- function (
     df_med, n_clust, col_cluster = "cluster", 
-    col_x = "group", col_y = "loc_score", 
+    col_x = "Group", col_y = "loc_score", 
     levels_group = NULL, col_fraction = "Fraction", levels_fraction = NULL, 
+    color_fractions = NULL, 
     panel_ids = NULL, cl_id = NULL, filepath = NULL, out_nm = NULL, 
     theme = NULL, ...)
 {
@@ -875,6 +877,14 @@ make_subcell_plot <- function (
       dplyr::filter(.data[[col_x]] %in% levels_group) |>
       dplyr::mutate(
         !!col_x := factor(!!rlang::sym(col_x), levels = levels_group)
+      )
+  }
+  
+  if (length(levels_fraction)) {
+    df_med <- df_med |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction)
       )
   }
  
@@ -970,7 +980,7 @@ make_subcell_plot <- function (
     facet_wrap(vars(!!rlang::sym(col_cluster)), ncol = ncol, 
                scales = "free_y") +
     geom_hline(yintercept = 0, color = "grey50", linewidth = 0.4) +
-    scale_fill_viridis_d(option = "plasma", end = 0.85) + 
+    # scale_fill_viridis_d(option = "plasma", end = 0.85) + 
     scale_y_continuous(
       labels = scales::label_number(accuracy = .1),
       breaks = scales::breaks_width(.2)
@@ -983,6 +993,18 @@ make_subcell_plot <- function (
     # theme_classic(base_size = 11) +
     theme
   
+  if (length(color_fractions)) {
+    p <- p + 
+      scale_fill_manual(
+        values = color_fractions,
+        breaks = c("CP", "NP", "ChA"), 
+        drop = FALSE
+      )
+  } else {
+    p <- p +
+      scale_fill_viridis_d(option = "plasma", end = 0.85)
+  }
+
   ggsave_dots <- 
     set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
   
@@ -1221,7 +1243,7 @@ classify_trends <- function (df_med = NULL, tie_method = "none",
 #' }
 #' @export
 plot_prnSubcellular <- function (
-    dat_dir = NULL, levels_group = NULL, 
+    dat_dir = NULL, col_group = NULL, levels_group = NULL, 
     col_select = NULL, col_order = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     col_subtype = NULL, levels_subtype = NULL, tie_method = "none", qt = .5, 
@@ -1237,11 +1259,12 @@ plot_prnSubcellular <- function (
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -1253,24 +1276,6 @@ plot_prnSubcellular <- function (
     stop("Value of 'id' need to be one of 'prot_acc', 'gene'.")
   }
   
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select  <- rlang::enexpr(col_select)
-  col_order   <- rlang::enexpr(col_order)
-  col_fraction <- rlang::enexpr(col_fraction)
-  col_subtype <- rlang::enexpr(col_subtype)
-  filepath   <- rlang::enexpr(filepath)
-  filename   <- rlang::enexpr(filename)
-  df2 <- rlang::enexpr(df2)
-  
-  # NULL or symbol -> length 0 or 1
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-  if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  if (!is.character(df2)) df2 <- as.character(df2)
-
   tie_method <- if (n_subcell_levs <- length(levels_fraction)) {
     if (n_subcell_levs <= 3) {
       "none"
@@ -1295,7 +1300,6 @@ plot_prnSubcellular <- function (
             df2 = df2, 
             filepath = filepath, 
             filename = filename,
-            
             dat_dir = dat_dir, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
@@ -1321,10 +1325,10 @@ plot_prnSubcellular <- function (
 #' @param species Species in one of human, mouse and rat.
 #' @param id Identifier.
 #' @param col_y The column key in \code{df_ref} for training labels.
-#' @param col_compartment The identifier of subcellular compartment.
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath of inputs and outputs.
 #' @param n_clust The number of clusters.
+#' @param df_ref A data frame of reference markers.
 #' @param u_subtypes The unique levels of sample types. A NULL value indicates
 #'   only one subtype.
 #' @param levels_fraction The levels of subcellular fractions.
@@ -1332,9 +1336,10 @@ plot_prnSubcellular <- function (
 #' @inheritParams anal_prnTrend col_subtype
 svmSubcell <- function (
     species = "human", id = "gene", dat_dir = NULL, filepath = NULL, 
-    label_scheme_sub = NULL, 
-    n_clust = NULL, col_compartment = "compartment", col_y = "location", 
-    col_group = NULL, 
+    label_scheme_sub = NULL, df_ref = NULL, 
+    n_clust = NULL, col_y = "location", 
+    # col_compartment = "compartment", 
+    col_group = NULL, levels_group = NULL, 
     col_subtype = NULL, levels_subtype = NULL, u_subtypes = NULL, 
     col_fraction = NULL, 
     levels_fraction = 
@@ -1344,19 +1349,19 @@ svmSubcell <- function (
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   if (is.null(label_scheme_sub)) label_scheme_sub <- load_ls_group(dat_dir)
-  if (is.null(n_clust)) stop("'n_clust' cannot be NULL.")
+  if (is.null(n_clust)) stop("Proive a range for 'n_clust'.")
   
   ## (1) Obtain expression data and reference data
   tempdata <- prepSubcell(
     species = species, id = id, dat_dir = dat_dir, filepath = filepath, 
-    label_scheme_sub = label_scheme_sub, 
+    label_scheme_sub = label_scheme_sub, df_ref = df_ref, 
     n_clust = n_clust, col_group = col_group, 
     col_subtype = col_subtype, levels_subtype = levels_subtype, 
     u_subtypes = u_subtypes, 
     col_fraction = col_fraction, levels_fraction = levels_fraction)
-  
   df_exprs <- tempdata[["df_exprs"]]
   df_ref   <- tempdata[["df_ref"]]
+  sc_lookup <- tempdata[["sc_lookup"]]
 
   saveRDS(df_exprs, file.path(filepath, "df_exprs.rds"))
   saveRDS(df_ref, file.path(filepath, "df_ref.rds"))
@@ -1368,17 +1373,17 @@ svmSubcell <- function (
     }
   }
 
-  ## (2) Results by sub_types
+  ## (2) Results by sub types
   res <- vector("list", length(df_exprs))
+  names(res) <- names(df_exprs)
+  
   for (i in seq_along(res)) {
     res[[i]] <- train_loc_svm(
       df_expr = df_exprs[[i]], sub_type = u_subtypes[[i]], 
       df_ref = df_ref, id = id, col_y = col_y, col_subtype = col_subtype, 
-      col_compartment = col_compartment, filepath = filepath, seed = seed)
+      col_fraction = col_fraction, filepath = filepath, seed = seed)
   }
-  
-  names(res) <- names(df_exprs)
-  
+
   list(prob = res, expr = df_exprs)
 }
 
@@ -1390,13 +1395,13 @@ svmSubcell <- function (
 #' @param df_ref A reference data frame.
 #' @param id An identifier.
 #' @param col_y The column key in \code{df_ref} for training labels.
-#' @param col_compartment The identifier of subcellular compartment.
+#' @param col_fraction The identifier of subcellular compartment.
 #' @param sub_type A label of data subtype, e.g., "Control".
 #' @param seed A seed for SVM.
-#' @return Two lists of (1) SVM probablity matrix and (2) expression data.
+#' @return Two lists of (1) SVM probability matrix and (2) expression data.
 train_loc_svm <- function (
     df_expr, sub_type = NULL, df_ref, id = "gene", col_y = "location", 
-    col_subtype = NULL, col_compartment = "compartment", filepath = NULL, 
+    col_subtype = NULL, col_fraction = NULL, filepath = NULL, 
     seed = 42L, ...)
 {
   Xmat <- df_expr[df_ref[[id]], ]
@@ -1416,40 +1421,61 @@ train_loc_svm <- function (
   class_names <- levels(y_factor)
   
   ## (2) Training
+  # Calculate class frequencies
+  class_counts <- table(df_train[[col_y]])
+  
+  # Compute inverse frequency weights
+  weights <- max(class_counts) / class_counts
+  
+  # Train SVM with class weights
   set.seed(seed)
-  svm_model <- e1071::svm(
-    formula = stats::reformulate(".", response = col_y),
-    data = df_train,
-    kernel = "radial", 
-    probability = TRUE, 
-    scale = TRUE
-  )
   
-  svm_preds <- predict(svm_model, df_expr, probability = TRUE)
-  prob_mat  <- attr(svm_preds, "probabilities")
-  prob_mat  <- prob_mat[, class_names]
-  
+  # Grid search for better hyperparameters
   if (FALSE) {
-    svm_preds_ <- predict(svm_model, df_train, probability = TRUE)
-    prob_mat_ <- attr(svm_preds_, "probabilities")
-    prob_mat_ <- prob_mat_[, class_names]
-    
-    data.frame(
-      True      = as.vector(table(y_factor)),
-      Predicted = as.vector(table(factor(svm_preds_, levels = class_names))),
-      row.names = class_names
+    tuned_svmp <- e1071::tune(
+      e1071::svm,
+      train.x = stats::reformulate(".", response = col_y),
+      data = df_train,
+      kernel = "radial",
+      class.weights = weights, 
+      ranges = list(
+        cost = c(1, 10, 50, 100),    # Higher cost penalizes boundary violations more
+        gamma = c(0.01, 0.1, 0.5, 1) # Controls the 'reach' of a single training point
+      ), 
+      probability = TRUE
     )
-    
-    # Overall training accuracy
-    acc <- mean(df_train$location == svm_preds_)
-    cat("Training Accuracy:", round(acc * 100, 2), "%\n")
-    
-    # Confusion matrix
-    table(True = df_train$location, Predicted = svm_preds_)
+    # assign("tuned_svmp", tuned_svm, envir = .GlobalEnv)
+    # saveRDS(tuned_svmp, "~/tuned_svmp.rds")
+  } else {
+    tuned_svmp <- readRDS("~/tuned_svmp.rds")
+    # assign("tuned_svmp", tuned_svmp, envir = .GlobalEnv)
   }
   
+  # Extract the best model
+  svm_model <- tuned_svmp$best.model
+  
+  # 1. Calculate training set priors (class proportions)
+  # CP ~ 0.693, NP ~ 0.284, ChA ~ 0.022
+  priors <- table(df_train[[col_y]]) / nrow(df_train)
+  
+  # 2. Get raw model probabilities for all classes
+  svm_preds <- predict(svm_model, newdata = df_expr, probability = TRUE)
+  raw_probs <- attr(svm_preds, "probabilities")
+  
+  # 3. Divide each column probability by its corresponding class prior
+  prob_mat <- sweep(raw_probs, MARGIN = 2, STATS = priors, FUN = "/")
+  
+  # 4. Predict the class with the maximum prior-adjusted probability (Argmax across all 3 classes)
+  prob_mat  <- prob_mat[, class_names]
+  svm_final <- colnames(prob_mat)[apply(prob_mat, 1, which.max)]
+  svm_final <- factor(svm_final, levels = class_names)
+  
+  # table(svm_final)
+  # CP   NP  ChA 
+  # 5963 1852  859
+
   ## Outputs
-  df_pred    <- tibble::tibble(!!id := names(svm_preds), svm = svm_preds)
+  df_pred    <- tibble::tibble(!!id := names(svm_preds), svm = svm_final)
   entropies  <- -rowSums(prob_mat * log10(prob_mat))
   scores_loc <- prob_mat * (1 - entropies)
   entropies  <- tibble::tibble(!!id := names(entropies), entropy = entropies)
@@ -1459,17 +1485,17 @@ train_loc_svm <- function (
     data.frame(check.names = FALSE) |>
     tibble::rownames_to_column(var = id) |> 
     tidyr::pivot_longer(
-      -c(!!rlang::sym(id)), names_to = col_compartment, values_to = "loc_score")
+      -c(!!rlang::sym(id)), names_to = col_fraction, values_to = "loc_score")
   
   prob_mat <- prob_mat |>
     data.frame(check.names = FALSE) |>
     tibble::rownames_to_column(var = id) |> 
     tidyr::pivot_longer(
-      -c(!!rlang::sym(id)), names_to = col_compartment, values_to = "purity")
+      -c(!!rlang::sym(id)), names_to = col_fraction, values_to = "purity")
   
   ans <- prob_mat |>
     dplyr::left_join(entropies, by = id) |>
-    dplyr::left_join(scores_loc, by = c(id, col_compartment))
+    dplyr::left_join(scores_loc, by = c(id, col_fraction))
 }
 
 
@@ -1479,6 +1505,7 @@ train_loc_svm <- function (
 #' @param id Identifier.
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath of inputs and outputs.
+#' @param df_ref A data frame of reference markers.
 #' @param key_col The column key where data to be used.
 #' @param levels_fraction The levels of subcellular fractions.
 #' @param u_subtypes The unique levels of sample types. A NULL value indicates
@@ -1486,7 +1513,7 @@ train_loc_svm <- function (
 #' @inheritParams anal_prnTrend col_subtype
 prepSubcell <- function (
     species = "human", id = "gene", dat_dir = NULL, filepath = NULL, 
-    label_scheme_sub = NULL, 
+    label_scheme_sub = NULL, df_ref = NULL, 
     n_clust = NULL, key_col = "log10Int", col_group = NULL, 
     col_subtype = NULL, levels_subtype = NULL, u_subtypes = NULL, 
     col_fraction = NULL, 
@@ -1496,7 +1523,7 @@ prepSubcell <- function (
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   if (is.null(label_scheme_sub)) label_scheme_sub <- load_ls_group(dat_dir)
-  if (is.null(n_clust)) stop("'n_clust' cannot be NULL.")
+  if (is.null(n_clust)) stop("Provide a range of 'n_clust'.")
   
   abbr_species <- switch(
     species, 
@@ -1506,16 +1533,18 @@ prepSubcell <- function (
     stop("species: ", species, " is not in one of `human`, `mouse` or `rat`.")
   )
 
-  df_ref <- local({
-    file_db <- paste0("subcell_", abbr_species)
-    data(package = "proteoQ", list = file_db, envir = environment())
-    df_ref <- get(file_db)
-    df_ref |> dplyr::mutate(location = sub("ERGIC", "ER", location))
-  })
+  if (is.null(df_ref)) {
+    df_ref <- local({
+      file_db <- paste0("subcell_", abbr_species)
+      data(package = "proteoQ", list = file_db, envir = environment())
+      df_ref <- get(file_db)
+      df_ref |> dplyr::mutate(location = sub("ERGIC", "ER", location))
+    })
+  }
 
   if (length(levels_fraction) && 
       all(levels_fraction %in% c("NP", "CP", "ChA"))) {
-    df_ref$location <- df_ref$location_slim3
+    df_ref[["location"]] <- df_ref[["location_slim3"]]
   }
   
   # Find the file names of secondary 'Trend' inputs
@@ -1539,7 +1568,7 @@ prepSubcell <- function (
     }
     
     df <- df |>
-      tidyr::pivot_longer(-!!id, names_to = "group", values_to = key_col) |>
+      tidyr::pivot_longer(-!!id, names_to = col_group, values_to = key_col) |>
       dplyr::mutate(!!key_col := log10(!!rlang::sym(key_col)))
   } else {
     df <- readr::read_tsv(file.path(filepath, filenames_df2[[1]]))
@@ -1551,10 +1580,9 @@ prepSubcell <- function (
   
   sc_lookup <- label_scheme_sub |>
     dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
-    unique() |> 
-    dplyr::rename(Sample_ID := col_group)
+    unique() # |> dplyr::rename(Sample_ID := col_group)
 
-  rows <- match(df[["group"]], sc_lookup[["Sample_ID"]])
+  rows <- match(df[[col_group]], sc_lookup[[col_group]])
   
   if (!col_subtype %in% names(df)) {
     df <- dplyr::bind_cols(df, sc_lookup[rows, col_subtype])
@@ -1583,13 +1611,13 @@ prepSubcell <- function (
   
   for (i in seq_along(dfs)) {
     df_expr <- make_subcell_expr(
-      df = dfs[[i]], id = id, key_col = key_col, 
+      df = dfs[[i]], id = id, key_col = key_col, key_group = col_group, 
       col_fraction = col_fraction, levels_fraction = levels_fraction, 
       scale = TRUE)
     
     # Change from values under col_group to values under col_fraction
     colnames(df_expr) <- sc_lookup[[col_fraction]][
-      match(colnames(df_expr), sc_lookup[["Sample_ID"]])
+      match(colnames(df_expr), sc_lookup[[col_group]])
     ]
     
     df_expr <- df_expr[, levels_fraction]
@@ -1619,6 +1647,7 @@ prepSubcell <- function (
   list(
     df_exprs = df_exprs, 
     df_ref = df_ref, 
+    sc_lookup = sc_lookup, 
     abbr_species = abbr_species, 
     filenames_df2 = filenames_df2
   )
@@ -1630,6 +1659,7 @@ prepSubcell <- function (
 #' @inheritParams make_subcell_expr
 hmake_subcell_expr <- function (
     df = NULL, label_scheme_sub = NULL, id = "gene", key_col = "log10Int", 
+    scale = TRUE, key_group = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
     col_fraction = NULL, levels_fraction = NULL)
 {
@@ -1644,12 +1674,15 @@ hmake_subcell_expr <- function (
   
   # Normalized intensity (percentages)
   df_exprs <- vector("list", length(dfs))
+  names(df_exprs) <- names(dfs)
+  
   for (i in seq_along(dfs)) {
     df_exprs[[i]] <- make_subcell_expr(
       df = dfs[[i]], 
       id = id, key_col = key_col, 
+      key_group = key_group, 
       col_fraction = col_fraction, levels_fraction = levels_fraction, 
-      scale = TRUE)
+      scale = scale)
   }
   
   local({
@@ -1682,7 +1715,7 @@ hmake_subcell_expr <- function (
 #' @param scale Logical; to scale values by rowSums or not.
 make_subcell_expr <- function (
     df = NULL, id = "gene", key_col = "log10Int", # label_scheme_sub = NULL, 
-    key_group = "group", col_fraction = NULL, 
+    key_group = "Group", col_fraction = NULL, 
     levels_fraction = 
       c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
     scale = TRUE)
@@ -1725,7 +1758,7 @@ make_subcell_expr <- function (
   df_expr <- as.matrix(df_expr[, -which(names(df_expr) %in% id)])
   rownames(df_expr) <- rns
   
-  # Normalized intensity
+  # Normalized intensity; do not scale if log2Ratios
   if (scale) {
     df_expr <- df_expr / rowSums(df_expr)
   }
@@ -1745,8 +1778,8 @@ make_subcell_expr <- function (
 #' @param n_clust The number of clusters.
 #' @param choice A clustering method.
 cluster_svmprobs <- function (
-    df_prob = NULL, sub_type = NULL, dat_dir = NULL, filepath = NULL, 
-    id = "gene", n_clust = NULL, 
+    df_prob = NULL, sub_type = NULL, col_fraction = NULL, 
+    dat_dir = NULL, filepath = NULL, id = "gene", n_clust = NULL, 
     choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
     ...) 
 {
@@ -1759,10 +1792,10 @@ cluster_svmprobs <- function (
   
   # Compartment probabilities
   df_comp <- local({
-    df_comp <- df_prob[, c(id, "compartment", "loc_score")] |>
+    df_comp <- df_prob[, c(id, col_fraction, "loc_score")] |>
       tidyr::pivot_wider(
         id_cols = id, 
-        names_from = c("compartment"), 
+        names_from = col_fraction, 
         values_from = "loc_score",
         # values_fill = 0, 
       )
@@ -1809,6 +1842,7 @@ cluster_svmprobs <- function (
 #' @param species A species in one of \code{"human", "mouse", "rat"} for
 #'   identifying the database of reference markers.
 #' @param n_clust The number of clusters.
+#' @param df_ref A data frame of reference markers.
 #' @param choice A clustering method.
 #' @param min_prot_n_peps The minimum number of detected peptides under a
 #'   protein for consideration.
@@ -1816,16 +1850,18 @@ cluster_svmprobs <- function (
 #' @param levels_group The levels of data group for ordering on the X-axis in
 #'   visualization.
 #' @param levels_subtype The levels of sample subtypes, e.g., Control, Treated.
+#' @param reanalyze_trend Logical; Should be FALSE. if TRUE, redo trend
+#'   analysis.
 #' @param seed A random seed.
 #' @param ... Additional arguments.
 #' @import ggplot2 RColorBrewer
 #'
 #' @examples \donttest{
 #' dat_dir <- "my/working/directory"
-#' 
-#' # The names of organelle compartments can be either (1) coincide with or (2) 
+#'
+#' # The names of organelle compartments can be either (1) coincide with or (2)
 #' # different to sample fractions.
-#' 
+#'
 #' ## (1) Sample fractions coincide with organelle compartments
 #' levels_fraction <- c("CP", "NP", "ChA")
 #' levels_subtype <- c("Veh", "TG")
@@ -1837,7 +1873,7 @@ cluster_svmprobs <- function (
 #'   unique()
 #'
 #' # 'levels_group' can be either users' provided or deduced automatically.
-#' classify_subcellular(
+#' classify_subcellular_supervised(
 #'   dat_dir = dat_dir, id = "gene", species = "human", n_clust = 16:36,
 #'   col_group = "Group", levels_group = levels_group,
 #'   col_fraction = "Fraction", levels_fraction = levels_fraction,
@@ -1848,7 +1884,7 @@ cluster_svmprobs <- function (
 #' compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
 #' levels_group <- compartments # Assume one 'subtype'
 #'
-#' classify_subcellular(
+#' classify_subcellular_supervised(
 #'   dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36,
 #'   col_group = "Group", # for group summarization of raw expression data
 #'   levels_group = levels_group, # for the order on the X-axis in visualization
@@ -1857,73 +1893,62 @@ cluster_svmprobs <- function (
 #'     c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"))
 #' }
 #' @export
-classify_subcellular <- function (
-    dat_dir = NULL, filepath = NULL, id = "gene", species = "human", 
-    n_clust = 16:36, levels_group = NULL, 
+classify_subcellular_supervised <- function (
+    dat_dir = NULL, filepath = NULL, label_scheme = NULL, 
+    id = "gene", species = "human", n_clust = 16:36, df_ref = NULL, 
+    col_group = NULL, levels_group = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
-    col_group = NULL, col_order = NULL, 
-    min_prot_n_peps = 2L, make_plot = TRUE, seed = 42L, ...) 
+    col_select = NULL, col_order = NULL, 
+    min_prot_n_peps = 2L, reanalyze_trend = TRUE, make_plot = FALSE, seed = 42L, 
+    ...) 
 {
   dots <- rlang::enexprs(...)
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
-  if (is.null(n_clust)) stop("'n_clust' cannot be NULL.")
-  
-  label_scheme <- load_ls_group(dat_dir)
+  if (is.null(n_clust)) stop("Specifify a range of 'n_clust'.")
+  if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir)
 
-  if (TRUE) {
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_group    <- rlang::enexpr(col_group)
-    col_order    <- rlang::enexpr(col_order)
-    col_fraction <- rlang::enexpr(col_fraction)
-    col_subtype  <- rlang::enexpr(col_subtype)
-    
-    # At NULL default: length(0); at symbol -> length(1)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-    
-    ## Argument with single, non-NULL option (with or without quotation mark)
-    #  (Never NULL since the default is not NULL)
-    id <- rlang::as_string(rlang::enexpr(id))
-    species <- rlang::as_string(rlang::enexpr(species))
-  }
-
-  if (FALSE) {
-    ## Special handling of character vectors
-    levels_fraction <- eval(rlang::enexpr(levels_fraction))
-    levels_subtype <- eval(rlang::enexpr(levels_subtype))
-  }
-  
   check_subcell(
     levels_fraction = levels_fraction, levels_subtype = levels_subtype, 
     col_subtype = col_subtype)
+  
+  label_scheme_sub <- if (length(col_select)) {
+    label_scheme |> dplyr::filter(!is.na(.data[[col_select]]))
+  } else {
+    label_scheme
+  }
 
-  ### (1) Obtain aggregated expression data  
-  # Need `!!` since `anal_prnTrend` is a UI function
-  ans_trend <- anal_prnTrend(
-    col_group = !!col_group, 
-    col_order = !!col_order,
-    col_fraction = !!col_fraction, 
-    col_subtype = !!col_subtype, 
-    cluster_data = FALSE, # to skip clustering steps
-    n_clust = n_clust, 
-    filter_by_npep = exprs(prot_n_pep >= !!min_prot_n_peps), )
-  # df_mean_log2r <- ans_trend[["log2R"]]
-  # df_mean_int   <- ans_trend[["Intensity"]]
-
+  ### (1) Obtain aggregated expression data when no 
+  # prior 'anal_prnTrend' execution
+  
+  # min_prot_n_peps <- eval(min_prot_n_peps)
+  if (reanalyze_trend) {
+    ans_trend <- anal_prnTrend(
+      col_group = col_group, 
+      col_order = col_order,
+      col_fraction = col_fraction, 
+      col_subtype  = col_subtype, 
+      cluster_data = FALSE, # to skip clustering steps
+      n_clust = n_clust, 
+      filter_by_npep = exprs(prot_n_pep >= !!min_prot_n_peps), )
+    # df_mean_log2r <- ans_trend[["log2R"]]
+    # df_mean_int   <- ans_trend[["Intensity"]]
+  }
+  
   ### (2) Generate an SVM probability matrix
-  no_subtype <- !length(col_subtype)
-  u_subtypes <- if (no_subtype) NULL else unique(label_scheme[[col_subtype]])
+  n_subtype  <- length(col_subtype)
+  no_subtype <- !n_subtype
+  u_subtypes <- if (no_subtype) NULL else unique(label_scheme_sub[[col_subtype]])
   
   ans_svm <- svmSubcell(
     species = species, id = id, dat_dir = dat_dir, filepath = filepath, 
-    col_group = col_group, 
+    df_ref = df_ref, 
+    label_scheme_sub = label_scheme_sub, 
+    col_group = col_group, levels_group = levels_group, 
     col_subtype = col_subtype, levels_subtype = levels_subtype, 
-    col_compartment = "compartment", 
+    # col_compartment = "compartment", 
     col_fraction = col_fraction, levels_fraction = levels_fraction, 
     u_subtypes = u_subtypes, n_clust = n_clust, seed = seed)
   svm_probs <- ans_svm[["prob"]]
@@ -1938,11 +1963,16 @@ classify_subcellular <- function (
   
   for (i in seq_along(svm_probs)) {
     ans_cl[[i]] <- cluster_svmprobs(
-      df_prob = svm_probs[[i]], sub_type = u_subtypes[[i]], dat_dir = dat_dir, 
+      df_prob = svm_probs[[i]], sub_type = u_subtypes[[i]], 
+      col_fraction = col_fraction, dat_dir = dat_dir, 
       filepath = filepath, id = id, n_clust = n_clust, iter.max = 250)
   }
   
   ## (4) Combine data under the same n_clust across all sub_types
+  sc_lookup <- label_scheme_sub |>
+    dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
+    unique()
+
   ans_cl <- local({
     out_nms <- paste0("Protein_svmProb_Z_nclust", n_clust, ".tsv")
     
@@ -1950,8 +1980,11 @@ classify_subcellular <- function (
     
     for (i in seq_along(n_clust)) {
       ans[[i]] <- lapply(ans_cl, `[[`, i) |>
-        dplyr::bind_rows(.id = if (no_subtype) NULL else col_subtype)
-      
+        dplyr::bind_rows(.id = if (no_subtype) NULL else col_subtype) |>
+        dplyr::left_join(sc_lookup, by = c(col_fraction, col_subtype)) |>
+        reloc_col_before_first(col_group) |>
+        reloc_col_after(col_fraction, col_subtype)
+
       readr::write_tsv(ans[[i]], file.path(filepath, out_nms[[i]]))
     }
     
@@ -1966,9 +1999,9 @@ classify_subcellular <- function (
   plot_prnSubcellular(
     col_order = "colnames", # X-axix ordered by compartment
     levels_group = levels_group, 
-    col_subtype = !!col_subtype, 
+    col_subtype = col_subtype, 
     levels_subtype = levels_subtype,
-    col_fraction = !!col_fraction,
+    col_fraction = col_fraction,
     levels_fraction = levels_fraction,
     q = .5, 
     ncol = 6,
@@ -2003,6 +2036,7 @@ classify_subcellular <- function (
 #' 
 #' @param dat_dir The working directory.
 #' @param filepath A filepath for inputs and outputs.
+#' @param label_scheme The metadata generated from \link{load_expts}.
 #' @param id Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 #'   \code{prot_acc} and \code{gene}.
 #' @param species A species in one of \code{"human", "mouse", "rat"} for
@@ -2031,74 +2065,53 @@ classify_subcellular <- function (
 #' }
 #' @export
 classify_subcellular_unsupervised <- function (
-    dat_dir = NULL, filepath = NULL, col_select = NULL, 
-    id = "gene", species = "human", 
-    n_clust = 16:36, levels_group = NULL, 
+    dat_dir = NULL, filepath = NULL, label_scheme = NULL, 
+    id = "gene", species = "human", n_clust = 16:36, 
+    col_group = NULL, levels_group = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
-    col_group = NULL, col_order = NULL, 
+    col_select = NULL, col_order = NULL, 
     min_prot_n_peps = 2L, make_plot = TRUE, seed = 42L, ...) 
 {
+  options(warn = 1L)
+  
   dots <- rlang::enexprs(...)
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
-  if (is.null(n_clust)) stop("'n_clust' cannot be NULL.")
-  
-  label_scheme <- load_ls_group(dat_dir)
-  
-  if (TRUE) {
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select   <- rlang::enexpr(col_select)
-    col_order    <- rlang::enexpr(col_order)
-    col_group    <- rlang::enexpr(col_group)
-    col_fraction <- rlang::enexpr(col_fraction)
-    col_subtype  <- rlang::enexpr(col_subtype)
+  if (is.null(n_clust)) stop("Specify a range of 'n_clust'.")
+  if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir)
 
-    # At NULL default: length(0); at symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-    
-    ## Argument with single, non-NULL option (with or without quotation mark)
-    #  (Never NULL since the default is not NULL)
-    id <- rlang::as_string(rlang::enexpr(id))
-    species <- rlang::as_string(rlang::enexpr(species))
-  }
-  
-  if (FALSE) {
-    ## Special handling of character vectors
-    levels_fraction <- eval(rlang::enexpr(levels_fraction))
-    levels_subtype <- eval(rlang::enexpr(levels_subtype))
-  }
-  
   check_subcell(
     levels_fraction = levels_fraction, levels_subtype = levels_subtype, 
     col_subtype = col_subtype)
   
-  # label_scheme_sub <- label_scheme %>% dplyr::filter(!is.na(!!rlang::sym(col_select)))
-  
+  label_scheme_sub <- if (length(col_select)) {
+    label_scheme |> dplyr::filter(!is.na(.data[[col_select]]))
+  } else {
+    label_scheme
+  }
+
   ### (1) Obtain aggregated expression data  
-  # Need `!!` since `anal_prnTrend` is a UI function
+  # min_prot_n_peps <- eval(min_prot_n_peps)
   anal_prnTrend(
-    col_select = !!col_select, 
-    col_group = !!col_group, 
-    col_order = !!col_order,
-    col_fraction = !!col_fraction, 
-    col_subtype = !!col_subtype, 
+    col_select = col_select, 
+    col_group  = col_group, 
+    col_order  = col_order,
+    col_fraction = col_fraction, 
+    col_subtype  = col_subtype, 
     n_clust = n_clust, 
     iter.max = 250, 
     filter_by_npep = exprs(prot_n_pep >= !!min_prot_n_peps), )
   
-  ### (2) Optional visualzation of trend clusters
+  ### (2) Optional visualization of trend clusters
   if (make_plot) {
     try(
       plot_prnTrend(
-        col_select = !!col_select,
-        levels_group = !!levels_group, 
-        col_order = !!col_order,
+        col_select = col_select,
+        col_group = col_group, 
+        levels_group = levels_group, 
+        col_order = col_order,
         ymax = 10, 
         ymin = -10,
         limitsize = FALSE,
@@ -2109,13 +2122,11 @@ classify_subcellular_unsupervised <- function (
   
   ### (3) Classify subcellular
   plot_prnSubcellular(
-    col_select = !!col_select, 
-    levels_group = levels_group, 
-    col_order = !!col_order, 
-    col_fraction = !!col_fraction, levels_fraction = levels_fraction, 
-    col_subtype = !!col_subtype, levels_subtype = levels_subtype, 
-    ncol = 6, limitsize = FALSE, make_plot = make_plot, 
-  )
+    col_select = col_select, col_order = col_order, 
+    col_group = col_group, levels_group = levels_group, 
+    col_fraction = col_fraction, levels_fraction = levels_fraction, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    make_plot = make_plot, ncol = 6, limitsize = FALSE)
 }
 
 
@@ -2159,16 +2170,22 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #'
 #' @param dat_dir The current working directory.
 #' @param df_expr A matrix of expression data.
+#' @param df_umap A matrix UMAP coordinates.
 #' @param id An identifier.
 #' @param n_clust Not used. The number of clusters.
-#' @param levels_ref_compartments The factor levels of subcellular
-#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
-#'   determination.
+#' @param key_col The key column where the values being used for UMAP.
+#' @param pred_col The prediction column.
+#' @param method The method of subcellular classification.
+#' @param levels_ref_compartments The factor levels of subcellular compartments.
+#'   Set \code{levels_ref_compartments = NULL} for automatic determination.
+#' @param reorder_ref_levels Not used. Logical; if TRUE, reorder reference
+#'   levles by the decreasing of category counts.
 #' @param df2 Not used. The names of secondary input files.
 #' @param filepath A file path of inputs and outputs.
 #' @param filename An output filename.
 #' @param ext An extension of output filename.
 #' @param wrap_facets Wrap facets or not.
+#' @param overwrite_umap_res Logical; rewrite UMAP result files or not.
 #' @param seed A seed for umap.
 #'
 #' @examples
@@ -2178,77 +2195,160 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #'   df2 = NULL, filepath = NULL, filename = NULL, ext = "pdf",
 #'   wrap_facets = TRUE, seed = 123, nrow = 2, ncol = 7, width = 16, height = 6)
 #' }
+#' @export
 plot_prnSubcell_UMAP <- function (
-    dat_dir = NULL, df_expr = NULL, id = "gene", n_clust = 16:36, 
+    dat_dir = NULL, label_scheme = NULL, col_group = NULL, df_umap = NULL,  
+    id = "gene", n_clust = 16:36, key_col = c("log2FC", "log10Int"), 
+    pred_col = "sub_location", 
+    method = c("unsupervised", "supervised"), 
     levels_ref_compartments = c(
       "Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin", "Lysosome", 
       "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome", 
       "Ribosome", "Centrosome", "P_body", "Stress_granule"), 
+    reorder_ref_levels = TRUE, 
+    col_fraction = NULL, levels_fraction =  NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
-    df2 = NULL, filepath = NULL, filename = NULL, ext = "png", use_cache = TRUE, 
-    wrap_facets = TRUE, seed = 123, ...) 
+    df2 = NULL, filepath = NULL, filename = NULL, ext = "png", 
+    use_cache = FALSE, overwrite_umap_res = FALSE, 
+    wrap_facets = TRUE, break_width = 5, hide_grids = TRUE, drop = FALSE, 
+    seed = 42, ...) 
 {
   dots <- rlang::enexprs(...)
   
   if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
+  if (is.null(col_group)) col_group <- "Group"
+  if (is.null(col_subtype)) col_subtype <- "Type"
+  if (is.null(col_fraction)) col_fraction <- "Fraction"
   
-  ## Find input `df2` of SVM probabilities
-  fns_svmprob <- find_trend_df2(
-    df2 = df2, n_clust = NULL, 
-    pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
-    ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+  key_col <- match.arg(key_col)
+  col_x   <- col_group
+  scale   <- if (key_col == "log10Int") TRUE else FALSE
   
-  if (!length(fns_svmprob)) {
-    warning("No SVM results found.")
+  if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir = dat_dir)
+
+  label_scheme_sub <- label_scheme |>
+    dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
+  
+  ## Find input `df2` of classication probabilities
+  files_2 <- if ((method <- match.arg(method)) == "supervised") {
+    find_trend_df2(
+      df2 = df2, n_clust = NULL, 
+      pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
+      ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+  } else if (method == "unsupervised") {
+    find_trend_df2(
+      df2 = df2, n_clust = NULL, 
+      scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+  } else {
+    stop("Unknown method.")
+  }
+  
+  if (!length(files_2)) {
+    warning("No classification results found.")
     return(NULL)
   }
+
+  file_2 <- files_2[[1]]
   
   ## Load classification results
-  df <- readr::read_tsv(file.path(filepath, fns_svmprob[[1]]))
-  
-  if (FALSE) {
-    sub_types <- sub(paste0(".*_nclust\\d+[_]{0,1}(.*)\\.", "tsv"), "\\1", fns_svmprob)
-    
-    # Use for-loop: lapply crashed sometime
-    df <- local({
-      if (!length(mts <- match(levels_subtype, sub_types))) {
-        mts <- seq_along(fns_svmprob)
-      }
-      
-      filepaths <- file.path(filepath, fns_svmprob[mts])
-      dfs <- vector("list", length(filepaths))
-      for (i in seq_along(filepaths)) {
-        dfs[[i]] <- readr::read_tsv(filepaths[[i]])
-      }
-      
-      df <- dplyr::bind_rows(dfs)
-    })
-  }
-
-  ## Compile subcellular factor levels
-  if (!length(levels_ref_compartments)) {
-    levels_ref_compartments <- local({
-      univ <- unique(df$compartment)
-      levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
-      levs <- c(levs, univ[!univ %in% levs], "Unknown")
-    })
-  }
-  
-  print(paste("The levels of 'levels_ref_compartments': ", 
-              paste(levels_ref_compartments, collapse = ", ")))
+  df <- readr::read_tsv(file.path(filepath, file_2)) |>
+    dplyr::filter(
+      .data[[col_subtype]] %in% levels_subtype,
+      .data[[col_x]] %in% levels_group, )
 
   df <- df |>
-    dplyr::select(dplyr::one_of(id, "sub_location", col_subtype)) |>
-    dplyr::filter(!is.na(sub_location)) |>
-    unique()
+    dplyr::mutate(
+      !!col_x := 
+        factor(!!rlang::sym(col_x), levels = levels_group), 
+      !!col_subtype := 
+        factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
+      !!col_fraction := 
+        factor(!!rlang::sym(col_fraction), levels = levels_fraction), ) |>
+    dplyr::arrange_at(c(col_x, col_fraction, col_subtype))
   
-  if (length(levels_ref_compartments)) {
-    df <- df |>
-      dplyr::mutate(
-        sub_location = factor(sub_location, levels = levels_ref_compartments))
+  if (is.null(filename)) {
+    fn_prefix <- if (method == "unsupervised") {
+      paste0(tools::file_path_sans_ext(file_2), "_umap")
+    } else {
+      paste0(tools::file_path_sans_ext(file_2), "_sumap")
+    }
+
+    fn_suffix <- ext
+    filename  <- paste0(fn_prefix, ".", fn_suffix)
+  } else {
+    fn_prefix <- tools::file_path_sans_ext(filename)
+    fn_suffix <- tools::file_ext(filename)
+  }
+  
+  file_umaps <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
+  
+  if (method == "supervised") {
+    if (!all(file.exists(file_umaps))) {
+      stop("UMAP results not found. Run unsupervised analysis first.")
+    }
+    
+    df_umap <- lapply(file_umaps, readr::read_tsv) |>
+      dplyr::bind_rows()
+    
+    df_plot <- plot_umap(
+      df_plot = tibble::tibble(df_umap), df = df, id = id, pred_col = pred_col, 
+      col_subtype = col_subtype, levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments, 
+      filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
+      break_width = break_width, hide_grids = hide_grids, drop = drop, 
+      !!!dots)
+    
+    return(df_plot)
   }
 
+  ## Prepare data matrices for UMAP
+  #  (see also 'prepSubcell' and 'make_subcell_expr')
+  df_exprs <- hmake_subcell_expr(
+    df = df, id = id, key_col = key_col, key_group = col_group, 
+    label_scheme_sub = label_scheme_sub, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    levels_fraction = levels_ref_compartments, scale = scale)
+  
+  # Should be the same as levels_subtypes
+  if (!identical(names(df_exprs), levels_subtype)) {
+    stop("Developer: check for mismatches.")
+  }
+  
+  ## Compile subcellular factor levels
+  if (!length(levels_ref_compartments)) {
+    if (method == "supervised") {
+      if (!"compartment" %in% names(df)) {
+        stop("Column 'compartment' not found.")
+      }
+      
+      levels_ref_compartments <- local({
+        univ <- unique(df[["compartment"]])
+        levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
+        levs <- unique(c(levs, univ[!univ %in% levs], "Unknown"))
+      })
+    } else if (method == "unsupervised") {
+      levels_ref_compartments <- local({
+        levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
+        levs <- unique(c(levs, "Unknown"))
+      })
+    } else {
+      stop("Need to specify 'levels_ref_compartments'.")
+    }
+  }
+  
+  print(
+    paste("The levels of 'levels_ref_compartments': ", 
+          paste(levels_ref_compartments, collapse = ", ")))
+
+  df <- df |>
+    dplyr::mutate(
+      !!pred_col := factor(!!rlang::sym(pred_col), 
+                           levels = levels_ref_compartments)) |>
+    dplyr::select(dplyr::one_of(id, pred_col, col_subtype)) |>
+    dplyr::filter(!is.na(.data[[pred_col]])) |>
+    unique()
+  
   if (length(col_subtype) && length(levels_subtype) && 
       col_subtype %in% names(df)) {
     df <- df |>
@@ -2257,70 +2357,100 @@ plot_prnSubcell_UMAP <- function (
           factor(!!rlang::sym(col_subtype), levels = levels_subtype), )
   }
   
-  if (is.null(filename)) {
-    fn_prefix <- paste0(tools::file_path_sans_ext(fns_svmprob[[1]]), "_umap")
-    fn_suffix <- ext
-    filename  <- paste0(fn_prefix, ".", fn_suffix)
-  } else {
-    fn_prefix <- tools::file_path_sans_ext(filename)
-    fn_suffix <- tools::file_ext(filename)
-  }
-  
-  ## Load the matrices of normalized intensities
-  #  (see also 'prepSubcell' and 'make_subcell_expr')
-  if (file.exists(fn_expr <- file.path(filepath, "df_exprs.rds"))) {
-    df_exprs  <- readRDS(fn_expr)
-    sub_types <- names(df_exprs)
-  } else {
-    warning("Expression file not found: ", file.path(filepath, "df_exprs.rds"))
-    return(NULL)
-  }
-  rm(list = "fn_expr")
-  
-  file_umaps <- file.path(filepath, paste0("umap_", sub_types, ".tsv"))
-  
-  if (use_cache && all(file.exists(file_umaps))) {
-    df_umap <- lapply(file_umaps, readr::read_tsv) |>
-      dplyr::bind_rows()
-  } else {
-    set.seed(seed)
-    
-    df_umap <- mapply(function (df_expr, sub_type, file_umap) {
-      res_umap <- umap::umap(df_expr)
-      df_umap  <- res_umap$layout[, 1:2]
-      colnames(df_umap) <- paste0("UMAP", 1:2)
-      rownames(df_umap) <- rownames(df_expr)
-      df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
-      
-      if (length(col_subtype)) {
-        df_umap[[col_subtype]] <- sub_type
-      }
-      
-      readr::write_tsv(df_umap, file_umap)
-      
-      df_umap
-    }, df_exprs, sub_types, file_umaps, SIMPLIFY = FALSE) |>
-      dplyr::bind_rows()
+  if (is.null(df_umap)) {
+    if (use_cache && all(file.exists(file_umaps))) {
+      df_umap <- lapply(file_umaps, readr::read_tsv) |>
+        dplyr::bind_rows()
+    } else {
+      df_umap <- mapply(function (df_expr, sub_type, file_umap) {
+        n_col <- ncol(df_expr)
+        rows <- rowSums(is.na(df_expr)) == n_col | 
+          rowSums(is.infinite(df_expr)) == n_col
+        df_expr_b <- df_expr[rows, ]
+        df_expr <- df_expr[!rows, ]
+        # df_expr <- round(df_expr, digits = 2L)
+        set.seed(seed)
+        res_umap <- umap::umap(df_expr)
+        df_umap  <- res_umap$layout[, 1:2]
+        df_umap  <- round(df_umap, digits = 2L)
+        colnames(df_umap) <- paste0("UMAP", 1:2)
+        rownames(df_umap) <- rownames(df_expr)
+        df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
+
+        if (length(col_subtype)) {
+          df_umap[[col_subtype]] <- sub_type
+        }
+        
+        if (overwrite_umap_res) {
+          readr::write_tsv(df_umap, file_umap)
+        }
+
+        df_umap
+      }, df_exprs, levels_subtype, file_umaps, SIMPLIFY = FALSE) |>
+        dplyr::bind_rows()
+    }
   }
 
-  # Join predicted 'sub_location'
-  df_plot <- tibble::tibble(df_umap)
+  ## Making plots
+  df_plot <- plot_umap(
+    df_plot = tibble::tibble(df_umap), 
+    df = df, id = id, pred_col = pred_col, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    levels_ref_compartments = levels_ref_compartments, 
+    filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
+    break_width = break_width, hide_grids = hide_grids, drop = drop, 
+    !!!dots)
+  
+  invisible(df_plot)
+}
+
+
+#' Help of plotting UMAP results.
+#'
+#' @param df_plot A data frame containing UMAP results.
+#' @param df A data frame of trend results.
+#' @param id An identifier.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param fn_prefix A file name prefix.
+#' @param fn_suffix A file name suffix.
+#' @param ... Additional parameters for plot controls.
+plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location", 
+                       col_subtype = NULL, levels_subtype = NULL, 
+                       levels_ref_compartments = NULL, 
+                       filepath = NULL, fn_prefix, fn_suffix, 
+                       break_width = 5, hide_grids = TRUE, drop = FALSE, 
+                       ...)
+{
+  dots <- rlang::enexprs(...)
+  
+  # Some df_plot$gene may not be in df
+  col_join <- c(id, pred_col)
+  key_join <- id
+  
   if (length(col_subtype)) {
-    df_plot <- df_plot |>
-      dplyr::left_join(df[, c(id, "sub_location", col_subtype)], 
-                       by = c(id, col_subtype))
-  } else {
-    df_plot <- df_plot |>
-      dplyr::left_join(df[, c(id, "sub_location")], by = id)
+    col_join <- c(col_join, col_subtype)
+    key_join <- c(key_join, col_subtype)
   }
-
-  df_plot <- df_plot |>
-    dplyr::mutate(
-      sub_location = as.character(sub_location), 
-      sub_location = ifelse(is.na(sub_location), "Unknown", sub_location), 
-      sub_location = factor(sub_location, levels = levels_ref_compartments)) |>
-    unique()
   
+  # Some id in df_plot may be absent from df
+  df_plot <- df_plot |>
+    dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
+  
+  df_plot <- df_plot |>
+    dplyr::left_join(df[, col_join], by = key_join) |>
+    dplyr::filter(!is.na(.data[[pred_col]])) |>
+    dplyr::mutate(
+      !!pred_col := as.character(!!rlang::sym(pred_col)), 
+      !!pred_col := dplyr::coalesce(.data[[pred_col]], "Unknown"), 
+      !!pred_col := factor(!!rlang::sym(pred_col), levels = levels_ref_compartments)
+    ) |>
+    unique()
+
+  ### Plots
   my_colors <- local({
     set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
                      "#FFFF33", "#A65628", "#F781BF")
@@ -2335,7 +2465,7 @@ plot_prnSubcell_UMAP <- function (
     } else {
       rng_colors <- 1:n_comps
     }
-
+    
     my_colors <- c(set1_colors, add_colors)[rng_colors]
     my_colors <- c(my_colors, last_color)
     
@@ -2345,7 +2475,7 @@ plot_prnSubcell_UMAP <- function (
     
     my_colors
   })
-
+  
   ncol   <- dots$ncol
   nrow   <- dots$nrow
   size   <- dots$size
@@ -2384,52 +2514,87 @@ plot_prnSubcell_UMAP <- function (
   dots$size <- NULL
   dots$dpi <- NULL
   
-  p <- ggplot() +
-    geom_point(
-      data = df_plot, 
-      aes(x = UMAP1, y = UMAP2, color = sub_location), 
-      size = .02, 
-      alpha = 0.5
-    ) +
-    scale_color_manual(values = my_colors, drop = FALSE) + 
-    theme_minimal(base_size = 14) +
+  xmin <- eval(dots$xmin)
+  xmax <- eval(dots$xmax)
+  ymin <- eval(dots$ymin)
+  ymax <- eval(dots$ymax)
+  
+  if (is.null(xmin)) xmin <- -12
+  if (is.null(xmax)) xmax <- 12
+  if (is.null(ymin)) ymin <- -12
+  if (is.null(ymax)) ymax <- 12
+  
+  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
+  
+  if (TRUE) {
+    p <- ggplot() +
+      geom_point(
+        data = df_plot, 
+        aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(pred_col)), 
+        shape = 46, size = .02, alpha = 0.5) +
+      scale_color_manual(values = my_colors, breaks = levels_fraction, drop = drop)
+  } else {
+    p <- ggplot() +
+      geom_point(
+        data = df_plot, 
+        aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(pred_col)), 
+        size = .02, 
+        alpha = 0.5
+      ) +
+      scale_color_manual(values = my_colors, drop = drop)
+  }
+
+  p <- p +
+    guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
+    theme_bw() +
     labs(
       title = NULL,
       x = "UMAP 1",
       y = "UMAP 2",
-      color = "Location"
-    ) +
-    theme(
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      plot.title = element_text(face = "bold"), 
-      legend.title = element_blank()
-    ) + 
-    guides(
-      color = guide_legend(override.aes = list(size = 3, alpha = 1))
+      color = pred_col
     )
+
+  if (hide_grids) {
+    p <- p +
+      theme(
+        plot.title = element_text(face = "bold", size = 14),
+        legend.title = element_blank(),
+        panel.grid = element_blank())
+  } else {
+    p <- p +
+      theme(
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank())
+  }
   
+  p <- p + 
+    guides(color = guide_legend(
+      override.aes = list(size = 3, shape = 16, alpha = 1)))
+
   if (n_subtypes < 2L) {
     px <- p + 
       facet_wrap(
-        ~ sub_location, ncol = ncol, labeller = label_value, drop = FALSE)
+        vars(!!rlang::sym(pred_col)), 
+        ncol = ncol, labeller = label_value, drop = FALSE)
   } else {
     px <- p + 
       facet_wrap(
-        vars(!!rlang::sym(col_subtype), sub_location), 
-        ncol = ncol, labeller = label_value)
-    
+        vars(!!rlang::sym(col_subtype), !!rlang::sym(pred_col)), ncol = ncol, 
+        labeller = labeller(.default = label_value, .multi_line = FALSE))
+
     p <- p + 
       facet_wrap(
         vars(!!rlang::sym(col_subtype)),
         ncol = ncol, labeller = label_value, )
   }
   
-  ggsave(plot = px, file.path(filepath, paste0(fn_prefix, ".", fn_suffix)), 
-         width = width, height = height, dpi = dpi)
+  ggsave(plot = px, 
+         file.path(filepath, paste0(fn_prefix, ".", fn_suffix)), 
+         width = 2 * ncol, height = 2 * n_subtypes, dpi = dpi)
   
-  ggsave(plot = p, file.path(filepath, paste0(fn_prefix, "_combined.", fn_suffix)), 
-         width = height + 2, height = height, dpi = dpi)
+  ggsave(plot = p, 
+         file.path(filepath, paste0(fn_prefix, "_combined.", fn_suffix)), 
+         width = 2.1 * n_subtypes, height = 2, dpi = dpi)
   
   invisible(df_plot)
 }
@@ -2441,17 +2606,18 @@ plot_prnSubcell_UMAP <- function (
 #' 
 #' @param contr_elements Contrast elements.
 #' @param contr_nm Contrast names.
+#' @param FUN A logical function of \code{all} or \code{any}.
 #' @param df A data frame.
 update_subell_by_contr <- function (
-    contr_elements = NULL, contr_nm = NULL, df = NULL)
+    contr_elements = NULL, contr_nm = NULL, df = NULL, FUN = all)
 {
+  # No assigned subcellular locations
   nas <- local({
     dfx <- data.frame(df[, contr_elements], check.names = FALSE)
     
-    nas <- sapply(1:nrow(dfx), function(i) {
+    sapply(1:nrow(dfx), function(i) {
       vals <- dfx[i, ]
-      # any(is.na(vals) | vals == 0)
-      all(is.na(vals) | vals == 0)
+      FUN(is.na(vals) | vals == 0)
     })
   })
   
@@ -2488,9 +2654,10 @@ update_subell_by_contr <- function (
 #' @param fml_nm Formula name.
 #' @param fml Formula.
 #' @param df A data frame.
+#' @param FUN A logical function of \code{all} or \code{any}.
 #' @param label_scheme_sub Metadata.
 update_subcell_by_fml <- function (
-    fml_nm = NULL, fml = NULL, df = NULL, label_scheme_sub = NULL)
+    fml_nm = NULL, fml = NULL, df = NULL, label_scheme_sub = NULL, FUN = all)
 {
   fml_ops     <- prepFml(fml, label_scheme_sub)
   elements    <- fml_ops[["elements"]]
@@ -2515,7 +2682,7 @@ update_subcell_by_fml <- function (
     contr_elements <- contrs_elements[[i]]
     
     df <- update_subell_by_contr(
-      contr_elements = contr_elements, contr_nm = contr_nm, df = df)
+      contr_elements = contr_elements, contr_nm = contr_nm, df = df, FUN = FUN)
   }
   
   df
@@ -2530,6 +2697,8 @@ update_subcell_by_fml <- function (
 #'
 #' @param df Automatically determined: a data frame from
 #'   \code{Protein_pVals.txt} or \code{Peptide_pVals.txt}.
+#' @param rm_tetherome Logical; remove tetherome entries or not by nullifying
+#'   pVals.
 #' @param dat_dir The working directory.
 #' @param data_type The type of data in either \code{Protein} or \code{Peptide}.
 #' @param filepath Automatically determined: the fiepath to \code{Protein} or
@@ -2539,22 +2708,22 @@ update_subcell_by_fml <- function (
 #' @param label_scheme_sub Automatically determined: metadata.
 #' @export
 update_subcell <- function (
-    df = NULL, data_type = c("Protein", "Peptide"), 
+    data_type = c("Protein", "Peptide"), rm_tetherome = FALSE, df = NULL, 
     dat_dir = NULL, filepath = NULL, fml_nms = NULL, label_scheme_sub = NULL, 
     ...)
 {
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  }
-  
   data_type <- match.arg(data_type)
   filename  <- paste0(data_type, "_pVals.txt")
   
-  group_psm_by <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, data_type, "Model")
+
+  group_psm_by <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(group_psm_by)) {
     group_psm_by <- tryCatch(
-      match_call_arg(makePepDIANN, group_psm_by), 
+      match_call_arg("makePepDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -2562,20 +2731,17 @@ update_subcell <- function (
     group_psm_by <- "pep_seq_mod"
   }
   
-  group_pep_by <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  group_pep_by <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(group_pep_by)) {
     group_pep_by <- tryCatch(
-      match_call_arg(makePepDIANN, group_psm_by), 
+      match_call_arg("makePepDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
   if (is.na(group_pep_by)) {
     group_pep_by <- "gene"
-  }
-  
-  if (is.null(filepath)) {
-    filepath <- file.path(dat_dir, data_type, "Model")
   }
   
   if (is.null(df)) {
@@ -2626,7 +2792,9 @@ update_subcell <- function (
   
   res_subcell <- add_subcell(
     df= df, dat_dir = dat_dir, group_pep_by = group_pep_by, 
-    is_subcellular = TRUE, scale_log2r = TRUE, impute_na = FALSE)
+    is_subcellular = TRUE, rm_tetherome = rm_tetherome, 
+    update_trend_res = if (data_type == "Protein") TRUE else FALSE, 
+    scale_log2r = TRUE, impute_na = FALSE)
   df <- res_subcell[["df"]]
   col_fraction <- res_subcell[["col_fraction"]]
   col_subtype <- res_subcell[["col_subtype"]]
@@ -2638,7 +2806,8 @@ update_subcell <- function (
     fml <- fmls[[i]]
     
     df <- update_subcell_by_fml(
-      fml_nm = fml_nm, fml = fml, df = df, label_scheme_sub = label_scheme_sub)
+      fml_nm = fml_nm, fml = fml, df = df, label_scheme_sub = label_scheme_sub, 
+      FUN = all)
   }
   
   df <- df[, names(df) %in% nms_df]
@@ -2647,6 +2816,20 @@ update_subcell <- function (
   readr::write_tsv(df, path_out)
   
   invisible(df)
+}
+
+
+#' Update pVals and log2Ratios by incorporating subcellular specificity.
+#'
+#' Nullifying p-values and log2Ratios of protein and peptides
+#'
+#' @param rm_tetherome Logical; if TRUE, nullify additionally pVals and
+#'   log2Ratios of tetherome entries.
+#' @export
+update_subcell_stat <- function (rm_tetherome = TRUE)
+{
+  update_subcell(data_type = "Protein", rm_tetherome = rm_tetherome)
+  update_subcell(data_type = "Peptide", rm_tetherome = rm_tetherome)
 }
 
 
@@ -2680,8 +2863,8 @@ find_bad_transloc <- function (
   
   sc_lookup <- label_scheme_sub |>
     dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
-    unique() |>
-    dplyr::rename(Sample_ID := col_group)
+    unique() # |> dplyr::rename(Sample_ID := col_group)
+  
   labels_frac <- sc_lookup[[col_fraction]]
   labels_subtype <- sc_lookup[[col_subtype]]
 
@@ -2711,8 +2894,6 @@ find_bad_transloc <- function (
 #' @param id An identifier.
 #' @param use_updated_subcell Logical; if TRUE, use clean subcellular metrics of
 #'   purity etc. Otherwise, use raws subcellular metrics.
-#' @param col_group The column key in metadata linked to the information of
-#'   sample groups.
 #' @param scale_log2r Not used. Logical; scale log2Ratio values or not.
 #' @param impute_na Not used. Loigcal; impute missing values or not.
 #' @param from_to The pair of subcellular compartments that defines the scope of
@@ -2722,10 +2903,10 @@ find_bad_transloc <- function (
 #' @param color_outlier The color of outliers.
 #' @param levels_subtype The levels of sample subtypes or treatment conditions.
 #' @param ... Additional arguments.
-#' 
+#'
 #' @examples \donttest{
 #' res <- find_from_to_transloc(
-#'   from_to = list(c("CP", "NP"), c("NP", "ChA")), 
+#'   from_to = list(c("CP", "NP"), c("NP", "ChA")),
 #'   levels_subtype = c("Veh", "TG"), transloc_co = .3, width = 9, height = 3.4)
 #' }
 #' @return A table of \code{corr_subcell_combined.tsv}.
@@ -2736,9 +2917,9 @@ find_from_to_transloc <- function (
     levels_ref_compartments = c("CP", "NP", "ChA"), 
     colors = c("CP" = "coral", "NP" = "skyblue", "ChA" = "mediumseagreen"), 
     color_outlier = "red", 
-    levels_subtype = NULL, transloc_co = .3, 
+    levels_subtype = NULL, transloc_co = .5, 
     use_updated_subcell = TRUE, 
-    col_select = "Select", col_group = "Group", col_order = "Order", 
+    col_select = "Select", col_order = "Order", # col_group = "Group", 
     id = "gene", dat_dir = NULL, filepath = NULL, 
     scale_log2r = TRUE, impute_na = FALSE, 
     ...)
@@ -2750,11 +2931,6 @@ find_from_to_transloc <- function (
   rm(list = "lens")
   
   key_col <- match.arg(key_col)
-  
-  if (!length(col_group)) {
-    warning("'col_group' not specified; Use the default 'Group'.")
-    col_order <- "Group"
-  }
   
   if (!length(col_order)) {
     warning("'col_order' not specified; Use the default 'Order'.")
@@ -2800,6 +2976,7 @@ find_from_to_transloc <- function (
   
   ## Plots
   #  Load updated loc_score, purity, entropy and trend results
+  col_group    <- df[["col_group"]][[1]]
   col_fraction <- df[["col_fraction"]][[1]]
   col_subtype  <- df[["col_subtype"]][[1]]
   
@@ -2809,7 +2986,8 @@ find_from_to_transloc <- function (
   
   n_subtype <- length(levels_subtype)
   if (n_subtype != 2L) {
-    stop("Proive two values to 'levels_subtype' for translocation analysis.")
+    stop("Proive two values to 'levels_subtype' for ", 
+         "pairwised translocation analysis.")
   }
   
   cdn_x <- levels_subtype[[1]]
@@ -2932,42 +3110,49 @@ find_from_to_transloc <- function (
   ggsave(file.path(filepath, "corr_subcell_combined.png"), 
          width = width, height = height)
   
-  df_combined
+  invisible(df_combined)
 }
 
 
 #' Update subcellular purity, entropy and localization scores.
-#' 
+#'
 #' Also update trend results under sub directory \code{subcell_update}.
-#' 
+#'
 #' @param id An identifier.
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath to protein \code{Trend} results.
 #' @param files The filenames to protein \code{Trend} results.
-#' @param col_select The column key in metadata linked to the information of
-#'   sample being selected.
+#' @param col_select Not used. The column key in metadata linked to the
+#'   information of sample being selected.
 #' @param col_group The column key in metadata linked to the information of
 #'   sample groups.
+#'
+#'   Not used since its values can be changed from run to run by users. To
+#'   decide, use the first values under the column \code{"col_group"}.
+#' 
 #' @param col_oder The column key in metadata linked to the information of
 #'   sample orders.
 #' @param col_fraction The column key in metadata linked to the information of
 #'   sample subcellular fractions.
 #' @param col_subtype The column key in metadata linked to the information of
 #'   sample subtypes or treatment conditions.
+#'   
+#'   Not used. See also parameter \code{col_group}.
+#'   
 #' @param levels_subtype The levels of sample subtypes.
 #' @param scale_log2r Not used. Logical; scale log2Ratio values or not.
 #' @param impute_na Not used. Loigcal; impute missing values or not.
 #' @param ... Additional arguments.
-#' 
+#'
 #' @examples \donttest{
 #' update_subcell_metrics(col_group = "Group", levels_subtype = c("Veh", "TG"))
 #' }
-#' 
+#'
 #' @export
 update_subcell_metrics <- function (
     id = "gene", dat_dir = NULL, filepath = NULL, files = NULL, 
-    col_select = NULL, col_group = NULL, col_order = NULL, 
-    # col_fraction = NULL, col_subtype = NULL, 
+    col_select = NULL, col_order = NULL, 
+    # col_group = NULL, col_fraction = NULL, col_subtype = NULL, 
     levels_subtype = NULL, 
     scale_log2r = TRUE, impute_na = FALSE, ...)
 {
@@ -2991,16 +3176,12 @@ update_subcell_metrics <- function (
   df <- df |>
     dplyr::filter(!is.na(sub_location))
   
+  col_group    <- df[["col_group"]][[1]]
   col_fraction <- df[["col_fraction"]][[1]]
   col_subtype  <- df[["col_subtype"]][[1]]
   
   if (!length(levels_subtype)) {
     levels_subtype <- unique(df[[col_subtype]])
-  }
-  
-  if (!length(col_group)) {
-    warning("'col_group' not specified; Use the default 'Group'.")
-    col_order <- "Group"
   }
   
   if (!length(col_order)) {
@@ -3019,11 +3200,11 @@ update_subcell_metrics <- function (
     dplyr::filter(!is.na(.data[[col_select]]))
   
   # Aggregated intensity matrix
-  df_mean_int <- df[, c(id, "group", "log10Int")] |>
+  df_mean_int <- df[, c(id, col_group, "log10Int")] |>
     dplyr::mutate(log10Int = 10^log10Int) |>
     tidyr::pivot_wider(
       id_cols = id, 
-      names_from = c("group"), 
+      names_from = col_group, 
       values_from = "log10Int",
       values_fill = 1, 
     ) |>
@@ -3045,21 +3226,21 @@ update_subcell_metrics <- function (
   # Subcellular lookup
   sc_lookup <- label_scheme_sub |>
     dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
-    unique() |>
-    dplyr::rename(Sample_ID := col_group)
-  
+    unique()
+
   purities <- vector("list", n_subtypes)
+  # DON'T: names(purities) <- levels_subtype
   for (i in seq_along(levels_subtype)) {
     sids_sub <- sc_lookup |>
       dplyr::filter(.data[[col_subtype]] == levels_subtype[[i]]) |>
-      dplyr::pull("Sample_ID")
-    
+      dplyr::pull(col_group)
+
     dfy <- df_mean_int[, grps %in% sids_sub]
     purities[[i]] <- dfy / rowSums(dfy, na.rm = TRUE)
   }
   rm(list = c("dfy", "sids_sub"))
   
-  entropies <- lapply(purities, function (x) {
+  entropies  <- lapply(purities, function (x) {
     x[x == 0] <- 1E-4
     -rowSums(x * log10(x))
   })
@@ -3073,19 +3254,19 @@ update_subcell_metrics <- function (
     x
   })
   
-  purities <- lapply(purities, function (x) {
+  purities   <- lapply(purities, function (x) {
     x[x < 1E-3] <- 0.0
     x
   })
   
-  entropies <- lapply(entropies, function (x) {
+  entropies  <- lapply(entropies, function (x) {
     x[x < 1E-3] <- 0.0
     x
   })
   
-  purities <- do.call(cbind, purities)
+  purities   <- do.call(cbind, purities)
   scores_loc <- do.call(cbind, scores_loc)
-  entropies <- do.call(cbind, entropies)
+  entropies  <- do.call(cbind, entropies)
   colnames(entropies) <- levels_subtype
   
   nans <- sapply(purities, is.nan)
@@ -3109,7 +3290,7 @@ update_subcell_metrics <- function (
     tibble::rownames_to_column(id) |>
     tidyr::pivot_longer(
       cols = -id,
-      names_to = "group",
+      names_to = col_group,
       values_to = "purity"
     )
   
@@ -3125,7 +3306,7 @@ update_subcell_metrics <- function (
     tibble::rownames_to_column(id) |>
     tidyr::pivot_longer(
       cols = -id,
-      names_to = "group",
+      names_to = col_group,
       values_to = "loc_score"
     )
   
@@ -3141,7 +3322,7 @@ update_subcell_metrics <- function (
       dplyr::select(dfi, -dplyr::one_of("purity", "entropy", "loc_score")), 
       purities, 
       scores_loc) |>
-      purrr::reduce(dplyr::left_join, by = c(id, "group")) |>
+      purrr::reduce(dplyr::left_join, by = c(id, col_group)) |>
       dplyr::left_join(entropies, by = c(id, col_subtype))
     
     dfi <- dfx[, colnames(dfi)]
@@ -3315,6 +3496,911 @@ hupdate_subcellular <- function (
   readr::write_tsv(dfp_pep, file.path(dat_dir, "Peptide", "Model", "Peptide_pVals_subcell.txt"))
   
   invisible(df_prn)
+}
+
+
+#' Plot marker proteins onto the scatter of 2-D UMAP.
+#'
+#' @param id An identifier.
+#' @param species The species.
+#' @param df_markers A data frame of marker proteins.
+#' @param dat_dir The current working directory.
+#' @param filepath The file path.
+#' @param label_scheme Metadata.
+#' @param levels_group The levels of data group.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param polygons The vertices of polygons.
+#' @param ext A file name extension.
+#' @param break_width The width of breaks on X and Y axis.
+#' @param hide_grids Logical; hide grid lines or not.
+#' @param ... Additional parameters for plot controls.
+#' 
+#' @importFrom magrittr %>%
+#' @export
+plot_subcell_markers <- function (
+    id = "gene", species = "human", df_markers = NULL, 
+    dat_dir = NULL, filepath = NULL, 
+    label_scheme = NULL, 
+    levels_ref_compartments = c(
+      "Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin", "Lysosome", 
+      "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome", 
+      "Ribosome", "Centrosome", "P_body", "Stress_granule"), 
+    levels_group = NULL, 
+    col_subtype = NULL,  levels_subtype = NULL, 
+    col_fraction = NULL, levels_fraction = NULL, 
+    polygons = NULL, ext = "png", break_width = 5, hide_grids = TRUE, 
+    ...)
+{
+  dots <- rlang::enexprs(...)
+  
+  write_tetherome_res <- TRUE
+  drop <- FALSE
+  wrap_facet <- TRUE
+  
+  dot_write_tetherome_res <- dots[["write_tetherome_res"]]
+  dot_drop <- dots[["drop"]]
+  dot_wrap_facet <- dots[["wrap_facet"]]
+  dots[["write_tetherome_res"]] <- dots[["drop"]] <- dots[["wrap_facet"]] <- NULL
+  
+  if (!is.null(dot_write_tetherome_res) && 
+      is.logical(is.null(dot_write_tetherome_res)) && 
+      !dot_write_tetherome_res) {
+    write_tetherome_res <- FALSE
+  }
+  
+  if (!is.null(dot_drop) && is.logical(dot_drop) && dot_drop) {
+    drop <- TRUE
+  }
+  
+  if (!is.null(dot_wrap_facet) && is.logical(dot_wrap_facet) && !dot_wrap_facet) {
+    wrap_facet <- FALSE
+  }
+  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
+  
+  message("The output path: ", filepath)
+  
+  ### 1. Marker proteins
+  abbr_species <- switch(
+    species, 
+    human = "hs",
+    mouse = "mm",
+    rat = "rn",
+    stop("species: ", species, " is not in one of `human`, `mouse` or `rat`.")
+  )
+  
+  if (is.null(df_markers)) {
+    db_nm <- paste0("subcell_", abbr_species)
+    data(list = db_nm)
+    df_markers <- get(db_nm, rlang::current_env())
+  }
+  
+  if (!"location" %in% names(df_markers)) {
+    stop("Required column 'location' not found.")
+  }
+  
+  if (is.null(levels_ref_compartments)) {
+    levels_ref_compartments <- local({
+      locs <- df_markers[["location"]]
+      univ <- unique(locs)
+      levs <- names(sort(table(locs), decreasing = TRUE))
+    })
+  }
+  
+  df_markers <- df_markers |>
+    dplyr::mutate(location = factor(location, levels = levels_ref_compartments))
+  
+  ### 2. Metadata
+  if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir = dat_dir)
+  
+  label_scheme_sub <- label_scheme |>
+    dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
+  
+  if (is.null(levels_group)) {
+    levels_group <- label_scheme_sub |>
+      dplyr::arrange_at("Order") |>
+      dplyr::pull("Group") |>
+      unique()
+  }
+  
+  ### 3. Expression data
+  df <- readr::read_tsv(
+    file.path(dat_dir, "Protein", "Trend", find_trend_df2()[[1]]))
+  
+  col_fraction <- df[["col_fraction"]][[1]]
+  col_subtype  <- df[["col_subtype"]][[1]]
+  col_group    <- df[["col_group"]][[1]]
+  
+  key_col <- "log2FC"
+  col_x   <- col_group
+  
+  df <- df |>
+    dplyr::filter(.data[[col_x]] %in% levels_group, 
+                  .data[[col_subtype]] %in% levels_subtype, 
+                  .data[[col_fraction]] %in% levels_fraction) |>
+    dplyr::mutate(
+      !!col_x := 
+        factor(!!rlang::sym(col_x), levels = levels_group), 
+      !!col_subtype := 
+        factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
+      !!col_fraction := 
+        factor(!!rlang::sym(col_fraction), levels = levels_fraction), ) |>
+    dplyr::arrange_at(c(col_x, col_fraction, col_subtype)) |>
+    dplyr::filter(!is.na(.data[["sub_location"]]), ) |>
+    dplyr::left_join(df_markers, by = id)
+  
+  dfs <- split(df, df[[col_subtype]])
+  dfs <- dfs[levels_subtype]
+  
+  ### 5. UMAP data
+  files_umap <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
+  
+  files_umap <- local({
+    oks <- file.exists(files_umap)
+    
+    if (any(bads <- !oks)) {
+      warning("UMAP results not found for: ", 
+              paste(files_umap[bads], collapse = ", "))
+    }
+    
+    files_umap <- files_umap[oks]
+    
+    if (!length(files_umap)) {
+      stop("UMAP results not found. Run 'plot_prnSubcell_UMAP' first.")
+    }
+    
+    files_umap
+  })
+  
+  dfs_umap   <- lapply(files_umap, readr::read_tsv)
+  dfs_umap   <- lapply(dfs_umap, function (x) { x[[col_subtype]] <- NULL; x})
+  names(dfs_umap) <- levels_subtype
+  
+  n_subtypes <- length(levels_subtype)
+  polygons <- polygons[levels_subtype]
+  draw_polygon <- lapply(polygons, function (x) !is.null(x))
+  
+  if (!length(draw_polygon)) {
+    draw_polygon <- rep_len(FALSE, n_subtypes)
+  }
+
+  df_tether <- vector("list", n_subtypes)
+  
+  for (i in seq_along(levels_subtype)) {
+    df_tether[[i]] <- find_tetherome_by_subtype(
+      df = dfs[[i]], 
+      df_umap = dfs_umap[[i]], 
+      polygons = polygons[[i]], 
+      draw_polygon = draw_polygon[[i]], 
+      subtype = levels_subtype[[i]], 
+      id = id, 
+      col_fraction = col_fraction,
+      levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, 
+      levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments)
+  }
+  
+  if (FALSE) {
+    # Assume only one fraction
+    for (i in seq_along(levels_subtype)) {
+      if (!"UMAP2" %in% names(dfs[[i]])) {
+        dfs[[i]] <- dplyr::left_join(dfs[[i]], dfs_umap[[i]], by = id)
+      }
+    }
+    
+    polygons <- lapply(polygons, function (x) x[names(x) %in% levels_fraction])
+
+    plot_subcell_markers_by_fraction(
+      df = dplyr::bind_rows(dfs), 
+      # df_umap = dplyr::bind_rows(dfs_umap), 
+      polygons = NULL, 
+      draw_polygon = FALSE, 
+      # subtype = levels_subtype[[i]], 
+      id = id, col_x = col_x, 
+      # df_bg = df, 
+      col_fraction = col_fraction,
+      levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, 
+      levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments, 
+      filepath = filepath, 
+      ext = ext, 
+      break_width = break_width, 
+      hide_grids = hide_grids, 
+      wrap_facet = wrap_facet, 
+      drop = drop, 
+      !!!dots
+    )
+  }
+  
+  
+  for (i in seq_along(levels_subtype)) {
+    plot_subcell_markers_by_subtype(
+      df = dfs[[i]], 
+      df_umap = dfs_umap[[i]], 
+      polygons = polygons[[i]], 
+      draw_polygon = draw_polygon[[i]], 
+      subtype = levels_subtype[[i]], 
+      id = id, col_x = col_x, 
+      # df_bg = df, 
+      col_fraction = col_fraction,
+      levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, 
+      levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments, 
+      filepath = filepath, 
+      ext = ext, 
+      break_width = break_width, 
+      hide_grids = hide_grids, 
+      wrap_facet = wrap_facet, 
+      drop = drop, 
+      !!!dots
+    )
+  }
+  
+  df_tether <- dplyr::bind_rows(df_tether)
+  
+  if (isTRUE(write_tetherome_res)) {
+    readr::write_tsv(df_tether, file.path(filepath, "marker_tetherome.tsv"))
+  }
+
+  df_tether
+}
+
+
+#' Find tetherome by subtype.
+#' 
+#' @param df A data frame.
+#' @param df_umap A UMAP data frame.
+#' @param subtype A sample subtype.
+#' @param id An identifier.
+#' @param draw_polygon Logical; draw polygon or not.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param polygons The vertices of polygons.
+find_tetherome_by_subtype <- function (
+    df, df_umap, subtype, id = "gene", draw_polygon = TRUE, 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, 
+    levels_ref_compartments = NULL, polygons = NULL) 
+{
+  df <- df_umap |> 
+    dplyr::left_join(df, by = id) |>
+    dplyr::filter(!is.na(.data[["sub_location"]]))
+  
+  if (FALSE) {
+    n_fracs <- length(levels_fraction)
+    
+    p <- ggplot() +
+      geom_point(data = df, aes(x = UMAP1, y = UMAP2, 
+                                color = !!rlang::sym(col_fraction)), 
+                 shape = 16, size = .1, alpha = 0.5) +
+      scale_color_manual(
+        values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A"),
+        breaks = c("CP", "NP", "ChA"), 
+        drop = FALSE
+      ) +
+      scale_x_continuous(limits = c(-10, 10)) +
+      scale_y_continuous(limits = c(-10, 12)) +
+      theme_minimal(base_size = 14) +
+      labs(
+        title = NULL,
+        x = "UMAP 1",
+        y = "UMAP 2",
+        color = "Location"
+      ) +
+      theme(
+        strip.text = element_text(
+          face = "bold",
+          size = 14,
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) + 
+      guides(
+        color = guide_legend(override.aes = list(size = 3, alpha = 1))
+      ) + 
+      facet_wrap(
+        vars(!!rlang::sym(col_fraction)), 
+        ncol = n_fracs, 
+        labeller = labeller(.default = label_value, .multi_line = FALSE))
+    
+    if (draw_polygon) {
+      # k <- 0.08685714; b <- 1.148571
+      df_poly <- vector("list", n_fracs)
+      names(df_poly) <- levels_fraction
+      
+      for (i in seq_along(levels_fraction)) {
+        fr <- levels_fraction[[i]]
+        pg <- polygons[[fr]]
+        
+        df_poly[[i]] <- tibble::tibble(
+          x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
+      }
+      
+      df_poly <- dplyr::bind_rows(df_poly) |>
+        dplyr::mutate(
+          !!col_fraction := 
+            factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+      
+      p + 
+        geom_polygon(
+          df_poly, 
+          mapping = aes(x = x, y = y), 
+          fill = NA, color = "black", linewidth = .2)
+    }
+  }
+  
+  df_tether <- vector("list", length(levels_fraction))
+  
+  for (i in seq_along(levels_fraction)) {
+    fr <- levels_fraction[[i]]
+    pg <- polygons[[fr]]
+    
+    df_clean <- hremove_contams(
+      df = df, col_fraction = col_fraction, tether_fraction = fr, 
+      polygons = pg)
+    
+    # The results for for markers, not for the whole proteome
+    df_tether[[i]] <- tibble::tibble(
+      !!id := attr(df_clean, "tethers"), 
+      !!col_subtype := subtype, 
+      !!col_fraction := fr)
+  }
+  
+  df_tether <- dplyr::bind_rows(df_tether) |>
+    dplyr::mutate(
+      !!col_fraction := 
+        factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+}
+
+
+#' Plot subcellular markers by subtype.
+#' 
+#' @param df_umap A UMAP data frame.
+#' @param subtype A sample subtype.
+#' @param id An identifier.
+#' @param df Background data. 
+#' @param col_x The column key of X-axis.
+#' @param draw_polygon Logical; draw polygon or not.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param polygons The vertices of polygons.
+#' @param filepath An output file path.
+#' @param ext An file name extension.
+#' @param break_width The width of X and Y breaks.
+#' @param hide_grids Logical; hide grid lines or not.
+#' @param wrap_facet Logical; wrap_facet or not.
+#' @param drop Drop unknown levels or not.
+plot_subcell_markers_by_subtype <- function (
+    df, df_umap, polygons = NULL, draw_polygon = TRUE, subtype, 
+    id = "gene", col_x = "Group", 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, 
+    levels_ref_compartments = NULL, filepath, ext = "png", 
+    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
+    ...) 
+{
+  dots <- rlang::enexprs(...)
+  
+  draw_polygon <- isTRUE(draw_polygon)
+  
+  df <- df_umap |> 
+    dplyr::filter(.data[[id]] %in% df[[id]]) |>
+    dplyr::left_join(df, by = id)
+  
+  # Expression subset found in markers
+  df_loc <- df |>
+    dplyr::filter(!is.na(.data[["location"]]))
+  
+  my_colors <- local({
+    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
+                     "#FFFF33", "#A65628", "#F781BF")
+    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
+                     "#99d8c9", "#fee6ce")
+    last_color  <- "#999999"
+    
+    n_comps <- length(levels_ref_compartments)
+    
+    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
+      rng_colors <- 1:(n_comps - 1L)
+    } else {
+      rng_colors <- 1:n_comps
+    }
+    
+    my_colors <- c(set1_colors, add_colors)[rng_colors]
+    my_colors <- c(my_colors, last_color)
+    
+    if (any(is.na(my_colors))) {
+      warning("More compartments than the number of colors.")
+    }
+    
+    my_colors
+  })
+  
+  n_fracs <- length(levels_fraction)
+  
+  if (is.null(ncol <- dots[["ncol"]])) {
+    ncol <- n_fracs
+  }
+  dots[["ncol"]] <- NULL
+  
+  width <- dots[["width"]]
+  height <- dots[["height"]]
+  dpi <- dots[["dpi"]]
+  dots[["width"]] <- dots[["height"]] <- dots[["dpi"]] <- NULL
+  
+  if (is.null(width)) width <- ncol * 6
+  if (is.null(height)) height <- 6
+  if (is.null(dpi)) dpi <- 600
+  
+  xmin <- eval(dots$xmin)
+  xmax <- eval(dots$xmax)
+  ymin <- eval(dots$ymin)
+  ymax <- eval(dots$ymax)
+  
+  if (is.null(xmin)) xmin <- -12
+  if (is.null(xmax)) xmax <- 12
+  if (is.null(ymin)) ymin <- -12
+  if (is.null(ymax)) ymax <- 12
+  
+  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
+  
+  top_layers_1  <- df_loc[["location"]] %in% c("Centrosome", "Chromatin")
+  top_layers_2  <- df_loc[["location"]] %in% c("Nucleus")
+  df_loc_top_1  <- df_loc[top_layers_1, ]
+  df_loc_top_2  <- df_loc[top_layers_2, ]
+  df_loc_others <- df_loc[!(top_layers_1 | top_layers_2), ]
+
+  p <- ggplot() +
+    geom_point(data = df, aes(x = UMAP1, y = UMAP2), color = "gray", 
+               shape = 1, size = 1.5, stroke = .2)
+  
+  use_shape_21 <- TRUE
+  
+  if (use_shape_21) {
+    p <- p + 
+      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      scale_fill_manual(values = my_colors, drop = drop)
+  } else {
+    p <- p + 
+      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      scale_color_manual(values = my_colors, drop = drop)
+  }
+  
+  p <- p + 
+    scale_x_continuous(
+      limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
+    scale_y_continuous(
+      limits = c(ymin, ymax), breaks = scales::breaks_width(break_width))
+  
+  p <- p + 
+    theme_minimal(base_size = 14) +
+    labs(
+      title = NULL,
+      x = "UMAP 1",
+      y = "UMAP 2")
+    
+  if (hide_grids) {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  } else {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  }
+  
+  if (use_shape_21) {
+    p <- p +
+      guides(fill = guide_legend(override.aes = list(size = 5, alpha = 1)))
+
+    if (wrap_facet) {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_fraction)), 
+          ncol = ncol, 
+          labeller = labeller(.default = label_value, .multi_line = FALSE))
+    }
+    
+  } else {
+    p <- p +
+      guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)))
+      
+    
+    if (wrap_facet) {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_fraction)), 
+          ncol = ncol, 
+          labeller = labeller(.default = label_value, .multi_line = FALSE))
+    }
+    
+  }
+  
+  if (draw_polygon) {
+    # k <- 0.08685714; b <- 1.148571
+    df_poly <- vector("list", n_fracs)
+    names(df_poly) <- levels_fraction
+    
+    for (i in seq_along(levels_fraction)) {
+      fr <- levels_fraction[[i]]
+      pg <- polygons[[fr]]
+      
+      if (length(pg)) {
+        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
+      }
+      
+      df_poly[[i]] <- tibble::tibble(
+        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
+    }
+    
+    df_poly <- dplyr::bind_rows(df_poly) |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+    
+    p <- p + 
+      geom_polygon(
+        df_poly, 
+        mapping = aes(x = x, y = y), 
+        fill = NA, color = "black", linewidth = .2)
+    
+    # k <- 10/3; b <- -28/3; 1.5 * k + b
+    if (FALSE) {
+      p <- p + 
+        geom_segment(
+          # x = -0.2, y = -10, xend = 1.5, yend = -4.333
+          # x = 1.5, y = -4.333, xend = -0.2, yend = -10
+          data = data.frame(
+            x = poly_x_np_cha[[1]], y = poly_y_np_cha[[1]], 
+            xend = poly_x_np_cha[[2]], yend = poly_y_np_cha[[2]]),
+          aes(x = x, y = y, xend = xend, yend = yend),
+          linetype = "longdash",
+          color = "darkgray",
+          linewidth = 0.5)
+    }
+  }
+  
+  if (draw_polygon) 
+    out_name <- paste0("umap_markers_", subtype, "_polygon.", ext)
+  else 
+    out_name <- paste0("umap_markers_", subtype, ".", ext)
+  
+  # rlang::exec(ggsave,filename = file.path(filepath, out_name),!!!dots)
+  
+  ggsave(filename = file.path(filepath, out_name), 
+         width = width, height = height, dpi = dpi)
+  
+  p
+}
+
+
+
+plot_subcell_markers_by_fraction <- function (
+    df, polygons = NULL, draw_polygon = TRUE, subtype, 
+    id = "gene", col_x = "Group", 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, 
+    levels_ref_compartments = NULL, filepath, ext = "png", 
+    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
+    ...) 
+{
+  dots <- rlang::enexprs(...)
+  
+  draw_polygon <- isTRUE(draw_polygon)
+  
+  # Expression subset found in markers
+  df_loc <- df |>
+    dplyr::filter(!is.na(.data[["location"]]))
+  
+  my_colors <- local({
+    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
+                     "#FFFF33", "#A65628", "#F781BF")
+    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
+                     "#99d8c9", "#fee6ce")
+    last_color  <- "#999999"
+    
+    n_comps <- length(levels_ref_compartments)
+    
+    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
+      rng_colors <- 1:(n_comps - 1L)
+    } else {
+      rng_colors <- 1:n_comps
+    }
+    
+    my_colors <- c(set1_colors, add_colors)[rng_colors]
+    my_colors <- c(my_colors, last_color)
+    
+    if (any(is.na(my_colors))) {
+      warning("More compartments than the number of colors.")
+    }
+    
+    my_colors
+  })
+  
+  n_fracs <- length(levels_fraction)
+  n_subtypes <- length(levels_subtype)
+  
+  if (is.null(ncol <- dots[["ncol"]])) {
+    ncol <- n_fracs
+  }
+  dots[["ncol"]] <- NULL
+  
+  width <- dots[["width"]]
+  height <- dots[["height"]]
+  dpi <- dots[["dpi"]]
+  dots[["width"]] <- dots[["height"]] <- dots[["dpi"]] <- NULL
+  
+  if (is.null(width)) width <- ncol * 6
+  if (is.null(height)) height <- 6
+  if (is.null(dpi)) dpi <- 600
+  
+  xmin <- eval(dots$xmin)
+  xmax <- eval(dots$xmax)
+  ymin <- eval(dots$ymin)
+  ymax <- eval(dots$ymax)
+  
+  if (is.null(xmin)) xmin <- -12
+  if (is.null(xmax)) xmax <- 12
+  if (is.null(ymin)) ymin <- -12
+  if (is.null(ymax)) ymax <- 12
+  
+  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
+  
+  top_layers_1  <- df_loc[["location"]] %in% c("Centrosome", "Chromatin")
+  top_layers_2  <- df_loc[["location"]] %in% c("Nucleus")
+  df_loc_top_1  <- df_loc[top_layers_1, ]
+  df_loc_top_2  <- df_loc[top_layers_2, ]
+  df_loc_others <- df_loc[!(top_layers_1 | top_layers_2), ]
+  
+  p <- ggplot() +
+    geom_point(data = df, aes(x = UMAP1, y = UMAP2), color = "gray", 
+               shape = 1, size = 1.5, stroke = .2)
+  
+  use_shape_21 <- TRUE
+  
+  if (use_shape_21) {
+    p <- p + 
+      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, fill = location), 
+                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+      scale_fill_manual(values = my_colors, drop = drop)
+  } else {
+    p <- p + 
+      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, color = location), 
+                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
+      scale_color_manual(values = my_colors, drop = drop)
+  }
+  
+  p <- p + 
+    scale_x_continuous(
+      limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
+    scale_y_continuous(
+      limits = c(ymin, ymax), breaks = scales::breaks_width(break_width))
+  
+  p <- p + 
+    theme_minimal(base_size = 14) +
+    labs(
+      title = NULL,
+      x = "UMAP 1",
+      y = "UMAP 2")
+  
+  if (hide_grids) {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  } else {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  }
+  
+  if (use_shape_21) {
+    p <- p +
+      guides(fill = guide_legend(override.aes = list(size = 5, alpha = 1)))
+    
+    if (wrap_facet) {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_subtype)), 
+          ncol = ncol, 
+          labeller = labeller(.default = label_value, .multi_line = FALSE))
+    }
+    
+  } else {
+    p <- p +
+      guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)))
+    
+    
+    if (wrap_facet) {
+      p <- p + 
+        facet_wrap(
+          vars(!!rlang::sym(col_subtype)), 
+          ncol = ncol, 
+          labeller = labeller(.default = label_value, .multi_line = FALSE))
+    }
+    
+  }
+  
+  if (draw_polygon) {
+    # k <- 0.08685714; b <- 1.148571
+    df_poly <- vector("list", n_fracs)
+    names(df_poly) <- levels_fraction
+    
+    for (i in seq_along(levels_fraction)) {
+      fr <- levels_fraction[[i]]
+      pg <- polygons[[fr]]
+      
+      if (length(pg)) {
+        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
+      }
+      
+      df_poly[[i]] <- tibble::tibble(
+        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
+    }
+    
+    df_poly <- dplyr::bind_rows(df_poly) |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+    
+    p <- p + 
+      geom_polygon(
+        df_poly, 
+        mapping = aes(x = x, y = y), 
+        fill = NA, color = "black", linewidth = .2)
+    
+    # k <- 10/3; b <- -28/3; 1.5 * k + b
+    if (FALSE) {
+      p <- p + 
+        geom_segment(
+          # x = -0.2, y = -10, xend = 1.5, yend = -4.333
+          # x = 1.5, y = -4.333, xend = -0.2, yend = -10
+          data = data.frame(
+            x = poly_x_np_cha[[1]], y = poly_y_np_cha[[1]], 
+            xend = poly_x_np_cha[[2]], yend = poly_y_np_cha[[2]]),
+          aes(x = x, y = y, xend = xend, yend = yend),
+          linetype = "longdash",
+          color = "darkgray",
+          linewidth = 0.5)
+    }
+  }
+  
+  # Assume one fraction
+  fraction <- levels_fraction[[1]]
+  
+  if (draw_polygon) 
+    out_name <- paste0("umap_markers_", fraction, "_polygon.", ext)
+  else 
+    out_name <- paste0("umap_markers_", fraction, ".", ext)
+  
+  # rlang::exec(ggsave,filename = file.path(filepath, out_name),!!!dots)
+  
+  ggsave(filename = file.path(filepath, out_name), 
+         width = width, height = height, dpi = dpi)
+  
+  p
+}
+
+
+
+#' Helper remove tethered mitochondrial, ER proteins.
+#' 
+#' @param df A data frame.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param tether_fraction The fraction where tetherome will be considered.
+#' @param polygons The vertices of polygons.
+hremove_contams <- function (
+    df, col_fraction = "Fraction", tether_fraction = "NP", polygons = NULL)
+{
+  rows <- df[[col_fraction]] == tether_fraction
+  
+  dfx <- remove_contams(
+    df[rows, ], poly_x = polygons[["x"]], poly_y = polygons[["y"]])
+  tethers <- attr(dfx, "tethers")
+  
+  df <- dplyr::bind_rows(df[!rows, ], dfx)
+  attr(df, "tethers") <- tethers
+  
+  df
+}
+
+
+#' Remove tethered mitochondrial, ER proteins.
+#' 
+#' @param df A data frame.
+#' @param An identifiers.
+#' @param poly_x The vertices of X coordinates of a polygon.
+#' @param poly_x The vertices of Y coordinates of a polygon.
+remove_contams <- function (df, id = "gene", poly_x = NULL, poly_y = NULL)
+{
+  if (is.null(poly_x) || is.null(poly_y)) {
+    return(df)
+  }
+  
+  inside_status <- sp::point.in.polygon(
+    point.x = df$UMAP1, 
+    point.y = df$UMAP2, 
+    pol.x   = poly_x, 
+    pol.y   = poly_y
+  )
+  
+  ids_inside <- unique(df[[id]][inside_status > 0])
+  
+  rows <- df[[id]] %in% ids_inside
+  # dfx  <- df[rows, ]
+  df <- df[!rows, ]
+  
+  attr(df, "tethers") <- ids_inside
+  
+  df
 }
 
 

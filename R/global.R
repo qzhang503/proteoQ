@@ -3,8 +3,7 @@
 #' @inheritParams load_expts
 set_dat_dir <- function(dat_dir = NULL) 
 {
-  if (is.null(dat_dir)) 
-    dat_dir <- get_gl_dat_dir()
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   
   if (!fs::dir_exists(dat_dir)) {
     new_dat_dir <- fs::path_expand_r(dat_dir)
@@ -30,8 +29,9 @@ set_dat_dir <- function(dat_dir = NULL)
 #' 
 get_gl_dat_dir <- function() 
 {
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv, inherits = FALSE), 
-                      error = function(e) NA)
+  dat_dir <- tryCatch(
+    get("dat_dir", envir = .GlobalEnv, inherits = FALSE), 
+    error = function(e) NA)
   
   if (is.na(dat_dir)) {
     stop("Unknown working directory; ", 

@@ -13,14 +13,13 @@
 prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
                               frac_smry = "frac_smry.xlsx") 
 {
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  }
-
-  ext <- parse_filename(expt_smry, dat_dir)$fn_suffix
-
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  
+  ext <- parse_filename(expt_smry, dat_dir)[["fn_suffix"]]
+  
   # (do not remove empty columns)
-  label_scheme_full <- read_metadata(expt_smry, dat_dir, ext, "expt") |>
+  label_scheme_full <- read_metadata(
+    filename = expt_smry, dat_dir = dat_dir, ext = ext, metatype = "expt") |>
     check_unnamed_cols(expt_smry) |>
     check_empty_rows() |>
     check_required_cols(expt_smry) |>
@@ -28,7 +27,7 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     check_tmt126_row() |>
     check_tmt_nc()
   
-  if (all(label_scheme_full$Reference)) {
+  if (all(label_scheme_full[["Reference"]])) {
     stop("All samples were set to `Reference`. ", 
          "Change some or all of the values to FALSE.")
   }
@@ -49,7 +48,7 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
       
       if (length(missings))
         stop("Sample IDs in MaxQuant 'peptides.txt' not found in '", expt_smry, 
-                "':\n", paste(missings, collapse = "\n"))
+             "':\n", paste(missings, collapse = "\n"))
       
       label_scheme_full <- label_scheme_full %>% 
         dplyr::mutate(Sample_ID = factor(Sample_ID, levels = sample_ids)) %>% 
@@ -59,17 +58,18 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     else
       label_scheme_full
   })
-
-  TMT_plex <- TMT_plex(label_scheme_full) # after check_tmt_nc
-  label_scheme_full <- check_tmt_plex(label_scheme_full, TMT_plex)
-  TMT_levels <- TMT_levels(TMT_plex) # after check_tmt_plex
-  is_lfq <- is.null(TMT_levels)
-  is_tmt <- !is.null(TMT_levels)
+  
+  tmt_plex <- TMT_plex(label_scheme_full) # after check_tmt_nc
+  label_scheme_full <- check_tmt_plex(label_scheme_full, tmt_plex)
+  tmt_levels <- TMT_levels(tmt_plex) # after check_tmt_plex
+  is_lfq <- is.null(tmt_levels)
+  is_tmt <- !is_lfq
   
   local({
     if (is_lfq) {
-      n_sids <- length(unique(label_scheme_full$Sample_ID))
-      n_tmts <- length(unique(label_scheme_full$TMT_Set))
+      n_sids <- length(unique(label_scheme_full[["Sample_ID"]]))
+      n_tmts <- length(unique(label_scheme_full[["TMT_Set"]]))
+      
       if (n_sids > n_tmts) {
         stop("The number of Sample_IDs (", n_sids, 
              ") is greater than the number of TMT_Sets (", n_tmts, 
@@ -89,22 +89,22 @@ prep_label_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
     tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) 
   
   label_scheme_full <- label_scheme_full |>
-    rm_fully_empty_tmt_sets(frac_smry, TMT_plex, dat_dir, ext) 
+    rm_fully_empty_tmt_sets(frac_smry, tmt_plex, dat_dir, ext)
   
   label_scheme_full <- label_scheme_full |>
-    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) |>
+    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = tmt_levels)) |>
     dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel) |>
     check_metadata_integers(is_tmt, expt_smry)
-
+  
   if (is_tmt) {
     label_scheme_full <- label_scheme_full |>
       syn_empty_channels() |>
-      recheck_tmt_channels(TMT_plex) |>
+      recheck_tmt_channels(tmt_plex) |>
       check_tmt_rawfiles() |>
-      check_tmt_sampleids(TMT_plex) |>
+      check_tmt_sampleids(tmt_plex) |>
       check_tmt_emptyids() |>
-      check_tmt_chans_vs_levs(TMT_levels, expt_smry) |>
-      check_tmt_mixplexes(TMT_levels, TMT_plex)
+      check_tmt_chans_vs_levs(tmt_levels, expt_smry) |>
+      check_tmt_mixplexes(tmt_levels, tmt_plex)
   } 
   else {
     # Empty.xxx removed during `rm_fully_empty_tmt_sets`
@@ -185,12 +185,12 @@ prep_fraction_scheme <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   load(file.path(dat_dir, "label_scheme_full.rda"))
-  TMT_plex <- TMT_plex2()
-  TMT_levels <- TMT_levels(TMT_plex)
-  is_lfq <- is.null(TMT_levels)
-  is_tmt <- !is.null(TMT_levels)
+  tmt_plex <- TMT_plex2()
+  tmt_levels <- TMT_levels(tmt_plex)
+  is_lfq <- is.null(tmt_levels)
+  is_tmt <- !is_lfq
   
-  ext <- parse_filename(frac_smry, dat_dir)$fn_suffix
+  ext <- parse_filename(frac_smry, dat_dir)[["fn_suffix"]]
 
   if (file.exists(file.path(dat_dir, frac_smry))) {
     fraction_scheme <- update_frac_smry(
@@ -246,8 +246,9 @@ update_frac_smry <- function (frac_smry = "frac_smry.xlsx", expt_smry = "expt_sm
 
   fraction_scheme <- fraction_scheme |>
     dplyr::filter(!is.na(RAW_File)) |>
-    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) |>
-    dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE))
+    dplyr::mutate(
+      RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE), 
+      RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE), )
   
   if (any(duplicated(fraction_scheme$RAW_File)) && 
       is.null(fraction_scheme[["PSM_File"]])) {
@@ -494,8 +495,17 @@ read_metadata <- function (filename = "expt_smry.xlsx", dat_dir = NULL,
   } 
   else if (ext == "csv") {
     df <- read.csv(file, check.names = TRUE, header = TRUE, 
-                   comment.char = "#", na.strings = c("", "NA")) 
+                   comment.char = "#", na.strings = c("", "NA"))
   } 
+  else if (ext %in% c("txt", "tsv")) {
+    df <- readr::read_tsv(file)
+    
+    if (ncol(df) <= 1L) {
+      warning("Metadata may not be tab-delimited; try comma-separated.")
+      df <- readr::read_csv(file)
+    }
+    
+  }
   else {
     stop("File extension is not one of '.xls', '.xlsx' or '.csv': ", filename)
   }
@@ -517,12 +527,10 @@ write_metadata <- function (df, dat_dir = NULL, filename = "expt_smry.xlsx",
             length(metatype) == 1L, 
             is.data.frame(df))
 
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  }
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
   file <- file.path(dat_dir, filename)
-  ext  <- parse_filename(filename, dat_dir)$fn_suffix
+  ext  <- parse_filename(filename, dat_dir)[["fn_suffix"]]
   
   if (ext %in% c("xls", "xlsx")) {
     wb <- openxlsx::createWorkbook()
@@ -544,6 +552,9 @@ write_metadata <- function (df, dat_dir = NULL, filename = "expt_smry.xlsx",
   else if (ext == "csv") {
     write.csv(df, file, row.names = FALSE)
   } 
+  else if (ext %in% c("txt", "tsv")) {
+    readr::write_tsv(df, file)
+  }
   else {
     stop("File extension is not one of '.xls', '.xlsx' or '.csv': ", filename)
   }
@@ -788,38 +799,40 @@ check_tmt_ref <- function (x)
 #' Sample IDs started with \code{Empty} are at first replaced with NA.
 #'
 #' @param df A data frame of metadata (e.g., label_scheme_full).
-#' @param TMT_plex The multiplexity of TMT.
+#' @param tmt_plex The multiplexity of TMT.
 #' @inheritParams load_expts
 #' @inheritParams read_metadata
-rm_fully_empty_tmt_sets <- function (df, frac_smry = NULL, TMT_plex = 0L, 
+rm_fully_empty_tmt_sets <- function (df, frac_smry = NULL, tmt_plex = 0L, 
                                      dat_dir = NULL, ext = NULL) 
 {
-  df <- df %>% 
-    replace_empty_with_na() %>% 
-    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE) %>% 
-    dplyr::group_by(TMT_inj) %>% 
+  df <- df |>
+    replace_empty_with_na() |>
+    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE) |>
+    dplyr::group_by(TMT_inj) |>
     dplyr::mutate(count_na. = sum(is.na(Sample_ID))) 
   
   n_bf <- nrow(df)
   
-  df <- if (TMT_plex) {
-    df %>% dplyr::filter(count_na. != TMT_plex)
+  df <- if (tmt_plex) {
+    df |> dplyr::filter(count_na. != TMT_plex)
   }
   else {
-    df %>% dplyr::filter(count_na. == 0L)
+    df |> dplyr::filter(count_na. == 0L)
   }
   
   n_af <- nrow(df)
   
-  if (!n_af)
+  if (!n_af) {
     stop("Zero row in metadata; probably forget to set \"TMT_Set\" for LFQ.")
-  
+  }
+
   if (n_af < n_bf) {
     file <- file.path(dat_dir, frac_smry)
     
     if (file.exists(file)) {
       fraction_scheme <- read_metadata(frac_smry, dat_dir, ext, "frac") %>% 
-        tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE)
+        tidyr::unite(
+          TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE)
       
       rows <- fraction_scheme$TMT_inj %in% df$TMT_inj
       
@@ -831,11 +844,9 @@ rm_fully_empty_tmt_sets <- function (df, frac_smry = NULL, TMT_plex = 0L,
     }
   }
   
-  df <- df %>% 
-    dplyr::ungroup() %>% 
-    dplyr::select(-TMT_inj, -count_na.)
-
-  invisible(df)
+  df <- df |>
+    dplyr::ungroup() |>
+    dplyr::select(-dplyr::all_of(c("TMT_inj", "count_na.")))
 }
 
 
@@ -1161,9 +1172,9 @@ check_lfq_exptraws <- function (df)
   df <- df |>
     dplyr::mutate(Sample_ID = replace_na_with_empty(Sample_ID, "Empty"))
   
-  if (!all(is.na(df$RAW_File))) {
-    # if any RAW_File is provided -> safe to remove NA RAW_File(s)
-    df <- df |> dplyr::filter(!is.na(RAW_File)) 
+  # if any RAW_File is provided -> safe to remove NA RAW_File(s)
+  if (!all(is.na(df[["RAW_File"]]))) {
+    df <- df |> dplyr::filter(!is.na(.data[["RAW_File"]])) 
     
     if (any(bads <- duplicated(df$RAW_File))) {
       stop("Duplicaed entries under `RAW_File`:\n", 
@@ -1172,7 +1183,10 @@ check_lfq_exptraws <- function (df)
   }
   
   col <- which(names(df) == "Sample_ID")
-  df  <- dplyr::bind_cols(df[, col, drop = FALSE], df[, -col, drop = FALSE])
+  
+  df  <- dplyr::bind_cols(
+    df[, col, drop = FALSE], 
+    df[, -col, drop = FALSE])
 }
 
 
@@ -1495,22 +1509,22 @@ load_dbs <- function (gset_nms = NULL, species = NULL, id = "entrez",
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
                         frac_smry = "frac_smry.xlsx") 
 {
-  on.exit(mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
-            save_call(fun))
+  on.exit(
+    mget(names(formals()), envir = environment(), inherits = FALSE) |> 
+      save_call(fun))
   
   this_call <- match.call()
   fun <- as.character(this_call[[1]])
-
-  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
-  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
-
   dat_dir <- set_dat_dir(dat_dir)
 
   prep_label_scheme(dat_dir, expt_smry, frac_smry)
   prep_fraction_scheme(dat_dir, expt_smry, frac_smry)
   
   session_info <- sessionInfo()
-  dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
+  
+  dir.create(
+    file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
+  
   try(save(session_info, file = file.path(dat_dir, "Calls", "proteoQ.rda")))
 }
 
@@ -1523,21 +1537,22 @@ reload_expts <- function()
 {
   dat_dir <- get_gl_dat_dir()
   
-  expt_smry <- match_call_arg(load_expts, expt_smry)
-  frac_smry <- match_call_arg(load_expts, frac_smry)
+  expt_smry <- match_call_arg("load_expts", "expt_smry")
+  frac_smry <- match_call_arg("load_expts", "frac_smry")
   
   fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
   
-  if (is.na(fi_xlsx)) 
+  if (is.na(fi_xlsx)) {
     stop("Time stamp of ", expt_smry, " not available.")
-  
+  }
+
   fi_rda <- 
     fs::file_info(file.path(dat_dir, "label_scheme_full.rda"))$change_time
   
   if (fi_xlsx > fi_rda) 
     load_expts(dat_dir = dat_dir, 
-               expt_smry = !!expt_smry, 
-               frac_smry = !!frac_smry)
+               expt_smry = expt_smry, 
+               frac_smry = frac_smry)
 }
 
 
@@ -1678,25 +1693,25 @@ TMT_levels <- function (TMT_plex)
 #' @inheritParams n_TMT_sets
 simple_label_scheme <- function (dat_dir, label_scheme_full) 
 {
-  TMT_plex <- TMT_plex(label_scheme_full)
-  TMT_levels <- TMT_levels(TMT_plex)
+  tmt_plex <- TMT_plex(label_scheme_full)
+  tmt_levels <- TMT_levels(tmt_plex)
   
   # OK Sample_ID of "sample_x" and "Empty.1" at the same TMT_Set and TMT_Channel,
   # but different LCMS_Injection
-  label_scheme <- label_scheme_full %>%
-    dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>%
-    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+  label_scheme <- label_scheme_full |>
+    dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) |>
+    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = tmt_levels)) |>
     dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
   
-  multi_dips <- label_scheme %>% 
-    tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>% 
-    dplyr::group_by(key) %>% 
-    dplyr::mutate(n = n()) %>% 
-    dplyr::filter(n > 1L) %>% 
+  multi_dips <- label_scheme |>
+    tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) |>
+    dplyr::group_by(key) |>
+    dplyr::mutate(n = dplyr::n()) |>
+    dplyr::filter(n > 1L) |>
     dplyr::ungroup()
   
   label_scheme <- label_scheme %>% 
-    dplyr::filter(! .data$Sample_ID %in% multi_dips$Sample_ID)
+    dplyr::filter(!.data[["Sample_ID"]] %in% multi_dips[["Sample_ID"]])
   
   label_scheme <- multi_dips %>% 
     dplyr::filter(!grepl("^Empty\\.[0-9]+$", Sample_ID)) %>% 
@@ -1705,9 +1720,10 @@ simple_label_scheme <- function (dat_dir, label_scheme_full)
     dplyr::mutate(LCMS_Injection = 1L) %>% 
     dplyr::arrange(TMT_Set, TMT_Channel)
   
-  if (nrow(label_scheme) < (TMT_plex * n_TMT_sets(label_scheme))) 
-    stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
-  
+  if (nrow(label_scheme) < (tmt_plex * n_TMT_sets(label_scheme))) {
+    stop("Duplicated sample ID(s) in metadata.")
+  }
+
   save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
   
   invisible(label_scheme)

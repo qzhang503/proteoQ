@@ -96,13 +96,14 @@ write_fasta <- function (fasta_db, file)
 #' }
 load_fasta <- function (fasta = NULL) 
 {
-  if (is.null(fasta)) 
-    stop("FASTA file(s) are required.", call. = FALSE)
+  if (is.null(fasta)) {
+    stop("FASTA file(s) are required.")
+  }
 
-  if (!all(file.exists(fasta))) 
+  if (!all(file.exists(fasta))) {
     stop("Missing FASTA file(s): \n", 
-         purrr::reduce(fasta %>% .[!file.exists(.)], paste, sep = "\n"), 
-         call. = FALSE)
+         purrr::reduce(fasta %>% .[!file.exists(.)], paste, sep = "\n"))
+  }
 
   purrr::map(fasta, ~ read_fasta(.x)) %>% 
     do.call(`c`, .) %>% 

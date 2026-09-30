@@ -6,6 +6,7 @@
 \usage{
 plot_prnSubcellular(
   dat_dir = NULL,
+  col_group = NULL,
   levels_group = NULL,
   col_select = NULL,
   col_order = NULL,
@@ -33,6 +34,12 @@ plot_prnSubcellular(
 }
 \arguments{
 \item{dat_dir}{The working directory.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{levels_group}{The levels of data groups.}
 

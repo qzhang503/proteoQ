@@ -52,7 +52,7 @@ prnGSPA(
   gset_nms = c("go_sets", "c2_msig"),
   filter_prots_by_npep = exprs(prot_n_pep >= 2),
   filter_prots_by_species = exprs(species == "human"), 
-  filename = row_filters.txt,
+  filename = "row_filters.txt",
 )
 
 # by default, volcano-plot visualization for all GSPA result files, 
@@ -64,7 +64,7 @@ gspaMap(
   impute_na = FALSE,
   topn_labels = 0, 
   topn_gsets = 50, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 # or manually supply specific secondary file(s) with `df2`; 
@@ -72,7 +72,7 @@ gspaMap(
   df2 = "row_filters_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
   topn_gsets = 10, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 # may apply additionally secondary `fliter2_` varargs against `df2`
@@ -82,7 +82,7 @@ gspaMap(
   impute_na = FALSE,
   topn_gsets = 10, 
   topn_labels = 0, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 # can also visualize results for specific formula(e) and/or 
@@ -93,7 +93,7 @@ gspaMap(
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
   topn_gsets = 20, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 ## customized thresholds
@@ -111,7 +111,7 @@ prnGSPA(
   gset_nms = c("go_sets"), 
   filter_by_npep = exprs(prot_n_pep >= 2), 
   filter_prots_by_species = exprs(species == "human"), 
-  filename = thresholds.txt,
+  filename = "thresholds.txt",
 )
 
 gspaMap(
@@ -133,7 +133,7 @@ prnGSPA(
   gspval_cutoff = c(5E-2), 
   gset_nms = c("go_sets", "c2_msig"), 
   filter_by = exprs(prot_n_pep >= 2, species == "human"), 
-  filename = methods.txt,
+  filename = "methods.txt",
 )
 
 gspaMap(
@@ -141,7 +141,7 @@ gspaMap(
   impute_na = FALSE,
   topn_gsets = 25, 
   topn_labels = 0, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 ## NA imputation
@@ -179,7 +179,7 @@ prnGSPAHM(
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
-  filename = show_some_redundancy.png,
+  filename = "show_some_redundancy.png",
 )
 
 # human terms only
@@ -188,7 +188,7 @@ prnGSPAHM(
   filter2_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
-  filename = show_more_connectivity.png,
+  filename = "show_more_connectivity.png",
 )
 
 # custom color palette
@@ -197,7 +197,7 @@ prnGSPAHM(
   annot_colnames = c("Eset index", "Size"),
   filter2_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = custom_colors.png,
+  filename = "custom_colors.png",
 )
 
 # can also visualize results for specific `df2` and formula(e)
@@ -207,7 +207,7 @@ prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
   filter2_by = exprs(distance <= .95),
-  filename = w16_vs_w2.png,
+  filename = "w16_vs_w2.png",
 )
 
 
@@ -219,19 +219,19 @@ unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
 # prepare GO databases (see also ?prepGO)
 prepGO(
-  species = human,
+  species = "human",
   db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
-  filename = go_hs.rds,
+  filename = "go_hs.rds",
 )
 
 prepGO(
-  species = mouse,
+  species = "mouse",
   db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
-  filename = go_mm.rds,
+  filename = "go_mm.rds",
 )
 
 head(readRDS(file.path("~/proteoQ/dbs/go", "go_hs.rds")))
@@ -252,7 +252,7 @@ gspaMap(
                "~/proteoQ/dbs/go/go_mm.rds"),
   impute_na = FALSE,
   topn_gsets = 20, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 # ===================================
@@ -262,8 +262,8 @@ gspaMap(
 unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
 # prepare MSig databases (see also ?prepMSig)
-prepMSig(species = human)
-prepMSig(species = mouse)
+prepMSig(species = "human")
+prepMSig(species = "mouse")
 
 head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_hs.rds")))
 head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_mm.rds")))
@@ -283,7 +283,7 @@ gspaMap(
                "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
   topn_gsets = 20, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 ## put custom `prepGO`, `prepMSig` preparation into `prnGSPA` analysis
@@ -299,7 +299,7 @@ prnGSPA(
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
   gset_nms = c(prepGO(human), prepGO(mouse), prepMSig(human), prepMSig(mouse)),
-  filename = cmbn.txt,
+  filename = "cmbn.txt",
 ) %>% 
   gspaMap(
     # gset_nms = ., 
@@ -307,8 +307,6 @@ prnGSPA(
     impute_na = FALSE,
     topn_gsets = 20, 
     topn_labels = 0, 
-    show_sig = pVal, 
+    show_sig = "pVal", 
   )
 }
-
-

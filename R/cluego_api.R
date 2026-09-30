@@ -38,58 +38,62 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
                     n_clust = 3L) 
 {
   if (!requireNamespace("RJSONIO", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"RJSONIO\" for this function to work.",
-         "\n====================================================================",
-         call. = FALSE)
+         "\n=================================================================",)
   }
   
   if (!requireNamespace("httr", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"httr\" for this function to work.",
-         "\n====================================================================",
-         call. = FALSE)
+         "\n=================================================================",)
   }
-  
-  df2 <- rlang::as_string(rlang::enexpr(df2))
   
   dat_dir <- get_gl_dat_dir()
   filepath <- file.path(dat_dir, "Protein", "Trend")
 
-  if (length(species) > 1L)
-    stop("Only one species at a time.", call. = FALSE)
+  if (length(species) > 1L) {
+    stop("Only one species at a time.")
+  }
 
-  if (!rlang::is_integerish(n_clust))
-    stop("`n_clust` needs to be integers.", call. = FALSE)
+  if (!n_clust) {
+    stop("`n_clust` needs to be integers.")
+  }
 
   df <- tryCatch(
-    readr::read_tsv(file.path(filepath, df2), col_types = cols(group = col_factor())), 
+    readr::read_tsv(
+      file.path(filepath, df2), col_types = cols(group = col_factor())), 
     error = function(e) NA)
 
-  if (is.null(dim(df))) 
-    stop("File `", df2, "` not found.", call. = FALSE)
-  
+  if (is.null(dim(df))) {
+    stop("File `", df2, "` not found.")
+  }
+
   df <- df %>% 
     dplyr::filter(.data$species == names(.env$species), cluster %in% n_clust)
   
-  if (!nrow(df))
+  if (!nrow(df)) {
     stop("Zero data entries at species `", species, 
          "` and clusters ", purrr::reduce(n_clust, paste, sep = ", "))
+  }
 
   n_clust <- unique(df$cluster)
 
   # 0 --- start up
   cytoscape_base_url <- paste("http://localhost:1234", "/v1", sep = "")
-  cluego_base_url <- paste(cytoscape_base_url, "apps", "cluego", "cluego-manager", sep = "/")
+  cluego_base_url <- paste(cytoscape_base_url, "apps", "cluego", 
+                           "cluego-manager", sep = "/")
   
   response <- tryCatch(
-    httr::POST(url = paste(cytoscape_base_url, "apps", "cluego", "start-up-cluego", sep = "/"), 
+    httr::POST(url = paste(cytoscape_base_url, "apps", "cluego", 
+                           "start-up-cluego", sep = "/"), 
                encode = "json"), 
     error = function(e) NA)
 
-  if (all(is.na(response))) 
-    stop("Start Cytoscape first!", call. = FALSE)
-  
+  if (all(is.na(response))) {
+    stop("Start Cytoscape first!")
+  }
+
   if (grepl("HTTP ERROR 500",response)) {
     message("Initiating ClueGO...")
     Sys.sleep(2)
@@ -104,7 +108,8 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   max_input_panel_number <- length(n_clust)
   
   response <- httr::PUT(
-    url = paste(cluego_base_url, "cluster", "max-input-panel", max_input_panel_number, sep = "/"), 
+    url = paste(cluego_base_url, "cluster", "max-input-panel", 
+                max_input_panel_number, sep = "/"), 
     encode = "json")
 
   # 3 --- "set-analysis-properties"
@@ -129,7 +134,7 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   purrr::map2(input_panel_indexes, n_clust, ~ {
     genes <- df %>% 
       dplyr::filter(cluster == .y) %>% 
-      .[[match_call_arg(normPSM, group_pep_by)]] %>% 
+      .[[match_call_arg("normPSM", group_pep_by)]] %>% 
       unique() %>% 
       RJSONIO::toJSON()
 
@@ -185,7 +190,8 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   use_significance_cutoff <- TRUE
   
   response <- httr::PUT(
-    url = paste(cluego_base_url, "ontologies", use_significance_cutoff, p_value_cutoff, sep = "/"), 
+    url = paste(cluego_base_url, "ontologies", use_significance_cutoff, 
+                p_value_cutoff, sep = "/"), 
     encode = "json")
 
   # 3.6 Use GO term fusion
@@ -202,14 +208,17 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   use_doubling <- FALSE
   
   response <- httr::PUT(
-    url = paste(cluego_base_url, "stats", enrichment_type, multiple_testing_correction, 
-                use_mid_pvalues, use_doubling, sep = "/"), encode = "json")
+    url = paste(cluego_base_url, "stats", enrichment_type, 
+                multiple_testing_correction, 
+                use_mid_pvalues, use_doubling, sep = "/"), 
+    encode = "json")
   
   # 3.8 Set the Kappa Score level
   kappa_score <- 0.4
   
   response <- httr::PUT(
-    url = paste(cluego_base_url, "ontologies", "set-kappa-score-level", kappa_score, sep = "/"), 
+    url = paste(cluego_base_url, "ontologies", "set-kappa-score-level", 
+                kappa_score, sep = "/"), 
     encode = "json")
   
   # # 3.9 Set grouping parameters
@@ -222,15 +231,16 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   perc_terms_for_merge <- 50
   
   response <- httr::PUT(
-    url = paste(cluego_base_url, "grouping", do_grouping, coloring_type, group_leading_term, 
-                grouping_type, init_group_size, perc_groups_for_merge, perc_terms_for_merge, 
-                sep = "/"), encode = "json")
+    url = paste(
+      cluego_base_url, "grouping", do_grouping, coloring_type, 
+      group_leading_term, grouping_type, init_group_size, perc_groups_for_merge, 
+      perc_terms_for_merge, sep = "/"), encode = "json")
 
   # 8 --- "analysis"
   analysis_name <- paste(df2, reduce(sort(n_clust), paste, sep = "-"))
   
-  response <- httr::GET(paste(cluego_base_url, URLencode(analysis_name), 
-                              URLencode("Cancel and refine selection"), 
-                              sep = "/"))
+  response <- httr::GET(
+    paste(cluego_base_url, URLencode(analysis_name), 
+          URLencode("Cancel and refine selection"), sep = "/"))
 }
 

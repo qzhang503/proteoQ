@@ -296,21 +296,10 @@ pepHist <- function (dat_dir = NULL, col_select = NULL, scale_log2r = TRUE,
 
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NULL)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) NULL)
   if (is.null(id)) id <- "pep_seq_mod"
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
 
   dots <- rlang::enexprs(...)
   
@@ -490,21 +479,10 @@ prnHist <- function (dat_dir = NULL, col_select = NULL, scale_log2r = TRUE,
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NULL)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NULL)
   if (is.null(id)) id <- "gene"
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
 
   dots <- rlang::enexprs(...)
   

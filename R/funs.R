@@ -29,8 +29,10 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -507,10 +509,11 @@
 # hmake_subcell_expr
 # make_subcell_expr
 # cluster_svmprobs
-# classify_subcellular
+# classify_subcellular_supervised
 # classify_subcellular_unsupervised
 # check_subcell
 # plot_prnSubcell_UMAP
+# plot_umap
 # update_subell_by_contr
 # update_subcell_by_fml
 # update_subcell

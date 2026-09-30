@@ -107,8 +107,7 @@ stringTest <- function(df = NULL, id = gene,
                        filepath = NULL, filename = NULL, ...) 
 {
   dat_dir <- get_gl_dat_dir()
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   stopifnot(id %in% names(df), 
             nrow(label_scheme_sub) > 0, 
             vapply(c(score_cutoff), rlang::is_double, logical(1L)))
@@ -196,12 +195,12 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
+    match_call_arg("normPSM", group_pep_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -209,27 +208,23 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE,
     id <- "gene"
   }
 
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
   reload_expts()
   
-  info_anal(id = !!id, 
+  info_anal(id = id, 
             col_select = NULL, 
             col_group = NULL, 
             col_order = NULL,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = !!df, 
+            df = df, 
             df2 = NULL, 
-            filepath = !!filepath, 
-            filename = !!filename,
+            filepath = filepath, 
+            filename = filename,
             anal_type = "String")(db_nms = db_nms, 
                                   score_cutoff = score_cutoff, 
                                   ...)
@@ -294,13 +289,11 @@ prepString <- function(species = "human", # abbr_species = NULL,
   on.exit(options(old_opts), add = TRUE)
   
   if (!requireNamespace("downloader", quietly = TRUE)) {
-    stop("\n====================================================================", 
+    stop("\n=================================================================", 
          "\nNeed package \"downloader\" for this function to work.",
-         "\n====================================================================",
-         call. = FALSE)
+         "\n=================================================================")
   }
   
-  species <- rlang::as_string(rlang::enexpr(species))
   db_path <- create_db_path(db_path)
 
   if (is.null(links_url)) {
@@ -451,7 +444,7 @@ prepString <- function(species = "human", # abbr_species = NULL,
     temp  
   })
   
-  filename <- set_db_outname(!!rlang::enexpr(filename), species, "string")
+  filename <- set_db_outname(filename, species, "string")
   
   saveRDS(list(links = df_links, aliases = df_aliases, info = df_info), 
           file.path(db_path, filename))

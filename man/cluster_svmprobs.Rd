@@ -7,6 +7,7 @@
 cluster_svmprobs(
   df_prob = NULL,
   sub_type = NULL,
+  col_fraction = NULL,
   dat_dir = NULL,
   filepath = NULL,
   id = "gene",

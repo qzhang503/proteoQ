@@ -10,6 +10,7 @@ prepSubcell(
   dat_dir = NULL,
   filepath = NULL,
   label_scheme_sub = NULL,
+  df_ref = NULL,
   n_clust = NULL,
   key_col = "log10Int",
   col_group = NULL,
@@ -29,6 +30,8 @@ prepSubcell(
 \item{dat_dir}{The current working directory.}
 
 \item{filepath}{The filepath of inputs and outputs.}
+
+\item{df_ref}{A data frame of reference markers.}
 
 \item{key_col}{The column key where data to be used.}
 

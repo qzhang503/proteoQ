@@ -8,7 +8,8 @@ update_subcell_by_fml(
   fml_nm = NULL,
   fml = NULL,
   df = NULL,
-  label_scheme_sub = NULL
+  label_scheme_sub = NULL,
+  FUN = all
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ update_subcell_by_fml(
 \item{df}{A data frame.}
 
 \item{label_scheme_sub}{Metadata.}
+
+\item{FUN}{A logical function of \code{all} or \code{any}.}
 }
 \description{
 There can be multiple contrasts under a formula.

@@ -145,7 +145,7 @@ prnVol(
 prnVol(
   xco = 0,
   yco = Inf,
-  filename = no_xylines.png,
+  filename = "no_xylines.png",
 )
 
 # Shows vertical center line at log2(1)
@@ -153,7 +153,7 @@ prnVol(
 prnVol(
   xco = 1,
   yco = Inf,
-  filename = no_xylines.png,
+  filename = "no_xylines.png",
 )
 
 # Kinases and prot_n_pep >= 2
@@ -175,7 +175,7 @@ prnVol(
   y_label = "pVal ("*-log[10]*")", 
   height = 6,
   width = 6*2.7,
-  filename = custom.png,
+  filename = "custom.png",
 )
 
 # Custom theme
@@ -207,11 +207,11 @@ my_theme <- theme_bw() +
     legend.box = NULL
   )
 
-prnVol(theme = my_theme, filename = my_theme.png)
+prnVol(theme = my_theme, filename = "my_theme.png")
 
 # Custom plot
 # ("W2_bat" etc. are contrast names in `pepSig`)
-prnVol(fml_nms = c("W2_bat", "W2_loc"), filename = foo.png)
+prnVol(fml_nms = c("W2_bat", "W2_loc"), filename = "foo.png")
 
 res <- readRDS(file.path(dat_dir, "Protein/Volcano/W2_bat/foo.rds"))
 # names(res)
@@ -252,7 +252,7 @@ p <- p + geom_table(data = res$topn_labels, aes(table = gene),
 # Highlight
 prnVol(
   highlights = rlang::exprs(gene \%in\% c("ACTB", "GAPDH")), 
-  filename = highlights.png
+  filename = "highlights.png"
 )
 
 
@@ -272,14 +272,14 @@ prnGSPA(
 #   according to the corresponding `prnGSPA` in red; 
 # (2) optional lines of `xco` and `yco` in grey
 prnGSPAMap(
-  show_sig = pVal, 
+  show_sig = "pVal", 
 )
 
 # Disable the lines of `xco` and `yco`, 
 prnGSPAMap(
   impute_na = FALSE,
   topn_gsets = 20, 
-  show_sig = pVal, 
+  show_sig = "pVal", 
   xco = 0, 
   yco = Inf, 
 )
@@ -291,7 +291,7 @@ prnGSPAMap(
   gslogFC_cutoff = log2(1.2),
   topn_gsets = 20, 
   topn_labels = 0,
-  show_sig = pVal,
+  show_sig = "pVal",
   xco = 0, 
   yco = Inf, 
 )

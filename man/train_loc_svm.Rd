@@ -11,7 +11,7 @@ train_loc_svm(
   id = "gene",
   col_y = "location",
   col_subtype = NULL,
-  col_compartment = "compartment",
+  col_fraction = NULL,
   filepath = NULL,
   seed = 42L,
   ...
@@ -29,12 +29,12 @@ that summed to one across fractions for each protein.}
 
 \item{col_y}{The column key in \code{df_ref} for training labels.}
 
-\item{col_compartment}{The identifier of subcellular compartment.}
+\item{col_fraction}{The identifier of subcellular compartment.}
 
 \item{seed}{A seed for SVM.}
 }
 \value{
-Two lists of (1) SVM probablity matrix and (2) expression data.
+Two lists of (1) SVM probability matrix and (2) expression data.
 }
 \description{
 Train localization SVM.

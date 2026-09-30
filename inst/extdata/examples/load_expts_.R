@@ -46,8 +46,8 @@ load_expts("~/proteoQ/examples")
 
 # PSM data standardization
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   annot_kinases = TRUE, 
   
   # no default and required
@@ -170,8 +170,8 @@ load_expts("~/proteoQ/examples")
 
 # PSM data standardization
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   annot_kinases = TRUE, 
   fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hsmm_2020_03.fasta"),
 )
@@ -262,7 +262,7 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = my_expt)
 
 # need unquoting; 
 # see also: https://dplyr.tidyverse.org/articles/programming.html
-load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
+load_expts(dat_dir = "~/proteoQ/examples", expt_smry = my_expt)
 }
 
 

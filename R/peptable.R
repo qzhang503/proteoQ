@@ -192,7 +192,7 @@ use_mq_prottable <- function (dat_dir)
 fillMFprnnums <- function (dat_dir, use_maxlfq = TRUE, use_spec_counts = FALSE, 
                            prob_co = .99) 
 {
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   sids <- label_scheme$Sample_ID
   refChannels <- sids[label_scheme[["Reference"]]]
 
@@ -246,7 +246,7 @@ fillMFprnnums <- function (dat_dir, use_maxlfq = TRUE, use_spec_counts = FALSE,
 #' @param use_maxlfq Logical; use MaxLFQ values or not.
 fillMQprnnums <- function (dat_dir, use_spec_counts = FALSE, use_maxlfq = TRUE) 
 {
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   sids <- label_scheme$Sample_ID
   refChannels <- sids[label_scheme[["Reference"]]]
 
@@ -426,8 +426,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE,
                        use_spec_counts = FALSE, use_maxlfq = TRUE) 
 {
   dat_dir <- get_gl_dat_dir()
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
 
   filelist <- 
     list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
@@ -551,8 +551,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE,
     df$"Gene names" <- df$"Gene Names" <- df$"Protein names" <- 
       df$"Protein Names" <- NULL
     
-    fasta <- match_call_arg(normPSM, fasta)
-    entrez <- match_call_arg(normPSM, entrez)
+    fasta <- match_call_arg("normPSM", "fasta")
+    entrez <- match_call_arg("normPSM", "entrez")
     
     df <- local({
       df <- df %>% 
@@ -594,7 +594,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE,
   # group_psm_by = "pep_seq" only in `normPSM()`
   if (group_psm_by == "pep_seq_mod") {
     if ("Modified sequence" %in% names(df)) {
-      use_lowercase_aa <- match_call_arg(normPSM, use_lowercase_aa)
+      use_lowercase_aa <- match_call_arg("normPSM", "use_lowercase_aa")
       
       df <- df %>% 
         dplyr::rename(pep_seq_mod = `Modified sequence`) %>% 
@@ -662,8 +662,8 @@ pep_mf_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE,
                        use_lowercase_aa = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   
   filelist <- if (group_psm_by == "pep_seq_mod") {
     list.files(path = file.path(dat_dir), 
@@ -1220,7 +1220,7 @@ point_in_polygon <- function(x, y, xp, yp)
 calcLFQPepInts <- function (df, filelist, group_psm_by) 
 {
   dat_dir <- get_gl_dat_dir()
-  label_scheme <- load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme", prefer_group = FALSE)
   
   cols_grp  <- c(group_psm_by, "TMT_Set")
   cols_grp2 <- c("TMT_Set")
@@ -1294,7 +1294,7 @@ calcLFQPepInts <- function (df, filelist, group_psm_by)
   
   if (is_mulgrps) {
     label_scheme_group <- 
-      load_ls_group(dat_dir, label_scheme, prefer_group = TRUE)
+      load_ls_group(dat_dir, "label_scheme", prefer_group = TRUE)
     
     df_num <- pad_grp_samples(
       df = df_num, 
@@ -1342,9 +1342,9 @@ spreadPepNums <- function (df, dat_dir = NULL, basenames, tmt_plex = 0L,
   }
 
   label_scheme <- 
-    load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+    load_ls_group(dat_dir, "label_scheme", prefer_group = FALSE)
   label_scheme_full <- 
-    load_ls_group(dat_dir, label_scheme_full, prefer_group = FALSE)
+    load_ls_group(dat_dir, "label_scheme_full", prefer_group = FALSE)
   
   tmt_levels <- TMT_levels(tmt_plex)
   tmt_levels <- if (tmt_plex) gsub("^TMT-", "", tmt_levels) else "000"
@@ -1977,7 +1977,7 @@ pad_grp_samples <- function (df, sids, tmt_levels = NULL,
 #' @inheritParams newColnames
 rep_ls_groups <- function (group_ids) 
 {
-  label_scheme <- load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme", prefer_group = FALSE)
 
   nrow <- nrow(label_scheme)
   sids <- label_scheme$Sample_ID
@@ -2388,7 +2388,7 @@ normPep <- function (dat_dir = NULL, group_psm_by = "pep_seq_mod",
   
   # --- add varmod columns ---
   if (("pep_seq_mod" %in% names(df)) && 
-      (match_call_arg(normPSM, use_lowercase_aa))) {
+      (match_call_arg("normPSM", "use_lowercase_aa"))) {
     df <- df |>
       dplyr::mutate(pep_mod_protnt = ifelse(grepl("^~", pep_seq_mod), 
                                             TRUE, FALSE)) |>
@@ -3147,11 +3147,11 @@ mergePep <- function (
   dir.create(file.path(dat_dir, "Peptide/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   
   if (is.null(mbr_ret_tol)) {
-    mbr_ret_tol  <- match_call_arg(normPSM, mbr_ret_tol)
+    mbr_ret_tol  <- match_call_arg("normPSM", "mbr_ret_tol")
   }
   else {
     if (!is.numeric(mbr_ret_tol)) {
@@ -3182,8 +3182,8 @@ mergePep <- function (
          "Use either, not both.")
   }
 
-  use_spec_counts <- match_call_arg(normPSM, use_spec_counts)
-  lfq_mbr <- match_call_arg(normPSM, lfq_mbr)
+  use_spec_counts <- match_call_arg("normPSM", "use_spec_counts")
+  lfq_mbr <- match_call_arg("normPSM", "lfq_mbr")
 
   df <- normPep(dat_dir = dat_dir, 
                 group_psm_by = group_psm_by, 
@@ -3398,46 +3398,23 @@ standPep <- function (dat_dir = NULL,
   reload_expts()
   
   group_psm_by <- tryCatch(
-    match_call_arg(normPSM, group_psm_by),error = function(e) NULL)
+    match_call_arg("normPSM", group_psm_by), error = function(e) NULL)
   group_pep_by <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) NULL)
+    match_call_arg("normPSM", group_pep_by), error = function(e) NULL)
   if (is.null(group_psm_by)) { group_psm_by <- "pep_seq_mod" }
   if (is.null(group_pep_by)) { group_pep_by <- "gene" }
 
-  ok_method_align <- c("MC", "MGKernel", "None")
-  method_align <- rlang::enexpr(method_align)
-  method_align <- if (length(method_align) > 1L) "MC" else as.character(method_align)
-  
-  if (FALSE) {
-    if (method_align == rlang::expr(ok_method_align)) {
-      method_align <- "MC"
-    } else {
-      method_align <- rlang::as_string(method_align)
-      if (length(method_align) != 1L) {
-        warning("More than one 'method_align'; set to 'MC'.")
-        method_align <- "MC"
-      } else if (!method_align %in% ok_method_align) {
-        warning("Unknown 'method_align'; set to 'MC'.")
-        method_align <- "MC"
-      }
-    }
-  }
-  
+  method_align <- match.arg(method_align)
   range_log2r <- prep_range(range_log2r)
   range_int <- prep_range(range_int)
   
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
-  label_scheme_full <- load_ls_group(dat_dir, label_scheme_full)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
+  label_scheme_full <- load_ls_group(dat_dir, "label_scheme_full")
   ok_existing_params(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_N.txt"))
 
-  col_select <- rlang::enexpr(col_select)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
   if (!length(col_select)) col_select <- "Sample_ID"
-  col_select <- parse_col_select(col_select, label_scheme)
-
-  col_group <- rlang::enexpr(col_group)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
   if (!length(col_group)) col_group <- "Group"
+  col_select <- parse_col_select(col_select, label_scheme)
 
   dots <- rlang::enexprs(...)
   
@@ -3613,9 +3590,9 @@ Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE,
   tmt_plex <- TMT_plex(label_scheme_full)
   
   group_pep_by <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   use_spec_counts <- tryCatch(
-    match_call_arg(normPSM, use_spec_counts), error = function(e) FALSE)
+    match_call_arg("normPSM", "use_spec_counts"), error = function(e) FALSE)
 
   if (use_spec_counts) {
     method_pep_prn <- "lfq_all" # sum of peptide spec counts
@@ -3805,7 +3782,7 @@ calcLFQprnnums <- function (df, label_scheme, use_unique_pep = TRUE,
   refChannels  <- label_scheme$Sample_ID[label_scheme[["Reference"]]]
 
   if (use_unique_pep) {
-    pep_unique_by <- match_call_arg(normPSM, pep_unique_by)
+    pep_unique_by <- match_call_arg("normPSM", "pep_unique_by")
     
     if (pep_unique_by == "group") {
       df <- df |> dplyr::filter(pep_razor_unique)
@@ -3959,7 +3936,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
                        use_spec_counts = FALSE, ...)
 {
   dat_dir <- get_gl_dat_dir()
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   tmt_plex <- TMT_plex(label_scheme)
 
   # `id` is always "prot_acc"; `group_pep_by` could be "gene"
@@ -4055,8 +4032,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     warning("Values of \"pep_isunique\" are all NA and coerced to TRUE.")
   }
   
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   
   # add `prot_n_uniqpep` and `prot_n_uniqpsm`
   df <- local({

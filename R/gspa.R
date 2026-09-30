@@ -30,16 +30,18 @@ pepGSPA <- function (dat_dir = NULL,
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "GSPA")
 
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makePepDIANN, group_psm_by), 
+      match_call_arg("makePepDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -48,20 +50,6 @@ pepGSPA <- function (dat_dir = NULL,
   }
 
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
-  method <- rlang::as_string(rlang::enexpr(method))
-  
   stopifnot(all(method %in% c("mean", "limma")))
   
   dots <- rlang::enexprs(...)
@@ -297,13 +285,14 @@ prnGSPA <- function (
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -312,20 +301,6 @@ prnGSPA <- function (
   }
   
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  id_gspa <- rlang::as_string(rlang::enexpr(id_gspa))
-  method <- rlang::as_string(rlang::enexpr(method))
-
   stopifnot(method %in% c("mean", "limma"))
   
   dots <- rlang::enexprs(...)
@@ -370,72 +345,152 @@ prnGSPA <- function (
 
 
 #' Add subcellular results to protein table.
-#' 
-#' @param df A data frame. 
+#'
+#' @param df A data frame.
 #' @param dat_dir The working directory.
 #' @param is_subcellular Logical; is subcellular data type or not.
+#' @param rm_tetherome Logical; remove tetherome entries or not by nullifying
+#'   pVals.
+#' @param update_trend_res Logical; rewrite trend results or not.
+#' @param col_subtype The column key in metadata to smple subtypes.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param scale_log2r Not used. Logical; if TRUE, adjusts \code{log2FC} to the
+#'   same scale of standard deviation across all samples. The default is TRUE.
+#'   At \code{scale_log2r = NA}, the raw \code{log2FC} without normalization
+#'   will be used.
+#' @param impute_na Not used. Logical; if TRUE, data with the imputation of
+#'   missing values will be used. The default is FALSE.
 #' @inheritParams normPSM
-add_subcell <- function (df = NULL, dat_dir, group_pep_by = "gene", 
-                         is_subcellular = FALSE, scale_log2r = TRUE, 
-                         impute_na = FALSE)
+add_subcell <- function (
+    df = NULL, dat_dir, group_pep_by = "gene", is_subcellular = FALSE, 
+    col_subtype = NULL, col_fraction = NULL, 
+    rm_tetherome = FALSE, update_trend_res = FALSE, 
+    scale_log2r = TRUE, impute_na = FALSE)
 {
   ## Find input `df2`
   path_trend <- file.path(dat_dir, "Protein", "trend")
   
-  if (is_subcellular) {
-    df2 <- find_trend_df2(
-      df2 = NULL, n_clust = NULL, scale_log2r = scale_log2r, 
-      impute_na = impute_na, filepath = path_trend)
-    
-    if (is.null(df2)) {
-      is_subcellular <- FALSE
-    } else {
-      df2 <- df2[[1]]
-    }
-  } else {
-    df2 <- NULL
+  files_2 <- find_trend_df2(
+    df2 = NULL, n_clust = NULL, scale_log2r = scale_log2r, 
+    impute_na = impute_na, filepath = path_trend)
+  
+  if (is.null(files_2) && is_subcellular) {
+    warning("Subcellular results not found.")
+    is_subcellular <- FALSE
   }
   
-  if (is_subcellular) {
-    df_trend <- readr::read_tsv(file.path(path_trend, df2))
-    col_fraction <- df_trend[["col_fraction"]][[1]]
-    col_subtype <- df_trend[["col_subtype"]][[1]]
-    col_group <- df_trend[["col_group"]][[1]]
-    
-    # col_fraction encodes sample fraction; 
-    # sub_location: classification results
-    if (!"sub_location" %in% colnames(df_trend)) {
-      stop("Column 'sub_location' not found. ", 
-           "Run 'plot_prnSubcellular' first.")
-    }
-    
-    # Replace log2FC with 0 for proteins not belonging to a given fraction
-    df_trend_long <- 
-      df_trend[, c(group_pep_by, "loc_score", "sub_location", "group")] |>
-      dplyr::filter(!is.na(sub_location)) |>
-      dplyr::arrange(gene) |>
-      unique() 
-    
-    df_trend <- df_trend_long |>
-      tidyr::pivot_wider(
-        id_cols = group_pep_by, 
-        names_from = c("group"), 
-        values_from = "loc_score",
-        values_fill = 0, )
-
-    df <- df |>
-      dplyr::left_join(df_trend, by = group_pep_by)
-  } else {
+  if (!is_subcellular) {
     df_trend <- NULL
     col_fraction <- NULL
     col_subtype <- NULL
     col_group <- NULL
     df_trend_long <- NULL
+    
+    return(
+      list(df = df, df_trend = df_trend, df_trend_long = df_trend_long, 
+           col_fraction = col_fraction, col_subtype = col_subtype, 
+           col_group = col_group, path_trend = path_trend)
+    )
   }
   
-  list(df = df, df_trend = df_trend, df_trend_long = df_trend_long, 
+  file_2 <- files_2[[1]]
+  
+  df_trend     <- readr::read_tsv(file.path(path_trend, file_2))
+  col_fraction <- df_trend[["col_fraction"]][[1]]
+  col_subtype  <- df_trend[["col_subtype"]][[1]]
+  col_group    <- df_trend[["col_group"]][[1]]
+  
+  # col_fraction encodes sample fraction; 
+  # sub_location: classification results
+  if (!"sub_location" %in% colnames(df_trend)) {
+    stop("Column 'sub_location' not found. Run ", 
+         "'plot_prnSubcellular' or 'classify_subcellular_unsupervised' first.")
+  }
+  
+  ## Add tethome
+  fi_tether <- file.path(path_trend, "marker_tetherome.tsv")
+  
+  if (rm_tetherome && !file.exists(fi_tether)) {
+    warning("Tetherome results not found.")
+    rm_tetherome <- FALSE
+  }
+  
+  if (rm_tetherome) {
+    df_tether <- readr::read_tsv(fi_tether) |>
+      dplyr::mutate(is_tetherome = TRUE)
+    
+    # 'Empty' data with only columns `col_subtype` and `col_fraction`
+    if (!group_pep_by %in% names(df_tether)) {
+      rm_tetherome <- FALSE
+    }
+  }
+  
+  if (rm_tetherome && update_trend_res) {
+    res_tether <- update_trend_tetherome(
+      files_trend = files_2, df_tether = df_tether, filepath = path_trend, 
+      group_pep_by = group_pep_by, col_subtype = col_subtype, 
+      col_fraction = col_fraction, update_trend_res = update_trend_res)
+    df_trend_updated <- res_tether[[1]]
+    
+    rm(list = c("df_tether", "rows", "res_tether"))
+  } else {
+    df_trend_updated <- df_trend
+  }
+
+  # Replace log2FC with 0 for proteins not belonging to a given fraction
+  df_trend_long <- df_trend_updated |>
+    dplyr::select(
+      dplyr::all_of(c(group_pep_by, "loc_score", "sub_location", col_group))) |>
+    dplyr::filter(!is.na(sub_location)) |>
+    dplyr::arrange(gene) |>
+    unique() 
+  
+  df_trend_updated <- df_trend_long |>
+    tidyr::pivot_wider(
+      id_cols = group_pep_by, 
+      names_from = col_group, 
+      values_from = "loc_score",
+      values_fill = 0., )
+
+  df <- df |>
+    dplyr::left_join(df_trend_updated, by = group_pep_by)
+  
+  list(df = df, df_trend = df_trend_updated, df_trend_long = df_trend_long, 
        col_fraction = col_fraction, col_subtype = col_subtype, 
        col_group = col_group, path_trend = path_trend)
+}
+
+
+#' Update trend results with tetherome.
+
+#' @param files_trend The file names of trend results.
+#' @param df_tether The data frame of tetherome.
+#' @param filepath The file path to trend results.
+#' @inheritParams add_subcell
+update_trend_tetherome <- function (
+    files_trend, df_tether, filepath, group_pep_by, update_trend_res = FALSE, 
+    col_subtype, col_fraction)
+{
+  dfs <- vector("list", length(files_trend))
+  
+  for (i in seq_along(files_trend)) {
+    fn <- files_trend[[i]]
+    df <- readr::read_tsv(file.path(filepath, fn))
+    
+    df <- df |>
+      dplyr::left_join(
+        df_tether, by = c(group_pep_by, col_subtype, col_fraction))
+    rows <- df[["is_tetherome"]] & !is.na(df[["is_tetherome"]])
+    df[["sub_location"]][rows] <- NA_character_
+    df[["is_tetherome"]] <- NULL
+    dfs[[i]] <- df
+    
+    if (update_trend_res) {
+      readr::write_tsv(df, file.path(filepath, fn))
+    }
+  }
+  
+  invisible(dfs)
 }
 
 
@@ -1490,14 +1545,13 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE,
   dir.create(file.path(dat_dir, "Protein/GSPA/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  # id <- match_call_arg(normPSM, group_pep_by)
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
+    match_call_arg("normPSM", group_pep_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -1505,17 +1559,11 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE,
     id <- "gene"
   }
 
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
 
-  df2 <- rlang::enexpr(df2)
-  filename <- rlang::enexpr(filename)
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  annot_rows <- rlang::enexpr(annot_rows) 
-  
   dots <- rlang::enexprs(...)
   
   dots <- concat_fml_dots(
@@ -1527,17 +1575,17 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE,
 
   reload_expts()
 
-  info_anal(id = !!id, 
+  info_anal(id = id, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
             df = NULL, 
-            df2 = !!df2, 
+            df2 = df2, 
             filepath = NULL, 
-            filename = !!filename, 
-            anal_type = "GSPA_hm")(annot_cols = !!annot_cols, 
-                                   annot_colnames = !!annot_colnames, 
-                                   annot_rows = !!annot_rows, 
+            filename = filename, 
+            anal_type = "GSPA_hm")(annot_cols = annot_cols, 
+                                   annot_colnames = annot_colnames, 
+                                   annot_rows = annot_rows, 
                                    !!!dots)
 }
 

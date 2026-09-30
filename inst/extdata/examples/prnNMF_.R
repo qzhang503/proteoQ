@@ -18,7 +18,7 @@ library(NMF)
 
 anal_prnNMF(
   impute_na = FALSE,
-  col_group = Group,
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
 )
@@ -26,22 +26,22 @@ anal_prnNMF(
 # passing a different `method`
 anal_prnNMF(
   impute_na = FALSE,
-  col_group = Group,
+  col_group = "Group",
   method = "lee",
   rank = c(3:4),
   nrun = 20, 
-  filename = lee.txt,
+  filename = "lee.txt",
 )
 
 ## row filtration and selected samples (proteins)
 anal_prnNMF(
   impute_na = FALSE,
-  col_select = BI,
-  col_group = Group,
+  col_select = "BI",
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
   filter_prots = exprs(prot_n_pep >= 3),
-  filename = bi_npep3.txt,
+  filename = "bi_npep3.txt",
 )
 
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
@@ -62,12 +62,12 @@ prnSig(impute_na = FALSE)
 # (`W16_vs_W2.pVal (W16-W2)` now a column key)
 anal_prnNMF(
   impute_na = FALSE,
-  col_group = Group,
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pval.txt,
+  filename = "pval.txt",
 )
 
 ## additional row filtration by pVals (impute_na = TRUE)
@@ -91,18 +91,18 @@ prnSig(impute_na = TRUE)
 
 anal_prnNMF(
   impute_na = TRUE,
-  col_group = Group,
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pval2.txt,
+  filename = "pval2.txt",
 )
 
 ## analogous peptides
 anal_pepNMF(
   impute_na = TRUE,
-  col_group = Group,
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
@@ -111,7 +111,7 @@ anal_pepNMF(
 
 anal_pepNMF(
   impute_na = FALSE,
-  col_group = Group,
+  col_group = "Group",
   rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
@@ -137,13 +137,13 @@ plot_prnNMFCon(
 # analogous peptides
 plot_pepNMFCon(
   impute_na = FALSE,
-  col_select = BI,
+  col_select = "BI",
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   color = colorRampPalette(RColorBrewer::brewer.pal(n = 7, name = "Spectral"))(50), 
   width = 10,
   height = 10,
-  filename = bi.pdf,
+  filename = "bi.pdf",
 )
 
 # manual selection of input data file(s)
@@ -170,12 +170,12 @@ plot_prnNMFCon(
 # analogous peptides
 plot_pepNMFCon(
   impute_na = TRUE,
-  col_select = BI,
+  col_select = "BI",
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
-  filename = bi_con.png,
+  filename = "bi_con.png",
 )
 
 
@@ -251,19 +251,19 @@ plot_metaNMF(
 # proteins, selected sample(s)
 plot_metaNMF(
   impute_na = FALSE,
-  col_select = BI_1,
+  col_select = "BI_1",
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   fontsize = 8,
   fontsize_col = 5,
   cellwidth = 6, 
-  filename = bi1.png,
+  filename = "bi1.png",
 )
 
 # proteins, selected sample(s) and row ordering
 plot_metaNMF(
   impute_na = FALSE,
-  col_select = BI_1,
+  col_select = "BI_1",
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   fontsize = 8,
@@ -271,7 +271,7 @@ plot_metaNMF(
   cellwidth = 6, 
   cluster_rows = FALSE,
   arrange_prots_by = exprs(gene),
-  filename = bi1_row_by_genes.png,
+  filename = "bi1_row_by_genes.png",
 )
 
 # manual selection of input .rda file(s)
@@ -279,7 +279,7 @@ plot_metaNMF(
 plot_metaNMF(
   df2 = c("Protein_NMF_Z_rank3.rda"),  
   impute_na = FALSE,
-  col_select = BI_1,
+  col_select = "BI_1",
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   fontsize = 8,
@@ -287,7 +287,7 @@ plot_metaNMF(
   cellwidth = 6, 
   cluster_rows = FALSE,
   arrange_prots_by = exprs(gene),
-  filename = bi1_row_by_genes.png,
+  filename = "bi1_row_by_genes.png",
 )
 
 ## NA imputation 

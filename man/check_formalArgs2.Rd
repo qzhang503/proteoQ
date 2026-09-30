@@ -4,7 +4,7 @@
 \alias{check_formalArgs2}
 \title{Checks conflicts in function arguments.}
 \usage{
-check_formalArgs2(w = anal_prnTrend, f = NMF::nmf, excludes = NULL)
+check_formalArgs2(w = "anal_prnTrend", f = "NMF::nmf", excludes = NULL)
 }
 \arguments{
 \item{w}{Expression; the wrapper function.}

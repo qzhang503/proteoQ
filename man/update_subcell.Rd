@@ -5,8 +5,9 @@
 \title{Update subcellular protein or peptide tables.}
 \usage{
 update_subcell(
-  df = NULL,
   data_type = c("Protein", "Peptide"),
+  rm_tetherome = FALSE,
+  df = NULL,
   dat_dir = NULL,
   filepath = NULL,
   fml_nms = NULL,
@@ -15,10 +16,13 @@ update_subcell(
 )
 }
 \arguments{
+\item{data_type}{The type of data in either \code{Protein} or \code{Peptide}.}
+
+\item{rm_tetherome}{Logical; remove tetherome entries or not by nullifying
+pVals.}
+
 \item{df}{Automatically determined: a data frame from
 \code{Protein_pVals.txt} or \code{Peptide_pVals.txt}.}
-
-\item{data_type}{The type of data in either \code{Protein} or \code{Peptide}.}
 
 \item{dat_dir}{The working directory.}
 

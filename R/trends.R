@@ -281,6 +281,8 @@ analTrend <- function (
   ## Can have NaN if only select a subset of input data
   df_mean_log2r[is.na(df_mean_log2r)] <- 0.0
   df_mean_int[is.na(df_mean_int)] <- 0.0
+  df_mean_int <- round(df_mean_int, digits = 0L)
+  df_mean_log2r <- round(df_mean_log2r, digits = 3L)
   
   df_mean_log2r |>
     tibble::rownames_to_column(id) |>
@@ -349,22 +351,21 @@ analTrend <- function (
   
   df_mean_int_long <- log10(df_mean_int) |>
     tibble::rownames_to_column(id) |>
-    tidyr::pivot_longer(-!!id, names_to = "group", values_to = "log10Int") |>
-    tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+    tidyr::pivot_longer(-!!id, names_to = col_group, values_to = "log10Int") |>
+    tidyr::unite(uid, !!id, !!col_group, sep = ".", remove = TRUE)
   
-  df_mean_int <- df_mean_int |>
-    tibble::rownames_to_column(id)
-  
+  df_mean_int <- df_mean_int |> tibble::rownames_to_column(id)
+
   if (ok_frac_purity <- length(df_frac_purity)) {
     df_frac_purity <- df_frac_purity |>
       tibble::rownames_to_column(id) |>
-      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "purity") |>
-      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+      tidyr::pivot_longer(-!!id, names_to = col_group, values_to = "purity") |>
+      tidyr::unite(uid, !!id, !!col_group, sep = ".", remove = TRUE)
     
     df_score_loc <- df_score_loc |>
       tibble::rownames_to_column(id) |>
-      tidyr::pivot_longer(-!!id, names_to = "group", values_to = "loc_score") |>
-      tidyr::unite(uid, !!id, group, sep = ".", remove = TRUE)
+      tidyr::pivot_longer(-!!id, names_to = col_group, values_to = "loc_score") |>
+      tidyr::unite(uid, !!id, !!col_group, sep = ".", remove = TRUE)
     
     df_entropy <- df_entropy |>
       tibble::rownames_to_column(id) |>
@@ -388,22 +389,23 @@ analTrend <- function (
       dplyr::left_join(res_cl[[i]], by = id) |>
       tidyr::pivot_longer(
         cols = -c(.data[[id]], cluster), 
-        names_to = "group", 
+        names_to = col_group, 
         values_to = "log2FC") |>
-      dplyr::mutate(group = factor(group, levels = fcts)) |>
-      dplyr::arrange(group) |>
-      tidyr::unite(uid, !!id, group, sep = ".", remove = FALSE) |> 
+      dplyr::mutate(
+        !!col_group := factor(!!rlang::sym(col_group), levels = fcts)) |>
+      dplyr::arrange_at(col_group) |>
+      tidyr::unite(uid, !!id, !!col_group, sep = ".", remove = FALSE) |> 
       dplyr::left_join(df_mean_int_long, by = "uid")
     
     if (ok_frac_purity) {
       outi <- outi |>
-        dplyr::left_join(sc_lookup, by = c("group" = "Sample_ID"))
+        dplyr::left_join(sc_lookup, by = col_group)
       
       outi <- outi |>
         dplyr::left_join(df_frac_purity, by = "uid")
       
       outi <- outi |>
-        tidyr::unite(uid_ent, !!id, col_subtype, sep = ".", remove = FALSE) |> 
+        tidyr::unite(uid_ent, !!id, !!col_subtype, sep = ".", remove = FALSE) |> 
         dplyr::left_join(df_entropy, by = "uid_ent") |>
         dplyr::left_join(df_score_loc, by = "uid")
     } else {
@@ -470,9 +472,7 @@ prepTrend <- function (
     impute_na = FALSE, anal_type = "Trend", p_outlier = 0.05, 
     group_renorm_by = NULL, int_to_long = TRUE, ...)
 {
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  }
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   
   dots <- rlang::enexprs(...)
   lang_dots    <- dots[unlist(lapply(dots, is.language))]
@@ -492,7 +492,7 @@ prepTrend <- function (
   rm(list = "tempdata")
 
   label_scheme_sub <- label_scheme_sub |>
-    dplyr::filter(Sample_ID %in% colnames(dfR))
+    dplyr::filter(.data[["Sample_ID"]] %in% colnames(dfR))
   
   tempdata <- make_renorm_data(
     df_lgr = dfR, df_log2r = NULL, df_int = dfI, 
@@ -630,8 +630,8 @@ prepTrend <- function (
 #' @param label_scheme_sub Metadata.
 #' @inherit anal_prnTrend
 calc_subcell_frac <- function (
-    dfR = NULL, dfI = NULL, label_scheme_sub = NULL, col_group = "Group", 
-    col_fraction = "Subcellular", col_subtype = NULL) 
+    dfR = NULL, dfI = NULL, label_scheme_sub = NULL, col_group = NULL, 
+    col_fraction = NULL, col_subtype = NULL) 
 {
   if (!length(col_fraction)) {
     return(NULL)
@@ -656,15 +656,15 @@ calc_subcell_frac <- function (
 
   sc_lookup <- label_scheme_sub |>
     dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
-    unique() |>
-    dplyr::rename(Sample_ID := col_group)
-  
+    unique() # |> dplyr::rename(Sample_ID := col_group)
+
   dfs <- sep_data_by_group(
     elements = unique(sc_lookup[[col_subtype]]), 
     dfR = dfR, 
     dfI = dfI, 
-    sids = sc_lookup[["Sample_ID"]], 
+    sids = sc_lookup[[col_group]], 
     key_col = col_subtype, 
+    sid_col = col_group, 
     label_scheme = sc_lookup)
 
   # Fraction probability
@@ -843,6 +843,7 @@ find_trend_df2 <- function (df2 = NULL, filepath = NULL, n_clust = NULL,
                             pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", 
                             ext = "txt", scale_log2r = TRUE, impute_na = FALSE)
 {
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   ins <- list.files(path = filepath, pattern = pat)
 
   if (!length(ins)) {
@@ -1067,7 +1068,8 @@ plotTrend_sub <- function (
   src_path <- file.path(filepath, df2)
   
   df <- tryCatch(
-    readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
+    readr::read_tsv(
+      src_path, col_types = cols(!!rlang::sym(col_group) := col_factor())), 
     error = function(e) NA)
   
   if (!is.null(dim(df))) {
@@ -1223,10 +1225,11 @@ plotTrend_sub <- function (
   })
 
   df <- df |>
-    dplyr::filter(group %in% levels_group) |>
+    dplyr::filter(.data[[col_group]] %in% levels_group) |>
     filters_in_call(!!!filter2_dots) |>
     arrangers_in_call(!!!arrange2_dots) |>
-    dplyr::mutate(group = factor(group, levels = levels_group))
+    dplyr::mutate(
+      !!col_group := factor(!!rlang::sym(col_group), levels = levels_group))
   
   if (complete_cases) {
     df <- df[complete.cases(df), ]
@@ -1261,8 +1264,9 @@ plotTrend_sub <- function (
   }
   
   p <- ggplot(data = df,
-              mapping = aes(x = group, y = !!rlang::sym(col_y), 
-                            group = !!rlang::sym(id))) +
+              mapping = aes(
+                x = !!rlang::sym(col_group), y = !!rlang::sym(col_y), 
+                group = !!rlang::sym(id))) +
     geom_line(colour = color, alpha = alpha) + 
     scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
     labs(title = "", x = "", y = y_label) +
@@ -1322,13 +1326,13 @@ anal_pepTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
-              function (x) check_formalArgs(anal_prnTrend, !!x))
+              function (x) check_formalArgs("anal_prnTrend", x))
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_psm_by), 
+      match_call_arg("makeProtDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -1337,49 +1341,12 @@ anal_pepTrend <- function (
   }
   
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-  
-  # force(choice); force(group_data_by);
-  # force(col_select); force(col_group); force(col_order); force(col_fraction);
-  # force(col_subtype); force(df); force(filepath); force(filename); 
-  
-  if (TRUE) {
-    ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-    choice <- rlang::enexpr(choice)
-    choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
-    group_data_by <- rlang::enexpr(group_data_by)
-    group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
-  } else {
-    choice <- match.arg(choice)
-    group_data_by <- match.arg(group_data_by)
-  }
+
+  choice <- match.arg(choice)
+  group_data_by <- match.arg(group_data_by)
   
   checkdots_analTrend(choice, ...)
   
-  if (TRUE) {
-    ## Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select   <- rlang::enexpr(col_select)
-    col_group    <- rlang::enexpr(col_group)
-    col_order    <- rlang::enexpr(col_order)
-    col_fraction <- rlang::enexpr(col_fraction)
-    col_subtype  <- rlang::enexpr(col_subtype)
-    df <- rlang::enexpr(df)
-    filepath <- rlang::enexpr(filepath)
-    filename <- rlang::enexpr(filename)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-    if (!is.character(df)) df <- as.character(df)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(filename)) filename <- as.character(filename)
-  }
-
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()
@@ -1559,12 +1526,13 @@ anal_prnTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
-              function (x) check_formalArgs(anal_prnTrend, !!x))
+              function (x) check_formalArgs("anal_prnTrend", x))
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", group_pep_by), 
+                 error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_pep_by), 
+    id <- tryCatch(match_call_arg("makeProtDIANN", group_pep_by), 
                    error = function(e) NA)
   }
   
@@ -1574,49 +1542,11 @@ anal_prnTrend <- function (
   
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  ###
-  # try(force(choice, env = environment()))
-  # try(force(group_data_by))
-  ###
-  
-  if (TRUE) {
-    ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-    choice <- rlang::enexpr(choice)
-    choice <- if (length(choice) > 1L) "cmeans" else as.character(choice)
-    group_data_by <- rlang::enexpr(group_data_by)
-    group_data_by <- if (length(group_data_by) > 1L) "ratio" else group_data_by(choice)
-  } else {
-    choice <- match.arg(choice)
-    group_data_by <- match.arg(group_data_by)
-  }
+  choice <- match.arg(choice)
+  group_data_by <- match.arg(group_data_by)
   
   checkdots_analTrend(choice, ...)
   
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select   <- rlang::enexpr(col_select)
-    col_group    <- rlang::enexpr(col_group)
-    col_order    <- rlang::enexpr(col_order)
-    col_fraction <- rlang::enexpr(col_fraction)
-    col_subtype  <- rlang::enexpr(col_subtype)
-    # df <- rlang::enexpr(df)
-    # filepath <- rlang::enexpr(filepath)
-    # filename <- rlang::enexpr(filename)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(col_fraction)) col_fraction <- as.character(col_fraction)
-    if (!is.character(col_subtype)) col_subtype <- as.character(col_subtype)
-    # if (!is.character(df)) df <- as.character(df)
-    # if (!is.character(filepath)) filepath <- as.character(filepath)
-    # if (!is.character(filename)) filename <- as.character(filename)
-  }
-
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()
@@ -1654,7 +1584,8 @@ anal_prnTrend <- function (
 #' @rdname anal_prnTrend
 #' @export
 plot_pepTrend <- function (
-    dat_dir = NULL, col_select = NULL, col_order = NULL, levels_group = NULL, 
+    dat_dir = NULL, col_select = NULL, col_order = NULL, 
+    col_group = NULL, levels_group = NULL, 
     n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     df2 = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
@@ -1666,12 +1597,12 @@ plot_pepTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), 
+    match_call_arg("normPSM", group_psm_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_psm_by), 
+      match_call_arg("makeProtDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -1681,23 +1612,6 @@ plot_pepTrend <- function (
   
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  if (TRUE) {
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select    <- rlang::enexpr(col_select)
-    col_order     <- rlang::enexpr(col_order)
-    levels_group  <- rlang::enexpr(levels_group)
-    filename      <- rlang::enexpr(filename)
-    df2           <- rlang::enexpr(df2)
-    
-    # NULL or symbol -> length 0 or 1
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(levels_group)) levels_group <- as.character(levels_group)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
-
   if (file.exists(fn_pars <- file.path(dat_dir, "Calls/anal_pepTrend.rda"))) {
     load(file = fn_pars)
     
@@ -1717,7 +1631,7 @@ plot_pepTrend <- function (
   
   info_anal(id = id, 
             col_select = col_select, 
-            col_group = NULL, 
+            col_group = col_group, 
             col_order = col_order,
             df = NULL, 
             df2 = df2, 
@@ -1858,7 +1772,8 @@ plot_pepTrend <- function (
 #'
 #'@export
 plot_prnTrend <- function (
-    dat_dir = NULL, col_select = NULL, col_order = NULL, levels_group = NULL,
+    dat_dir = NULL, col_select = NULL, col_order = NULL, 
+    col_group = NULL, levels_group = NULL,
     n_clust = NULL, panel_ids = NULL, show_panel_ids = TRUE, 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     df2 = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
@@ -1870,12 +1785,12 @@ plot_prnTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
+    match_call_arg("normPSM", group_pep_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -1884,23 +1799,6 @@ plot_prnTrend <- function (
   }
   
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  if (TRUE) {
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select    <- rlang::enexpr(col_select)
-    col_order     <- rlang::enexpr(col_order)
-    levels_group  <- rlang::enexpr(levels_group)
-    filename      <- rlang::enexpr(filename)
-    df2           <- rlang::enexpr(df2)
-    
-    # NULL or symbol -> length 0 or 1
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_order)) col_order <- as.character(col_order)
-    if (!is.character(levels_group)) levels_group <- as.character(levels_group)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
 
   if (file.exists(fn_pars <- file.path(dat_dir, "Calls/anal_prnTrend.rda"))) {
     load(file = fn_pars)
@@ -1921,7 +1819,7 @@ plot_prnTrend <- function (
   
   info_anal(id = id, 
             col_select = col_select, 
-            col_group = NULL, 
+            col_group = col_group, 
             col_order = col_order,
             df = NULL, 
             df2 = df2, 

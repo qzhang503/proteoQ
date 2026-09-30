@@ -175,7 +175,7 @@ plotHM <- function(df, id, col_select, col_order, col_benchmark,
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
   
   dat_dir <- get_gl_dat_dir()
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   sample_ids <- label_scheme_sub$Sample_ID
   
   if (!(is.null(col_order) || is.factor(label_scheme[[col_order]]))) {
@@ -862,33 +862,9 @@ pepHM <- function (dat_dir = NULL,
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Heatmap")
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  # force(col_select); force(col_order); force(col_benchmark); force(df);
-  # force(filepath); force(filename);
-  # force(hc_method_rows); force(hc_method_cols)
-  
-  col_select    <- rlang::enexpr(col_select)
-  col_order     <- rlang::enexpr(col_order)
-  col_benchmark <- rlang::enexpr(col_benchmark)
-  df            <- rlang::enexpr(df)
-  filepath      <- rlang::enexpr(filepath)
-  filename      <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_benchmark)) col_benchmark <- as.character(col_benchmark)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  # Never NULL (since the default is not NULL)
-  hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
-  hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1130,33 +1106,9 @@ prnHM <- function (dat_dir = NULL,
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Heatmap")  
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  # force(col_select); force(col_order); force(col_benchmark); force(df);
-  # force(filepath); force(filename);
-  # force(hc_method_rows); force(hc_method_cols)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select    <- rlang::enexpr(col_select)
-  col_order     <- rlang::enexpr(col_order)
-  col_benchmark <- rlang::enexpr(col_benchmark)
-  df            <- rlang::enexpr(df)
-  filepath      <- rlang::enexpr(filepath)
-  filename      <- rlang::enexpr(filename)
-  
-  # NULL or symbol -> length 0 or 1
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_benchmark)) col_benchmark <- as.character(col_benchmark)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  # Never NULL (since the default is not NULL)
-  hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
-  hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   

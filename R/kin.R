@@ -11,14 +11,12 @@ annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL,
   if (!all(file.exists(db_nms))) {
     stop("Missing PSP file(s): \n", 
          purrr::reduce(db_nms %>% .[!file.exists(.)], paste, sep = "\n"), 
-         "\nCheck the file path or download the database from 'www.phosphosite.org'.", 
-         call. = FALSE)
+         "\nCheck the file path or download the database from 'www.phosphosite.org'.")
   }
   
   if (all(is.na(df$entrez))) {
     stop("Entrez IDs not available in primary 'df' for annotation.\n", 
-         "Consider utilities 'Uni2Entrez' or 'Ref2Entrez'for adding entrez IDs.", 
-         call. = FALSE)
+         "Consider utilities 'Uni2Entrez' or 'Ref2Entrez'for adding entrez IDs.")
   }
   
   nms_df <- names(df)
@@ -28,8 +26,7 @@ annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL,
                  error = function(e) "e")
   
   if (ok != "acc_lookup") {
-    stop("`acc_lookup.rda` not found under ", dat_dir, ".", 
-         call. = FALSE)
+    stop("`acc_lookup.rda` not found under ", dat_dir, ".")
   }
   
   rm(list = "ok")
@@ -84,12 +81,12 @@ KinSubTest <- function(df = NULL, id = gene, label_scheme_sub = NULL,
                        filepath = NULL, filename = NULL, ...) 
 {
   dat_dir <- get_gl_dat_dir()
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   stopifnot(id %in% names(df), nrow(label_scheme_sub) > 0L)
 
-  if (complete_cases)
+  if (complete_cases) {
     df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
+  }
 
   dots <- rlang::enexprs(...)
   
@@ -162,45 +159,32 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
   
   check_dots(c("id", "anal_type", "df2"), ...)
   
-  type <- rlang::enexpr(type)
+  type <- match.arg(type)
   
-  if (length(type) > 1) {
-    type <- "peptide"
-  } 
-  else {
-    type <- rlang::as_string(type)
-    stopifnot(type %in% c("peptide", "protein"), 
-              length(type) == 1L)
-  }
-
   id <- switch(type, 
-               peptide = match_call_arg(normPSM, group_psm_by), 
-               protein = match_call_arg(normPSM, group_pep_by), 
-               stop("`type` need to be one of `peptide` or `protein`.", 
-                    call. = FALSE))
+               peptide = match_call_arg("normPSM", group_psm_by), 
+               protein = match_call_arg("normPSM", group_pep_by), 
+               stop("`type` need to be one of `peptide` or `protein`."))
   
-  dir.create(file.path(get_gl_dat_dir(), stringr::str_to_title(type), "KinSub/log"), 
-             recursive = TRUE, showWarnings = FALSE)
+  dir.create(
+    file.path(get_gl_dat_dir(), stringr::str_to_title(type), "KinSub/log"), 
+    recursive = TRUE, showWarnings = FALSE)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), 
                    rlang::is_logical, logical(1L)))
   
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
   reload_expts()
   
-  info_anal(df = !!df, 
+  info_anal(df = df, 
             df2 = NULL, 
-            id = !!id, 
+            id = id, 
             scale_log2r = TRUE, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             anal_type = "KinSub")(db_nms = db_nms, match_orgs = match_orgs, ...)
 }
 

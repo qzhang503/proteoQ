@@ -942,64 +942,16 @@ pepMDS <- function (dat_dir = NULL,
   
   purrr::walk2(formals(pepMDS)[["choice"]] %>% eval(), 
                list(c("d", "k"), c("d", "k", "p")), 
-               ~ check_formalArgs(pepMDS, !!.x, .y))
+               ~ check_formalArgs("pepMDS", .x, .y))
   
-  check_formalArgs(pepMDS, dist, c("method", "p"))
-  
-  # force(choice); force(method);
-  # force(col_select); force(col_group); force(col_order); force(col_color); 
-  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
-  # force(color_brewer); force(fill_brewer); force(size_manual); 
-  # force(shape_manual); force(alpha_manual); 
-  # force(df); force(filepath); force(filename); 
-  
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "cmdscale" else as.character(choice)
-  method <- rlang::enexpr(method)
-  method <- if (length(method) > 1L) "euclidean" else as.character(method)
+  check_formalArgs("pepMDS", "dist", c("method", "p"))
 
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  choice <- match.arg(choice)
+
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_group  <- rlang::enexpr(col_group)
-  col_order  <- rlang::enexpr(col_order)
-  col_color  <- rlang::enexpr(col_color)
-  col_fill   <- rlang::enexpr(col_fill)
-  col_shape  <- rlang::enexpr(col_shape)
-  col_size   <- rlang::enexpr(col_size)
-  col_alpha  <- rlang::enexpr(col_alpha)
-  
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer  <- rlang::enexpr(fill_brewer)
-  size_manual  <- rlang::enexpr(size_manual)
-  shape_manual <- rlang::enexpr(shape_manual)
-  alpha_manual <- rlang::enexpr(alpha_manual)
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_color)) col_color <- as.character(col_color)
-  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
-  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
-  if (!is.character(col_size)) col_size <- as.character(col_size)
-  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
-  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
-  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
-  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
-  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
-  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1235,9 +1187,9 @@ prnMDS <- function (dat_dir = NULL,
   
   purrr::walk2(formals(prnMDS)[["choice"]] %>% eval(), 
                list(c("d", "k"), c("d", "k", "p")), 
-              ~ check_formalArgs(prnMDS, !!.x, .y))
+              ~ check_formalArgs("prnMDS", .x, .y))
   
-  check_formalArgs(prnMDS, dist, c("method", "p"))
+  check_formalArgs("prnMDS", "dist", c("method", "p"))
   
   # force(choice); force(method);
   # force(col_select); force(col_group); force(col_order); force(col_color); 
@@ -1352,10 +1304,10 @@ pepEucDist <- function (col_select = NULL,
 {
   check_dots(c("id", "col_group", "col_color", "col_fill",
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
-  check_formalArgs(prnEucDist, dist)
+  check_formalArgs("prnEucDist", "dist")
 
   id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
 
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
@@ -1492,10 +1444,10 @@ prnEucDist <- function (col_select = NULL,
 {
   check_dots(c("id", "col_group", "col_color", "col_fill",
                "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
-  check_formalArgs(prnEucDist, dist)
+  check_formalArgs("prnEucDist", "dist")
 
   id <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
 
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)

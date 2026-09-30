@@ -1075,12 +1075,12 @@ anal_pepOutlier <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   group_psm_by <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), 
+    match_call_arg("normPSM", group_psm_by), 
     error = function(e) NA)
   
   if (is.na(group_psm_by)) {
     group_psm_by <- tryCatch(
-      match_call_arg(makePepDIANN, group_psm_by), 
+      match_call_arg("makePepDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -1089,12 +1089,12 @@ anal_pepOutlier <- function (
   }
   
   group_pep_by <- tryCatch(
-    match_call_arg(normPSM, group_pep_by), 
+    match_call_arg("normPSM", group_pep_by), 
     error = function(e) NA)
   
   if (is.na(group_pep_by)) {
     group_pep_by <- tryCatch(
-      match_call_arg(makePepDIANN, group_pep_by), 
+      match_call_arg("makePepDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -1102,24 +1102,6 @@ anal_pepOutlier <- function (
     group_pep_by <- "gene"
   }
   
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select  <- rlang::enexpr(col_select)
-  col_group   <- rlang::enexpr(col_group)
-  col_order   <- rlang::enexpr(col_order)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  group_renorm_by <- rlang::enexpr(group_renorm_by)
-  
-  # NULL or symbol -> length 0 or 1
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  if (!is.character(group_renorm_by)) group_renorm_by <- as.character(group_renorm_by)
-
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()

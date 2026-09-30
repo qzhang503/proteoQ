@@ -8,11 +8,12 @@ make_subcell_plot(
   df_med,
   n_clust,
   col_cluster = "cluster",
-  col_x = "group",
+  col_x = "Group",
   col_y = "loc_score",
   levels_group = NULL,
   col_fraction = "Fraction",
   levels_fraction = NULL,
+  color_fractions = NULL,
   panel_ids = NULL,
   cl_id = NULL,
   filepath = NULL,
@@ -35,6 +36,8 @@ make_subcell_plot(
 \item{col_fraction}{The column key of subcellular fractions.}
 
 \item{levels_fraction}{The levels of fractions.}
+
+\item{color_fractions}{The color scheme of fractions.}
 
 \item{panel_ids}{The subset of panel_ids for visualization.}
 

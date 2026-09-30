@@ -910,15 +910,15 @@ anal_pepNMF <- function (
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
-  check_formalArgs2(anal_pepNMF, NMF::nmf, "rank")
+  check_formalArgs2("anal_pepNMF", "NMF::nmf", "rank")
 
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_psm_by), 
+    id <- tryCatch(match_call_arg("makeProtDIANN", group_psm_by), 
                    error = function(e) NA)
   }
   
@@ -930,25 +930,6 @@ anal_pepNMF <- function (
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select   <- rlang::enexpr(col_select)
-    col_group    <- rlang::enexpr(col_group)
-    df <- rlang::enexpr(df)
-    filepath <- rlang::enexpr(filepath)
-    filename <- rlang::enexpr(filename)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(df)) df <- as.character(df)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(filename)) filename <- as.character(filename)
-  }
-  
   reload_expts()
   
   info_anal(id = id, 
@@ -957,7 +938,7 @@ anal_pepNMF <- function (
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
-            df = !!df, 
+            df = df, 
             df2 = NULL, filepath = filepath, filename = filename, 
             anal_type = "NMF")(rank = rank, nrun = nrun, seed = seed, ...)
 }
@@ -987,16 +968,17 @@ anal_prnNMF <- function (
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
-  check_formalArgs2(anal_prnNMF, NMF::nmf, "rank")
+  check_formalArgs2("anal_prnNMF", "NMF::nmf", "rank")
   
   dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_pep_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1007,31 +989,6 @@ anal_prnNMF <- function (
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select   <- rlang::enexpr(col_select)
-    col_group    <- rlang::enexpr(col_group)
-    df <- rlang::enexpr(df)
-    filepath <- rlang::enexpr(filepath)
-    filename <- rlang::enexpr(filename)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(col_group)) col_group <- as.character(col_group)
-    if (!is.character(df)) df <- as.character(df)
-    if (!is.character(filepath)) filepath <- as.character(filepath)
-    if (!is.character(filename)) filename <- as.character(filename)
-  }
-  
   reload_expts()
   
   dots <- rlang::enexprs(...)
@@ -1150,11 +1107,12 @@ plot_pepNMFCon <- function (col_select = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_psm_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_psm_by), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1165,21 +1123,6 @@ plot_pepNMFCon <- function (col_select = NULL,
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select <- rlang::enexpr(col_select)
-    filename <- rlang::enexpr(filename)
-    df2 <- rlang::enexpr(df2)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
-  
   reload_expts()
 
   info_anal(id = id, 
@@ -1214,11 +1157,12 @@ plot_prnNMFCon <- function (col_select = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_pep_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1229,21 +1173,6 @@ plot_prnNMFCon <- function (col_select = NULL,
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select <- rlang::enexpr(col_select)
-    filename <- rlang::enexpr(filename)
-    df2 <- rlang::enexpr(df2)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
-  
   reload_expts()
   
   info_anal(id = id, 
@@ -1278,11 +1207,12 @@ plot_pepNMFCoef <- function (col_select = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_psm_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_psm_by), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1293,21 +1223,6 @@ plot_pepNMFCoef <- function (col_select = NULL,
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select <- rlang::enexpr(col_select)
-    filename <- rlang::enexpr(filename)
-    df2 <- rlang::enexpr(df2)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
-  
   reload_expts()
   
   info_anal(id = id, 
@@ -1342,11 +1257,12 @@ plot_prnNMFCoef <- function (col_select = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_pep_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1357,21 +1273,6 @@ plot_prnNMFCoef <- function (col_select = NULL,
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  if (TRUE) {
-    ## 1. Argument with single, non-NULL option (with or without quotation mark)
-    # my_arg <- rlang::as_string(rlang::enexpr(my_arg))
-    
-    ## Argument with single option and NULL default (quotation marks or not)
-    col_select <- rlang::enexpr(col_select)
-    filename <- rlang::enexpr(filename)
-    df2 <- rlang::enexpr(df2)
-    
-    # NULL default: length(0); symbol -> length(1)
-    if (!is.character(col_select)) col_select <- as.character(col_select)
-    if (!is.character(filename)) filename <- as.character(filename)
-    if (!is.character(df2)) df2 <- as.character(df2)
-  }
-  
   reload_expts()
   
   info_anal(id = id, 
@@ -1479,11 +1380,12 @@ plot_metaNMF <- function (col_select = NULL,
   dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg(makeProtDIANN, group_pep_by), 
-                   error = function(e) NA)
+    id <- tryCatch(
+      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
   }
   
   if (is.na(id)) {

@@ -9,6 +9,10 @@ add_subcell(
   dat_dir,
   group_pep_by = "gene",
   is_subcellular = FALSE,
+  col_subtype = NULL,
+  col_fraction = NULL,
+  rm_tetherome = FALSE,
+  update_trend_res = FALSE,
   scale_log2r = TRUE,
   impute_na = FALSE
 )
@@ -25,6 +29,23 @@ alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
 \item{is_subcellular}{Logical; is subcellular data type or not.}
+
+\item{col_subtype}{The column key in metadata to smple subtypes.}
+
+\item{col_fraction}{The column key in metadata to subcellular fractions.}
+
+\item{rm_tetherome}{Logical; remove tetherome entries or not by nullifying
+pVals.}
+
+\item{update_trend_res}{Logical; rewrite trend results or not.}
+
+\item{scale_log2r}{Not used. Logical; if TRUE, adjusts \code{log2FC} to the
+same scale of standard deviation across all samples. The default is TRUE.
+At \code{scale_log2r = NA}, the raw \code{log2FC} without normalization
+will be used.}
+
+\item{impute_na}{Not used. Logical; if TRUE, data with the imputation of
+missing values will be used. The default is FALSE.}
 }
 \description{
 Add subcellular results to protein table.

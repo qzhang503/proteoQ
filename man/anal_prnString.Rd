@@ -78,16 +78,16 @@ The ppi file, \code{[...]_ppi.tsv}, and the expression file,
 library(proteoQ)
 
 # `human` and `mouse` STRING using default urls;
-prepString(human)
-prepString(mouse)
+prepString("human")
+prepString("mouse")
 
 # custom `human` and `mouse` STRING
 prepString(
-  species = does_not_matter_at_custom_urls,
+  species = "does_not_matter_at_custom_urls",
   links_url = "https://stringdb-static.org/download/protein.links.full.v11.0/9606.protein.links.full.v11.0.txt.gz",
   aliases_url = "https://stringdb-static.org/download/protein.aliases.v11.0/9606.protein.aliases.v11.0.txt.gz",
   info_url = "https://stringdb-static.org/download/protein.info.v11.0/9606.protein.info.v11.0.txt.gz", 
-  filename = my_hs.rds,
+  filename = "my_hs.rds",
 )
 
 prepString(
@@ -95,7 +95,7 @@ prepString(
   links_url = "https://stringdb-static.org/download/protein.links.full.v11.0/10090.protein.links.full.v11.0.txt.gz",
   aliases_url = "https://stringdb-static.org/download/protein.aliases.v11.0/10090.protein.aliases.v11.0.txt.gz",
   info_url = "https://stringdb-static.org/download/protein.info.v11.0/10090.protein.info.v11.0.txt.gz", 
-  filename = my_mm.rds,
+  filename = "my_mm.rds",
 )
 }
 
@@ -124,7 +124,7 @@ anal_prnString(
   score_cutoff = .9,
   filter_by_sp = exprs(species == "human"),
   filter_prots_by = exprs(prot_n_pep >= 2),
-  filename = human.tsv,
+  filename = "human.tsv",
 )
 
 # `mouse` only
@@ -134,7 +134,7 @@ anal_prnString(
   score_cutoff = .9,
   filter_by_sp = exprs(species == "mouse"),
   filter_prots_by = exprs(prot_n_pep >= 2),
-  filename = mouse.tsv,
+  filename = "mouse.tsv",
 )
 
 
@@ -147,7 +147,7 @@ anal_prnString(
                        `W16_vs_W2.pVal (W16-W2)` <= 1E-6,
                        abs(`W16_vs_W2.log2Ratio (W16-W2)`) >= 1.2),
   filter_prots_by = exprs(prot_n_pep >= 2),
-  filename = human_sigs.tsv,
+  filename = "human_sigs.tsv",
 )
 
 anal_prnString(
@@ -157,7 +157,7 @@ anal_prnString(
                        `W16_vs_W2.pVal (W16-W2)` <= 1E-6,
                        abs(`W16_vs_W2.log2Ratio (W16-W2)`) >= 1.2),
   filter_prots_by = exprs(prot_n_pep >= 2),
-  filename = mouse_sigs.tsv,
+  filename = "mouse_sigs.tsv",
 )
 
 # can incorporate `prepString` into `anal_prnString`
@@ -166,7 +166,7 @@ anal_prnString(
              prepString(mouse)),
   score_cutoff = .9,
   filter_prots_by = exprs(prot_n_pep >= 2),
-  filename = one_pot.tsv,
+  filename = "one_pot.tsv",
 )
 }
 }

@@ -9,6 +9,8 @@ hmake_subcell_expr(
   label_scheme_sub = NULL,
   id = "gene",
   key_col = "log10Int",
+  scale = TRUE,
+  key_group = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   col_fraction = NULL,
@@ -22,6 +24,11 @@ hmake_subcell_expr(
 
 \item{key_col}{The column key where values will be used for preparing
 expression data.}
+
+\item{scale}{Logical; to scale values by rowSums or not.}
+
+\item{key_group}{The column key where group information will be found for
+preparing expression data.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
 }

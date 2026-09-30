@@ -22,14 +22,11 @@ prepDM <- function(df = NULL, dat_dir = NULL, id = "pep_seq",
     dat_dir <- get_gl_dat_dir()
   }
   
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   
   if (!nrow(df)) {
     stop("Zero row of data after subsetting.")
   }
-  
-  # force(id)
-  # id <- rlang::as_string(rlang::enexpr(id))
   
   if (anal_type %in% c("ESGAGE", "GSVA")) {
     id <- "entrez"
@@ -342,9 +339,6 @@ not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
 aggrNums <- function(f) 
 {
   function (df, id, ...) {
-    force(id)
-    id <- rlang::as_string(rlang::enexpr(id))
-
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
@@ -364,9 +358,6 @@ aggrNums <- function(f)
 aggrTopn <- function(f) 
 {
   function (df, id, n, ...) {
-    force(id)
-    id <- rlang::as_string(rlang::enexpr(id))
-
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
@@ -450,8 +441,6 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
   
   range_int <- c(.05, .95)
   
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
   # intensity
@@ -535,9 +524,6 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 TMT_top_n <- function (df, id, ...) 
 {
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
-
   df %>%
     dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
     dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
@@ -688,7 +674,7 @@ colAnnot <- function (annot_cols = NULL, annot_colnames = NULL,
   }
 
   dat_dir <- get_gl_dat_dir()
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   exists <- annot_cols %in% names(label_scheme)
   
   if (sum(!exists) > 0L) {
@@ -840,9 +826,6 @@ setHMlims <- function (x, xmin, xmax)
 #' @examples \donttest{ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)}
 ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) 
 {
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
-  
   nm_ctrl <- rlang::as_string(rlang::ensym(nm_ctrl))
   
   x <- df %>%
@@ -887,10 +870,9 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl)
 imputeNA <- function (id, overwrite = FALSE, ...) 
 {
   my_mice <- function (data, ...) {
-    data <- rlang::enexpr(data)
     dots <- rlang::enexprs(...)
     
-    rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), 
+    rlang::eval_bare(rlang::expr(mice::mice(data = data, !!!dots)), 
                      env = rlang::caller_env())
   }
   
@@ -917,12 +899,8 @@ imputeNA <- function (id, overwrite = FALSE, ...)
   if (!requireNamespace("mice", quietly = TRUE)) {
     stop("\n============================================================", 
          "\nNeed package \"mice\" for this function to work.",
-         "\n============================================================",
-         call. = FALSE)
+         "\n============================================================")
   }
-  
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     src_path <- file.path(dat_dir, "Peptide", "Peptide.txt")
@@ -1012,8 +990,8 @@ imputeNA <- function (id, overwrite = FALSE, ...)
 pepImp <- function (...) 
 {
   check_dots(c("id"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  imputeNA(id = !!id, ...)
+  id <- match_call_arg("normPSM", group_psm_by)
+  imputeNA(id = id, ...)
 }
 
 
@@ -1039,7 +1017,7 @@ pepImp <- function (...)
 prnImp <- function (...) 
 {
   check_dots(c("id"), ...)
-  id <- match_call_arg(normPSM, group_pep_by)
+  id <- match_call_arg("normPSM", group_pep_by)
   imputeNA(id = !!id, ...)
 }
 
@@ -1926,9 +1904,6 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r", FUN = stop)
 {
   dat_dir <- get_gl_dat_dir()
   
-  call_rda <- rlang::as_string(rlang::enexpr(call_rda))
-  arg <- rlang::as_string(rlang::enexpr(arg))
-  
   rda <- paste0(call_rda, ".rda")
   file <- file.path(dat_dir, "Calls", rda)
   
@@ -1958,7 +1933,7 @@ match_gset_nms <- function (gset_nms = NULL)
   
   if (is.null(gset_nms)) {
     if (file.exists(file)) {
-      gset_nms <- match_call_arg(anal_prnGSPA, gset_nms)
+      gset_nms <- match_call_arg("anal_prnGSPA", gset_nms)
     } else {
       stop("`gset_nms` is NULL and ", file, " not found.", 
            call. = FALSE)
@@ -1966,12 +1941,10 @@ match_gset_nms <- function (gset_nms = NULL)
   } 
   else {
     if (file.exists(file)) {
-      # gset_nms <- gset_nms %>% .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
-      gset_nms <- gset_nms %>% .[. %in% match_call_arg(anal_prnGSPA, .)]
+      gset_nms <- gset_nms %>% .[. %in% match_call_arg("anal_prnGSPA", .)]
     } else {
       warning("File `", file, "`` not available for `gset_nms` matches.", 
-              "\nUse the `gset_nms` value as it.", 
-              call. = FALSE)
+              "\nUse the `gset_nms` value as it.")
     }
   }
   
@@ -2009,20 +1982,19 @@ match_gset_nms <- function (gset_nms = NULL)
 match_logi_gv <- function(var, val) 
 {
   oval <- val
-
-  ok <- exists(var, envir = .GlobalEnv)
+  ok   <- exists(var, envir = .GlobalEnv)
   gvar <- if (ok) get(var, envir = .GlobalEnv) else NULL
 
   if (is.null(gvar))
     val
   else {
-    if (!is.logical(gvar))
+    if (!is.logical(gvar)) {
       stop("Argument \"", var, "\" is not logical.")
+    }
 
     if ((!is.na(gvar)) && (gvar != oval)) {
       warning("Coerce ", var, " to ", gvar, 
-              " after matching to the global setting.", 
-              call. = FALSE)
+              " after matching to the global setting.")
     }
 
     gvar
@@ -2041,14 +2013,13 @@ match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
   stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
   
   mscale_log2r <- if (impute_na) 
-    match_call_arg(prnSig_impTRUE, scale_log2r)
+    match_call_arg("prnSig_impTRUE", "scale_log2r")
   else 
-    match_call_arg(prnSig_impFALSE, scale_log2r)
+    match_call_arg("prnSig_impFALSE", "scale_log2r")
   
   if ((!is.na(mscale_log2r)) && (scale_log2r != mscale_log2r)) {
     warning("scale_log2r = ", mscale_log2r, 
-            " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
-            call. = FALSE)
+            " after matching to prnSig(impute_na = ", impute_na, ", ...)")
   }
 
   mscale_log2r
@@ -2065,14 +2036,13 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
   stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
   
   mscale_log2r <- if (impute_na) 
-    match_call_arg(pepSig_impTRUE, scale_log2r)
+    match_call_arg("pepSig_impTRUE", "scale_log2r")
   else 
-    match_call_arg(pepSig_impFALSE, scale_log2r)
+    match_call_arg("pepSig_impFALSE", "scale_log2r")
   
   if ((!is.na(mscale_log2r)) && (scale_log2r != mscale_log2r)) {
     warning("scale_log2r = ", mscale_log2r, 
-            " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
-            call. = FALSE)
+            " after matching to pepSig(impute_na = ", impute_na, ", ...)")
   }
 
   mscale_log2r
@@ -2413,10 +2383,7 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
          call. = FALSE)
   
   fasta_db <- fasta_db %>% .[!duplicated(names(.))]
-  
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   if (id == "gene") {
     gn_rollup <- TRUE
     id <- "prot_acc"
@@ -2514,9 +2481,6 @@ calc_cover <- function(df, id)
     df$pep_end <- as.numeric(as.character(df$pep_end))
   }
 
-  force(id)
-  id <- rlang::as_string(rlang::enexpr(id))
-  
   if (id == "gene") {
     gn_rollup <- TRUE
     id <- "prot_acc"
@@ -2724,40 +2688,38 @@ rm_pval_whitespace <- function(df)
 filters_in_call <- function (df, ...) 
 {
   dots <- rlang::enexprs(...)
-  nms <- names(dots)
+  nms  <- names(dots)
   
   for (i in seq_along(dots)) {
-    row_exprs <- dots[[nms[i]]] %>% 
-      rlang::eval_bare()
+    row_exprs <- rlang::eval_bare(dots[[nms[i]]])
     
     if (!rlang::is_list(row_exprs)) row_exprs <- list(row_exprs)
     
-    row_exprs <- purrr::map(row_exprs, ~ {
-      is_char <- is.character(.x)
-      if (is_char) .x <- rlang::sym(.x)
-      
-      return(.x)
+    row_exprs <- purrr::map(row_exprs, function (x) {
+      if (is.character(x)) x <- rlang::sym(x)
+      x
     })
     
-    row_vals <- row_exprs %>% 
-      purrr::map(eval_tidy, df) %>% 
+    row_vals <- row_exprs |>
+      purrr::map(eval_tidy, df) |>
       purrr::reduce(`&`, .init = 1)
 
-    row_vals <- row_vals %>% ifelse(is.na(.), FALSE, .)
-
-    stopifnot(is.logical(row_vals))
+    row_vals <- ifelse(is.na(row_vals), FALSE, row_vals)
     
+    if (!is.logical(row_vals)) {
+      stop("Non-logical values detected in data row filtration using varargs.")
+    }
+
     if (sum(row_vals) == 0) 
       stop("Zero row of data available after `filter_` vararg(s).\n", 
            "Examine both (a) the values under the selected column(s) and ", 
            "(b) the supplied logical condition(s).\n", 
-           "For example, values are not all NAs or FALSE under the column(s).", 
-           call. = FALSE)
+           "For example, values are not all NAs or FALSE under the column(s).")
     
     df <- df[row_vals, , drop = FALSE]
   }
   
-  return(df)
+  df
 }
 
 
@@ -2903,16 +2865,14 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
   if (!length(col_select)) col_select <- "Select"
   if (!length(col_order)) col_order <- "Order"
 
   if (col_select == "Sample_ID") stop(err_msg1)
   if (col_order == "Sample_ID") stop(err_msg1)
   
-  label_scheme_full <- load_ls_group(dat_dir, label_scheme_full)
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme_full <- load_ls_group(dat_dir, "label_scheme_full")
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   
   if (is.null(label_scheme_full[[col_select]])) 
     stop("Column \'", col_select, "\' does not exist.")
@@ -3173,8 +3133,8 @@ count_phosphopeps <- function(filename = "Peptide.txt", collapses = c("mn"),
       dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   }
   
-  id <- match_call_arg(normPSM, group_psm_by)
-  use_lowercase_aa <- match_call_arg(normPSM, use_lowercase_aa)
+  id <- match_call_arg("normPSM", group_psm_by)
+  use_lowercase_aa <- match_call_arg("normPSM", "use_lowercase_aa")
   
   if (use_lowercase_aa) {
     pat_mod2 <- paste0("[", pat_mod, "]")
@@ -3727,14 +3687,13 @@ check_gset_nms <- function (gset_nms)
 ok_existing_params <- function (filepath) 
 {
   dat_dir <- get_gl_dat_dir()
-  # load(file = file.path(dat_dir, "label_scheme.rda"))
-  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  label_scheme <- load_ls_group(dat_dir, "label_scheme")
   
   if (!file.exists(filepath)) 
     return(TRUE)
   
-  params <- readr::read_tsv(file.path(filepath), 
-                            col_types = cols(Component = col_double()))
+  params <- readr::read_tsv(
+    file.path(filepath), col_types = cols(Component = col_double()))
 
   missing_samples <- local({
     par_samples <- unique(params$Sample_ID) %>% .[!is.na(.)]
@@ -4206,11 +4165,8 @@ add_entry_ids <- function (df, col_in = "pep_seq", col_out = "pep_index")
 #' @param f Expression; the function to be wrapped.
 #' @param excludes Character string; arguments from \code{f} to be excluded for
 #'   checking.
-check_formalArgs <- function(w = anal_prnTrend, f = cmeans, excludes = NULL) 
+check_formalArgs <- function(w = "anal_prnTrend", f = "cmeans", excludes = NULL) 
 {
-  w <- rlang::as_string(rlang::enexpr(w))
-  f <- rlang::as_string(rlang::enexpr(f))
-  
   args_w <- formalArgs(w) %>% .[! . == "..."]
   args_f <- formalArgs(f) %>% .[! . == "..."]
 
@@ -4245,18 +4201,19 @@ check_formalArgs <- function(w = anal_prnTrend, f = cmeans, excludes = NULL)
 #' contains both function name and package name.
 #' 
 #' @inheritParams check_formalArgs
-check_formalArgs2 <- function(w = anal_prnTrend, f = NMF::nmf, excludes = NULL) 
+check_formalArgs2 <- function(
+    w = "anal_prnTrend", f = "NMF::nmf", excludes = NULL) 
 {
   # for error messages
-  nm_f <- rlang::enexpr(f)
+  # nm_f <- rlang::enexpr(f)
+  nm_f <- f
+  
   if (any(grepl("::", nm_f))) {
     nm_f <- nm_f %>% as.character() 
     stopifnot(length(nm_f) ==3)
     nm_f <- nm_f %>% `[`(3)
   }
   
-  w <- rlang::as_string(rlang::enexpr(w))
-
   args_w <- formalArgs(w) %>% .[! . == "..."]
   args_f <- formalArgs(f) %>% .[! . == "..."]
     
@@ -4735,10 +4692,9 @@ write_excel_wb <- function (df, sheetName = "Setup", dat_dir = NULL, filename)
 #'   label_scheme etc.
 #' @inheritParams load_expts
 #' @export
-load_ls_group <- function (dat_dir, filename = "label_scheme", prefer_group = TRUE) 
+load_ls_group <- function (
+    dat_dir, filename = "label_scheme", prefer_group = TRUE) 
 {
-  filename <- rlang::as_string(rlang::enexpr(filename))
-  
   if (grepl("\\.rda$", filename)) {
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
   }
@@ -4760,7 +4716,7 @@ load_ls_group <- function (dat_dir, filename = "label_scheme", prefer_group = TR
     nm <- fn_prefix
   }
   else {
-    stop("`label_schem` not found under ", dat_dir)
+    stop("`label_scheme.rda` not found under ", dat_dir)
   }
   
   load(fi)
@@ -4813,14 +4769,14 @@ parse_filename <- function (filename, dat_dir, must_exists = FALSE)
   file <- file.path(dat_dir, filename)
   
   if (must_exists && !file.exists(file))
-    stop(filename, " not found under '", dat_dir, "'.", call. = FALSE)
+    stop(filename, " not found under '", dat_dir, "'.")
   
   if (!grepl("\\.", filename))
     stop("File name has no extension: ", filename)
   
-  fn_suffix <- gsub("^.*\\.([^\\.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
-  
+  fn_prefix <- tools::file_path_sans_ext(filename)
+  fn_suffix <- tools::file_ext(filename)
+
   if (nchar(fn_prefix) <= 0L)
     stop("File name has no base: ", filename)
   

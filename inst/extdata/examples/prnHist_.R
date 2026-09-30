@@ -15,7 +15,7 @@ standPep(
 )
 
 standPrn(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 2, 
   seed = 749662, 
   maxit = 200, 
@@ -31,10 +31,10 @@ pepHist(scale_log2r = TRUE)
 
 ## (2) sample column selection
 # sample IDs indicated under column `Select` in `expt_smry.xlsx`
-pepHist(col_select = Select, filename = colsel.png)
+pepHist(col_select = "Select", filename = "colsel.png")
 
 # protein data for samples under column `W2` in `expt_smry.xlsx`
-prnHist(col_select = W2, filename = w2.png)
+prnHist(col_select = "W2", filename = "w2.png")
 
 ## (3) row filtration of data
 # exclude oxidized methione or deamidated asparagine
@@ -48,19 +48,19 @@ pepHist(
 pepHist(
   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
   scale_y = FALSE, 
-  filename = phospho.png,
+  filename = "phospho.png",
 )
 
 # or use `grepl` directly
 pepHist(
   filter_by = exprs(grepl("[sty]", pep_seq_mod)),
-  filename = same_phospho.png,
+  filename = "same_phospho.png",
 )
 
 ## (4) between lead and lag
 # leading profiles
 pepHist(
-  filename = lead.png,
+  filename = "lead.png",
 )
 
 # lagging profiles at
@@ -69,13 +69,13 @@ pepHist(
 pepHist(
   filter_peps_by_npsm = exprs(pep_n_psm >= 10),
   filter_peps_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
-  filename = lag.png,
+  filename = "lag.png",
 )
 
 ## (5) Data binning by `prot_icover`
 pepHist(
   cut_points = c(prot_icover = NA),
-  filename = prot_icover_coded.png,
+  filename = "prot_icover_coded.png",
 )
 
 ## (6) custom theme
@@ -106,19 +106,19 @@ my_histo_theme <- theme_bw() + theme(
 
 pepHist(
   theme = my_histo_theme,
-  filename = my_theme.png,
+  filename = "my_theme.png",
 )
 
 pepHist(
-  col_select = BI_1,
+  col_select = "BI_1",
   theme = theme_dark(),
-  filename = bi1_dark.png,
+  filename = "bi1_dark.png",
 )
 
 
 ## (7) direct uses of ggplot2
 library(ggplot2)
-res <- pepHist(filename = default.png)
+res <- pepHist(filename = "default.png")
 
 # names(res)
 

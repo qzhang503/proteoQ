@@ -62,7 +62,7 @@ prnEucDist(
   width = 14,
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 # analogous peptides
@@ -72,7 +72,7 @@ pepEucDist(
   width = 14,
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = pvalcutoff.png, 
+  filename = "pvalcutoff.png", 
 )
 
 ## additional row filtration by pVals (proteins, impute_na = TRUE)
@@ -101,7 +101,7 @@ prnEucDist(
   width = 14,
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png, 
+  filename = "filpvals_impna.png", 
 )
 
 # analogous peptides
@@ -112,7 +112,7 @@ pepEucDist(
   width = 14,
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
-  filename = filpvals_impna.png, 
+  filename = "filpvals_impna.png", 
 )
 
 ## custom color
@@ -124,7 +124,7 @@ pepEucDist(
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   color = colorRampPalette(c("blue", "white", "red"))(500),
-  filename = my_palette.png, 
+  filename = "my_palette.png", 
 )
 
 ## Not run: 

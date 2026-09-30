@@ -451,13 +451,10 @@ sp_lookup_go <- function(species)
 #' @inheritParams prepMSig
 find_abbr_species <- function(species = "human", abbr_species = NULL) 
 {
-  # `species` is never NULL, but still to be safe
-  species <- rlang::enexpr(species)
   if (!is.null(species)) {
     species <- rlang::as_string(species)
   }
 
-  abbr_species <- rlang::enexpr(abbr_species)
   if (!is.null(abbr_species)) {
     abbr_species <- rlang::as_string(abbr_species)
   }
@@ -473,8 +470,7 @@ find_abbr_species <- function(species = "human", abbr_species = NULL)
            "\ni.e., `abbr_species = Mm` for uses with `org.Mm.eg.db`.")
     )
   } else {
-    # abbr_species <- rlang::as_string(abbr_species)
-    if (stringr::str_length(abbr_species) != 2L) {
+    if (abbr_species != 2L) {
       warning("The number of characters is typically `2` for `abbr_species`.")
     }
     
@@ -494,8 +490,6 @@ find_abbr_species <- function(species = "human", abbr_species = NULL)
 #' @inheritParams prepMSig
 set_db_outname <- function(filename = NULL, species = "human", signature = NULL) 
 {
-  filename <- rlang::enexpr(filename)
-  
   if (is.null(filename)) {
     abbr_species_lwr <- switch(
       species, 
@@ -729,7 +723,6 @@ prepGO <- function(species = "human", abbr_species = NULL,
   }
 
   type <- match.arg(type)
-  species <- rlang::as_string(rlang::enexpr(species))
 
   db_path <- create_db_path(db_path)
 
@@ -778,7 +771,7 @@ prepGO <- function(species = "human", abbr_species = NULL,
     download.file(obo_url, file.path(db_path, "cache", fn_obo), mode = "wb")
   }
   
-  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
+  abbr_species <- find_abbr_species(species, abbr_species)
   
   abbr_type <- switch(
     type, 
@@ -790,7 +783,7 @@ prepGO <- function(species = "human", abbr_species = NULL,
   )
   
   filename <- set_db_outname(
-    !!rlang::enexpr(filename), 
+    filename = filename, 
     species = species, 
     signature = paste0("go_", abbr_type))
 
@@ -955,40 +948,27 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
          "\n=================================================================")
   }
   
-  path_url <- "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.1.Hs/"
-  msig_url <- if (is.null(msig_url)) {
-    paste0(path_url, "c2.all.v2026.1.Hs.entrez.gmt")
-  } else {
-    rlang::as_string(rlang::enexpr(msig_url))
-  }
+  path_url <- 
+    "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.1.Hs/"
+  
+  if (is.null(msig_url)) 
+    msig_url <- paste0(path_url, "c2.all.v2026.1.Hs.entrez.gmt")
   
   db_path <- create_db_path(db_path)
   
   fn_gmt <- dl_msig(msig_url, db_path, overwrite)
-  
-  species <- rlang::as_string(rlang::enexpr(species))
-  
-  ortho_mart <- local({
-    ok <- tryCatch(force(ortho_mart), error = function(e) 1)
-    
-    if (ok == 1) {
-      ortho_mart <- rlang::as_string(rlang::enexpr(ortho_mart))
-    } 
-    else {
-      ortho_mart <- ok
-    }
-  })
   
   if (species == "human" && ortho_mart != "to_itself") {
     species <- "unknown"
   }
 
   if (ortho_mart == "unknown") {
-    stop("Specify the value of `ortho_mart` for species other than \"human\", \"mouse\", and \"rat\".")
+    stop("Specify the value of `ortho_mart` for species other than ", 
+         "\"human\", \"mouse\", and \"rat\".")
   }
 
-  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
-  filename <- set_db_outname(!!rlang::enexpr(filename), species, "msig")
+  abbr_species <- find_abbr_species(species, abbr_species)
+  filename <- set_db_outname(filename = filename, species = species, "msig")
   out_path <- proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
   invisible(out_path)
 }
@@ -1011,13 +991,12 @@ map_to_entrez <- function(
   on.exit(options(old_opts), add = TRUE)
   
   db_path <- create_db_path(db_path)
-  species <- rlang::as_string(rlang::enexpr(species))
-  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
-  from <- rlang::as_string(rlang::enexpr(from))
-  filename <- set_db_outname(!!rlang::enexpr(filename), 
-                             species, paste(tolower(from), 
-                                            "entrez", 
-                                            sep = "_" ))
+
+  abbr_species <- find_abbr_species(species, abbr_species)
+
+  filename <- set_db_outname(filename = filename, 
+                             species = species, 
+                             paste(tolower(from), "entrez", sep = "_" ))
   
   if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
     pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
@@ -1108,10 +1087,10 @@ map_to_entrez <- function(
 Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
                        db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) 
 {
-  map_to_entrez(!!rlang::enexpr(species), 
-                !!rlang::enexpr(abbr_species), 
+  map_to_entrez(species, 
+                abbr_species, 
                 "UNIPROT", 
-                !!rlang::enexpr(filename), 
+                filename, 
                 db_path, 
                 overwrite)
 }
@@ -1134,10 +1113,10 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
                        db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) 
 {
-  map_to_entrez(!!rlang::enexpr(species), 
-                !!rlang::enexpr(abbr_species), 
+  map_to_entrez(species, 
+                abbr_species, 
                 "REFSEQ", 
-                !!rlang::enexpr(filename), 
+                filename, 
                 db_path, 
                 overwrite)
 }
@@ -1159,13 +1138,11 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
   # add column species in the rds output
   
   db_path <- create_db_path(db_path)
-  species <- rlang::as_string(rlang::enexpr(species))
-  os_name <- rlang::as_string(rlang::enexpr(os_name))
-  
+
   create_os_lookup(species, os_name, overwrite)
   
-  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
-  filename <- set_db_outname(!!rlang::enexpr(filename), species, 
+  abbr_species <- find_abbr_species(species, abbr_species)
+  filename <- set_db_outname(filename = filename, species = species, 
                              paste(tolower(from), "entrez", sep = "_" ))
   
   if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
@@ -1173,7 +1150,7 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
     
     if (!requireNamespace(pkg_nm, quietly = TRUE)) {
       stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
-           then `library(", pkg_nm, ")`", call. = FALSE)
+           then `library(", pkg_nm, ")`")
     }
     
     new_from <- paste0("eg", from)
@@ -1184,8 +1161,9 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
     )
     
     if (!is.object(x)) {
-      if (x == 1) 
+      if (x == 1) {
         stop("Did you forget to run `library(", pkg_nm, ")`?")
+      }
     }
     
     entrez_ids <- AnnotationDbi::mappedkeys(x) 
@@ -1206,7 +1184,7 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
       accessions <- accessions %>% dplyr::rename(refseq_acc = value)
     } 
     else {
-      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
+      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.")
     }
     
     saveRDS(accessions, file.path(db_path, filename))
@@ -1248,15 +1226,18 @@ create_os_lookup <- function(species, os_name, overwrite = FALSE)
   os_name <- convert_default_os(species, os_name)
   curr_lookup <- uniprot_entrez_lookup <- setNames(species, os_name)
 
-  if (os_name == "Homo sapiens" && species != "human") 
-    stop("`os_name = Homo sapiens` is reversed for `species = human`.", call. = FALSE)
-  
-  if (os_name == "Mus musculus" && species != "mouse") 
-    stop("`os_name = Mus musculus` is reversed for `species = mouse`.", call. = FALSE)
-  
-  if (os_name == "Rattus norvegicus" && species != "rat") 
-    stop("`os_name = Rattus norvegicus` is reversed for `species = rat`.", call. = FALSE)  
-  
+  if (os_name == "Homo sapiens" && species != "human") {
+    stop("`os_name = Homo sapiens` is reversed for `species = human`.")
+  }
+
+  if (os_name == "Mus musculus" && species != "mouse") {
+    stop("`os_name = Mus musculus` is reversed for `species = mouse`.")
+  }
+
+  if (os_name == "Rattus norvegicus" && species != "rat") {
+    stop("`os_name = Rattus norvegicus` is reversed for `species = rat`.")
+  }
+
   # check if the same os_name but diferent species
   file <- file.path(dat_dir, "uniprot_entrez_lookup.rda")
   

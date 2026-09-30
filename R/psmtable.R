@@ -1835,8 +1835,8 @@ check_raws <- function(df)
     fs_raws <-  unique(fraction_scheme$RAW_File)
     
     if (!(all(is.na(ls_raws)) || all(ls_raws %in% fs_raws))) {
-      expt_smry <- match_call_arg(load_expts, expt_smry)
-      frac_smry <- match_call_arg(load_expts, frac_smry)
+      expt_smry <- match_call_arg("load_expts", "expt_smry")
+      frac_smry <- match_call_arg("load_expts", "frac_smry")
       unlink(file.path(dat_dir, frac_smry))
       prep_fraction_scheme(dat_dir, expt_smry, frac_smry)
 
@@ -3594,20 +3594,13 @@ normPSM <- function(dat_dir = NULL,
   }
 
   lapply(fasta, function (x) if (!file.exists(x)) stop("FASTA not found: ", x))
+  
+  group_psm_by <- match.arg(group_psm_by)
+  group_pep_by <- match.arg(group_pep_by)
+  type_sd <- match.arg(type_sd)
+  pep_unique_by <- match.arg(pep_unique_by)
+  mc_psm_by <- match.arg(mc_psm_by)
 
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  group_psm_by <- rlang::enexpr(group_psm_by)
-  group_pep_by <- rlang::enexpr(group_pep_by)
-  type_sd <- rlang::enexpr(type_sd)
-  pep_unique_by <- rlang::enexpr(pep_unique_by)
-  mc_psm_by <- rlang::enexpr(mc_psm_by)
-  
-  group_psm_by <- if (length(group_psm_by) > 1L) "pep_seq_mod" else as.character(group_psm_by)
-  group_pep_by <- if (length(group_pep_by) > 1L) "gene" else as.character(group_pep_by)
-  type_sd <- if (length(type_sd) > 1L) "log2_R" else as.character(type_sd)
-  pep_unique_by <- if (length(pep_unique_by) > 1L) "group" else as.character(pep_unique_by)
-  mc_psm_by <- if (length(mc_psm_by) > 1L) "peptide" else as.character(mc_psm_by)
-  
   oks <- eval(fmls[["group_psm_by"]])
   if (!group_psm_by %in% oks) {
     stop("\"group_psm_by\" is not one of ", paste(oks, collapse = ", "))
@@ -3648,10 +3641,6 @@ normPSM <- function(dat_dir = NULL,
   
   engine <- find_search_engine(dat_dir)
   
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
-  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
-  
   stopifnot(vapply(c(rptr_intco), is.numeric, logical(1)))
   
   stopifnot(vapply(c(use_corrected_mqint, 
@@ -3669,7 +3658,7 @@ normPSM <- function(dat_dir = NULL,
                      lfq_mbr), 
                    rlang::is_logical, logical(1L)))
   
-  # ---
+  ### 
   load(file = file.path(dat_dir, "label_scheme.rda"))
   tmt_plex <- TMT_plex(label_scheme)
   n_files  <- length(unique(label_scheme$Sample_ID))
@@ -5007,8 +4996,8 @@ PSM2Pep <- function(method_psm_pep =
   
   engine       <- find_search_engine(dat_dir)
   tmt_plex     <- TMT_plex(label_scheme_full)
-  group_psm_by <- match_call_arg(normPSM, group_psm_by)
-  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", group_psm_by)
+  group_pep_by <- match_call_arg("normPSM", group_pep_by)
   method_psm_pep <- if (tmt_plex) { "median" } else { "lfq_max" }
 
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
@@ -5039,7 +5028,7 @@ PSM2Pep <- function(method_psm_pep =
   message("Primary column keys in \"PSM/TMTset1_LCMSinj1_PSM_N.txt\" etc. ", 
           "for \"filter_\" varargs.")
   
-  use_spec_counts  <- match_call_arg(normPSM, use_spec_counts)
+  use_spec_counts  <- match_call_arg("normPSM", "use_spec_counts")
   
   if (use_spec_counts || tmt_plex || engine != "mz") {
     # lfq_mbr <- FALSE

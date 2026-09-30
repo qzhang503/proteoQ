@@ -9,7 +9,7 @@
 PSM2Pep()
 
 # mean statistics
-PSM2Pep(method_psm_pep = mean)  
+PSM2Pep(method_psm_pep = "mean")  
 
 ## Not run: 
 # cut-offs in precursor intensity

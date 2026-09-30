@@ -17,7 +17,7 @@
 # (1.1) the first `MGKernel` after `mergePep()`
 # (default double trimming by log2FC and intensity percentiles also applied)
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 749662, 
   maxit = 200, 
@@ -26,49 +26,65 @@ standPep(
 
 # histograms for all data rows
 # (for samplicity only plot against samples indicated under `expt_smry.xlsx::BI_1`)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "bi1.png")
 
 # human subset
 # (a little off in relative to all data rows)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human.png)
+pepHist(
+  scale_log2r = TRUE, 
+  col_select = "BI_1", 
+  filter_by = exprs(species == "human"), 
+  filename = "bi1_human.png")
 
 # mouse subset 
 # (a lot off in relative to all data rows)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "mouse"), filename = bi1_mouse.png)
+pepHist(
+  scale_log2r = TRUE, 
+  col_select = "BI_1", 
+  filter_by = exprs(species == "mouse"), 
+  filename = "bi1_mouse.png")
 
 # (1.2) additive step to (1.1): against `expt_smry.xlsx::W2` samples and based on their human subset
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_select = W2,  
+  col_select = "W2",  
   slice_peps_by = exprs(species == "human"),
 )
 
 # human subset 
 # (W2 samples are now aligned)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw2.png)
+pepHist(
+  scale_log2r = TRUE, 
+  col_select = "BI_1", 
+  filter_by = exprs(species == "human"), 
+  filename = "bi1_human_slicehuw2.png")
 
 # (1.3) additive to (1.2): against `expt_smry.xlsx::W16` samples and based on their human subset
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_select = W16,  
+  col_select = "W16",  
   slice_peps_by = exprs(species == "human"),
 )
 
 # human subset 
 # (W16 samples are now also aligned)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw16.png)
+pepHist(
+  scale_log2r = TRUE, 
+  col_select = "BI_1", 
+  filter_by = exprs(species == "human"), 
+  filename = "bi1_human_slicehuw16.png")
 
 # a side effect: to recapitulate the misalignment between human data and human + mouse data
 # (this is because density curves are based on the latest `standPep` at `method_align = MGKernel`)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1_recap.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "bi1_recap.png")
 
 
 # ===================================
@@ -80,35 +96,35 @@ PSM2Pep()
 mergePep()
 
 # data in initial `Peptide.txt` from `mergePep()` are aligned by MC
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mc.png")
 
 # (2.1) the first `MGKernel` alignment against all samples using all data rows
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 883, 
   maxit = 200, 
   epsilon = 1e-05, 
 )
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mG.png")
 
 # (2.2) followed by MC against selected samples using all data rows
 # (arguments `n_comp`, `seed`, `maxit`, `epsilon` have no effects at `method_align = MC`)
 standPep(
-  method_align = MC,
+  method_align = "MC",
   
   n_comp = 3,
   seed = 883,
   maxit = 200,
   epsilon = 1e-05,
   
-  col_select = Select_sub, 
+  col_select = "Select_sub", 
 )
 
 # the net result is mixed-bed alignment of MGKernel and MC
 # (with samples indicated by `Select_sub` aligned by MC and the remaining by MGKernel)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mix.png")
 
 
 # ===================================
@@ -119,19 +135,19 @@ unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
 PSM2Pep()
 mergePep()
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mc.png")
 
 # (3.1) MC alignment for all samples, but only selected data rows used for normalization
 standPep(
-  method_align = MC, 
+  method_align = "MC", 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mc_selrows.png")
 
 # (3.2) the first `MGKernel` for all samples using selected data rows
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 400, 
   maxit = 200, 
@@ -143,19 +159,19 @@ standPep(
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG_selrows.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mG_selrows.png")
 
 # (3.3) back to MC for selected samples using selected data rows
 # (mixed-bed again, but based on data subset by `prot_n_psm >= 10`)
 standPep(
-  method_align = MC, 
-  col_select = Select_sub, 
+  method_align = "MC", 
+  col_select = "Select_sub", 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
 # A side effect in comparing `MC` and `MGKernel`
 # (density curves are from the preceding `MGKernel` in (3.2))
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix_selcols_selrows.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mix_selcols_selrows.png")
 
 
 # ===================================
@@ -166,11 +182,11 @@ unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
 PSM2Pep()
 mergePep()
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mc.png")
 
 # (4.1) first `MGKernel` at `n_comp = 3` for all samples
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 400, 
   maxit = 200, 
@@ -182,17 +198,17 @@ pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 # (4.2) a fresh start since changing `n_comp`
 # (e.g. `col_select = Select_sub` ignored; instead apply `MGKernel` to all samples)
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 2, 
   seed = 400, 
   maxit = 200, 
   epsilon = 1e-05,
   
   # ignored
-  col_select = Select_sub, 
+  col_select = "Select_sub", 
 )
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG2.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mG2.png")
 
 
 # ===================================
@@ -205,15 +221,19 @@ PSM2Pep()
 mergePep()
 
 # initial `Peptide.txt` from `mergePep()` is aligned by MC
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mc.png")
 
 # (GAPDH more abundant in W16 according to MC alignment)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
+pepHist(
+  scale_log2r = TRUE, 
+  col_select = "BI_1", 
+  filter_ = exprs(gene == "GAPDH"), 
+  filename = "mcGAPDH.png")
 
 # heat map for `BI_1` samples
 # (outputs under `Peptide/Heatmap` folder; for help, ?pepHM)
 pepHM(
-  col_select = BI_1, 
+  col_select = "BI_1", 
   xmin = -2,
   xmax = 2,
   xmargin = 0.1,
@@ -259,15 +279,15 @@ pepHM(
 # first renormalize against GAPDH for all samples
 # (not to use `MGkernel` as may not have enough data entries from housekeeper(s))
 standPep(
-  method_align = MC, 
+  method_align = "MC", 
   slice_hskp = exprs(gene %in% c("GAPDH")),
 )
 
 # (now log2FC profiles aligned by GAPDH for `BI_1` samples)
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = wrong_hskp.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "wrong_hskp.png")
 
 # (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples as no GAPDH underneath)
-pepHist(scale_log2r = TRUE, filename = wrong_hskp_all.png)
+pepHist(scale_log2r = TRUE, filename = "wrong_hskp_all.png")
 
 # not to keep the above example with no data under `JHU_TMT1` and `PNNL_TMT1`
 # (surely need different normalizer(s))
@@ -280,25 +300,25 @@ mergePep()
 
 # change to `MGKernel`
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 400, 
   maxit = 200, 
   epsilon = 1e-05, 
 )
 
-pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
+pepHist(scale_log2r = TRUE, col_select = "BI_1", filename = "mG.png")
 
 # then renormalize against data from GAPDH
 # (error: too few entries for fitting with multiple Gaussians)
 standPep(
-  method_align = MGKernel, 
+  method_align = "MGKernel", 
   n_comp = 3, 
   seed = 400, 
   maxit = 200, 
   epsilon = 1e-05, 
   
-  col_select = W2, 
+  col_select = "W2", 
   slice_hskp = exprs(gene %in% c("GAPDH")),
 )
 ## End(Not run)

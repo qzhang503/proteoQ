@@ -31,16 +31,16 @@ library(proteoQ)
 load_expts("~/proteoQ/custom_refseq_lookups")
 
 # prepare RefSeq-to-Entrez lookups
-Ref2Entrez(species = human)
-Ref2Entrez(species = mouse)
+Ref2Entrez(species = "human")
+Ref2Entrez(species = "mouse")
 
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/refseq_entrez_hs.rds")))
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/refseq_entrez_mm.rds")))
 
 # overrule the default `Entrez` lookups with the custom databases
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   entrez = c("~/proteoQ/dbs/entrez/refseq_entrez_hs.rds", 
@@ -76,15 +76,15 @@ dat_dir <- "~/proteoQ/custom_uniprot_lookups"
 load_expts()
 
 # prepare UniProt-to-Entrez lookups
-Uni2Entrez(species = human)
-Uni2Entrez(species = mouse)
+Uni2Entrez(species = "human")
+Uni2Entrez(species = "mouse")
 
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/uniprot_entrez_hs.rds")))
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/uniprot_entrez_mm.rds")))
 
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2014_07.fasta",
             "~/proteoQ/dbs/fasta/uniprot/uniprot_mm_2014_07.fasta"),
   entrez = c("~/proteoQ/dbs/entrez/uniprot_entrez_hs.rds", 
@@ -95,8 +95,8 @@ normPSM(
 
 \dontrun{
 # name your `species`
-Uni2Entrez(species = this_human, abbr_species = Hs, filename = my_human.rds)
-Uni2Entrez(species = this_mouse, abbr_species = Mm, filename = my_mouse.rds)
+Uni2Entrez(species = "this_human", abbr_species = "Hs", filename = "my_human.rds")
+Uni2Entrez(species = "this_mouse", abbr_species = "Mm", filename = "my_mouse.rds")
 
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/my_human.rds")))
 # head(readRDS(file.path("~/proteoQ/dbs/entrez/my_mouse.rds")))
@@ -104,8 +104,8 @@ Uni2Entrez(species = this_mouse, abbr_species = Mm, filename = my_mouse.rds)
 # in PSM and subsequent outputs, values under column `species` 
 #  will be shown as "this_human" or "this_mouse"
 normPSM(
-  group_psm_by = pep_seq_mod, 
-  group_pep_by = gene, 
+  group_psm_by = "pep_seq_mod", 
+  group_pep_by = "gene", 
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   entrez = c("~/proteoQ/dbs/entrez/my_human.rds", 
@@ -121,7 +121,7 @@ BiocManager::install("org.Ce.eg.db")
 library(org.Ce.eg.db)
 
 library(proteoQ)
-Uni2Entrez(species = "worm", abbr_species = "Ce", filename = uniprot_entrez_ce.rds)
+Uni2Entrez(species = "worm", abbr_species = "Ce", filename = "uniprot_entrez_ce.rds")
 
 # --- PAUSE: prepare Fasta file(s) before proceeding to `normPSM`. ---
 
@@ -134,8 +134,8 @@ normPSM(
 
 \dontrun{
 # wrong `abbr_species` provided `species` other than "human", "mouse" and "rat"
-Uni2Entrez(species = "my human", abbr_species = Hu, filename = my_human.rds, overwrite = TRUE)
+Uni2Entrez(species = "my human", abbr_species = "Hu", filename = "my_human.rds", overwrite = TRUE)
   
 # the value of `abbr_species` ignored at `species` among "human", "mouse" and "rat"
-Uni2Entrez(species = human, abbr_species = ok_not_Hs, filename = my_human.rds, overwrite = TRUE)
+Uni2Entrez(species = "human", abbr_species = "ok_not_Hs", filename = "my_human.rds", overwrite = TRUE)
 }

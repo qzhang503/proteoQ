@@ -489,25 +489,9 @@ pepCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -552,25 +536,9 @@ pepCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -703,25 +671,9 @@ prnCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -767,26 +719,10 @@ prnCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_order <- rlang::enexpr(col_order)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-  
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
-  
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
 
   reload_expts()

@@ -602,7 +602,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                                           center = !!center_features, 
                                           scale. = !!scale_features, 
                                           !!!dots)) %>%
-        rlang::eval_bare(env = caller_env())
+        rlang::eval_bare(env = rlang::caller_env())
     } 
     else {
       stop("Unknown `choice = ", choice, "`.")
@@ -645,7 +645,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                                           center = FALSE, 
                                           scale. = !!scale_log2r, 
                                           !!!dots)) %>%
-        rlang::eval_bare(env = caller_env())
+        rlang::eval_bare(env = rlang::caller_env())
     } 
     else {
       stop("Unknown `choice = ", choice, "`.")
@@ -699,64 +699,14 @@ pepPCA <- function (dat_dir = NULL,
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
-  check_formalArgs(pepPCA, prcomp)
+  check_formalArgs("pepPCA", "prcomp")
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
-
-  # force(choice); force(type);
-  # force(col_select); force(col_group); force(col_order); force(col_color); 
-  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
-  # force(color_brewer); force(fill_brewer); force(size_manual); 
-  # force(shape_manual); force(alpha_manual); 
-  # force(df); force(filepath); force(filename);
-  
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  # (choice currently has one possibility)
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "prcomp" else as.character(choice)
-  type   <- rlang::enexpr(type)
-  type   <- if (length(type) > 1L) "obs" else as.character(type)
+  type <- match.arg(type)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   stopifnot(type %in% c("obs", "feats"))
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_group  <- rlang::enexpr(col_group)
-  col_order  <- rlang::enexpr(col_order)
-  col_color  <- rlang::enexpr(col_color)
-  col_fill   <- rlang::enexpr(col_fill)
-  col_shape  <- rlang::enexpr(col_shape)
-  col_size   <- rlang::enexpr(col_size)
-  col_alpha  <- rlang::enexpr(col_alpha)
-  
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer  <- rlang::enexpr(fill_brewer)
-  size_manual  <- rlang::enexpr(size_manual)
-  shape_manual <- rlang::enexpr(shape_manual)
-  alpha_manual <- rlang::enexpr(alpha_manual)
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_color)) col_color <- as.character(col_color)
-  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
-  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
-  if (!is.character(col_size)) col_size <- as.character(col_size)
-  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
-  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
-  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
-  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
-  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
-  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -928,65 +878,15 @@ prnPCA <- function (dat_dir = NULL,
   on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
-  check_formalArgs(prnPCA, prcomp)
+  check_formalArgs("prnPCA", "prcomp")
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
-  # force(choice); force(type);
-  # force(col_select); force(col_group); force(col_order); force(col_color); 
-  # force(col_fill); force(col_shape); force(col_size); force(col_alpha); 
-  # force(color_brewer); force(fill_brewer); force(size_manual); 
-  # force(shape_manual); force(alpha_manual); 
-  # force(df); force(filepath); force(filename);
-  
-  ## Argument with multi-options -> non-NULL default, (quotation marks or not)
-  # (choice currently has one possibility)
-  choice <- rlang::enexpr(choice)
-  choice <- if (length(choice) > 1L) "prcomp" else as.character(choice)
-  type   <- rlang::enexpr(type)
-  type   <- if (length(type) > 1L) "obs" else as.character(type)
+
+  type <- match.arg(type)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   stopifnot(type %in% c("obs", "feats"))
-
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
-
-  ## Argument with single option and NULL default (quotation marks or not)
-  col_select <- rlang::enexpr(col_select)
-  col_group  <- rlang::enexpr(col_group)
-  col_order  <- rlang::enexpr(col_order)
-  col_color  <- rlang::enexpr(col_color)
-  col_fill   <- rlang::enexpr(col_fill)
-  col_shape  <- rlang::enexpr(col_shape)
-  col_size   <- rlang::enexpr(col_size)
-  col_alpha  <- rlang::enexpr(col_alpha)
   
-  color_brewer <- rlang::enexpr(color_brewer)
-  fill_brewer  <- rlang::enexpr(fill_brewer)
-  size_manual  <- rlang::enexpr(size_manual)
-  shape_manual <- rlang::enexpr(shape_manual)
-  alpha_manual <- rlang::enexpr(alpha_manual)
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  # NULL default: length(0); symbol -> length(1)
-  if (!is.character(col_select)) col_select <- as.character(col_select)
-  if (!is.character(col_group)) col_group <- as.character(col_group)
-  if (!is.character(col_order)) col_order <- as.character(col_order)
-  if (!is.character(col_color)) col_color <- as.character(col_color)
-  if (!is.character(col_fill)) col_fill <- as.character(col_fill)
-  if (!is.character(col_shape)) col_shape <- as.character(col_shape)
-  if (!is.character(col_size)) col_size <- as.character(col_size)
-  if (!is.character(col_alpha)) col_alpha <- as.character(col_alpha)
-  if (!is.character(color_brewer)) color_brewer <- as.character(color_brewer)
-  if (!is.character(fill_brewer)) fill_brewer <- as.character(fill_brewer)
-  if (!is.character(size_manual)) size_manual <- as.character(size_manual)
-  if (!is.character(shape_manual)) shape_manual <- as.character(shape_manual)
-  if (!is.character(alpha_manual)) alpha_manual <- as.character(alpha_manual)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
   reload_expts()

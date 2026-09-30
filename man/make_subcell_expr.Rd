@@ -8,7 +8,7 @@ make_subcell_expr(
   df = NULL,
   id = "gene",
   key_col = "log10Int",
-  key_group = "group",
+  key_group = "Group",
   col_fraction = NULL,
   levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
   scale = TRUE

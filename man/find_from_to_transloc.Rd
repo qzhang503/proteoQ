@@ -11,10 +11,9 @@ find_from_to_transloc(
   colors = c(CP = "coral", NP = "skyblue", ChA = "mediumseagreen"),
   color_outlier = "red",
   levels_subtype = NULL,
-  transloc_co = 0.3,
+  transloc_co = 0.5,
   use_updated_subcell = TRUE,
   col_select = "Select",
-  col_group = "Group",
   col_order = "Order",
   id = "gene",
   dat_dir = NULL,
@@ -42,9 +41,6 @@ one of \code{c("purity", "loc_score", "entropy")}.}
 \item{use_updated_subcell}{Logical; if TRUE, use clean subcellular metrics of
 purity etc. Otherwise, use raws subcellular metrics.}
 
-\item{col_group}{The column key in metadata linked to the information of
-sample groups.}
-
 \item{id}{An identifier.}
 
 \item{dat_dir}{The current working directory.}
@@ -66,7 +62,7 @@ Find translocation outliers between a pair of subcellular compartments.
 \examples{
 \donttest{
 res <- find_from_to_transloc(
-  from_to = list(c("CP", "NP"), c("NP", "ChA")), 
+  from_to = list(c("CP", "NP"), c("NP", "ChA")),
   levels_subtype = c("Veh", "TG"), transloc_co = .3, width = 9, height = 3.4)
 }
 }

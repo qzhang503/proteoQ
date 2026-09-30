@@ -1351,6 +1351,8 @@ plot_gspa_volcano <- function (
           res[["data"]], 
           res[["greater"]], 
           res[["less"]])
+      } else {
+        warning("Global background file not found: ", fi_gl)
       }
       
       dfw_sub
@@ -1703,17 +1705,12 @@ pepVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_psm_by), error = function(e) "pep_seq_mod")
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  scale_log2r <- match_pepSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
+  scale_log2r <-
+    match_pepSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1851,17 +1848,12 @@ prnVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+  stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
-  
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1917,12 +1909,12 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
          c("show_labels", "topn_labels")), ...)
   
   id <- tryCatch(
-    match_call_arg(normPSM, group_psm_by), 
+    match_call_arg("normPSM", group_psm_by), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_psm_by), 
+      match_call_arg("makeProtDIANN", group_psm_by), 
       error = function(e) NA)
   }
   
@@ -1930,18 +1922,10 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
     id <- "pep_seq_mod"
   }
 
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1L)
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
-                                          impute_na = impute_na)
-  
-  df <- rlang::enexpr(df)
-  df2 <- rlang::enexpr(df2)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  show_sig <- rlang::as_string(rlang::enexpr(show_sig))
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
   
   stopifnot(show_sig %in% c("none", "pVal", "qVal"), 
             length(show_sig) == 1L)
@@ -1950,12 +1934,12 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
   
   reload_expts()
   
-  info_anal(df = !!df, 
-            df2 = !!df2, 
-            id = !!id, 
+  info_anal(df = df, 
+            df2 = df2, 
+            id = id, 
             id_gspa = id_gspa,
-            filepath = !!filepath, 
-            filename = !!filename, 
+            filepath = filepath, 
+            filename = filename, 
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na, 
@@ -2131,13 +2115,15 @@ prnGSPAMap <- function (dat_dir = NULL,
          c("logFC_cutoff", "gslogFC_cutoff"), 
          c("show_labels", "topn_labels")), ...)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(
+    scale_log2r = scale_log2r, impute_na = impute_na)
   
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) NA)
+  id <- tryCatch(
+    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg(makeProtDIANN, group_pep_by), 
+      match_call_arg("makeProtDIANN", group_pep_by), 
       error = function(e) NA)
   }
   
@@ -2146,21 +2132,6 @@ prnGSPAMap <- function (dat_dir = NULL,
   }
   
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
-  
-  ## Argument with single option and NULL default (quotation marks or not)
-  df  <- rlang::enexpr(df)
-  df2 <- rlang::enexpr(df2)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  if (!is.character(df)) df <- as.character(df)
-  if (!is.character(df2)) df2 <- as.character(df2)
-  if (!is.character(filepath)) filepath <- as.character(filepath)
-  if (!is.character(filename)) filename <- as.character(filename)
-
-  ## Argument with single, non-NULL option (with or without quotation mark)
-  show_sig <- rlang::as_string(rlang::enexpr(show_sig))
-  
   stopifnot(show_sig %in% c("none", "pVal", "qVal"), length(show_sig) == 1L)
   
   check_gset_nms(gset_nms)
@@ -2218,7 +2189,10 @@ GeomTable <- ggproto(
     wx = data$widthx / 2
     wy = data$widthy / 2
     
-    corners <- data.frame(x = c(data$x - wx, data$x + wx), y = c(data$y - wy, data$y + wy))
+    corners <- data.frame(
+      x = c(data$x - wx, data$x + wx), 
+      y = c(data$y - wy, data$y + wy))
+    
     d <- coord$transform(corners, panel_scales)
     
     table = read.csv(text = data$table, header = TRUE)
@@ -2234,12 +2208,13 @@ GeomTable <- ggproto(
                          width = diff(x_rng), height = diff(y_rng), 
                          just = c("center", "center"))
     
-    grob <- gridExtra::tableGrob(table, rows = NULL, cols = NULL,
-                                 theme = 
-                                   gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
-                                                             colhead = list(fg_params=list(cex = .7), 
-                                                                            parse=TRUE),
-                                                             rowhead = list(fg_params=list(cex = .7))))
+    grob <- gridExtra::tableGrob(
+      table, rows = NULL, cols = NULL,
+      theme = 
+        gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
+                                  colhead = list(fg_params=list(cex = .7), 
+                                                 parse=TRUE),
+                                  rowhead = list(fg_params=list(cex = .7))))
     grob$heights <- grob$heights*.6
     
     ## add a line across the header
@@ -2264,6 +2239,7 @@ facet_id <- local({
     i
   }
 })
+
 
 #' Prints table in ggplot2 images
 #' 
