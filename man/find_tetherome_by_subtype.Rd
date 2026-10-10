@@ -15,7 +15,8 @@ find_tetherome_by_subtype(
   col_subtype = "Type",
   levels_subtype = NULL,
   levels_ref_compartments = NULL,
-  polygons = NULL
+  polygons = NULL,
+  exclude_inside = TRUE
 )
 }
 \arguments{
@@ -42,6 +43,10 @@ compartments. Set \code{levels_ref_compartments = NULL} for automatic
 determination.}
 
 \item{polygons}{The vertices of polygons.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 }
 \description{
 Find tetherome by subtype.

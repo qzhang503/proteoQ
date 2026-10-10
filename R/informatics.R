@@ -541,7 +541,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
     }
   } 
   else if (anal_type == "Model") {
-    function(method = "limma", padj_method = "BH", 
+    function(method = "limma", flatten = TRUE, padj_method = "BH", 
              var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), 
              perc_baseline_intensity = 1E-4, abs_baselne_intensity = 10^5.5, 
              rm_allna = FALSE, ...) {
@@ -559,6 +559,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
               filepath = filepath,
               filename = paste0(fn_prefix, ".", fn_suffix),
               method = method,
+              flatten = flatten, 
               padj_method = padj_method, 
               var_cutoff = var_cutoff,
               pval_cutoff = pval_cutoff,

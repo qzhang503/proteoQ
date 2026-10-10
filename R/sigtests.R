@@ -40,15 +40,24 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3)
 #' Helper to find contrast elements
 #' 
 #' @param contrs A vectors of contrast groups.
-find_contrast_elements <- function (contrs) 
+#' @param flatten Logical; flatten lists or not.
+find_contrast_elements <- function (contrs, flatten = TRUE) 
 {
-  contrs %>%
+  vecs <- contrs %>%
     gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
     gsub("[\\(\\)]", "", .) %>%
-    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
-    as.character() %>%
-    unique() %>% 
-    .[. != ""]
+    str_split("[\\+\\-]\\s*", simplify = FALSE)
+
+  vecs <- lapply(vecs, function (x) {
+    x <- unique(x)
+    x <- x[x != ""]
+  })
+  
+  if (flatten) {
+    vecs <- unique(unlist(vecs))
+  }
+  
+  vecs
 }
 
 
@@ -57,7 +66,7 @@ find_contrast_elements <- function (contrs)
 #' @inheritParams gspaTest
 #' @inheritParams model_onechannel
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-prepFml <- function(formula, label_scheme_sub, ...) 
+prepFml <- function(formula, label_scheme_sub, flatten = TRUE, ...) 
 {
   # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
   # formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
@@ -73,85 +82,108 @@ prepFml <- function(formula, label_scheme_sub, ...)
   
   dots <- rlang::enexprs(...)
   
-  fml <- gsub("\\s+", "", as.character(formula))
-  fml <- fml[fml != "~"]
-  len <- length(fml)
-  
-  fml_last <- fml[[len]]
-  key_col  <- gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", fml_last)
-  
-  label_scheme_sub <- label_scheme_sub %>% 
-    dplyr::filter(!is.na(!!sym(key_col)))
-  
-  # formula = ~ Term[ ~ V]
-  base <- if (grepl("\\[\\s*\\~\\s*", fml_last)) {
-    gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", fml_last)
-  }
-  else {
-    NULL
-  }
+  fml_last <- find_formula_last(formula)
+  key_col  <- find_formula_key(fml_last)
+  base <- find_formula_base(fml_last) # formula = ~ Term[ ~ V]
 
-  if (!is.null(base)) { # formula = ~ Term[~V]
-    new_levels <- levels(label_scheme_sub[[key_col]])
-    new_levels <- c(new_levels[new_levels == base], 
-                    new_levels[new_levels != base])
-    label_scheme_sub <- label_scheme_sub %>%
-      dplyr::mutate(
-        !!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
-  } 
-  else if (!grepl("\\[", fml_last)) { # formula = log2Ratio ~ Term
-    new_levels <- levels(label_scheme_sub[[key_col]])
-  }
-  else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
-    new_levels <- NULL
-  }
+  label_scheme_sub <- label_scheme_sub |>
+    dplyr::filter(!is.na(.data[[key_col]]))
   
+  # is.null with a canonical formula format
+  # may have random terms at the end
+  new_levels <- find_formula_new_levels(
+    formula = fml_last, base = base, key_col = key_col, 
+    label_scheme_sub = label_scheme_sub)
+
   if (is.null(new_levels)) {
-    # Used for name displaying
-    contrs <- gsub("\\\"", "", gsub(".*\\[(.*)\\].*", "\\1", fml_last)) |>
-      str_split(",\\s*", simplify = TRUE) |>
-      as.character()
+    # [1,] "(C_NP-A_NP)-(C_CP-A_CP)" "(C_ChA-A_ChA)-(C_NP-A_NP)"
+    new_contrs <- split_formula_contrasts(fml_last)
     
-    # Used for real analysis; 
-    # may have random terms at the end
-    new_contrs <- gsub("\\\"", "", gsub("^.*\\[(.*)\\].*", "\\1", fml_last)) %>% 
-      str_split(",\\s*", simplify = TRUE) %>% 
-      gsub("\\s+", "", .) %>% 
-      gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
-      gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
-      gsub("[ <>]+", "", .)
+    # For name displaying
+    contrs <- as.character(new_contrs)
     
-    # Nested: "(C_NP-A_NP)-(C_CP-A_CP)", "(C_NP-AZC_NP)-(C_CP-AZC_CP)"
-    # If no nested structures: return a list of character(0)
-    sub_contrs <- regmatches(
-      new_contrs, gregexpr("(?<=\\().*?(?=\\))", new_contrs, perl = TRUE))
+    new_contrs <- compile_formula_new_contrasts(new_contrs)
     
-    new_elements <- find_contrast_elements(new_contrs)
-
-    elements <- new_elements %>% 
-      gsub(".plus.", "+", ., fixed = TRUE) %>% 
-      gsub(".minus.", "-", ., fixed = TRUE)
+    # [[1]] "C_NP-A_NP" "C_CP-A_CP"
+    # [[2]] "C_ChA-A_ChA" "C_NP-A_NP"
+    # or NULL if no nested structure
+    sub_contrs <- find_sub_contrs(new_contrs)
     
-    message("\ncontrs: ", paste(contrs, collapse = ", "), "\n")
-    message("new_contrs: ", paste(new_contrs, collapse = ", "), "\n")
-    message("elements: ", paste(elements, collapse = ", "), "\n")
-    message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
+    # [1] "C_NP"  "C_ChA" "A_NP"  "A_ChA" "C_CP"  "A_CP"
+    if (flatten) {
+      new_elements <- find_contrast_elements(new_contrs)
+      elements <- compile_formula_elements(new_elements)
+      random_vars <- find_random_vars(fml_last)
+      
+      fml_ops <- prep_formula_design(
+        key_col = key_col, elements = elements, sub_contrs = sub_contrs, 
+        contrs = contrs, new_contrs = new_contrs, random_vars = random_vars, 
+        label_scheme_sub = label_scheme_sub)
+    } else {
+      new_elements <- find_contrast_elements(new_contrs, flatten = FALSE)
+      elements <- lapply(new_elements, compile_formula_elements)
+      random_vars <- find_random_vars(fml_last)
+      
+      fml_ops <- vector("list", n_contrs <- length(new_contrs))
+      for (i in seq_len(n_contrs)) {
+        fml_ops[[i]] <- prep_formula_design(
+          key_col = key_col, 
+          elements = elements[[i]], sub_contrs = sub_contrs[[i]], 
+          contrs = contrs[[i]], new_contrs = new_contrs[[i]], 
+          random_vars = random_vars, 
+          label_scheme_sub = 
+            dplyr::filter(label_scheme_sub, .data[[key_col]] %in% elements[[i]]))
+      }
+      
+      message("\ncontrs: ", paste(contrs, collapse = ", "), "\n")
+      message("new_contrs: ", paste(new_contrs, collapse = ", "), "\n")
+      message("elements: ", paste(elements, collapse = ", "), "\n")
+      message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
+    }
   } else {
+    # Less critical at non-canonical formats
     contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
     elements <- new_levels
+    sub_contrs <- NULL
+    random_vars <- find_random_vars(fml_last)
+    
+    fml_ops <- prep_formula_design(
+      key_col = key_col, elements = elements, sub_contrs = sub_contrs, 
+      contrs = contrs, new_contrs = new_contrs, random_vars = random_vars, 
+      label_scheme_sub = label_scheme_sub)
   }
-  
+
+  fml_ops
+}
+
+
+#' Helper preparing the design of contrast fits.
+#' 
+#' @param key_col A key column.
+#' @param elements Contrast elements.
+#' @param sub_contrs Sub contrasts for nested stuctures.
+#' @param contrs Contrasts.
+#' @param new_contrs New contrasts with handling of \code{+} and \code{-}.
+#' @param random_vars Random variables.
+#' @param label_scheme_sub Metadata.
+prep_formula_design <- function (
+    elements, sub_contrs = NULL, contrs, new_contrs, random_vars, 
+    key_col, label_scheme_sub)
+{
   label_scheme_sub_sub <- label_scheme_sub |>
-    dplyr::filter(!!sym(key_col) %in% elements) |>
+    dplyr::filter(.data[[key_col]] %in% elements) |>
     dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
   
   if (!nrow(label_scheme_sub_sub)) {
     stop("No samples were found for formula ", formula, 
          "\nCheck the terms under column ", key_col)
   }
-
-  design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
-    `colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
+  
+  grp_labels <- label_scheme_sub_sub[[key_col]]
+  design <- model.matrix(~0+grp_labels)
+  # colnames(design) <- gsub("^grp_labels", "", colnames(design))
+  colnames(design) <- levels(grp_labels)
+  rownames(design) <- label_scheme_sub_sub[["Sample_ID"]]
   
   new_design_nms <- colnames(design) %>% 
     gsub("+", ".plus.", ., fixed = TRUE) %>% 
@@ -160,13 +192,45 @@ prepFml <- function(formula, label_scheme_sub, ...)
   new_design <- design %>% 
     `colnames<-`(new_design_nms)
   
-  contr_mat <- makeContrasts(contrasts = new_contrs, 
-                             levels = data.frame(new_design)) %>% 
+  contr_mat <- makeContrasts(
+    contrasts = new_contrs, levels = data.frame(new_design)) %>% 
     `colnames<-`(contrs) %>% 
     `rownames<-`(colnames(design))
   
   rm(list = c("new_design_nms", "new_design"))
+  
+  message("random_vars: ", as.character(random_vars), "\n\n")
+  
+  if (!any(lengths(sub_contrs))) {
+    sub_contrs <- NULL
+  }
+  
+  list(key_col = key_col, 
+       elements = elements, 
+       contrs = contrs, 
+       new_contrs = new_contrs, 
+       random_vars = random_vars,
+       
+       design = design, 
+       contr_mat = contr_mat, 
+       sub_contrs = sub_contrs, 
+       label_scheme_sub_sub = label_scheme_sub_sub)
+}
 
+
+find_formula_last <- function (formula)
+{
+  fml <- gsub("\\s+", "", as.character(formula))
+  fml <- fml[fml != "~"]
+  len <- length(fml)
+  fml_last <- fml[[length(fml)]]
+}
+
+#' Finds random variables.
+#' 
+#' @param fml_last A formula
+find_random_vars <- function (fml_last)
+{
   random_vars <- fml_last %>%
     gsub("\\[.*\\]+?", "", .) %>%
     paste("~", .) %>%
@@ -175,22 +239,104 @@ prepFml <- function(formula, label_scheme_sub, ...)
     attr(., "term.labels") %>%
     .[grepl("\\|", .)] %>%
     gsub("1\\s*\\|\\s*(.*)", "\\1", .)
-  
-  message("random_vars: ", as.character(random_vars), "\n\n")
-  
-  if (!any(lengths(sub_contrs))) {
-    sub_contrs <- NULL
-  }
+}
 
-  list(design = design, 
-       contr_mat = contr_mat, 
-       key_col = key_col, 
-       random_vars = random_vars,
-       elements = elements, 
-       contrs = contrs, 
-       new_contrs = new_contrs, 
-       sub_contrs = sub_contrs, 
-       label_scheme_sub_sub = label_scheme_sub_sub)
+
+#' Find the key column from a formula
+#' 
+#' @param formula A formula
+find_formula_key <- function (formula)
+{
+  gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", formula)
+}
+
+
+#' Find the base from a formula
+#' 
+#' @param formula A formula
+find_formula_base <- function (formula)
+{
+  base <- if (grepl("\\[\\s*\\~\\s*", formula)) {
+    gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", formula)
+  } else {
+    NULL
+  }
+  
+  base
+}
+
+
+#' Find formula contrasts
+#' 
+#' @param formula A formula
+split_formula_contrasts <- function (formula)
+{
+  new_contrs <- gsub("\\\"", "", gsub("^.*\\[(.*)\\].*", "\\1", formula)) |>
+    stringr::str_split(",\\s*", simplify = TRUE)
+}
+
+
+#' Compile formula new constrasts.
+#' 
+#' By substituting \code{+} and \code{-}.
+#' 
+#' @param new_contrs New contrast names.
+compile_formula_new_contrasts <- function (new_contrs)
+{
+  new_contrs %>% 
+    gsub("\\s+", "", .) %>% 
+    gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
+    gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
+    gsub("[ <>]+", "", .)
+}
+
+
+#' Compile formula elements.
+#' 
+#' By substituting back to \code{+} and \code{-}.
+#' 
+#' @param new_contrs New contrast names.
+compile_formula_elements <- function (elements)
+{
+  elements %>% 
+    gsub(".plus.", "+", ., fixed = TRUE) %>% 
+    gsub(".minus.", "-", ., fixed = TRUE)
+}
+
+
+#' Finds sub contrasts from nested structures.
+#'
+#' @param new_contrs Comma-split contrasts.
+#' @return Lists of character(0) if no nested structure in \code{new_contrs}.
+#' With nested structure, returns lists of "(C_NP-A_NP)-(C_CP-A_CP)",
+#' "(C_NP-AZC_NP)-(C_CP-AZC_CP)" etc.
+find_sub_contrs <- function (new_contrs)
+{
+  regmatches(new_contrs, gregexpr("(?<=\\().*?(?=\\))", new_contrs, perl = TRUE))
+}
+
+
+#' Find \code{new_lvels} from a formula.
+#' 
+#' @param formula A formula.
+#' @param base The base of a formula.
+#' @param key_col The key column of a formula.
+#' @param label_scheme_sub Metadata.
+find_formula_new_levels <- function (formula, key_col, base, label_scheme_sub)
+{
+  if (!is.null(base)) { # formula = ~ Term[~V]
+    new_levels <- levels(label_scheme_sub[[key_col]])
+    new_levels <- c(new_levels[new_levels == base], 
+                    new_levels[new_levels != base])
+    # label_scheme_sub <- label_scheme_sub %>%
+    #   dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
+  } else if (!grepl("\\[", formula)) { # formula = log2Ratio ~ Term
+    new_levels <- levels(label_scheme_sub[[key_col]])
+  } else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
+    new_levels <- NULL
+  }
+  
+  new_levels
 }
 
 
@@ -277,23 +423,79 @@ lm_summary <- function(
 }
 
 
+#' Check the suitability of contrast names.
+#' 
+#' @param contr_nms Contrast names.
+#' @param design A contrast matrix of design.
+#' @param formula A formula.
+check_contrast_names <- function (contr_nms, design, formula)
+{
+  if (length(dups <- which(duplicated(contr_nms)))) {
+    stop("Duplicated contrasts found: ", paste(contr_nms[dups], collapse = ", "))
+  }
+  
+  ss <- colSums(design) == 1
+  
+  if (length(bads <- ss[ss])) {
+    warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
+            " under `", formula, "`.")
+  }
+}
+
+
+#' Helper of \link{model_onechannel}.
+#' 
+#' One pair of contrast under a formula.
+#' 
+#' @inheritParams model_onechannel
+hmodel_onechannel <- function (
+    fml_ops = NULL, formula = NULL, # fml_nm = NULL, 
+    dfR = NULL, dfI = NULL, id, flatten = TRUE, 
+    label_scheme_sub, complete_cases = FALSE, impute_group_na = TRUE, 
+    perc_baseline_intensity = 1E-4, abs_baselne_intensity = 1E5, 
+    method = "limma", padj_method = "BH", var_cutoff = 1E-3, pval_cutoff = 1.00, 
+    logFC_cutoff = log2(1), ...)
+{
+  non_fml_dots <- rlang::enexprs(...)
+  
+  df_op <- vector("list", length(fml_ops))
+  
+  for (i in seq_along(fml_ops)) {
+    df_op[[i]] <- model_onechannel(
+      fml_ops = fml_ops[[i]], formula = formula, 
+      dfR = dfR, dfI = dfI, id = id, 
+      label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
+      impute_group_na = impute_group_na, 
+      perc_baseline_intensity = perc_baseline_intensity, 
+      abs_baselne_intensity = abs_baselne_intensity, 
+      method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
+      pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+      !!!non_fml_dots)
+  }
+
+  df_op <- dplyr::bind_cols(df_op)
+  # colnames(df_op) <- paste0(fml_nm, ".", colnames(df_op))
+  
+  df_op
+}
+
+
 #' Factorial model formula for interaction terms. All factors under one channel
 #' in `label_scheme_sub`
 #' 
 #' @param formula Language; the formula in linear modeling.
+#' @param flatten Logical; flatten nested formula or not.
 #' @param dfI Intensity data frame.
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
 #' @importFrom MASS ginv
-model_onechannel <- function (dfR = NULL, dfI = NULL, 
-                              id, formula, label_scheme_sub, 
-                              complete_cases = FALSE, impute_group_na = TRUE, 
-                              perc_baseline_intensity = 1E-4,
-                              abs_baselne_intensity = 1E5, 
-                              method = "limma", padj_method = "BH", 
-                              var_cutoff = 1E-3, pval_cutoff = 1.00, 
-                              logFC_cutoff = log2(1), ...) 
+model_onechannel <- function (
+    fml_ops = NULL, formula = NULL, dfR = NULL, dfI = NULL, id, flatten = TRUE, 
+    label_scheme_sub, complete_cases = FALSE, impute_group_na = TRUE, 
+    perc_baseline_intensity = 1E-4, abs_baselne_intensity = 1E5, 
+    method = "limma", padj_method = "BH", var_cutoff = 1E-3, pval_cutoff = 1.00, 
+    logFC_cutoff = log2(1), ...) 
 {
   # formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
   # formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
@@ -313,35 +515,30 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   # lmFit_dots <- dots %>% .[. %in% c("method")]
   # eBayes_dots <- dots %>% .[. %in% c("proportion")]
   
-  fml_ops     <- prepFml(formula, label_scheme_sub, ...)
-  elements    <- fml_ops$elements
-  contr_mat   <- fml_ops$contr_mat
+  # Backward compatibility
+  if (is.null(fml_ops)) {
+    fml_ops <- prepFml(
+      formula = formula, label_scheme_sub = label_scheme_sub, ...)
+  }
+  
+  elements    <- fml_ops[["elements"]]
+  contr_mat   <- fml_ops[["contr_mat"]]
   contr_nms   <- colnames(contr_mat)
-  design      <- fml_ops$design
-  key_col     <- fml_ops$key_col
-  random_vars <- fml_ops$random_vars
-  sub_contrs  <- fml_ops$sub_contrs # NULL if no nested structure
-  label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
+  design      <- fml_ops[["design"]]
+  key_col     <- fml_ops[["key_col"]]
+  random_vars <- fml_ops[["random_vars"]]
+  sub_contrs  <- fml_ops[["sub_contrs"]] # NULL if no nested structure
+  label_scheme_sub_sub <- fml_ops[["label_scheme_sub_sub"]]
   
-  local({
-    if (length(dups <- which(duplicated(contr_nms)))) {
-      stop("Duplicated contrasts found: ", 
-           paste(contr_nms[dups], collapse = ", "))
-    }
-    
-    ss <- colSums(design) == 1
-    if (length(bads <- ss[ss])) 
-      warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
-              " under `", formula, "`.")
-  })
-  
+  check_contrast_names(contr_nms = contr_nms, design = design, formula = formula)
+
   # Set aside the name list as rows may drop in filtration
   df_nms <- tibble::tibble(!!id := rownames(dfR))
   
   if (complete_cases) {
     dfR <- dfR[complete.cases(dfR), ]
   }
-
+  
   sids <- label_scheme_sub_sub[["Sample_ID"]]
   dfR  <- filterData(dfR, var_cutoff = var_cutoff)
   dfR  <- dfR[, sids, drop = FALSE]
@@ -355,26 +552,28 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   if (!identical(nrow(dfI), nrow(dfR))) {
     stop("Developer: Check mismatches between Intensity and Ratio data.")
   }
-
+  
   ###
   # Need to test the partial imputation at mixed effect modeling...
   ###
   
   dfN <- count_non_na(
-    dfR = dfR, dfI = dfI, label_scheme_sub = label_scheme_sub_sub, 
+    dfR = dfR, 
+    dfI = dfI, 
+    label_scheme_sub = label_scheme_sub_sub, 
     col_group = key_col)
-  grps <- attr(dfN, "grps")
-  ugrps <- attr(dfN, "ugrps")
+  grps    <- attr(dfN, "grps")
+  ugrps   <- attr(dfN, "ugrps")
   n_ugrps <- length(ugrps)
-  dfsR <- attr(dfN, "dfsR")
-  dfsI <- attr(dfN, "dfsI")
+  dfsR    <- attr(dfN, "dfsR")
+  dfsI    <- attr(dfN, "dfsI")
   
   # Unnested, unique contrast: 
   #  "TG_NP-Veh_NP", "TG_CP-Veh_CP", "TG_ChA-Veh_ChA"
-  u_contrs <- if (is.null(sub_contrs)) {
-    unique(contr_nms)
-  } else {
+  u_contrs <- if (length(sub_contrs)) {
     unique(unlist(sub_contrs, recursive = FALSE))
+  } else {
+    unique(contr_nms)
   }
   
   # Unnested, unique pairs of contrast: 
@@ -389,7 +588,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   if (sum(lengths(pairs_sub)) > n_ugrps) {
     warning(
       "Duplicated groups in \n", pairs_sub, 
-      "\nPartial imputation from the last occurance will be used.")
+      "\nPartial imputation from the last occurance will be used.\n", 
+      "Consider using 'flatten = FALSE'.")
   }
   
   # Subset of sample IDs within each pairs_sub
@@ -398,13 +598,13 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
       dplyr::filter(.data[[key_col]] %in% x) |>
       dplyr::pull("Sample_ID")
   })
-
+  
   # [1] "TG_NP"  "Veh_NP" "TG_CP"  "Veh_CP"
   # [1] "TG_ChA"  "Veh_ChA" "TG_NP"   "Veh_NP" 
   # [1] "TG_ChA"  "Veh_ChA" "TG_CP"   "Veh_CP" 
   groups_sub <- lapply(contr_nms, find_contrast_elements)
   groups_sub <- lapply(groups_sub, unique)
-
+  
   if (impute_group_na && !is.null(dfI)) {
     dfI[dfI < 1.0] <- 1.0
     
@@ -416,7 +616,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
     dfsR <- ans_base_y[["log2R"]]
     dfsI <- ans_base_y[["Intensity"]]
     ys_base <- ans_base_y[["baseline"]]
-
+    
     mapply(function (x, y) {
       if (!identical(rownames(x), rownames(y))) {
         stop("Developer: check for mismatched row names.")
@@ -426,17 +626,8 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
         stop("Developer: check for mismatched column names.")
       }
     }, dfsR, dfsI)
-
-    if (is.null(sub_contrs)) { # no nested contrast
-      ans2 <- impute_baseline_ints(
-        dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
-        ys_base = ys_base, sample_ids = sids)
-      dfI <- ans2[["Intensity"]]
-      dfR <- ans2[["log2R"]]
-      dfI <- dfI[, sids, drop = FALSE]
-      dfR <- dfR[, sids, drop = FALSE]
-      rm(list = "ans2")
-    } else {
+    
+    if (length(sub_contrs)) {
       for (i in seq_along(pairs_sub)) {
         # Sample pairs and IDs within an inner parentheses of a nested structure
         # e .g., C_ChA-A_ChA in "(C_ChA-A_ChA)-(C_NP-A_NP)"
@@ -462,17 +653,27 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
           key_col = key_col, label_scheme = label_scheme_sub_sub)
         dfsI <- lapply(tempi, `[[`, "Intensity")
         dfsR <- lapply(tempi, `[[`, "log2R")
+        
+        rm(list = c("ans2", "tempi", "pairi", "sidsi"))
       }
-      
-      rm(list = c("ans2", "tempi", "pairi", "sidsi"))
       
       dfI <- dfI[, sids, drop = FALSE]
       dfR <- dfR[, sids, drop = FALSE]
+    } else { # no nested contrast
+      ans2 <- impute_baseline_ints(
+        dfsR = dfsR, dfsI = dfsI, dfR = dfR, dfI = dfI, 
+        ys_base = ys_base, sample_ids = sids)
+      dfI <- ans2[["Intensity"]]
+      dfR <- ans2[["log2R"]]
+      dfI <- dfI[, sids, drop = FALSE]
+      dfR <- dfR[, sids, drop = FALSE]
+      rm(list = "ans2")
+      
     }
     
     rm(list = c("ans_base_y", "ys_base"))
   }
-
+  
   local({
     if ((ncol <- ncol(dfR)) < 4L) 
       warning(formula, ": the total number of samples is ", ncol, ".\n", 
@@ -512,7 +713,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
   if (!identical(rownames(dfN), rownames(pvals))) {
     stop("Developer: check for mismatches.")
   }
-
+  
   res_lm <- lm_summary(
     pvals = pvals, log2rs = log2rs, dfN = dfN, 
     contr_nms = contr_nms, groups_sub = groups_sub, 
@@ -546,7 +747,7 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
           function (x) tidyr::replace_na(x, 1.0)
         ))
   }
-
+  
   df_op
 }
 
@@ -555,12 +756,13 @@ model_onechannel <- function (dfR = NULL, dfI = NULL,
 #'
 #' @param data_type The type of data being either \code{Peptide} or
 #'   \code{Protein}.
+#' @param flatten Logical; flatten nested formula or not.
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
 #' @import limma stringr purrr tidyr dplyr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-sigTest <- function(df, id, label_scheme_sub, 
+sigTest <- function(df, id, label_scheme_sub, flatten = TRUE, 
                     scale_log2r = TRUE, complete_cases = FALSE, 
                     impute_na = FALSE, impute_group_na = TRUE, 
                     perc_baseline_intensity = 1E-4, 
@@ -646,15 +848,45 @@ sigTest <- function(df, id, label_scheme_sub,
 
   # Significance test by each formula
   # Partial missing value imputation depends on lm contrasts
-  df_op <- lapply(dots, function (formula) model_onechannel(
-    dfR = dfR, dfI = dfI, id = id, formula = formula, 
-    label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
-    impute_group_na = impute_group_na, 
-    perc_baseline_intensity = perc_baseline_intensity, 
-    abs_baselne_intensity = abs_baselne_intensity, 
-    method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
-    pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-    !!!non_fml_dots))
+  
+  fml_ops <- lapply(dots, prepFml, label_scheme_sub = label_scheme_sub, 
+                    flatten = flatten, ...)
+  
+  df_op <- vector("list", length(dots))
+  names(df_op) <- fml_nms <- names(fml_ops)
+  
+  for (i in seq_along(df_op)) {
+    dots_i <- dots[[i]]
+    fml_ops_i <- fml_ops[[i]]
+    
+    if (flatten) {
+      df_op[[i]] <- model_onechannel(
+        formula = dots_i, fml_ops = fml_ops_i, 
+        dfR = dfR, dfI = dfI, id = id, 
+        label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
+        impute_group_na = impute_group_na, 
+        perc_baseline_intensity = perc_baseline_intensity, 
+        abs_baselne_intensity = abs_baselne_intensity, 
+        method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
+        pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+        !!!non_fml_dots)
+    } else {
+      df_op[[i]] <- hmodel_onechannel(
+        formula = dots_i, fml_ops = fml_ops_i, # fml_nm = fml_nms[[i]], 
+        dfR = dfR, dfI = dfI, id = id, 
+        label_scheme_sub = label_scheme_sub, complete_cases = complete_cases, 
+        impute_group_na = impute_group_na, 
+        perc_baseline_intensity = perc_baseline_intensity, 
+        abs_baselne_intensity = abs_baselne_intensity, 
+        method = method, padj_method = padj_method, var_cutoff = var_cutoff, 
+        pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+        !!!non_fml_dots
+      )
+      
+      # colnames(df_op[[i]]) <- paste0(names(df_op)[[i]], ".", colnames(df_op[[i]]))
+    }
+  }
+
   df_op <- do.call("cbind", df_op)
   
   # record the `scale_log2r` status; otherwise, need to indicate it in a way
@@ -683,7 +915,7 @@ sigTest <- function(df, id, label_scheme_sub,
   df_op <- df_op %>%
     tibble::rownames_to_column(id) %>% 
     dplyr::mutate(!!id := forcats::fct_na_value_to_level(!!rlang::sym(id))) %>% 
-    dplyr::right_join(df, ., by = id) 
+    dplyr::right_join(df, ., by = id)
   
   tempdata <- df_op %>%
     dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
@@ -969,7 +1201,11 @@ count_non_na <- function (dfR = NULL, dfI = NULL, label_scheme_sub = NULL,
   sids  <- label_scheme_sub[["Sample_ID"]]
   
   ans <- sep_data_by_group(
-    elements = ugrps, dfR = dfR, dfI = dfI, sids = sids, key_col = col_group, 
+    elements = ugrps, 
+    dfR = dfR, 
+    dfI = dfI, 
+    sids = sids, 
+    key_col = col_group, 
     label_scheme = label_scheme_sub)
   
   dfsR <- lapply(ans, `[[`, "log2R")
@@ -1120,8 +1356,8 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
                     abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
-                    method = c("limma", "lm"), padj_method = "BH", 
-                    method_replace_na = c("none", "min"), 
+                    method = c("limma", "lm"), flatten = TRUE, 
+                    padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
 {
@@ -1190,6 +1426,7 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
             filename = filename, 
             anal_type = "Model")(
               method = method, 
+              flatten = flatten, 
               padj_method = padj_method, 
               var_cutoff = var_cutoff, 
               pval_cutoff = pval_cutoff, 
@@ -1248,6 +1485,7 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
 #'  absolute \code{log2FC} smaller than the threshold will be removed from
 #'  multiple test corrections. The default is at \code{log2(1)} to include all
 #'  entries.
+#'@param flatten Logical; flatten nested formula or not.
 #'@param method_replace_na The method to replace NA values by rows. The default
 #'  is \code{none} by doing nothing. At \code{method_replace_na = min}, the row
 #'  minimums will be used. The argument is only a device to assess \code{pVals},
@@ -1340,7 +1578,7 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
                     impute_group_na = TRUE, perc_baseline_intensity = 1E-4, 
                     abs_baselne_intensity = 1E5, 
                     complete_cases = FALSE, rm_allna = FALSE, 
-                    method = c("limma", "lm"), 
+                    method = c("limma", "lm"), flatten = TRUE, 
                     padj_method = "BH", method_replace_na = c("none", "min"), 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) 
@@ -1362,10 +1600,10 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
     match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  flatten <- tryCatch(match_call_arg("pepSig", flatten), error = function(e) NA)
+  if (is.na(flatten)) flatten <- TRUE
   
-  # force(method); force(method_replace_na)
-  # force(df); force(filepath); force(filename); force(padj_method); 
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
   method <- match.arg(method)
@@ -1410,6 +1648,7 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
             filename = filename, 
             anal_type = "Model")(
               method = method, 
+              flatten = flatten, 
               padj_method = padj_method, 
               var_cutoff = var_cutoff, 
               pval_cutoff = pval_cutoff, 

@@ -367,6 +367,14 @@ add_subcell <- function (
     rm_tetherome = FALSE, update_trend_res = FALSE, 
     scale_log2r = TRUE, impute_na = FALSE)
 {
+  if (!is_subcellular) {
+    return(
+      list(df = df, df_trend = NULL, df_trend_long = NULL, 
+           col_fraction = NULL, col_subtype = NULL, 
+           col_group = NULL, path_trend = NULL)
+    )
+  }
+  
   ## Find input `df2`
   path_trend <- file.path(dat_dir, "Protein", "trend")
   
@@ -378,21 +386,7 @@ add_subcell <- function (
     warning("Subcellular results not found.")
     is_subcellular <- FALSE
   }
-  
-  if (!is_subcellular) {
-    df_trend <- NULL
-    col_fraction <- NULL
-    col_subtype <- NULL
-    col_group <- NULL
-    df_trend_long <- NULL
-    
-    return(
-      list(df = df, df_trend = df_trend, df_trend_long = df_trend_long, 
-           col_fraction = col_fraction, col_subtype = col_subtype, 
-           col_group = col_group, path_trend = path_trend)
-    )
-  }
-  
+
   file_2 <- files_2[[1]]
   
   df_trend     <- readr::read_tsv(file.path(path_trend, file_2))
@@ -1236,7 +1230,8 @@ check_gspa_subcellular <- function (
   
   load(file = fn_fml)
   
-  fml_ops  <- prepFml(prnSig_formulas[[fml_nm]], label_scheme_sub)
+  fml_ops  <- prepFml(
+    formula = prnSig_formulas[[fml_nm]], label_scheme_sub = label_scheme_sub)
   key_col  <- fml_ops[["key_col"]]
   elements <- fml_ops[["elements"]]
 

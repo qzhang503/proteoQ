@@ -6,10 +6,12 @@
 in `label_scheme_sub`}
 \usage{
 model_onechannel(
+  fml_ops = NULL,
+  formula = NULL,
   dfR = NULL,
   dfI = NULL,
   id,
-  formula,
+  flatten = TRUE,
   label_scheme_sub,
   complete_cases = FALSE,
   impute_group_na = TRUE,
@@ -24,12 +26,14 @@ model_onechannel(
 )
 }
 \arguments{
+\item{formula}{Language; the formula in linear modeling.}
+
 \item{dfI}{Intensity data frame.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
-\item{formula}{Language; the formula in linear modeling.}
+\item{flatten}{Logical; flatten nested formula or not.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}

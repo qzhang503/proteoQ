@@ -277,6 +277,8 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     write.table(file.path(filepath, paste0(fn_prefix, "_ES.txt")), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)    
 
+  # fml_ops <- prepFml(formula = formula, label_scheme_sub = label_scheme_sub, flatten = flatten, ...)
+  
   quietly_log <- 
     purrr::map(fmls, ~ purrr::quietly(model_onechannel)(
       res_es %>% 

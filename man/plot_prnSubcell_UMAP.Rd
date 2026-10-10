@@ -27,7 +27,7 @@ plot_prnSubcell_UMAP(
   filename = NULL,
   ext = "png",
   use_cache = FALSE,
-  overwrite_umap_res = FALSE,
+  overwrite_umap_res = TRUE,
   wrap_facets = TRUE,
   break_width = 5,
   hide_grids = TRUE,

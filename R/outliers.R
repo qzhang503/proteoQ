@@ -1474,7 +1474,7 @@ find_pepoutliers <- function (
     fml_nms <- names(prnSig_formulas)
     
     contr_pairs <- lapply(
-      prnSig_formulas, prepFml, label_scheme_sub = label_scheme_sub
+      prnSig_formulas, prepFml, label_scheme_sub
     ) |>
       lapply(`[[`, "contrs")
   } else {
@@ -1585,7 +1585,7 @@ find_pepoutliers_by_fml <- function (
     group_psm_by = "pep_seq_mod", group_pep_by = "gene", label_scheme_sub, 
     p_outlier = .05, min_n = 3L, p_contrast = .01, p_type = "adjP")
 {
-  fml_ops <- prepFml(formula = formula, label_scheme_sub = label_scheme_sub)
+  fml_ops <- prepFml(formula, label_scheme_sub)
   contrs  <- colnames(fml_ops[["contr_mat"]])
 
   if (!is.null(contr_pairs)) {

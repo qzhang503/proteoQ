@@ -20,6 +20,7 @@ plot_subcell_markers(
   col_fraction = NULL,
   levels_fraction = NULL,
   polygons = NULL,
+  exclude_inside = TRUE,
   ext = "png",
   break_width = 5,
   hide_grids = TRUE,
@@ -54,6 +55,10 @@ determination.}
 \item{levels_fraction}{The levels of subcellular compartments.}
 
 \item{polygons}{The vertices of polygons.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 
 \item{ext}{A file name extension.}
 

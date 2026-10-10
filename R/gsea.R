@@ -308,7 +308,8 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
            filepath = filepath, 
            fn_prefix = fn_prefix)
   
-  fml_ops <- suppressMessages(prepFml(fml, label_scheme_sub, ...))
+  fml_ops <- suppressMessages(
+    prepFml(formula = fml, label_scheme_sub = label_scheme_sub, ...))
   contr_mat <- fml_ops$contr_mat
   design <- fml_ops$design
   key_col <- fml_ops$key_col

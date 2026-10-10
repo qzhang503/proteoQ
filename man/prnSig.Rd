@@ -15,6 +15,7 @@ pepSig(
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
+  flatten = TRUE,
   padj_method = "BH",
   method_replace_na = c("none", "min"),
   var_cutoff = 0.001,
@@ -36,6 +37,7 @@ prnSig(
   complete_cases = FALSE,
   rm_allna = FALSE,
   method = c("limma", "lm"),
+  flatten = TRUE,
   padj_method = "BH",
   method_replace_na = c("none", "min"),
   var_cutoff = 0.001,
@@ -81,6 +83,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
 for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
+
+\item{flatten}{Logical; flatten nested formula or not.}
 
 \item{padj_method}{Character string; the method of multiple-test corrections
 for uses with \link[stats]{p.adjust}. The default is "BH". See

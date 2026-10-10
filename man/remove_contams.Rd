@@ -4,12 +4,22 @@
 \alias{remove_contams}
 \title{Remove tethered mitochondrial, ER proteins.}
 \usage{
-remove_contams(df, id = "gene", poly_x = NULL, poly_y = NULL)
+remove_contams(
+  df,
+  id = "gene",
+  poly_x = NULL,
+  poly_y = NULL,
+  exclude_inside = TRUE
+)
 }
 \arguments{
 \item{df}{A data frame.}
 
 \item{poly_x}{The vertices of Y coordinates of a polygon.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 
 \item{An}{identifiers.}
 }

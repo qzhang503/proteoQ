@@ -3424,31 +3424,34 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL,
 {
   dat_dir <- get_gl_dat_dir()
   
-  if ((!purrr::is_empty(fmls)) && (anal_type == "GSEA")) 
+  if (length(fmls) && (anal_type == "GSEA")) {
     return(c(dots, fmls))
-  
-  if (!length(fmls)) {
+  }
+
+  if (length(fmls)) {
+    match_fmls(fmls)
+    dots <- c(dots, fmls)
+  } else {
     fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
     
     if (file.exists(fml_file)) {
       load(file = fml_file)
       
       if (!is.null(fml_nms)) {
-        stopifnot(all(fml_nms %in% names(pepSig_formulas)))
+        oks  <- fml_nms %in% names(pepSig_formulas)
+        fml_bads <-  fml_nms[!oks]
         
-        pepSig_formulas <- pepSig_formulas %>% 
-          .[names(.) %in% fml_nms]
+        if (length(fml_bads)) {
+          stop("Formula names not found: ", paste(fml_bads, collapse = ", "))
+        }
+        
+        pepSig_formulas <- pepSig_formulas[names(pepSig_formulas) %in% fml_nms]
       }
       
       dots <- c(dots, pepSig_formulas)
     } else {
-      stop("Run both `pepSig()` and `prnSig()` first.", 
-           call. = FALSE)
+      stop("Run both `pepSig()` and `prnSig()` first.")
     }
-  } 
-  else {
-    match_fmls(fmls)
-    dots <- c(dots, fmls)
   }
   
   dots

@@ -28,9 +28,13 @@
 # load_fasta
 # calc_avgpep
 #
+# $foo_model.R
+# model_onecontrast
+#
 # $funs.R
-# # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -89,6 +93,7 @@
 # pepGSPA
 # prnGSPA
 # add_subcell
+# update_trend_tetherome
 # gspaTest
 # fml_gspa
 # hgspa_summary_mean
@@ -517,12 +522,19 @@
 # update_subell_by_contr
 # update_subcell_by_fml
 # update_subcell
+# update_subcell_stat
 # find_bad_transloc
 # find_from_to_transloc
 # update_subcell_metrics
 # make_transloc_scatter
 # update_subcellular
 # hupdate_subcellular
+# plot_subcell_markers
+# find_tetherome_by_subtype
+# plot_subcell_markers_by_subtype
+# plot_subcell_markers_by_fraction
+# hremove_contams
+# remove_contams
 #
 # $trends.R
 # checkdots_analTrend

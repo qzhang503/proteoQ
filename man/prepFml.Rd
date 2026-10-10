@@ -4,13 +4,15 @@
 \alias{prepFml}
 \title{Prepare formulas}
 \usage{
-prepFml(formula, label_scheme_sub, ...)
+prepFml(formula, label_scheme_sub, flatten = TRUE, ...)
 }
 \arguments{
 \item{formula}{Language; the formula in linear modeling.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{flatten}{Logical; flatten nested formula or not.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row
 filtration of data against the column keys in \code{Peptide.txt} for

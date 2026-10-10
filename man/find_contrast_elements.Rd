@@ -4,10 +4,12 @@
 \alias{find_contrast_elements}
 \title{Helper to find contrast elements}
 \usage{
-find_contrast_elements(contrs)
+find_contrast_elements(contrs, flatten = TRUE)
 }
 \arguments{
 \item{contrs}{A vectors of contrast groups.}
+
+\item{flatten}{Logical; flatten lists or not.}
 }
 \description{
 Helper to find contrast elements

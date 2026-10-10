@@ -6,9 +6,11 @@
 \usage{
 hremove_contams(
   df,
+  id = "gene",
   col_fraction = "Fraction",
   tether_fraction = "NP",
-  polygons = NULL
+  polygons = NULL,
+  exclude_inside = TRUE
 )
 }
 \arguments{
@@ -19,6 +21,10 @@ hremove_contams(
 \item{tether_fraction}{The fraction where tetherome will be considered.}
 
 \item{polygons}{The vertices of polygons.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 }
 \description{
 Helper remove tethered mitochondrial, ER proteins.

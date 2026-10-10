@@ -8,6 +8,7 @@ sigTest(
   df,
   id,
   label_scheme_sub,
+  flatten = TRUE,
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -44,6 +45,8 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{flatten}{Logical; flatten nested formula or not.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE. At

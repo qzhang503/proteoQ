@@ -2209,7 +2209,7 @@ plot_prnSubcell_UMAP <- function (
     col_fraction = NULL, levels_fraction =  NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
     df2 = NULL, filepath = NULL, filename = NULL, ext = "png", 
-    use_cache = FALSE, overwrite_umap_res = FALSE, 
+    use_cache = FALSE, overwrite_umap_res = TRUE, 
     wrap_facets = TRUE, break_width = 5, hide_grids = TRUE, drop = FALSE, 
     seed = 42, ...) 
 {
@@ -2659,10 +2659,10 @@ update_subell_by_contr <- function (
 update_subcell_by_fml <- function (
     fml_nm = NULL, fml = NULL, df = NULL, label_scheme_sub = NULL, FUN = all)
 {
-  fml_ops     <- prepFml(fml, label_scheme_sub)
-  elements    <- fml_ops[["elements"]]
-  contr_mat   <- fml_ops[["contr_mat"]]
-  sub_contrs  <- fml_ops[["sub_contrs"]] # NULL if no nested structure
+  fml_ops    <- prepFml(formula = fml, label_scheme_sub = label_scheme_sub)
+  elements   <- fml_ops[["elements"]]
+  contr_mat  <- fml_ops[["contr_mat"]]
+  sub_contrs <- fml_ops[["sub_contrs"]] # NULL if no nested structure
   # label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
   
   if (FALSE && !is.null(sub_contrs)) {
@@ -3520,6 +3520,9 @@ hupdate_subcellular <- function (
 #' @param break_width The width of breaks on X and Y axis.
 #' @param hide_grids Logical; hide grid lines or not.
 #' @param ... Additional parameters for plot controls.
+#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
+#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+#'   outside of the polygon.
 #' 
 #' @importFrom magrittr %>%
 #' @export
@@ -3534,7 +3537,8 @@ plot_subcell_markers <- function (
     levels_group = NULL, 
     col_subtype = NULL,  levels_subtype = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
-    polygons = NULL, ext = "png", break_width = 5, hide_grids = TRUE, 
+    polygons = NULL, exclude_inside = TRUE, 
+    ext = "png", break_width = 5, hide_grids = TRUE, 
     ...)
 {
   dots <- rlang::enexprs(...)
@@ -3640,9 +3644,9 @@ plot_subcell_markers <- function (
   dfs <- dfs[levels_subtype]
   
   ### 5. UMAP data
-  files_umap <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
-  
   files_umap <- local({
+    files_umap <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
+    
     oks <- file.exists(files_umap)
     
     if (any(bads <- !oks)) {
@@ -3663,8 +3667,27 @@ plot_subcell_markers <- function (
   dfs_umap   <- lapply(dfs_umap, function (x) { x[[col_subtype]] <- NULL; x})
   names(dfs_umap) <- levels_subtype
   
+  ## Check polygons
   n_subtypes <- length(levels_subtype)
+  
+  if (!all(names(polygons) %in% levels_subtype)) {
+    stop("Mismatched levels between polygons and levels_subtype")
+  }
+  
   polygons <- polygons[levels_subtype]
+  
+  mapply(function (ps, subtype) {
+    oks <- lapply(lapply(ps, lengths), function (n) {
+      n[["x"]] == n[["y"]]
+    }) |>
+      unlist()
+    
+    if (any(bads <- !oks)) {
+      stop("Mismatched lengths of x and y vertices: ", subtype, " | ", 
+           paste(names(bads)[bads == TRUE], collapse = ", "))
+    }
+  }, polygons, levels_subtype)
+  
   draw_polygon <- lapply(polygons, function (x) !is.null(x))
   
   if (!length(draw_polygon)) {
@@ -3685,7 +3708,8 @@ plot_subcell_markers <- function (
       levels_fraction = levels_fraction, 
       col_subtype = col_subtype, 
       levels_subtype = levels_subtype, 
-      levels_ref_compartments = levels_ref_compartments)
+      levels_ref_compartments = levels_ref_compartments, 
+      exclude_inside = exclude_inside)
   }
   
   if (FALSE) {
@@ -3701,7 +3725,7 @@ plot_subcell_markers <- function (
     plot_subcell_markers_by_fraction(
       df = dplyr::bind_rows(dfs), 
       # df_umap = dplyr::bind_rows(dfs_umap), 
-      polygons = NULL, 
+      polygons = polygons, 
       draw_polygon = FALSE, 
       # subtype = levels_subtype[[i]], 
       id = id, col_x = col_x, 
@@ -3720,7 +3744,6 @@ plot_subcell_markers <- function (
       !!!dots
     )
   }
-  
   
   for (i in seq_along(levels_subtype)) {
     plot_subcell_markers_by_subtype(
@@ -3771,11 +3794,14 @@ plot_subcell_markers <- function (
 #'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
 #'   determination.
 #' @param polygons The vertices of polygons.
+#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
+#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+#'   outside of the polygon.
 find_tetherome_by_subtype <- function (
     df, df_umap, subtype, id = "gene", draw_polygon = TRUE, 
     col_fraction = "Fraction", levels_fraction = NULL, 
     col_subtype = "Type", levels_subtype = NULL, 
-    levels_ref_compartments = NULL, polygons = NULL) 
+    levels_ref_compartments = NULL, polygons = NULL, exclude_inside = TRUE) 
 {
   df <- df_umap |> 
     dplyr::left_join(df, by = id) |>
@@ -3853,13 +3879,13 @@ find_tetherome_by_subtype <- function (
     fr <- levels_fraction[[i]]
     pg <- polygons[[fr]]
     
-    df_clean <- hremove_contams(
-      df = df, col_fraction = col_fraction, tether_fraction = fr, 
-      polygons = pg)
+    df <- hremove_contams( # df_clean
+      df = df, id = id, col_fraction = col_fraction, tether_fraction = fr, 
+      polygons = pg, exclude_inside = exclude_inside)
     
     # The results for for markers, not for the whole proteome
     df_tether[[i]] <- tibble::tibble(
-      !!id := attr(df_clean, "tethers"), 
+      !!id := attr(df, "tethers"), # df_clean
       !!col_subtype := subtype, 
       !!col_fraction := fr)
   }
@@ -4357,13 +4383,22 @@ plot_subcell_markers_by_fraction <- function (
 #' @param col_fraction The column key in metadata to subcellular fractions.
 #' @param tether_fraction The fraction where tetherome will be considered.
 #' @param polygons The vertices of polygons.
+#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
+#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+#'   outside of the polygon.
 hremove_contams <- function (
-    df, col_fraction = "Fraction", tether_fraction = "NP", polygons = NULL)
+    df, id = "gene", col_fraction = "Fraction", tether_fraction = "NP",
+    polygons = NULL, exclude_inside = TRUE)
 {
   rows <- df[[col_fraction]] == tether_fraction
   
   dfx <- remove_contams(
-    df[rows, ], poly_x = polygons[["x"]], poly_y = polygons[["y"]])
+    df[rows, ], 
+    id = id, 
+    poly_x = polygons[["x"]], 
+    poly_y = polygons[["y"]], 
+    exclude_inside = exclude_inside)
+  
   tethers <- attr(dfx, "tethers")
   
   df <- dplyr::bind_rows(df[!rows, ], dfx)
@@ -4374,33 +4409,43 @@ hremove_contams <- function (
 
 
 #' Remove tethered mitochondrial, ER proteins.
-#' 
+#'
 #' @param df A data frame.
 #' @param An identifiers.
 #' @param poly_x The vertices of X coordinates of a polygon.
 #' @param poly_x The vertices of Y coordinates of a polygon.
-remove_contams <- function (df, id = "gene", poly_x = NULL, poly_y = NULL)
+#' @inheritParams hremove_contams
+remove_contams <- function (
+    df, id = "gene", poly_x = NULL, poly_y = NULL, exclude_inside = TRUE)
 {
   if (is.null(poly_x) || is.null(poly_y)) {
     return(df)
   }
   
   inside_status <- sp::point.in.polygon(
-    point.x = df$UMAP1, 
-    point.y = df$UMAP2, 
+    point.x = df[["UMAP1"]], 
+    point.y = df[["UMAP2"]], 
     pol.x   = poly_x, 
     pol.y   = poly_y
   )
   
-  ids_inside <- unique(df[[id]][inside_status > 0])
+  ids_inside  <- unique(df[[id]][inside_status > 0])
+  ids_outside <- unique(df[[id]][inside_status <= 0])
   
   rows <- df[[id]] %in% ids_inside
-  # dfx  <- df[rows, ]
-  df <- df[!rows, ]
   
-  attr(df, "tethers") <- ids_inside
+  df_inside  <- df[rows, ]
+  df_outside <- df[!rows, ]
   
-  df
+  if (exclude_inside) {
+    res <- df_outside
+    attr(res, "tethers") <- ids_inside
+  } else {
+    res <- df_inside
+    attr(res, "tethers") <- ids_outside
+  }
+  
+  res
 }
 
 
