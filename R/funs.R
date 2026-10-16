@@ -28,12 +28,11 @@
 # load_fasta
 # calc_avgpep
 #
-# $foo_model.R
-# model_onecontrast
-#
 # $funs.R
-# # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
+# # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -466,8 +465,20 @@
 # filterData
 # find_contrast_elements
 # prepFml
+# prep_formula_design
+# find_formula_last
+# find_random_vars
+# find_formula_key
+# find_formula_base
+# split_formula_contrasts
+# compile_formula_new_contrasts
+# compile_formula_elements
+# find_sub_contrs
+# find_formula_new_levels
 # my_padj
 # lm_summary
+# check_contrast_names
+# hmodel_onechannel
 # model_onechannel
 # sigTest
 # himpute_baseline
@@ -511,6 +522,7 @@
 # svmSubcell
 # train_loc_svm
 # prepSubcell
+# make_f10_umap
 # hmake_subcell_expr
 # make_subcell_expr
 # cluster_svmprobs

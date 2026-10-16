@@ -16,6 +16,7 @@ classify_subcellular_supervised(
   levels_group = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
+  levels_ref_compartments = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   col_select = NULL,
@@ -44,6 +45,8 @@ identifying the database of reference markers.}
 
 \item{levels_group}{The levels of data group for ordering on the X-axis in
 visualization.}
+
+\item{levels_ref_compartments}{Levels of reference compartments.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
@@ -74,6 +77,7 @@ dat_dir <- "my/working/directory"
 ## (1) Sample fractions coincide with organelle compartments
 levels_fraction <- c("CP", "NP", "ChA")
 levels_subtype <- c("Veh", "TG")
+levels_ref_compartments <- levels_fraction
 
 # c("Veh_CP", "TG_CP", "Veh_NP", "TG_NP", "Veh_ChA", "TG_ChA")
 levels_group <- load_ls_group(dat_dir = dat_dir) |>
@@ -86,11 +90,13 @@ classify_subcellular_supervised(
   dat_dir = dat_dir, id = "gene", species = "human", n_clust = 16:36,
   col_group = "Group", levels_group = levels_group,
   col_fraction = "Fraction", levels_fraction = levels_fraction,
-  col_subtype = "Type", levels_subtype = levels_subtype)
+  col_subtype = "Type", levels_subtype = levels_subtype, 
+  levels_ref_compartments = levels_ref_compartments)
 
 ## (2) Sample fractions are different to organelle compartments
 data("subcell_mm")
 compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
+levels_ref_compartments <- compartments
 levels_group <- compartments # Assume one 'subtype'
 
 classify_subcellular_supervised(
@@ -99,6 +105,7 @@ classify_subcellular_supervised(
   levels_group = levels_group, # for the order on the X-axis in visualization
   col_fraction = "Fraction", # for preparation of summarized expression data
   levels_fraction = # to replace the colnames of summarized expression data
-    c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"))
+    c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
+  levels_ref_compartments = levels_ref_compartments)
 }
 }
