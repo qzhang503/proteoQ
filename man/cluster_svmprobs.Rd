@@ -2,23 +2,29 @@
 % Please edit documentation in R/subcellular.R
 \name{cluster_svmprobs}
 \alias{cluster_svmprobs}
-\title{Cluster SVM probabilities for a given sample subtype.}
+\title{Cluster SVM probabilities for a given sample sub-type using an unsupervised
+method.}
 \usage{
 cluster_svmprobs(
   df_prob = NULL,
   sub_type = NULL,
+  col_score = "loc_score",
   col_fraction = NULL,
   dat_dir = NULL,
   filepath = NULL,
   id = "gene",
   n_clust = NULL,
   choice = c("cmeans", "clara", "kmeans", "pam", "fanny"),
+  use_cache = FALSE,
   ...
 )
 }
 \arguments{
-\item{df_prob}{A data frame of SVM probabilities (under column
+\item{df_prob}{A data frame of SVM classification (column \code{svm}),
+probabilities (column \code{purity}) and localization scores (column
 \code{loc_score}).}
+
+\item{col_score}{The column key of localization scores.}
 
 \item{dat_dir}{The working directory.}
 
@@ -30,7 +36,10 @@ cluster_svmprobs(
 \item{n_clust}{The number of clusters.}
 
 \item{choice}{A clustering method.}
+
+\item{use_cache}{Logical; use cache or not.}
 }
 \description{
-Cluster SVM probabilities for a given sample subtype.
+Cluster SVM probabilities for a given sample sub-type using an unsupervised
+method.
 }

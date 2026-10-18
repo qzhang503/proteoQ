@@ -11,6 +11,7 @@ classify_subcellular_unsupervised(
   id = "gene",
   species = "human",
   n_clust = 16:36,
+  qt = 0.5,
   col_group = NULL,
   levels_group = NULL,
   col_fraction = NULL,
@@ -39,6 +40,9 @@ classify_subcellular_unsupervised(
 identifying the database of reference markers.}
 
 \item{n_clust}{The number of clusters.}
+
+\item{qt}{The quantile of localization score for thresholding
+subcellular compartment specificity. The default is to use median.}
 
 \item{levels_group}{The levels of data group for ordering on the X-axis in
 visualization. The argument overrule the orders by \code{col_order}.}

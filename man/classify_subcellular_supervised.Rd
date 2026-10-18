@@ -21,8 +21,10 @@ classify_subcellular_supervised(
   levels_subtype = NULL,
   col_select = NULL,
   col_order = NULL,
+  type_supervision = c("both", "sole"),
+  qt = 0.75,
   min_prot_n_peps = 2L,
-  reanalyze_trend = TRUE,
+  ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
   make_plot = FALSE,
   seed = 42L,
   ...
@@ -46,15 +48,25 @@ identifying the database of reference markers.}
 \item{levels_group}{The levels of data group for ordering on the X-axis in
 visualization.}
 
+\item{col_fraction}{The column key to subcellular fractions.}
+
+\item{levels_fraction}{The levels of subcellular compartments.}
+
 \item{levels_ref_compartments}{Levels of reference compartments.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
+\item{type_supervision}{\code{sole}, supervised learning only; \code{both},
+both supervised and unsupervised learning.}
+
+\item{qt}{The quantile of localization score for thresholding
+subcellular compartment specificity. The default is to use median.}
+
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
 protein for consideration.}
 
-\item{reanalyze_trend}{Logical; Should be FALSE. if TRUE, redo trend
-analysis.}
+\item{ranges}{for \code{cost} and \code{gamma} for grid searching with
+\code{radial} kernel.}
 
 \item{make_plot}{Logical; an option to plot clusters of probabilities.}
 
@@ -63,6 +75,9 @@ analysis.}
 \item{...}{Additional arguments.}
 
 \item{choice}{A clustering method.}
+
+\item{use_cache}{Logical; Should be FALSE. if TRUE, redo trend
+analysis.}
 }
 \description{
 A wrapper of classifying subcellular locations.
@@ -90,7 +105,7 @@ classify_subcellular_supervised(
   dat_dir = dat_dir, id = "gene", species = "human", n_clust = 16:36,
   col_group = "Group", levels_group = levels_group,
   col_fraction = "Fraction", levels_fraction = levels_fraction,
-  col_subtype = "Type", levels_subtype = levels_subtype, 
+  col_subtype = "Type", levels_subtype = levels_subtype,
   levels_ref_compartments = levels_ref_compartments)
 
 ## (2) Sample fractions are different to organelle compartments
@@ -105,7 +120,7 @@ classify_subcellular_supervised(
   levels_group = levels_group, # for the order on the X-axis in visualization
   col_fraction = "Fraction", # for preparation of summarized expression data
   levels_fraction = # to replace the colnames of summarized expression data
-    c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"), 
+    c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
   levels_ref_compartments = levels_ref_compartments)
 }
 }

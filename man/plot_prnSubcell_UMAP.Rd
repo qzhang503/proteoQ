@@ -32,6 +32,10 @@ plot_prnSubcell_UMAP(
   break_width = 5,
   hide_grids = TRUE,
   drop = FALSE,
+  width_combined = 5.5,
+  height_combined = 4,
+  width_sep = 14,
+  height_sep = 6,
   seed = 42,
   ...
 )
@@ -68,6 +72,14 @@ levles by the decreasing of category counts.}
 \item{overwrite_umap_res}{Logical; rewrite UMAP result files or not.}
 
 \item{wrap_facets}{Wrap facets or not.}
+
+\item{width_combined}{The width of a combined plot.}
+
+\item{height_combined}{The height of a combined plot.}
+
+\item{width_sep}{The width of a plot separated by compartments.}
+
+\item{height_sep}{The height of a plot separated by compartments.}
 
 \item{seed}{A seed for umap.}
 

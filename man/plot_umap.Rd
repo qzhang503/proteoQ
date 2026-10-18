@@ -18,6 +18,10 @@ plot_umap(
   break_width = 5,
   hide_grids = TRUE,
   drop = FALSE,
+  width_combined = 5.5,
+  height_combined = 4,
+  width_sep = 14,
+  height_sep = 6,
   ...
 )
 }

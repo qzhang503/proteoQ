@@ -12,9 +12,11 @@ plot_prnSubcellular(
   col_order = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
+  levels_ref_compartments = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   tie_method = "none",
+  type_supervision = c("sole", "both"),
   qt = 0.5,
   n_clust = NULL,
   panel_ids = NULL,
@@ -56,12 +58,7 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{col_fraction}{Only applicable to subcellular data analysis for
-  assessing fraction purity etc. Character string to a column key in
-  \code{expt_smry.xlsx} indicating subcellular fractions. No calculation of
-  subcellular location score at the \code{NULL} default.
-
-  Suggest, e.g., the corresponding column key \code{Fraction} in metadata.}
+\item{col_fraction}{The column key to sample fractions.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
 
@@ -74,8 +71,14 @@ independently.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
-\item{qt}{Not used. The quantile of localization score for thresholding
-subcellular compartment specificity. The default is to use median.}
+\item{tie_method}{Not used. A method for tie-breaking.}
+
+\item{type_supervision}{Only for uses with supervised learning: \code{sole},
+supervised learning only; \code{both}, both supervised and unsupervised
+learning.}
+
+\item{qt}{The quantile of localization score for thresholding subcellular
+compartment specificity. The default is to use median.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the gap method
@@ -156,10 +159,10 @@ levels_subtype <- c("Veh", "TG")
 
 # Automatic deduction of 'levels_group' or overruled with custom orders
 plot_prnSubcellular(
-  # levels_group = levels_group, 
-  col_fraction = "Fraction", levels_fraction = levels_fraction, 
-  col_subtype = "Type", levels_subtype = levels_subtype, 
-  ncol = 4, limitsize = FALSE, 
+  # levels_group = levels_group,
+  col_fraction = "Fraction", levels_fraction = levels_fraction,
+  col_subtype = "Type", levels_subtype = levels_subtype,
+  ncol = 4, limitsize = FALSE,
 )
 }
 }

@@ -5,23 +5,29 @@
 \title{Helper to make the outputs of trend analysis.}
 \usage{
 makeTrendRes(
-  fn,
+  n_clust = NULL,
+  fn = NULL,
+  df_mean_log2r = NULL,
   choice = "cmeans",
   dots = NULL,
   id = "gene",
-  df_mean_log2r = NULL,
   ext = "txt"
 )
 }
 \arguments{
+\item{n_clust}{Numeric vector; the number(s) of clusters that data will be
+divided into. At the NULL default, it will be determined by the gap method
+in \code{\link[cluster]{clusGap}}. The \code{n_clust} overwrites the
+argument \code{centers} in \code{\link[e1071]{cmeans}}.}
+
 \item{fn}{A prefix of file name.}
+
+\item{df_mean_log2r}{Data of mean log2Ratio.}
 
 \item{choice}{Character string; the clustering method in \code{c("cmeans",
 "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".}
 
 \item{id}{An identifier.}
-
-\item{df_mean_log2r}{Data of mean log2Ratio.}
 
 \item{ext}{The extension of out filenames.}
 }

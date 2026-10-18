@@ -20,6 +20,8 @@ svmSubcell(
   u_subtypes = NULL,
   col_fraction = NULL,
   levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
+  ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
+  use_cache = FALSE,
   seed = 42,
   ...
 )
@@ -50,6 +52,11 @@ independently.}
 only one subtype.}
 
 \item{levels_fraction}{The levels of subcellular fractions.}
+
+\item{ranges}{for \code{cost} and \code{gamma} for grid searching with
+\code{radial} kernel.}
+
+\item{use_cache}{Logical; use cache or not.}
 
 \item{seed}{A seed for SVM.}
 }

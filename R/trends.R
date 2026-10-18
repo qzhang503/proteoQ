@@ -147,12 +147,18 @@ find_trend_m <- function (dots, choice = "cmeans", n_clust = 5L, df_mean_log2r)
 #' @param df_mean_log2r Data of mean log2Ratio.
 #' @param ext The extension of out filenames.
 #' @inheritParams anal_prnTrend
-makeTrendRes <- function (fn, choice = "cmeans", dots = NULL, id = "gene", 
-                          df_mean_log2r = NULL, ext = "txt") 
+makeTrendRes <- function (
+    n_clust = NULL, fn = NULL, df_mean_log2r = NULL, choice = "cmeans", 
+    dots = NULL, id = "gene", ext = "txt") 
 {
-  n_clust  <- as.integer(gsub("^.*_nclust(\\d+).*", "\\1", fn))
-  filename <- paste0(fn, ext) # Not used
-  
+  if (is.null(n_clust)) {
+    if (is.null(fn)) {
+      stop("Both 'n_clust' and 'fn' are NULL.")
+    }
+    
+    n_clust  <- as.integer(gsub("^.*_nclust(\\d+).*", "\\1", fn))
+  }
+
   args <- if (choice %in% c("cmeans", "kmeans")) {
     c(list(x = as.matrix(df_mean_log2r), centers = n_clust), dots)
   } else if (choice %in% c("clara", "pam", "fanny")) {
@@ -342,7 +348,7 @@ analTrend <- function (
     tempdata <- do.call(rbind, tempdata)
   }
 
-  res_cl <- lapply(fn_prefix, makeTrendRes, choice = choice, dots = dots, 
+  res_cl <- lapply(n_clust, makeTrendRes, choice = choice, dots = dots, 
                    id = id, df_mean_log2r = tempdata)
   # rm(list = "tempdata")
   

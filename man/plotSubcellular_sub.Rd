@@ -9,7 +9,6 @@ plotSubcellular_sub(
   custom_prefix = NULL,
   fn_prefix = NULL,
   fn_suffix = NULL,
-  df = NULL,
   id = "gene",
   col_group = NULL,
   col_order = NULL,
@@ -46,8 +45,6 @@ of \code{df} and \code{df2}.}
 \item{fn_prefix}{A file name prefix.}
 
 \item{fn_suffix}{A file name suffix.}
-
-\item{df}{A data frame.}
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
@@ -101,6 +98,8 @@ will be applied.}
 \item{make_plot}{Logical; to bypass the plotting at FALSE.}
 
 \item{dots}{Variable arguments.}
+
+\item{df}{A data frame.}
 }
 \description{
 Input data include results from \link{anal_prnTrend} at \code{is_subcellular
