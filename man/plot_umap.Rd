@@ -5,30 +5,37 @@
 \title{Help of plotting UMAP results.}
 \usage{
 plot_umap(
-  df_plot,
   df,
+  polygons = NULL,
+  draw_polygon = FALSE,
+  highlight_markers = FALSE,
   id = "gene",
-  pred_col = "sub_location",
+  col_pred = "sub_location",
+  levels_pred = NULL,
+  col_fraction = NULL,
+  levels_fraction = NULL,
+  exclude_inside = TRUE,
   col_subtype = NULL,
   levels_subtype = NULL,
   levels_ref_compartments = NULL,
+  write_tetherome_res = TRUE,
   filepath = NULL,
   fn_prefix,
   fn_suffix,
   break_width = 5,
   hide_grids = TRUE,
+  wrap_facet = TRUE,
   drop = FALSE,
-  width_combined = 5.5,
+  width_combined = 6,
   height_combined = 4,
+  ext = "png",
   width_sep = 14,
   height_sep = 6,
   ...
 )
 }
 \arguments{
-\item{df_plot}{A data frame containing UMAP results.}
-
-\item{df}{A data frame of trend results.}
+\item{df}{A data frame combining UMAP, marker and trend results.}
 
 \item{id}{An identifier.}
 

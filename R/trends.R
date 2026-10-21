@@ -1334,11 +1334,12 @@ anal_pepTrend <- function (
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
               function (x) check_formalArgs("anal_prnTrend", x))
   
-  id <- tryCatch(match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", "group_psm_by"), 
+                 error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_psm_by), 
+      match_call_arg("makeProtDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -1534,11 +1535,11 @@ anal_prnTrend <- function (
   purrr::walk(eval(formals(anal_prnTrend)[["choice"]]), 
               function (x) check_formalArgs("anal_prnTrend", x))
   
-  id <- tryCatch(match_call_arg("normPSM", group_pep_by), 
+  id <- tryCatch(match_call_arg("normPSM", "group_pep_by"), 
                  error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg("makeProtDIANN", group_pep_by), 
+    id <- tryCatch(match_call_arg("makePepDIANN", "group_pep_by"), 
                    error = function(e) NA)
   }
   
@@ -1603,12 +1604,12 @@ plot_pepTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), 
+    match_call_arg("normPSM", "group_psm_by"), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -1791,12 +1792,12 @@ plot_prnTrend <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), 
+    match_call_arg("normPSM", "group_pep_by"), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   

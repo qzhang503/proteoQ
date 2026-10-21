@@ -490,7 +490,9 @@ pepCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), 
+    error = function(e) "pep_seq_mod")
+  
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
@@ -537,7 +539,7 @@ pepCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
@@ -672,7 +674,7 @@ prnCorr_logFC <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
@@ -720,7 +722,7 @@ prnCorr_logInt <- function (dat_dir = NULL, col_select = NULL, col_order = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)

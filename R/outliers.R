@@ -1075,12 +1075,12 @@ anal_pepOutlier <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   group_psm_by <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), 
+    match_call_arg("normPSM", "group_psm_by"), 
     error = function(e) NA)
   
   if (is.na(group_psm_by)) {
     group_psm_by <- tryCatch(
-      match_call_arg("makePepDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -1089,12 +1089,12 @@ anal_pepOutlier <- function (
   }
   
   group_pep_by <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), 
+    match_call_arg("normPSM", "group_pep_by"), 
     error = function(e) NA)
   
   if (is.na(group_pep_by)) {
     group_pep_by <- tryCatch(
-      match_call_arg("makePepDIANN", group_pep_by), 
+      match_call_arg("makePepDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   

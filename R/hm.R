@@ -863,7 +863,15 @@ pepHM <- function (dat_dir = NULL,
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "Heatmap")
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), 
+    error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg("makePepDIANN", "group_psm_by"), 
+      error = function(e) "pep_seq_mod")
+  }
+
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
@@ -1107,7 +1115,13 @@ prnHM <- function (dat_dir = NULL,
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Heatmap")  
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg("makePepDIANN", "group_pep_by"), error = function(e) "gene")
+  }
+
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
 
   dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)

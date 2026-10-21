@@ -7,6 +7,7 @@
 plot_subcell_markers(
   id = "gene",
   species = "human",
+  method = c("unsupervised", "supervised"),
   df_markers = NULL,
   dat_dir = NULL,
   filepath = NULL,
@@ -14,6 +15,7 @@ plot_subcell_markers(
   levels_ref_compartments = c("Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin",
     "Lysosome", "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome",
     "Ribosome", "Centrosome", "P_body", "Stress_granule"),
+  col_group = NULL,
   levels_group = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
@@ -67,6 +69,10 @@ outside of the polygon.}
 \item{hide_grids}{Logical; hide grid lines or not.}
 
 \item{...}{Additional parameters for plot controls.}
+
+\item{data_type}{The type of data.}
+
+\item{pat_df2}{The pattern of secondary files (df2).}
 }
 \description{
 Plot marker proteins onto the scatter of 2-D UMAP.

@@ -1238,11 +1238,12 @@ make_dfn <- function (dat_dir = NULL, col_group = "Group", ...)
   
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   
-  id <- tryCatch(match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", "group_pep_by"), 
+                 error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   
@@ -1374,7 +1375,7 @@ pepSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -1597,10 +1598,16 @@ prnSig <- function (dat_dir = NULL, scale_log2r = TRUE, impute_na = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg("makePepDIANN", "group_pep_by"), error = function(e) "gene")
+  }
+
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
-  flatten <- tryCatch(match_call_arg("pepSig", flatten), error = function(e) NA)
+  flatten <- tryCatch(match_call_arg("pepSig", "flatten"), error = function(e) NA)
   if (is.na(flatten)) flatten <- TRUE
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)

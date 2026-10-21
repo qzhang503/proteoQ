@@ -292,409 +292,6 @@ threshold_subcell_by_int <- function (df, id = "gene", col_fraction = NULL,
 }
 
 
-#' Plot UMAP of subcellular scores.
-#'
-#' Against localization scores.
-#' 
-#' @param dat_dir The current working directory.
-#' @param filepath The file path to Trend data.
-#' @param filename_ref Optional; a file name with prepending path to a reference
-#'   subcellular annotation file, e.g., UniProt and GO intersection.
-#' @param id An identifier.
-#' @param key_subcellular The key of subcellular compartments from the reference
-#'   data.
-#' @param key_col The column key where its values are used for UMAP.
-#' @param seed A seed for umap.
-#' @inheritParams plot_prnTrend
-#' @inheritParams plot_prnSubcellular
-plot_prnSubcellular_UMAP <- function (
-    df2 = NULL, id = "gene", levels_fraction = NULL, levels_subtype = NULL, 
-    dat_dir = NULL, filepath = NULL, col_group = "Group", 
-    key_subcellular = "location_slim3", key_col = "loc_score", 
-    levels_ref_compartments = c("CP", "NP", "ChA"), 
-    scale_log2r = TRUE, impute_na = FALSE, 
-    filename_ref = NULL, filename = NULL, seed = 42, ...) 
-{
-  dots <- rlang::enexprs(...)
-  lang_dots     <- dots[unlist(lapply(dots, is.language))]
-  filter2_dots  <- lang_dots[grepl("^filter2_", names(lang_dots))]
-  arrange2_dots <- lang_dots[grepl("^arrange2_", names(lang_dots))]
-  dots <- dots[!dots %in% c(filter2_dots, arrange2_dots)]
-  
-  if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
-  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
-  label_scheme_sub <- load_ls_group(dat_dir = dat_dir)
-  
-  ## Find input `df2`
-  df2 <- find_trend_df2(
-    df2 = df2, n_clust = NULL, scale_log2r = scale_log2r, 
-    impute_na = impute_na, filepath = filepath)
-  
-  if (!length(df2)) {
-    warning("No trend results found.", " Run 'anal_prnTrend' first.")
-    return(NULL)
-  }
-  
-  if (is.null(filename)) {
-    fn_prefix <- paste0(tools::file_path_sans_ext(df2[[1]]), "_umap")
-    fn_suffix <- "png"
-    filename  <- paste0(fn_prefix, ".", fn_suffix)
-  } else {
-    fn_prefix <- tools::file_path_sans_ext(filename)
-    fn_suffix <- tools::file_ext(filename)
-  }
-  
-  # A data frame containing either log2FC or intensity values
-  df <- readr::read_tsv(file.path(filepath, df2[[1]]))
-  
-  df <- df |>
-    filters_in_call(!!!filter2_dots) |>
-    arrangers_in_call(!!!arrange2_dots)
-  
-  # Obtain the column keys encoding fraction and sub-type information
-  col_fraction <- df[["col_fraction"]][[1]]
-  col_subtype  <- df[["col_subtype"]][[1]]
-  
-  check_subcell(
-    levels_fraction = levels_fraction, levels_subtype = levels_subtype, 
-    col_subtype = col_subtype)
-  
-  df <- df |>
-    dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
-
-  # String `col_fraction` is the key that encodes sample fraction; 
-  # Column `sub_location` contains classification results
-  
-  # Remove is.na(sub_location) can cause extreme values in UMAP
-  # gene  Veh_CP TG_CP TG_ChA TG_NP Veh_NP Veh_ChA
-  # ALG9     0.2     0      0     0  0.209       0
-  if (key_col == "log10Int") {
-    df_expr <- hmake_subcell_expr(
-      df = df, label_scheme_sub = label_scheme_sub, id = id, 
-      key_col = key_col, key_group = col_group, 
-      col_subtype = col_subtype, levels_subtype = levels_subtype, 
-      col_fraction = col_fraction, levels_fraction = levels_fraction)
-    
-    saveRDS(df_expr, file.path(filepath, "df_exprs_int.rds"))
-    
-    df_expr <- do.call(cbind, df_expr) |>
-      as.data.frame() |>
-      tibble::rownames_to_column(id)
-    
-    readr::write_tsv(df_expr, file.path(filepath, "df_expr_int.tsv"))
-    saveRDS(df_expr, file.path(filepath, "df_expr_int.rds"))
-  } else {
-    df_expr <- df[, c(id, key_col, "sub_location", col_group)] |>
-      dplyr::filter(!is.na(sub_location)) |>
-      dplyr::arrange_at(id) |>
-      unique() |>
-      tidyr::pivot_wider(
-        id_cols = id, 
-        names_from = col_group, 
-        values_from = key_col,
-        values_fill = 0, )
-    
-    readr::write_tsv(df_expr, file.path(filepath, "df_expr_log2Ratio.tsv"))
-    saveRDS(df_expr, file.path(filepath, "df_expr_log2Ratio.rds"))
-  }
-  
-  file_umap <- file.path(filepath, paste0(fn_prefix, "_", key_col, ".tsv"))
-  
-  if (file.exists(file_umap)) {
-    umap_df <- readr::read_tsv(file_umap)
-  } else {
-    umap_df <- local({
-      set.seed(seed)
-      res_umap <- umap::umap(df_expr[, !colnames(df_expr) == id, drop = FALSE])
-      umap_df <- res_umap$layout[, 1:2]
-      colnames(umap_df) <- paste0("UMAP", 1:2)
-      rownames(umap_df) <- df_expr$gene
-      umap_df <- tibble::rownames_to_column(data.frame(umap_df), id)
-      
-      # readr::write_tsv(umap_df, file_umap)
-      
-      umap_df
-    })
-  }
-  
-  ## Plot of predicted subcellular results
-  ok_subtypes <- sort(unique(df[[col_subtype]]))
-  
-  if (n_subtypes <- length(levels_subtype)) {
-    if (length(bads <- levels_subtype[!levels_subtype %in% ok_subtypes])) {
-      warning("levels_subtype not found: ", paste0(bads, collapse = ", "))
-      levels_subtype <- ok_subtypes
-      n_subtypes <- length(levels_subtype)
-    }
-  }
-
-  ncol   <- dots$ncol
-  nrow   <- dots$nrow
-  size   <- dots$size
-  alpha  <- dots$alpha
-  width  <- dots$width
-  height <- dots$height
-  dpi    <- dots$dpi
-  
-  if (is.null(width))  width <- n_subtypes * 8 / nrow + 2
-  if (is.null(height)) height <- 8 * nrow
-  if (is.null(ncol))  ncol <- 2
-  if (is.null(nrow))  nrow <- 1
-  if (is.null(size))  size <- .01
-  if (is.null(alpha)) alpha <- .5
-  if (is.null(dpi)) dpi <- 300
-  
-  if (is.null(ncol)) {
-    if (is.null(nrow)) {
-      ncol <- 4L
-      nrow <- ceiling(n_subtypes / ncol)
-    } else {
-      ncol <- ceiling(n_subtypes / nrow)
-    }
-  } else {
-    nrow <- ceiling(n_subtypes / ncol)
-  }
-  
-  dots$ncol <- NULL
-  dots$nrow <- NULL
-  dots$width <- NULL
-  dots$height <- NULL
-  dots$alpha <- NULL
-  dots$size <- NULL
-  dots$dpi <- NULL
-  
-  df <- df |> 
-    dplyr::mutate(
-      !!col_subtype := 
-        factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
-      !!col_fraction := 
-        factor(!!rlang::sym(col_fraction), levels = levels_fraction),
-      sub_location = 
-        factor(sub_location, levels = levels_fraction),)
-
-  # Special handling of
-  # gene  Veh_CP TG_CP TG_ChA TG_NP Veh_NP Veh_ChA
-  # ALG9     0.2     0      0     0  0.209       0
-  umap_df <- umap_df[rowSums(
-    abs(umap_df[, grepl("^UMAP\\d+", colnames(umap_df)), drop = FALSE]) > 100)
-    == 0, ]
-  
-  df_plot <- df |>
-    dplyr::left_join(umap_df, by = "gene") |> 
-    dplyr::filter(!is.na(sub_location))
-  
-  my_colors <- local({
-    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
-                     "#FFFF33", "#A65628", "#F781BF")
-    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
-                     "#99d8c9", "#fee6ce")
-    last_color  <- "#999999"
-    
-    n_comps <- length(levels_ref_compartments)
-    
-    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
-      rng_colors <- 1:(n_comps - 1L)
-    } else {
-      rng_colors <- 1:n_comps
-    }
-    
-    my_colors <- c(set1_colors, add_colors)[rng_colors]
-    my_colors <- c(my_colors, last_color)
-    
-    if (any(is.na(my_colors))) {
-      warning("More compartments than the number of colors.")
-    }
-    
-    my_colors
-  })
-  
-  p <- ggplot(df_plot, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
-    geom_point(shape = 46, alpha = alpha, size = size) +
-    scale_color_manual(values = my_colors, drop = FALSE) + 
-    guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
-    theme_bw() +
-    labs(
-      title = NULL,
-      x = "UMAP 1",
-      y = "UMAP 2",
-      color = "Subcellular\nLocation"
-    ) +
-    # facet_wrap(vars(!!rlang::sym(col_subtype)), nrow = nrow, labeller = label_value) + 
-    theme(
-      plot.title = element_text(face = "bold", size = 14),
-      legend.title = element_blank(),
-      panel.grid = element_blank()
-    )
-  
-  if (n_subtypes < 2L) {
-    px <- p + 
-      facet_wrap(
-        vars(!!rlang::sym(col_fraction)), ncol = 3, 
-        labeller = label_value, drop = FALSE)
-  } else {
-    px <- p + 
-      facet_wrap(
-        vars(!!rlang::sym(col_subtype), !!rlang::sym(col_fraction)), ncol = 3, 
-        
-        labeller = labeller(.default = label_value, .multi_line = FALSE))
-    
-    p <- p + 
-      facet_wrap(
-        vars(!!rlang::sym(col_subtype)), ncol = ncol, 
-        labeller = labeller(.default = label_value, .multi_line = FALSE), )
-  }
-  
-  ggsave(plot = px, file.path(filepath, paste0(fn_prefix, "_", key_col, ".", fn_suffix)), 
-         width = width, height = height, dpi = dpi) # 8, 5
-  
-  ggsave(plot = p, file.path(filepath, paste0(fn_prefix, "_", key_col, "_combined.", fn_suffix)), 
-         width = height + 1, height = height - 2, dpi = dpi) # 6, 3
-  
-  if (FALSE) {
-    # before classification
-    dfx <- df[, c("gene", col_fraction, col_subtype, "purity", "entropy", 
-                  key_col, "sub_location")] |>
-      unique()
-    out_nmx <- paste0(gsub("umap$", "hist", fn_prefix), "_all.", fn_suffix)
-    
-    # after classification
-    dfx <- df_plot
-    out_nmx <- paste0(gsub("umap$", "hist", fn_prefix), "_fil.", fn_suffix)
-
-    ggplot(dfx, 
-           aes(x = !!rlang::sym(key_col), fill = !!rlang::sym(col_subtype))) +
-      geom_histogram(aes(y = after_stat(count)), 
-                     color = "white", linewidth = 0.3, binwidth = 0.01, 
-                     alpha = .9) +
-      scale_x_continuous(
-        labels = scales::label_number(accuracy = .2),
-        breaks = scales::breaks_width(.4)
-      ) +
-      facet_wrap(vars(!!rlang::sym(col_fraction)), nrow = 1, 
-                 labeller = label_value) + 
-      scale_fill_brewer(palette = "Set2") +
-      labs(x = "Score", y = "Count") +
-      theme_classic() + 
-      theme(
-        plot.title = element_blank(),
-        axis.title.x = element_text(size = 14, margin = margin(t = 14)), 
-        axis.title.y = element_text(size = 14, margin = margin(r = 14)),
-        strip.text = element_text(size = 12, hjust = 0), # face = "bold", 
-        axis.line = element_line(linewidth = 0.3, color = "grey30"),
-        axis.text = element_text(color = "grey20"),
-        legend.title = element_blank(),
-        legend.position = "top", 
-        legend.justification = "left",
-        panel.spacing.y = unit(1.2, "lines"),
-        plot.margin = margin(t = 5, r = 15, b = 5, l = 5, unit = "pt")
-      )
-    
-    ggsave(file.path(filepath, out_nmx), width = width, height = height, 
-           dpi = dpi)
-  }
-  
-  ## Map to the reference of UniProt + GO
-  # Only at `loc_score`
-  if ((!is.null(filename_ref)) && file.exists(filename_ref)) {
-    filename2 <- paste0(fn_prefix, "_", key_col, "_ref.", fn_suffix)
-
-    df_ref <- readr::read_tsv(file.path(filename_ref)) |>
-      dplyr::filter(source != "HPA")
-    
-    if (use_intersect <- TRUE) {
-      df_ref <- local({
-        dfs <- split(df_ref, df_ref$source)
-        gns <- lapply(dfs, `[[`, "gene")
-        gns <- purrr::reduce(gns, intersect)
-        
-        df_ref <- df_ref |> 
-          dplyr::filter(gene %in% gns)
-      })
-    }
-    
-    df_ref <- df_ref |>
-      dplyr::rename(sub_location = !!rlang::sym(key_subcellular)) |>
-      dplyr::select(c("gene", "sub_location")) |>
-      unique() |>
-      dplyr::filter(gene %in% unique(df$gene))
-    
-    df_plot_ref <- df_plot |>
-      dplyr::select(-one_of("sub_location")) |>
-      dplyr::left_join(df_ref, by = "gene") |>
-      dplyr::filter(!is.na(sub_location)) |>
-      dplyr::select(dplyr::one_of(
-        c("gene", "UMAP1", "UMAP2", "sub_location", col_subtype))) |>
-      unique() |>
-      dplyr::mutate(
-        !!col_subtype := 
-          factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
-        sub_location = 
-          factor(sub_location, levels = levels_fraction),
-      )
-
-    p_ref <- ggplot(df_plot_ref, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
-      geom_point(shape = 46, alpha = alpha, size = size) +
-      scale_color_manual(
-        values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A")
-      ) +
-      # Override the legend point size, shape, and transparency
-      guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
-      theme_bw() +
-      labs(
-        title = NULL,
-        x = "UMAP 1",
-        y = "UMAP 2",
-        color = "Subcellular\nLocation"
-      ) +
-      facet_wrap(vars(!!rlang::sym(col_subtype[1])), nrow = nrow, 
-                 labeller = label_value) + 
-      theme(
-        plot.title = element_text(face = "bold", size = 14),
-        legend.title = element_blank(),
-        panel.grid = element_blank()
-      )
-    
-    ggsave(file.path(filepath, filename2), width = height + 1, height = height - 2, dpi = dpi)
-    
-    ## Combined plot
-    if (combine_plots <- TRUE) {
-      df_plot_all <- dplyr::bind_rows(
-        df_plot |> dplyr::mutate(Source = "This work"), 
-        df_plot_ref |> dplyr::mutate(Source = "UP and GO"), 
-      )
-      
-      p_all <- ggplot(df_plot_all, aes(x = UMAP1, y = UMAP2, color = sub_location)) +
-        geom_point(shape = 46, alpha = alpha, size = size) +
-        scale_color_manual(
-          values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A")
-        ) +
-        # Override the legend point size, shape, and transparency
-        guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
-        theme_bw() +
-        labs(
-          title = NULL,
-          x = "UMAP 1",
-          y = "UMAP 2",
-          color = "Subcellular\nLocation"
-        ) +
-        facet_wrap(vars(Source), nrow = nrow, 
-                   labeller = label_value) + 
-        theme(
-          plot.title = element_text(face = "bold", size = 14),
-          legend.title = element_blank(),
-          panel.grid = element_blank()
-        )
-      
-      filename_all <- paste0(fn_prefix, "_", key_col, "_all.", fn_suffix)
-      ggsave(file.path(filepath, filename_all), 
-             width = height + 1, height = height - 2.1, dpi = dpi)
-    }
-    
-    
-  }
-}
-
-
 #' Plots median trends at a given \code{n_clust}.
 #'
 #' Input data include results from \link{anal_prnTrend} at \code{is_subcellular
@@ -1380,11 +977,11 @@ plot_prnSubcellular <- function (
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makePepDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   
@@ -1749,6 +1346,15 @@ prepSubcell <- function (
       scale = TRUE)
     
     # Change from values under col_group to values under col_fraction
+    local({
+      sc_fracs <- sc_lookup[[col_fraction]]
+
+      if (any(bads <- !levels_fraction %in% sc_fracs)) {
+        stop("User-provided 'levels_fraction' not found in metadata:\n", 
+             levels_fraction[bads])
+      }
+    })
+    
     colnames(df_expr) <- sc_lookup[[col_fraction]][
       match(colnames(df_expr), sc_lookup[[col_group]])
     ]
@@ -1791,52 +1397,46 @@ prepSubcell <- function (
 #' 
 #' More generally where sample fractions do not match biological compartments.
 #' 
-#' @param filename A file name of expression data.
+#' @param df_expr Expression data.
+#' @param sub_type The subtype of samples.
+#' @param file_umap The file name for saving UMAP results.
 #' @param dat_dir The current working directory.
 #' @param filepath The file path to \code{file}.
 #' @param id An identifier.
-#' @param levels_subtype The levels of sample subtype.
-#' @param col_subtype The column key to \code{levels_subtype}.
+#' @param col_subtype The column key to \code{sub_type}.
+#' @param scale Logical; scale data or not.
 #' @param seed A seed.
-make_f10_umap <- function (
-    filename = "Protein_log2FC_summary.tsv", dat_dir = NULL, filepath = NULL, 
-    id = "gene", levels_subtype = NULL, col_subtype = "Type", scale = TRUE, 
-    seed = 42)
+smake_f10_umap <- function (
+    df_expr, sub_type, file_umap = NULL, dat_dir = NULL, filepath = NULL, 
+    id = "gene", col_subtype = "Type", scale = TRUE, seed = 42)
 {
-  df <- readr::read_tsv(file.path(filepath, filename))
-  
-  nms <- colnames(df)
-  cid <- which(nms == id)
-  
-  df_umaps <- vector("list", length(levels_subtype))
-  names(df_umaps) <- levels_subtype
-  
-  for (i in seq_along(levels_subtype)) {
-    lev  <- levels_subtype[[i]]
-    keys <- paste0(lev, "_", levels_fraction)
-    df_expr  <- df[, match(keys, nms), drop = FALSE]
-    df_expr <- data.frame(df_expr, check.names = FALSE)
-    rownames(df_expr) <- df[[id]]
-    
-    if (scale) {
-      df_expr <- df_expr / rowSums(df_expr)
-    }
-    
-    set.seed(seed)
-    res_umap <- umap::umap(df_expr)
-    df_umap  <- res_umap$layout[, 1:2]
-    df_umap  <- round(df_umap, digits = 2L)
-    colnames(df_umap) <- paste0("UMAP", 1:2)
-    rownames(df_umap) <- rownames(df_expr)
-    df_umaps[[i]] <- tibble::rownames_to_column(data.frame(df_umap), id)
-    
-    df_umaps[[i]][[col_subtype]] <- lev
-    file_umap  <- file.path(filepath, paste0("umap_", lev, ".tsv"))
-    readr::write_tsv(df_umaps[[i]], file_umap)
+  if (is.null(file_umap)) {
+    file_umap  <- file.path(filepath, paste0("umap_", sub_type, ".tsv"))
   }
   
-  # df_umap <- dplyr::bind_rows(df_umaps, .id = col_subtype)
-  df_umap <- dplyr::bind_rows(df_umaps)
+  ncol <- ncol(df_expr)
+  rows <- rowSums(is.na(df_expr)) == ncol | 
+    rowSums(sapply(df_expr, is.infinite)) == ncol
+  df_expr_b <- df_expr[rows, ]
+  df_expr   <- df_expr[!rows, ]
+  
+  if (scale) {
+    df_expr <- df_expr / rowSums(df_expr, na.rm = TRUE)
+  }
+  
+  set.seed(seed)
+  res_umap <- umap::umap(df_expr)
+  df_umap  <- res_umap$layout[, 1:2]
+  df_umap  <- round(df_umap, digits = 2L)
+  colnames(df_umap) <- paste0("UMAP", 1:2)
+  rownames(df_umap) <- rownames(df_expr)
+  
+  df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
+  df_umap[[col_subtype]] <- sub_type
+  
+  readr::write_tsv(df_umap, file_umap)
+  
+  df_umap
 }
 
 
@@ -1946,7 +1546,7 @@ make_subcell_expr <- function (
   
   # Normalized intensity; do not scale if log2Ratios
   if (scale) {
-    df_expr <- df_expr / rowSums(df_expr)
+    df_expr <- df_expr / rowSums(df_expr, na.rm = TRUE)
   }
   
   df_expr
@@ -2424,12 +2024,23 @@ classify_subcellular_unsupervised <- function (
   
   ### (3) Classify subcellular
   plot_prnSubcellular(
+    col_select = col_select, 
+    col_order = col_order, 
+    col_group = col_group, 
+    levels_group = levels_group, 
+    col_subtype = col_subtype, 
+    levels_subtype = levels_subtype,
+    col_fraction = col_fraction,
+    levels_fraction = levels_fraction,
+    levels_ref_compartments = levels_fraction,
     qt = qt, 
-    col_select = col_select, col_order = col_order, 
-    col_group = col_group, levels_group = levels_group, 
-    col_fraction = col_fraction, levels_fraction = levels_fraction, 
-    col_subtype = col_subtype, levels_subtype = levels_subtype, 
-    make_plot = make_plot, ncol = 6, limitsize = FALSE)
+    ncol = 6,
+    pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", 
+    ext = "txt", 
+    data_type = "Trend", 
+    limitsize = FALSE,
+    make_plot = make_plot, 
+  )
 }
 
 
@@ -2472,85 +2083,171 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #' Inputs are expression data of normalized intensities.
 #'
 #' @param dat_dir The current working directory.
-#' @param df_expr A matrix of expression data.
-#' @param df_umap A matrix UMAP coordinates.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param col_group The column key in metadata linked to the information of
+#'   sample groups.
+#' @param levels_group The levels of data group.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sample subtypes or treatment conditions.
+#' @param df_umap A matrix UMAP coordinates. Automatically determined at
+#'   \code{NULL}.
+#' @param highlight_markers Logical; highlight marker proteins or not.
+#' @param levels_ref_compartments For uses at \code{highlight_markers = TRUE}.
+#'   The factor levels of subcellular compartments for uses in marker
+#'   visualization.
+#'
+#' @param label_scheme The metadata generated from \link{load_expts}.
 #' @param id An identifier.
+#' @param species The species.
+#' @param df_markers A data frame of reference markers. Automatically determined
+#'   at \code{NULL}.
 #' @param n_clust Not used. The number of clusters.
 #' @param key_col The key column where the values being used for UMAP.
-#' @param pred_col The prediction column.
-#' @param method The method of subcellular classification.
-#' @param levels_ref_compartments The factor levels of subcellular compartments.
-#'   Set \code{levels_ref_compartments = NULL} for automatic determination.
-#' @param reorder_ref_levels Not used. Logical; if TRUE, reorder reference
-#'   levles by the decreasing of category counts.
+#' @param col_pred The prediction column.
+#' @param type_fraction The type of sub-cellular fraction. At the value of
+#'   \code{matched}, the experimental fractions matches biological compartments,
+#'   e.g., CP, NP and ChA. At the value of \code{pseudo}, the experimental
+#'   fractions (e.g., F1, F2 etc.) are different from biological compartments
+#'   (e.g. Centrosome, ER, etc.).
+#'
+#'   The information will be used to decide which secondary file (df2) to used
+#'   and to join the encoding of sub-cellular locations therein for color
+#'   aesthetics.
+#'
+#'   It is possible that users may exclude some levels from UMAP visualization
+#'   and thus a simple set difference assessment may not be adequate. For now,
+#'   the developer leave this argument for users own discretion.
+#'
 #' @param df2 Not used. The names of secondary input files.
-#' @param filepath A file path of inputs and outputs.
+#' @param filepath A file path of inputs and outputs. Automatically determined
+#'   at \code{NULL}.
 #' @param filename An output filename.
-#' @param ext An extension of output filename.
+#' @param ext An extension of output filename, e.g., pdf or png.
+#' @param polygons The vertices of polygons.
+#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
+#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+#'   outside of the polygon.
 #' @param wrap_facets Wrap facets or not.
 #' @param width_combined The width of a combined plot.
 #' @param height_combined The height of a combined plot.
 #' @param width_sep The width of a plot separated by compartments.
 #' @param height_sep The height of a plot separated by compartments.
 #' @param overwrite_umap_res Logical; rewrite UMAP result files or not.
+#' @param use_cache Logical; use cached results or not.
 #' @param seed A seed for umap.
 #'
 #' @examples
 #' \dontrun{
 #' plot_prnSubcell_UMAP(
-#'   dat_dir = dat_dir, df_expr = NULL, id = "gene",
+#'   dat_dir = dat_dir, id = "gene", species = "human",
 #'   df2 = NULL, filepath = NULL, filename = NULL, ext = "pdf",
 #'   wrap_facets = TRUE, seed = 123, nrow = 2, ncol = 7, width = 16, height = 6)
 #' }
 #' @export
 plot_prnSubcell_UMAP <- function (
-    dat_dir = NULL, label_scheme = NULL, col_group = NULL, df_umap = NULL,  
-    id = "gene", n_clust = 16:36, key_col = c("log2FC", "log10Int"), 
-    pred_col = "sub_location", 
-    method = c("unsupervised", "supervised"), 
-    levels_ref_compartments = c(
-      "Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin", "Lysosome", 
-      "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome", 
-      "Ribosome", "Centrosome", "P_body", "Stress_granule"), 
-    reorder_ref_levels = TRUE, 
+    dat_dir = NULL, label_scheme = NULL, df_umap = NULL, id = "gene", 
+    species = "human", df_markers = NULL, highlight_markers = FALSE, 
+    n_clust = 16:36, 
+    key_col = c("log2FC", "log10Int"), 
+    type_fraction = c("matched", "pseudo"), 
+    levels_ref_compartments = NULL, 
+    col_pred = "sub_location", levels_pred = NULL, 
     col_fraction = NULL, levels_fraction =  NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
+    col_group = NULL, levels_group = NULL, 
     df2 = NULL, filepath = NULL, filename = NULL, ext = "png", 
-    use_cache = FALSE, overwrite_umap_res = TRUE, 
+    polygons = NULL, exclude_inside = TRUE, 
+    overwrite_umap_res = TRUE, 
     wrap_facets = TRUE, break_width = 5, hide_grids = TRUE, drop = FALSE, 
     width_combined = 5.5, height_combined = 4, 
     width_sep = 14, height_sep = 6, 
-    seed = 42, ...) 
+    use_cache = TRUE, seed = 42, ...) 
 {
   dots <- rlang::enexprs(...)
+
+  if (FALSE) {
+    use_cache <- dots[["use_cache"]]
+    if (is.null(use_cache)) use_cache <- FALSE
+    dots[["use_cache"]] <- NULL
+  }
+
+  # For better positioning of marker proteins
+  dot_write_tetherome_res <- dots[["write_tetherome_res"]]
+  dot_drop <- dots[["drop"]]
+  dot_wrap_facet <- dots[["wrap_facet"]]
+  dots[["write_tetherome_res"]] <- dots[["drop"]] <- dots[["wrap_facet"]] <- NULL
   
+  if (!is.null(dot_write_tetherome_res) && 
+      is.logical(is.null(dot_write_tetherome_res)) && 
+      !dot_write_tetherome_res) {
+    write_tetherome_res <- FALSE
+  } else {
+    write_tetherome_res <- TRUE
+  }
+  
+  if (!is.null(dot_drop) && is.logical(dot_drop) && dot_drop) {
+    drop <- TRUE
+  } else {
+    drop <- FALSE
+  }
+  
+  if (!is.null(dot_wrap_facet) && is.logical(dot_wrap_facet) && !dot_wrap_facet) {
+    wrap_facet <- FALSE
+  } else {
+    wrap_facet <- TRUE
+  }
+  
+  ### 0. Metadata etc.
   if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   if (is.null(col_group)) col_group <- "Group"
   if (is.null(col_subtype)) col_subtype <- "Type"
   if (is.null(col_fraction)) col_fraction <- "Fraction"
   
+  message("The output path: ", filepath)
+  
+  type_fraction <- match.arg(type_fraction)
   key_col <- match.arg(key_col)
   col_x   <- col_group
-  scale   <- if (key_col == "log10Int") TRUE else FALSE
+  
+  if (key_col == "log2FC") {
+    file_expr <- "Protein_log2FC_summary.tsv" 
+    scale <- FALSE
+  } else if (key_col == "log10Int") {
+    file_expr <- "Protein_Intensity_summary.tsv"
+    scale <- TRUE
+  } else {
+    stop("Unknown key_col = ", key_col)
+  }
   
   if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir = dat_dir)
 
   label_scheme_sub <- label_scheme |>
     dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
   
-  ## Find input `df2` of classication probabilities
-  files_2 <- if ((method <- match.arg(method)) == "supervised") {
+  ### 1. Marker proteins
+  df_markers <- load_ref_markers(
+    df_markers = df_markers, 
+    species = species, 
+    levels_ref_compartments = levels_ref_compartments)
+  
+  # Insufficient since some levels_ref_compartments
+  #  may be excluded by users for UMAP visualization 
+  # is_pseudo_fraction <- !setequal(levels_fraction, levels_ref_compartments)
+
+  ### 2. Find input `df2` of classication probabilities
+  files_2 <- if (type_fraction == "pseudo") {
     find_trend_df2(
       df2 = df2, n_clust = NULL, 
       pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
       ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
-  } else if (method == "unsupervised") {
+  } else if (type_fraction == "matched") {
     find_trend_df2(
       df2 = df2, n_clust = NULL, 
       scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
   } else {
-    stop("Unknown method.")
+    stop("Unknown 'type_fraction'.")
   }
   
   if (!length(files_2)) {
@@ -2559,34 +2256,56 @@ plot_prnSubcell_UMAP <- function (
   }
 
   file_2 <- files_2[[1]]
+  rm(list = c("files_2"))
   
-  ## Load classification results
+  ### 3. Load classification results (column sub_location for color aesthetics)
+  # Don't filter out entries without sub_location assignment; 
+  # Otherwise, it can cause too many missing values for UMAP
   df <- readr::read_tsv(file.path(filepath, file_2)) |>
-    dplyr::filter(!is.na(.data[["sub_location"]]))
+    # dplyr::filter(!is.na(.data[["sub_location"]])) |>
+    dplyr::left_join(df_markers, by = id)
 
-  if (length(levels_subtype)) {
-    df <- df |> dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
+  cnms <- colnames(df)
+  if (col_subtype %in% cnms && length(levels_subtype)) {
+    df <- df |> 
+      dplyr::filter(.data[[col_subtype]] %in% levels_subtype) |>
+      dplyr::mutate(
+        !!col_subtype := 
+          factor(!!rlang::sym(col_subtype), levels = levels_subtype))
   }
   
-  if (length(levels_group)) {
-    df <- df |> dplyr::filter(.data[[col_x]] %in% levels_group)
+  # 'col_fraction' encodes pseudo fraction at type_fraction = "pseudo"
+  if (length(col_fraction) && length(levels_fraction)) {
+    df <- df |>
+      dplyr::filter(.data[[col_fraction]] %in% levels_fraction) |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+  }
+  
+  if (col_group %in% cnms && length(levels_group)) {
+    df <- df |> 
+      dplyr::filter(.data[[col_group]] %in% levels_group) |>
+      dplyr::mutate(
+        !!col_group := 
+          factor(!!rlang::sym(col_group), levels = levels_group))
+  }
+  
+  if (length(col_pred) && length(levels_pred)) {
+    df <- df |>
+      dplyr::filter(.data[[col_pred]] %in% levels_pred) |>
+      dplyr::mutate(
+        !!col_pred := 
+          factor(!!rlang::sym(col_pred), levels = levels_pred))
   }
 
-  df <- df |>
-    dplyr::mutate(
-      !!col_x := 
-        factor(!!rlang::sym(col_x), levels = levels_group), 
-      !!col_subtype := 
-        factor(!!rlang::sym(col_subtype), levels = levels_subtype), 
-      !!col_fraction := 
-        factor(!!rlang::sym(col_fraction), levels = levels_fraction), ) |>
-    dplyr::arrange_at(c(col_x, col_fraction, col_subtype))
-  
   if (is.null(filename)) {
-    fn_prefix <- if (method == "unsupervised") {
+    fn_prefix <- if (type_fraction == "matched") {
       paste0(tools::file_path_sans_ext(file_2), "_umap")
-    } else {
+    } else if (type_fraction == "pseudo") {
       paste0(tools::file_path_sans_ext(file_2), "_sumap")
+    } else {
+      stop("Unknown 'type_fraction'.")
     }
 
     fn_suffix <- ext
@@ -2596,146 +2315,135 @@ plot_prnSubcell_UMAP <- function (
     fn_suffix <- tools::file_ext(filename)
   }
   
-  file_expr <- if (key_col == "log2FC") 
-    "Protein_log2FC_summary.tsv" 
-  else if (key_col == "log10Int")
-    "Protein_Intensity_summary.tsv"
-  else
-    "Protein_Intensity_summary.tsv"
-  
-  file_umaps  <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
-  ok_file_umaps <- all(file.exists(file_umaps))
+  files_umap  <- file.path(filepath, paste0("umap_", levels_subtype, ".tsv"))
+  ok_files_umap <- all(file.exists(files_umap))
 
-  if (method == "supervised") {
-    if (use_cache) {
-      if (!all(file.exists(file_umaps))) {
-        stop("UMAP results not found. Set 'use_cache' to FALSE.")
-      }
-      
-      df_umap <- lapply(file_umaps, readr::read_tsv) |>
+  if (use_cache && !all(file.exists(files_umap))) {
+    use_cache <- FALSE
+  }
+  
+  # Better to 'bind_row' data since can always subset data by specifying 'levels_subtype'
+
+  ### Obtain UMAP coordinates
+  if (use_cache) {
+    df_umap <- lapply(files_umap, readr::read_tsv) |> 
+      dplyr::bind_rows() |>
+      tibble::tibble()
+  } else {
+    # Load expression data from disk
+    if (file.exists(file.path(filepath, file_expr))) {
+      dfs_expr <- sep_data_by_subtype(
+        file = file_expr, filepath = filepath, id = id, 
+        label_scheme_sub = label_scheme_sub, 
+        col_group = col_group, col_fraction = col_fraction, 
+        col_subtype = col_subtype, levels_subtype = levels_subtype, 
+        scale = scale)
+    } else {
+      # Obtain expression data directly
+      dfs_expr <- hmake_subcell_expr(
+        df = df, id = id, key_col = key_col, key_group = col_group, 
+        label_scheme_sub = label_scheme_sub, 
+        col_subtype = col_subtype, levels_subtype = levels_subtype, 
+        col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+        scale = scale)
+    }
+    
+    if (!identical(names(dfs_expr), levels_subtype)) {
+      stop("Developer: check for mismatches.")
+    }
+    
+    print(
+      paste("The levels of 'levels_ref_compartments': ", 
+            paste(levels_ref_compartments, collapse = ", "))
+    )
+    
+    if (is.null(df_umap)) {
+      df_umap <- mapply(
+        smake_f10_umap, 
+        dfs_expr, levels_subtype, files_umap, 
+        MoreArgs = list(
+          dat_dir = dat_dir, filepath = filepath, 
+          id = id, col_subtype = col_subtype, scale = scale, seed = seed
+        ), 
+        SIMPLIFY = FALSE
+      ) |>
         dplyr::bind_rows()
     } else {
-      if (!file.exists(file.path(filepath, file_expr))) {
-        stop("Expression data not found. Run unsupervised analysis first.")
-      }
-
-      df_umap <- make_f10_umap(
-        filename = file_expr, 
-        dat_dir = dat_dir, filepath = filepath, id = id, 
-        levels_subtype = levels_subtype, col_subtype = col_subtype, 
-        scale = scale, seed = seed)
-    }
-    
-    df_plot <- plot_umap(
-      df_plot = tibble::tibble(df_umap), df = df, id = id, pred_col = pred_col, 
-      col_subtype = col_subtype, levels_subtype = levels_subtype, 
-      levels_ref_compartments = levels_ref_compartments, 
-      filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
-      break_width = break_width, hide_grids = hide_grids, drop = drop, 
-      width_combined = width_combined, height_combined = height_combined, 
-      width_sep = width_sep, height_sep = height_sep, 
-      !!!dots)
-    
-    return(df_plot)
-  }
-
-  ## Prepare data matrices for UMAP
-  #  (see also 'prepSubcell' and 'make_subcell_expr')
-  df_exprs <- hmake_subcell_expr(
-    df = df, id = id, key_col = key_col, key_group = col_group, 
-    label_scheme_sub = label_scheme_sub, 
-    col_subtype = col_subtype, levels_subtype = levels_subtype, 
-    levels_fraction = levels_ref_compartments, scale = scale)
-  
-  # Should be the same as levels_subtypes
-  if (!identical(names(df_exprs), levels_subtype)) {
-    stop("Developer: check for mismatches.")
-  }
-  
-  ## Compile subcellular factor levels
-  if (!length(levels_ref_compartments)) {
-    if (method == "supervised") {
-      if (!"compartment" %in% names(df)) {
-        stop("Column 'compartment' not found.")
-      }
-      
-      levels_ref_compartments <- local({
-        univ <- unique(df[["compartment"]])
-        levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
-        levs <- unique(c(levs, univ[!univ %in% levs], "Unknown"))
-      })
-    } else if (method == "unsupervised") {
-      levels_ref_compartments <- local({
-        levs <- names(sort(table(df[["sub_location"]]), decreasing = TRUE))
-        levs <- unique(c(levs, "Unknown"))
-      })
-    } else {
-      stop("Need to specify 'levels_ref_compartments'.")
+      df_umap <- df_umap
     }
   }
   
-  print(
-    paste("The levels of 'levels_ref_compartments': ", 
-          paste(levels_ref_compartments, collapse = ", ")))
+  ### Combine df and df_umap
+  if (length(levels_subtype)) {
+    df_umap <- df_umap |>
+      dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
+  }
+  
+  col_pred <- "sub_location"
+  col_join <- c(id, col_pred)
+  key_join <- id
+
+  if (length(col_subtype)) {
+    col_join <- c(col_join, col_subtype)
+    key_join <- c(key_join, col_subtype)
+  }
+  
+  # Add 'sub_location' column for color aesthetics
+  df <- df_umap |>
+    dplyr::left_join(df, by = key_join)
+  
+  # Need re-factoring since col_subtype is part of the the 'key_join'
+  df <- df |> 
+    dplyr::mutate(
+      !!col_subtype := 
+        factor(!!rlang::sym(col_subtype), levels = levels_subtype))
+  
+  # 'col_fraction' encodes pseudo fractions at 'type_fraction' of 'pseudo'
+  df <- df |>
+    dplyr::arrange_at(c(col_group, col_fraction, col_subtype))
 
   df <- df |>
     dplyr::mutate(
-      !!pred_col := factor(!!rlang::sym(pred_col), 
-                           levels = levels_ref_compartments)) |>
-    dplyr::select(dplyr::one_of(id, pred_col, col_subtype)) |>
-    dplyr::filter(!is.na(.data[[pred_col]])) |>
+      !!col_pred := as.character(!!rlang::sym(col_pred)), 
+      !!col_pred := dplyr::coalesce(.data[[col_pred]], "Unknown"), 
+      !!col_pred := factor(!!rlang::sym(col_pred), levels = levels_pred)
+    ) |>
+    # Can have NA with some reference levels removed by users or 
+    # 'id' in df_umap but not in df
+    dplyr::filter(!is.na(.data[[col_pred]])) |> 
     unique()
   
-  if (length(col_subtype) && length(levels_subtype) && 
-      col_subtype %in% names(df)) {
-    df <- df |>
-      dplyr::mutate(
-        !!col_subtype := 
-          factor(!!rlang::sym(col_subtype), levels = levels_subtype), )
+  n_subtypes <- length(levels_subtype)
+  draw_polygon <- lapply(polygons, function (x) !is.null(x))
+  
+  if (!length(draw_polygon)) {
+    draw_polygon <- rep_len(FALSE, n_subtypes)
+    names(draw_polygon) <- levels_subtype
+    draw_polygon <- draw_polygon[levels_subtype]
   }
   
-  if (is.null(df_umap)) {
-    if (use_cache && all(file.exists(file_umaps))) {
-      df_umap <- lapply(file_umaps, readr::read_tsv) |>
-        dplyr::bind_rows()
-    } else {
-      df_umap <- mapply(function (df_expr, sub_type, file_umap) {
-        n_col <- ncol(df_expr)
-        rows <- rowSums(is.na(df_expr)) == n_col | 
-          rowSums(is.infinite(df_expr)) == n_col
-        df_expr_b <- df_expr[rows, ]
-        df_expr <- df_expr[!rows, ]
-        # df_expr <- round(df_expr, digits = 2L)
-        set.seed(seed)
-        res_umap <- umap::umap(df_expr)
-        df_umap  <- res_umap$layout[, 1:2]
-        df_umap  <- round(df_umap, digits = 2L)
-        colnames(df_umap) <- paste0("UMAP", 1:2)
-        rownames(df_umap) <- rownames(df_expr)
-        df_umap <- tibble::rownames_to_column(data.frame(df_umap), id)
-
-        if (length(col_subtype)) {
-          df_umap[[col_subtype]] <- sub_type
-        }
-        
-        if (overwrite_umap_res) {
-          readr::write_tsv(df_umap, file_umap)
-        }
-
-        df_umap
-      }, df_exprs, levels_subtype, file_umaps, SIMPLIFY = FALSE) |>
-        dplyr::bind_rows()
-    }
-  }
-
-  ## Making plots
-  df_plot <- plot_umap(
-    df_plot = tibble::tibble(df_umap), 
-    df = df, id = id, pred_col = pred_col, 
+  find_tethers(
+    df = df, id = id, dat_dir = dat_dir, filepath = filepath, 
+    col_fraction = col_fraction, levels_fraction = levels_fraction, 
     col_subtype = col_subtype, levels_subtype = levels_subtype, 
     levels_ref_compartments = levels_ref_compartments, 
+    polygons = polygons, exclude_inside = exclude_inside, 
+    write_tetherome_res = write_tetherome_res)
+  
+  # Make plots
+  df_plot <- plot_umap(
+    df = df, polygons = polygons, draw_polygon = draw_polygon, 
+    highlight_markers = highlight_markers, 
+    id = id, 
+    col_pred = col_pred, levels_pred =  levels_pred, 
+    col_subtype = col_subtype, levels_subtype = levels_subtype, 
+    levels_ref_compartments = levels_ref_compartments, 
+    col_fraction = col_fraction, levels_fraction = levels_fraction, 
+    exclude_inside = exclude_inside, 
+    write_tetherome_res = write_tetherome_res,
     filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
-    break_width = break_width, hide_grids = hide_grids, drop = drop, 
+    break_width = break_width, hide_grids = hide_grids, 
+    wrap_facet = wrap_facet, drop = drop, ext = ext, 
     width_combined = width_combined, height_combined = height_combined, 
     width_sep = width_sep, height_sep = height_sep, 
     !!!dots)
@@ -2744,10 +2452,100 @@ plot_prnSubcell_UMAP <- function (
 }
 
 
+#' Helper of finding tetherome
+#' 
+#' @inheritParams find_tethers_by_subtype
+find_tethers <- function (
+    df, id = "gene", dat_dir = NULL, filepath = NULL, 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, levels_ref_compartments = NULL, 
+    polygons = NULL, exclude_inside = TRUE, write_tetherome_res = TRUE, 
+    out_name = "marker_tetherome.tsv")
+{
+  dfs <- split(df, df[[col_subtype]])
+  dfs <- dfs[levels_subtype]
+  polygons <- polygons[levels_subtype]
+  
+  df_tether <- vector("list", length(dfs))
+  
+  for (i in seq_along(dfs)) {
+    df_tether[[i]] <- find_tethers_by_subtype(
+      df = dfs[[i]], subtype = levels_subtype[[i]], polygons = polygons[[i]], 
+      id = id, levels_ref_compartments = levels_ref_compartments, 
+      col_fraction = col_fraction, levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, levels_subtype = levels_subtype, 
+      exclude_inside = exclude_inside)
+  }
+  
+  df_tether <- dplyr::bind_rows(df_tether)
+  
+  if (isTRUE(write_tetherome_res)) {
+    readr::write_tsv(df_tether, file.path(filepath, out_name))
+  }
+}
+
+
+#' Find tetherome by subtype.
+#' 
+#' @param df A data frame.
+#' @param subtype A sample subtype.
+#' @param polygons The vertices of polygons.
+#' @param id An identifier.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
+#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+#'   outside of the polygon.
+find_tethers_by_subtype <- function (
+    df, subtype, polygons, id = "gene", levels_ref_compartments = NULL, 
+    col_fraction = "Fraction", levels_fraction = NULL, col_subtype = "Type", 
+    levels_subtype = NULL, exclude_inside = TRUE) 
+{
+  df_tether <- vector("list", length(levels_fraction))
+  
+  for (i in seq_along(levels_fraction)) {
+    fr <- levels_fraction[[i]]
+    pg <- polygons[[fr]]
+    
+    df <- hremove_contams(
+      df = df, id = id, col_fraction = col_fraction, tether_fraction = fr, 
+      polygons = pg, exclude_inside = exclude_inside)
+    
+    # The results for markers, not for the whole proteome
+    df_tether[[i]] <- tibble::tibble(
+      !!id := attr(df, "tethers"),
+      !!col_subtype := subtype, 
+      !!col_fraction := fr)
+  }
+  
+  df_tether <- dplyr::bind_rows(df_tether)
+  
+  # Column not existed if all(is.null(polygons))
+  ok_polygons <- !all(is.null(polygons))
+  
+  if (ok_polygons && id %in% colnames(df_tether)) {
+    df_tether <- df_tether |>
+      # NA gene if no polygon for a fraction
+      # dplyr::filter(!is.na(.data[[id]])) |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+  } else {
+    df_tether <- tibble::tibble(df_tether, !!id := NA_character_, )
+  }
+  
+  df_tether
+}
+
+
 #' Help of plotting UMAP results.
 #'
-#' @param df_plot A data frame containing UMAP results.
-#' @param df A data frame of trend results.
+#' @param df A data frame combining UMAP, marker and trend results.
 #' @param id An identifier.
 #' @param col_subtype Column key of sample types.
 #' @param levels_subtype The levels of sub_type.
@@ -2757,68 +2555,24 @@ plot_prnSubcell_UMAP <- function (
 #' @param fn_prefix A file name prefix.
 #' @param fn_suffix A file name suffix.
 #' @param ... Additional parameters for plot controls.
-plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location", 
-                       col_subtype = NULL, levels_subtype = NULL, 
-                       levels_ref_compartments = NULL, 
-                       filepath = NULL, fn_prefix, fn_suffix, 
-                       break_width = 5, hide_grids = TRUE, drop = FALSE, 
-                       width_combined = 5.5, height_combined = 4, 
-                       width_sep = 14, height_sep = 6, 
-                       ...)
+plot_umap <- function (
+    df, polygons = NULL, draw_polygon = FALSE, highlight_markers = FALSE, 
+    id = "gene", 
+    col_pred = "sub_location", levels_pred = NULL, 
+    col_fraction = NULL, levels_fraction = NULL, exclude_inside = TRUE, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    levels_ref_compartments = NULL, write_tetherome_res = TRUE, 
+    filepath = NULL, fn_prefix, fn_suffix, 
+    break_width = 5, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
+    width_combined = 6, height_combined = 4, ext = "png", 
+    width_sep = 14, height_sep = 6, 
+    ...)
 {
   dots <- rlang::enexprs(...)
-  
-  # Some df_plot$gene may not be in df
-  col_join <- c(id, pred_col)
-  key_join <- id
-  
-  if (length(col_subtype)) {
-    col_join <- c(col_join, col_subtype)
-    key_join <- c(key_join, col_subtype)
-  }
-  
-  # Some id in df_plot may be absent from df
-  if (length(levels_subtype)) {
-    df_plot <- df_plot |>
-      dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
-  }
 
-  df_plot <- df_plot |>
-    dplyr::left_join(df[, col_join], by = key_join) |>
-    dplyr::filter(!is.na(.data[[pred_col]])) |>
-    dplyr::mutate(
-      !!pred_col := as.character(!!rlang::sym(pred_col)), 
-      !!pred_col := dplyr::coalesce(.data[[pred_col]], "Unknown"), 
-      !!pred_col := factor(!!rlang::sym(pred_col), levels = levels_ref_compartments)
-    ) |>
-    unique()
+  my_colors <- prep_subcell_colors(levels_pred)
+  my_ref_colors <- prep_subcell_colors(levels_ref_compartments)
 
-  ### Plots
-  my_colors <- local({
-    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
-                     "#FFFF33", "#A65628", "#F781BF")
-    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
-                     "#99d8c9", "#fee6ce")
-    last_color  <- "#999999"
-    
-    n_comps <- length(levels_ref_compartments)
-    
-    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
-      rng_colors <- 1:(n_comps - 1L)
-    } else {
-      rng_colors <- 1:n_comps
-    }
-    
-    my_colors <- c(set1_colors, add_colors)[rng_colors]
-    my_colors <- c(my_colors, last_color)
-    
-    if (any(is.na(my_colors))) {
-      warning("More compartments than the number of colors.")
-    }
-    
-    my_colors
-  })
-  
   ncol   <- dots$ncol
   nrow   <- dots$nrow
   size   <- dots$size
@@ -2869,25 +2623,31 @@ plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location",
   
   dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
   
-  if (TRUE) {
-    p <- ggplot() +
-      geom_point(
-        data = df_plot, 
-        aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(pred_col)), 
-        shape = 46, size = 1, alpha = 1.0) +
-      scale_color_manual(values = my_colors, breaks = levels_ref_compartments, 
-                         drop = drop)
-  } else {
-    p <- ggplot() +
-      geom_point(
-        data = df_plot, 
-        aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(pred_col)), 
-        size = .02, 
-        alpha = 0.5
-      ) +
-      scale_color_manual(values = my_colors, drop = drop)
+  if (highlight_markers) {
+    plot_sc_markers(
+      df = df, polygons = polygons, draw_polygon = draw_polygon, 
+      my_colors = my_ref_colors, id = id, col_x = col_group, 
+      col_fraction = col_fraction, levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments, 
+      dat_dir = dat_dir, filepath = filepath, ext = ext, 
+      break_width = break_width, hide_grids = hide_grids, 
+      wrap_facet = wrap_facet, drop = drop, 
+      ncol = ncol, nrow = nrow, width = width_sep, height = height_sep, 
+      dpi = dpi, 
+      !!!dots)
+    
+    return(NULL)
   }
-
+  
+  p <- ggplot() +
+    geom_point(
+      data = df, 
+      aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(col_pred)), 
+      shape = 46, size = 1, alpha = 1.0) +
+    scale_color_manual(values = my_colors, breaks = levels_pred, 
+                       drop = drop)
+  
   p <- p +
     guides(color = guide_legend(override.aes = list(size = 3, shape = 16, alpha = 1))) +
     theme_bw() +
@@ -2895,9 +2655,9 @@ plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location",
       title = NULL,
       x = "UMAP 1",
       y = "UMAP 2",
-      color = pred_col
+      color = col_pred
     )
-
+  
   if (hide_grids) {
     p <- p +
       theme(
@@ -2914,18 +2674,19 @@ plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location",
   p <- p + 
     guides(color = guide_legend(
       override.aes = list(size = 3, shape = 16, alpha = 1)))
-
+  
   if (n_subtypes < 2L) {
     px <- p + 
       facet_wrap(
-        vars(!!rlang::sym(pred_col)), 
-        ncol = ncol, labeller = label_value, drop = FALSE)
+        vars(!!rlang::sym(col_pred)), 
+        ncol = ncol, labeller = label_value, drop = drop)
   } else {
     px <- p + 
       facet_wrap(
-        vars(!!rlang::sym(col_subtype), !!rlang::sym(pred_col)), ncol = ncol, 
-        labeller = labeller(.default = label_value, .multi_line = FALSE))
-
+        vars(!!rlang::sym(col_subtype), !!rlang::sym(col_pred)), ncol = ncol, 
+        labeller = labeller(.default = label_value, .multi_line = FALSE), 
+        drop = drop)
+    
     p <- p + 
       facet_wrap(
         vars(!!rlang::sym(col_subtype)),
@@ -2940,7 +2701,370 @@ plot_umap <- function (df_plot, df, id = "gene", pred_col = "sub_location",
          file.path(filepath, paste0(fn_prefix, "_combined.", fn_suffix)), 
          width = width_combined, height = height_combined, dpi = dpi)
   
-  invisible(df_plot)
+  invisible(df)
+}
+
+
+#' Prepare subcellular color schemes.
+#' 
+#' @param compartments A set of subcellular compartments.
+prep_subcell_colors <- function (compartments)
+{
+  set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
+                   "#FFFF33", "#A65628", "#F781BF")
+  add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
+                   "#99d8c9", "#fee6ce")
+  last_color  <- "#999999"
+  
+  n_comps <- length(compartments)
+  
+  if (any(is.na(n_comps)) || "Unknown" %in% compartments) {
+    rng_colors <- 1:(n_comps - 1L)
+  } else {
+    rng_colors <- 1:n_comps
+  }
+  
+  my_colors <- c(set1_colors, add_colors)[rng_colors]
+  my_colors <- c(my_colors, last_color)
+  
+  if (any(is.na(my_colors))) {
+    warning("More compartments than the number of colors.")
+  }
+  
+  my_colors
+}
+
+
+#' Helper in loading data of marker proteins.
+#' 
+#' @param df_markers A data frame of marker proteins.
+#' @param species An species name.
+#' @param levels_ref_compartments Levels of reference compartments.
+load_ref_markers <- function (df_markers = NULL, species = "hs", 
+                              levels_ref_compartments)
+{
+  abbr_species <- switch(
+    species, 
+    human = "hs",
+    mouse = "mm",
+    rat = "rn",
+    stop("species: ", species, " is not in one of `human`, `mouse` or `rat`.")
+  )
+  
+  if (is.null(df_markers)) {
+    db_nm <- paste0("subcell_", abbr_species)
+    data(list = db_nm)
+    df_markers <- get(db_nm, rlang::current_env())
+  }
+  
+  if (!"location" %in% names(df_markers)) {
+    stop("Required column 'location' not found.")
+  }
+  
+  if (FALSE && all(levels_ref_compartments %in% c("CP", "NP", "ChA")) && 
+      "location_slim3" %in% names(df_markers) && 
+      !all(is.na(df_markers[["location_slim3"]])) && 
+      !identical(df_markers[["location"]], df_markers[["location_slim3"]])) {
+    df_markers[["location"]] <- df_markers[["location_slim3"]]
+  }
+  
+  if (is.null(levels_ref_compartments)) {
+    locs <- df_markers[["location"]]
+    univ <- unique(locs)
+    levels_ref_compartments <- names(sort(table(locs), decreasing = TRUE))
+  }
+  
+  df_markers <- df_markers |>
+    dplyr::mutate(location = factor(location, levels = levels_ref_compartments))
+}
+
+
+#' Helper of separating data by sub-types.
+#' 
+#' @param df A data frame of expression data.
+#' @param id An identifier.
+#' @param scale Logical; scale data or not.
+#' @inheritParams plot_prnSubcell_UMAP
+sep_data_by_subtype <- function (
+    file = NULL, df = NULL, id = "gene", filepath = NULL, label_scheme_sub, 
+    col_group = NULL, col_fraction = NULL, 
+    col_subtype = NULL, levels_subtype = NULL, 
+    scale = TRUE) 
+{
+  if (is.null(df)) {
+    df <- readr::read_tsv(file.path(filepath, file))
+  }
+  
+  sc_lookup <- label_scheme_sub |>
+    dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
+    unique()
+  
+  nms <- colnames(df)
+  
+  dfs <- vector("list", length(levels_subtype))
+  names(dfs) <- levels_subtype
+  
+  for (i in seq_along(levels_subtype)) {
+    sids_sub <- sc_lookup |>
+      dplyr::filter(.data[[col_subtype]] == levels_subtype[[i]]) |>
+      dplyr::pull(col_group)
+    
+    df_expr <- df[, nms %in% sids_sub]
+    
+    if (scale) {
+      df_expr <- df_expr / rowSums(df_expr, na.rm = TRUE)
+    }
+    
+    df_expr <- data.frame(df_expr, check.names = FALSE)
+    rownames(df_expr) <- df[[id]]
+    
+    dfs[[i]] <- df_expr
+  }
+  
+  dfs
+}
+
+
+#' Helper of plotting subcellular markers.
+#' 
+#' @param df A data frame.
+#' @param id An identifier.
+#' @param df Background data. 
+#' @param col_x The column key of X-axis.
+#' @param draw_polygon Logical; draw polygon or not.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param polygons The vertices of polygons.
+#' @param filepath An output file path.
+#' @param ext An file name extension.
+#' @param break_width The width of X and Y breaks.
+#' @param hide_grids Logical; hide grid lines or not.
+#' @param wrap_facet Logical; wrap_facet or not.
+#' @param drop Drop unknown levels or not.
+#' @param my_colors A color scheme.
+#' @param dat_dir A workding directory.
+#' @param filepath A file path to inputs and outputs.
+plot_sc_markers <- function (
+    df, polygons = NULL, draw_polygon = TRUE, my_colors = NULL, 
+    id = "gene", col_x = "Group", 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, 
+    levels_ref_compartments = NULL, 
+    dat_dir = NULL, filepath = NULL, ext = "png", 
+    ncol = 7L, nrow = 2L, width = 14, height = 3, dpi = 600, 
+    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
+    ...)
+{
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
+  
+  dfs <- split(df, df[[col_subtype]])
+  dfs <- dfs[levels_subtype]
+  polygons <- polygons[levels_subtype]
+  draw_polygon <- draw_polygon[levels_subtype]
+  
+  for (i in seq_along(levels_subtype)) {
+    plot_sc_markers_by_subtype(
+      df = dfs[[i]], subtype = levels_subtype[[i]], polygons = polygons[[i]], 
+      draw_polygon = draw_polygon[[i]], my_colors = my_colors, 
+      id = id, col_x = col_x, 
+      col_fraction = col_fraction, levels_fraction = levels_fraction, 
+      col_subtype = col_subtype, levels_subtype = levels_subtype, 
+      levels_ref_compartments = levels_ref_compartments, 
+      dat_dir = dat_dir, filepath = filepath, ext = ext, 
+      ncol = ncol, nrow = nrow, 
+      width = width, height = height, dpi = dpi, 
+      break_width = break_width, hide_grids = hide_grids, 
+      wrap_facet = wrap_facet, drop = drop, ...)
+  }
+}
+
+
+#' Plot subcellular markers by subtype.
+#' 
+#' @param df A data frame.
+#' @param subtype A sample subtype.
+#' @param id An identifier.
+#' @param df Background data. 
+#' @param col_x The column key of X-axis.
+#' @param draw_polygon Logical; draw polygon or not.
+#' @param col_subtype Column key of sample types.
+#' @param levels_subtype The levels of sub_type.
+#' @param col_fraction The column key in metadata to subcellular fractions.
+#' @param levels_fraction The levels of subcellular compartments.
+#' @param levels_ref_compartments The factor levels of subcellular
+#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
+#'   determination.
+#' @param polygons The vertices of polygons.
+#' @param filepath An output file path.
+#' @param ext An file name extension.
+#' @param break_width The width of X and Y breaks.
+#' @param hide_grids Logical; hide grid lines or not.
+#' @param wrap_facet Logical; wrap_facet or not.
+#' @param drop Drop unknown levels or not.
+#' @param my_colors A color scheme.
+#' @param dat_dir A workding directory.
+#' @param filepath A file path to inputs and outputs.
+plot_sc_markers_by_subtype <- function (
+    df, subtype, polygons = NULL, draw_polygon = TRUE, my_colors = NULL, 
+    id = "gene", col_x = "Group", 
+    col_fraction = "Fraction", levels_fraction = NULL, 
+    col_subtype = "Type", levels_subtype = NULL, 
+    levels_ref_compartments = NULL, 
+    dat_dir = NULL, filepath = NULL, ext = "png", 
+    ncol = 7L, nrow = 2L, width = 14, height = 3, dpi = 600, 
+    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, ...)
+{
+  dots <- rlang::enexprs(...)
+  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
+  
+  draw_polygon <- isTRUE(draw_polygon)
+  
+  # Expression subset found with marker annotations
+  df_loc <- df |>
+    dplyr::filter(!is.na(.data[["location"]]))
+  
+  n_fracs <- length(levels_fraction)
+
+  xmin <- eval(dots$xmin)
+  xmax <- eval(dots$xmax)
+  ymin <- eval(dots$ymin)
+  ymax <- eval(dots$ymax)
+  
+  if (is.null(xmin)) xmin <- -12
+  if (is.null(xmax)) xmax <- 12
+  if (is.null(ymin)) ymin <- -12
+  if (is.null(ymax)) ymax <- 12
+  
+  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
+  
+  top_layers_1  <- df_loc[["location"]] %in% c("Centrosome", "Chromatin")
+  top_layers_2  <- df_loc[["location"]] %in% c("Nucleus")
+  df_loc_top_1  <- df_loc[top_layers_1, ]
+  df_loc_top_2  <- df_loc[top_layers_2, ]
+  df_loc_others <- df_loc[!(top_layers_1 | top_layers_2), ]
+  
+  p <- ggplot() +
+    geom_point(data = df, aes(x = UMAP1, y = UMAP2), color = "gray", 
+               shape = 1, size = 1.5, stroke = .2)
+  
+  p <- p + 
+    geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, fill = location), 
+               shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+    geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, fill = location), 
+               shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+    geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, fill = location), 
+               shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
+    scale_fill_manual(values = my_colors, drop = drop)
+  
+  p <- p + 
+    scale_x_continuous(
+      limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
+    scale_y_continuous(
+      limits = c(ymin, ymax), breaks = scales::breaks_width(break_width))
+  
+  p <- p + 
+    theme_minimal(base_size = 14) +
+    labs(
+      title = NULL,
+      x = "UMAP 1",
+      y = "UMAP 2")
+  
+  if (hide_grids) {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  } else {
+    p <- p +
+      theme(
+        strip.text = element_text(
+          size = 14,
+          color = "black"
+        ),
+        plot.title = element_text(face = "bold"), 
+        legend.title = element_blank()
+      ) 
+  }
+  
+  p <- p +
+    guides(fill = guide_legend(override.aes = list(size = 5, alpha = 1)))
+  
+  if (wrap_facet) {
+    p <- p + 
+      facet_wrap(
+        vars(!!rlang::sym(col_fraction)), 
+        ncol = ncol, 
+        labeller = labeller(.default = label_value, .multi_line = FALSE))
+  }
+  
+  if (draw_polygon) {
+    # k <- 0.08685714; b <- 1.148571
+    df_poly <- vector("list", n_fracs)
+    names(df_poly) <- levels_fraction
+    
+    for (i in seq_along(levels_fraction)) {
+      fr <- levels_fraction[[i]]
+      pg <- polygons[[fr]]
+      
+      if (length(pg)) {
+        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
+      }
+      
+      df_poly[[i]] <- tibble::tibble(
+        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
+    }
+    
+    df_poly <- dplyr::bind_rows(df_poly) |>
+      dplyr::mutate(
+        !!col_fraction := 
+          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+    
+    p <- p + 
+      geom_polygon(
+        df_poly, 
+        mapping = aes(x = x, y = y), 
+        fill = NA, color = "black", linewidth = .2)
+    
+    # k <- 10/3; b <- -28/3; 1.5 * k + b
+    if (FALSE) {
+      p <- p + 
+        geom_segment(
+          # x = -0.2, y = -10, xend = 1.5, yend = -4.333
+          # x = 1.5, y = -4.333, xend = -0.2, yend = -10
+          data = data.frame(
+            x = poly_x_np_cha[[1]], y = poly_y_np_cha[[1]], 
+            xend = poly_x_np_cha[[2]], yend = poly_y_np_cha[[2]]),
+          aes(x = x, y = y, xend = xend, yend = yend),
+          linetype = "longdash",
+          color = "darkgray",
+          linewidth = 0.5)
+    }
+  }
+  
+  if (draw_polygon) 
+    out_name <- paste0("umap_markers_", subtype, "_polygon.", ext)
+  else 
+    out_name <- paste0("umap_markers_", subtype, ".", ext)
+  
+  ggsave(filename = file.path(filepath, out_name), 
+         width = width, height = height, dpi = dpi)
+  
+  p
 }
 
 
@@ -3063,11 +3187,11 @@ update_subcell <- function (
   if (is.null(filepath)) filepath <- file.path(dat_dir, data_type, "Model")
 
   group_psm_by <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) NA)
   
   if (is.na(group_psm_by)) {
     group_psm_by <- tryCatch(
-      match_call_arg("makePepDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -3076,11 +3200,11 @@ update_subcell <- function (
   }
   
   group_pep_by <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(group_pep_by)) {
     group_pep_by <- tryCatch(
-      match_call_arg("makePepDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -3847,6 +3971,7 @@ hupdate_subcellular <- function (
 #'
 #' @param id An identifier.
 #' @param species The species.
+#' @param data_type The type of data.
 #' @param df_markers A data frame of marker proteins.
 #' @param dat_dir The current working directory.
 #' @param filepath The file path.
@@ -3860,6 +3985,7 @@ hupdate_subcellular <- function (
 #'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
 #'   determination.
 #' @param polygons The vertices of polygons.
+#' @param pat_df2 The pattern of secondary files (df2).
 #' @param ext A file name extension.
 #' @param break_width The width of breaks on X and Y axis.
 #' @param hide_grids Logical; hide grid lines or not.
@@ -3871,14 +3997,16 @@ hupdate_subcellular <- function (
 #' @importFrom magrittr %>%
 #' @export
 plot_subcell_markers <- function (
-    id = "gene", species = "human", df_markers = NULL, 
-    dat_dir = NULL, filepath = NULL, 
+    id = "gene", species = "human", 
+    # data_type = c("expr", "prob"), 
+    method = c("unsupervised", "supervised"), 
+    df_markers = NULL, dat_dir = NULL, filepath = NULL, 
     label_scheme = NULL, 
     levels_ref_compartments = c(
       "Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin", "Lysosome", 
       "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome", 
       "Ribosome", "Centrosome", "P_body", "Stress_granule"), 
-    levels_group = NULL, 
+    col_group = NULL, levels_group = NULL, 
     col_subtype = NULL,  levels_subtype = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     polygons = NULL, exclude_inside = TRUE, 
@@ -3945,6 +4073,9 @@ plot_subcell_markers <- function (
   df_markers <- df_markers |>
     dplyr::mutate(location = factor(location, levels = levels_ref_compartments))
   
+  ### 
+  method <- match.arg(method)
+  
   ### 2. Metadata
   if (is.null(label_scheme)) label_scheme <- load_ls_group(dat_dir = dat_dir)
   
@@ -3959,16 +4090,40 @@ plot_subcell_markers <- function (
   }
   
   ### 3. Expression data
-  df <- readr::read_tsv(
-    file.path(dat_dir, "Protein", "Trend", find_trend_df2()[[1]]))
+  if (method == "supervised") {
+    pat_df2 <- "svmProb_[ONZ]_.*nclust\\d+\\.tsv$"
+    ext_df2 <- "tsv"
+  } else if (method == "unsupervised") {
+    pat_df2 <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
+    ext_df2 <- "txt"
+  } else {
+    pat_df2 <- "Trend_[ONZ]_.*nclust\\d+\\.txt$"
+    ext_df2 <- "txt"
+  }
   
-  col_fraction <- df[["col_fraction"]][[1]]
-  col_subtype  <- df[["col_subtype"]][[1]]
-  col_group    <- df[["col_group"]][[1]]
+  file_df2 <- find_trend_df2(pat = pat_df2, ext = ext_df2)[[1]]
+  df <- readr::read_tsv(file.path(dat_dir, "Protein", "Trend", file_df2))
   
-  key_col <- "log2FC"
-  col_x   <- col_group
+  if (method == "unsupervised") {
+    col_fraction <- df[["col_fraction"]][[1]]
+    col_subtype  <- df[["col_subtype"]][[1]]
+    col_group    <- df[["col_group"]][[1]]
+    
+    key_col <- "log2FC"
+    col_x   <- col_group
+  } else if (data_type == "supervised") {
+    key_col <- "log2FC"
+    col_x   <- col_group
+  } else {
+    col_fraction <- df[["col_fraction"]][[1]]
+    col_subtype  <- df[["col_subtype"]][[1]]
+    col_group    <- df[["col_group"]][[1]]
+    
+    key_col <- "log2FC"
+    col_x   <- col_group
+  }
   
+
   df <- df |>
     dplyr::filter(.data[[col_x]] %in% levels_group, 
                   .data[[col_subtype]] %in% levels_subtype, 
@@ -3994,11 +4149,11 @@ plot_subcell_markers <- function (
     oks <- file.exists(files_umap)
     
     if (any(bads <- !oks)) {
-      warning("UMAP results not found for: ", 
-              paste(files_umap[bads], collapse = ", "))
+      stop("UMAP results not found: ", paste(files_umap[bads], collapse = ", "))
     }
     
-    files_umap <- files_umap[oks]
+    files_umap <- files_umap[levels_subtype]
+    names(files_umap) <- levels_subtype
     
     if (!length(files_umap)) {
       stop("UMAP results not found. Run 'plot_prnSubcell_UMAP' first.")
@@ -4040,6 +4195,8 @@ plot_subcell_markers <- function (
 
   df_tether <- vector("list", n_subtypes)
   
+  
+  
   for (i in seq_along(levels_subtype)) {
     df_tether[[i]] <- find_tetherome_by_subtype(
       df = dfs[[i]], 
@@ -4054,39 +4211,6 @@ plot_subcell_markers <- function (
       levels_subtype = levels_subtype, 
       levels_ref_compartments = levels_ref_compartments, 
       exclude_inside = exclude_inside)
-  }
-  
-  if (FALSE) {
-    # Assume only one fraction
-    for (i in seq_along(levels_subtype)) {
-      if (!"UMAP2" %in% names(dfs[[i]])) {
-        dfs[[i]] <- dplyr::left_join(dfs[[i]], dfs_umap[[i]], by = id)
-      }
-    }
-    
-    polygons <- lapply(polygons, function (x) x[names(x) %in% levels_fraction])
-
-    plot_subcell_markers_by_fraction(
-      df = dplyr::bind_rows(dfs), 
-      # df_umap = dplyr::bind_rows(dfs_umap), 
-      polygons = polygons, 
-      draw_polygon = FALSE, 
-      # subtype = levels_subtype[[i]], 
-      id = id, col_x = col_x, 
-      # df_bg = df, 
-      col_fraction = col_fraction,
-      levels_fraction = levels_fraction, 
-      col_subtype = col_subtype, 
-      levels_subtype = levels_subtype, 
-      levels_ref_compartments = levels_ref_compartments, 
-      filepath = filepath, 
-      ext = ext, 
-      break_width = break_width, 
-      hide_grids = hide_grids, 
-      wrap_facet = wrap_facet, 
-      drop = drop, 
-      !!!dots
-    )
   }
   
   for (i in seq_along(levels_subtype)) {
@@ -4121,604 +4245,6 @@ plot_subcell_markers <- function (
 
   df_tether
 }
-
-
-#' Find tetherome by subtype.
-#' 
-#' @param df A data frame.
-#' @param df_umap A UMAP data frame.
-#' @param subtype A sample subtype.
-#' @param id An identifier.
-#' @param draw_polygon Logical; draw polygon or not.
-#' @param col_subtype Column key of sample types.
-#' @param levels_subtype The levels of sub_type.
-#' @param col_fraction The column key in metadata to subcellular fractions.
-#' @param levels_fraction The levels of subcellular compartments.
-#' @param levels_ref_compartments The factor levels of subcellular
-#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
-#'   determination.
-#' @param polygons The vertices of polygons.
-#' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
-#'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
-#'   outside of the polygon.
-find_tetherome_by_subtype <- function (
-    df, df_umap, subtype, id = "gene", draw_polygon = TRUE, 
-    col_fraction = "Fraction", levels_fraction = NULL, 
-    col_subtype = "Type", levels_subtype = NULL, 
-    levels_ref_compartments = NULL, polygons = NULL, exclude_inside = TRUE) 
-{
-  df <- df_umap |> 
-    dplyr::left_join(df, by = id) |>
-    dplyr::filter(!is.na(.data[["sub_location"]]))
-  
-  if (FALSE) {
-    n_fracs <- length(levels_fraction)
-    
-    p <- ggplot() +
-      geom_point(data = df, aes(x = UMAP1, y = UMAP2, 
-                                color = !!rlang::sym(col_fraction)), 
-                 shape = 16, size = .1, alpha = 0.5) +
-      scale_color_manual(
-        values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A"),
-        breaks = c("CP", "NP", "ChA"), 
-        drop = FALSE
-      ) +
-      scale_x_continuous(limits = c(-10, 10)) +
-      scale_y_continuous(limits = c(-10, 12)) +
-      theme_minimal(base_size = 14) +
-      labs(
-        title = NULL,
-        x = "UMAP 1",
-        y = "UMAP 2",
-        color = "Location"
-      ) +
-      theme(
-        strip.text = element_text(
-          face = "bold",
-          size = 14,
-          color = "black"
-        ),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold"), 
-        legend.title = element_blank()
-      ) + 
-      guides(
-        color = guide_legend(override.aes = list(size = 3, alpha = 1))
-      ) + 
-      facet_wrap(
-        vars(!!rlang::sym(col_fraction)), 
-        ncol = n_fracs, 
-        labeller = labeller(.default = label_value, .multi_line = FALSE))
-    
-    if (draw_polygon) {
-      # k <- 0.08685714; b <- 1.148571
-      df_poly <- vector("list", n_fracs)
-      names(df_poly) <- levels_fraction
-      
-      for (i in seq_along(levels_fraction)) {
-        fr <- levels_fraction[[i]]
-        pg <- polygons[[fr]]
-        
-        df_poly[[i]] <- tibble::tibble(
-          x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
-      }
-      
-      df_poly <- dplyr::bind_rows(df_poly) |>
-        dplyr::mutate(
-          !!col_fraction := 
-            factor(!!rlang::sym(col_fraction), levels = levels_fraction))
-      
-      p + 
-        geom_polygon(
-          df_poly, 
-          mapping = aes(x = x, y = y), 
-          fill = NA, color = "black", linewidth = .2)
-    }
-  }
-  
-  df_tether <- vector("list", length(levels_fraction))
-  
-  for (i in seq_along(levels_fraction)) {
-    fr <- levels_fraction[[i]]
-    pg <- polygons[[fr]]
-    
-    df <- hremove_contams( # df_clean
-      df = df, id = id, col_fraction = col_fraction, tether_fraction = fr, 
-      polygons = pg, exclude_inside = exclude_inside)
-    
-    # The results for for markers, not for the whole proteome
-    df_tether[[i]] <- tibble::tibble(
-      !!id := attr(df, "tethers"), # df_clean
-      !!col_subtype := subtype, 
-      !!col_fraction := fr)
-  }
-  
-  df_tether <- dplyr::bind_rows(df_tether) |>
-    dplyr::mutate(
-      !!col_fraction := 
-        factor(!!rlang::sym(col_fraction), levels = levels_fraction))
-}
-
-
-#' Plot subcellular markers by subtype.
-#' 
-#' @param df_umap A UMAP data frame.
-#' @param subtype A sample subtype.
-#' @param id An identifier.
-#' @param df Background data. 
-#' @param col_x The column key of X-axis.
-#' @param draw_polygon Logical; draw polygon or not.
-#' @param col_subtype Column key of sample types.
-#' @param levels_subtype The levels of sub_type.
-#' @param col_fraction The column key in metadata to subcellular fractions.
-#' @param levels_fraction The levels of subcellular compartments.
-#' @param levels_ref_compartments The factor levels of subcellular
-#'   compartments. Set \code{levels_ref_compartments = NULL} for automatic
-#'   determination.
-#' @param polygons The vertices of polygons.
-#' @param filepath An output file path.
-#' @param ext An file name extension.
-#' @param break_width The width of X and Y breaks.
-#' @param hide_grids Logical; hide grid lines or not.
-#' @param wrap_facet Logical; wrap_facet or not.
-#' @param drop Drop unknown levels or not.
-plot_subcell_markers_by_subtype <- function (
-    df, df_umap, polygons = NULL, draw_polygon = TRUE, subtype, 
-    id = "gene", col_x = "Group", 
-    col_fraction = "Fraction", levels_fraction = NULL, 
-    col_subtype = "Type", levels_subtype = NULL, 
-    levels_ref_compartments = NULL, filepath, ext = "png", 
-    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
-    ...) 
-{
-  dots <- rlang::enexprs(...)
-  
-  draw_polygon <- isTRUE(draw_polygon)
-  
-  df <- df_umap |> 
-    dplyr::filter(.data[[id]] %in% df[[id]]) |>
-    dplyr::left_join(df, by = id)
-  
-  # Expression subset found in markers
-  df_loc <- df |>
-    dplyr::filter(!is.na(.data[["location"]]))
-  
-  my_colors <- local({
-    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
-                     "#FFFF33", "#A65628", "#F781BF")
-    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
-                     "#99d8c9", "#fee6ce")
-    last_color  <- "#999999"
-    
-    n_comps <- length(levels_ref_compartments)
-    
-    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
-      rng_colors <- 1:(n_comps - 1L)
-    } else {
-      rng_colors <- 1:n_comps
-    }
-    
-    my_colors <- c(set1_colors, add_colors)[rng_colors]
-    my_colors <- c(my_colors, last_color)
-    
-    if (any(is.na(my_colors))) {
-      warning("More compartments than the number of colors.")
-    }
-    
-    my_colors
-  })
-  
-  n_fracs <- length(levels_fraction)
-  
-  if (is.null(ncol <- dots[["ncol"]])) {
-    ncol <- n_fracs
-  }
-  dots[["ncol"]] <- NULL
-  
-  width <- dots[["width"]]
-  height <- dots[["height"]]
-  dpi <- dots[["dpi"]]
-  dots[["width"]] <- dots[["height"]] <- dots[["dpi"]] <- NULL
-  
-  if (is.null(width)) width <- ncol * 6
-  if (is.null(height)) height <- 6
-  if (is.null(dpi)) dpi <- 600
-  
-  xmin <- eval(dots$xmin)
-  xmax <- eval(dots$xmax)
-  ymin <- eval(dots$ymin)
-  ymax <- eval(dots$ymax)
-  
-  if (is.null(xmin)) xmin <- -12
-  if (is.null(xmax)) xmax <- 12
-  if (is.null(ymin)) ymin <- -12
-  if (is.null(ymax)) ymax <- 12
-  
-  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
-  
-  top_layers_1  <- df_loc[["location"]] %in% c("Centrosome", "Chromatin")
-  top_layers_2  <- df_loc[["location"]] %in% c("Nucleus")
-  df_loc_top_1  <- df_loc[top_layers_1, ]
-  df_loc_top_2  <- df_loc[top_layers_2, ]
-  df_loc_others <- df_loc[!(top_layers_1 | top_layers_2), ]
-
-  p <- ggplot() +
-    geom_point(data = df, aes(x = UMAP1, y = UMAP2), color = "gray", 
-               shape = 1, size = 1.5, stroke = .2)
-  
-  use_shape_21 <- TRUE
-  
-  if (use_shape_21) {
-    p <- p + 
-      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      scale_fill_manual(values = my_colors, drop = drop)
-  } else {
-    p <- p + 
-      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      scale_color_manual(values = my_colors, drop = drop)
-  }
-  
-  p <- p + 
-    scale_x_continuous(
-      limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
-    scale_y_continuous(
-      limits = c(ymin, ymax), breaks = scales::breaks_width(break_width))
-  
-  p <- p + 
-    theme_minimal(base_size = 14) +
-    labs(
-      title = NULL,
-      x = "UMAP 1",
-      y = "UMAP 2")
-    
-  if (hide_grids) {
-    p <- p +
-      theme(
-        strip.text = element_text(
-          size = 14,
-          color = "black"
-        ),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold"), 
-        legend.title = element_blank()
-      ) 
-  } else {
-    p <- p +
-      theme(
-        strip.text = element_text(
-          size = 14,
-          color = "black"
-        ),
-        plot.title = element_text(face = "bold"), 
-        legend.title = element_blank()
-      ) 
-  }
-  
-  if (use_shape_21) {
-    p <- p +
-      guides(fill = guide_legend(override.aes = list(size = 5, alpha = 1)))
-
-    if (wrap_facet) {
-      p <- p + 
-        facet_wrap(
-          vars(!!rlang::sym(col_fraction)), 
-          ncol = ncol, 
-          labeller = labeller(.default = label_value, .multi_line = FALSE))
-    }
-    
-  } else {
-    p <- p +
-      guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)))
-      
-    
-    if (wrap_facet) {
-      p <- p + 
-        facet_wrap(
-          vars(!!rlang::sym(col_fraction)), 
-          ncol = ncol, 
-          labeller = labeller(.default = label_value, .multi_line = FALSE))
-    }
-    
-  }
-  
-  if (draw_polygon) {
-    # k <- 0.08685714; b <- 1.148571
-    df_poly <- vector("list", n_fracs)
-    names(df_poly) <- levels_fraction
-    
-    for (i in seq_along(levels_fraction)) {
-      fr <- levels_fraction[[i]]
-      pg <- polygons[[fr]]
-      
-      if (length(pg)) {
-        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
-      }
-      
-      df_poly[[i]] <- tibble::tibble(
-        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
-    }
-    
-    df_poly <- dplyr::bind_rows(df_poly) |>
-      dplyr::mutate(
-        !!col_fraction := 
-          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
-    
-    p <- p + 
-      geom_polygon(
-        df_poly, 
-        mapping = aes(x = x, y = y), 
-        fill = NA, color = "black", linewidth = .2)
-    
-    # k <- 10/3; b <- -28/3; 1.5 * k + b
-    if (FALSE) {
-      p <- p + 
-        geom_segment(
-          # x = -0.2, y = -10, xend = 1.5, yend = -4.333
-          # x = 1.5, y = -4.333, xend = -0.2, yend = -10
-          data = data.frame(
-            x = poly_x_np_cha[[1]], y = poly_y_np_cha[[1]], 
-            xend = poly_x_np_cha[[2]], yend = poly_y_np_cha[[2]]),
-          aes(x = x, y = y, xend = xend, yend = yend),
-          linetype = "longdash",
-          color = "darkgray",
-          linewidth = 0.5)
-    }
-  }
-  
-  if (draw_polygon) 
-    out_name <- paste0("umap_markers_", subtype, "_polygon.", ext)
-  else 
-    out_name <- paste0("umap_markers_", subtype, ".", ext)
-  
-  # rlang::exec(ggsave,filename = file.path(filepath, out_name),!!!dots)
-  
-  ggsave(filename = file.path(filepath, out_name), 
-         width = width, height = height, dpi = dpi)
-  
-  p
-}
-
-
-
-plot_subcell_markers_by_fraction <- function (
-    df, polygons = NULL, draw_polygon = TRUE, subtype, 
-    id = "gene", col_x = "Group", 
-    col_fraction = "Fraction", levels_fraction = NULL, 
-    col_subtype = "Type", levels_subtype = NULL, 
-    levels_ref_compartments = NULL, filepath, ext = "png", 
-    break_width = 5L, hide_grids = TRUE, wrap_facet = TRUE, drop = FALSE, 
-    ...) 
-{
-  dots <- rlang::enexprs(...)
-  
-  draw_polygon <- isTRUE(draw_polygon)
-  
-  # Expression subset found in markers
-  df_loc <- df |>
-    dplyr::filter(!is.na(.data[["location"]]))
-  
-  my_colors <- local({
-    set1_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
-                     "#FFFF33", "#A65628", "#F781BF")
-    add_colors  <- c("#008080", "#3A1188", "#808000", "#882255", "#00BFFF", 
-                     "#99d8c9", "#fee6ce")
-    last_color  <- "#999999"
-    
-    n_comps <- length(levels_ref_compartments)
-    
-    if (any(is.na(n_comps)) || "Unknown" %in% levels_ref_compartments) {
-      rng_colors <- 1:(n_comps - 1L)
-    } else {
-      rng_colors <- 1:n_comps
-    }
-    
-    my_colors <- c(set1_colors, add_colors)[rng_colors]
-    my_colors <- c(my_colors, last_color)
-    
-    if (any(is.na(my_colors))) {
-      warning("More compartments than the number of colors.")
-    }
-    
-    my_colors
-  })
-  
-  n_fracs <- length(levels_fraction)
-  n_subtypes <- length(levels_subtype)
-  
-  if (is.null(ncol <- dots[["ncol"]])) {
-    ncol <- n_fracs
-  }
-  dots[["ncol"]] <- NULL
-  
-  width <- dots[["width"]]
-  height <- dots[["height"]]
-  dpi <- dots[["dpi"]]
-  dots[["width"]] <- dots[["height"]] <- dots[["dpi"]] <- NULL
-  
-  if (is.null(width)) width <- ncol * 6
-  if (is.null(height)) height <- 6
-  if (is.null(dpi)) dpi <- 600
-  
-  xmin <- eval(dots$xmin)
-  xmax <- eval(dots$xmax)
-  ymin <- eval(dots$ymin)
-  ymax <- eval(dots$ymax)
-  
-  if (is.null(xmin)) xmin <- -12
-  if (is.null(xmax)) xmax <- 12
-  if (is.null(ymin)) ymin <- -12
-  if (is.null(ymax)) ymax <- 12
-  
-  dots$xmin <- dots$xmax <- dots$ymin <- dots$ymax <- NULL
-  
-  top_layers_1  <- df_loc[["location"]] %in% c("Centrosome", "Chromatin")
-  top_layers_2  <- df_loc[["location"]] %in% c("Nucleus")
-  df_loc_top_1  <- df_loc[top_layers_1, ]
-  df_loc_top_2  <- df_loc[top_layers_2, ]
-  df_loc_others <- df_loc[!(top_layers_1 | top_layers_2), ]
-  
-  p <- ggplot() +
-    geom_point(data = df, aes(x = UMAP1, y = UMAP2), color = "gray", 
-               shape = 1, size = 1.5, stroke = .2)
-  
-  use_shape_21 <- TRUE
-  
-  if (use_shape_21) {
-    p <- p + 
-      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, fill = location), 
-                 shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = 1) + 
-      scale_fill_manual(values = my_colors, drop = drop)
-  } else {
-    p <- p + 
-      geom_point(data = df_loc_others, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      geom_point(data = df_loc_top_2, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      geom_point(data = df_loc_top_1, aes(x = UMAP1, y = UMAP2, color = location), 
-                 shape = 16, size = 1.5, , stroke = .02, alpha = 1) + 
-      scale_color_manual(values = my_colors, drop = drop)
-  }
-  
-  p <- p + 
-    scale_x_continuous(
-      limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
-    scale_y_continuous(
-      limits = c(ymin, ymax), breaks = scales::breaks_width(break_width))
-  
-  p <- p + 
-    theme_minimal(base_size = 14) +
-    labs(
-      title = NULL,
-      x = "UMAP 1",
-      y = "UMAP 2")
-  
-  if (hide_grids) {
-    p <- p +
-      theme(
-        strip.text = element_text(
-          size = 14,
-          color = "black"
-        ),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold"), 
-        legend.title = element_blank()
-      ) 
-  } else {
-    p <- p +
-      theme(
-        strip.text = element_text(
-          size = 14,
-          color = "black"
-        ),
-        plot.title = element_text(face = "bold"), 
-        legend.title = element_blank()
-      ) 
-  }
-  
-  if (use_shape_21) {
-    p <- p +
-      guides(fill = guide_legend(override.aes = list(size = 5, alpha = 1)))
-    
-    if (wrap_facet) {
-      p <- p + 
-        facet_wrap(
-          vars(!!rlang::sym(col_subtype)), 
-          ncol = ncol, 
-          labeller = labeller(.default = label_value, .multi_line = FALSE))
-    }
-    
-  } else {
-    p <- p +
-      guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)))
-    
-    
-    if (wrap_facet) {
-      p <- p + 
-        facet_wrap(
-          vars(!!rlang::sym(col_subtype)), 
-          ncol = ncol, 
-          labeller = labeller(.default = label_value, .multi_line = FALSE))
-    }
-    
-  }
-  
-  if (draw_polygon) {
-    # k <- 0.08685714; b <- 1.148571
-    df_poly <- vector("list", n_fracs)
-    names(df_poly) <- levels_fraction
-    
-    for (i in seq_along(levels_fraction)) {
-      fr <- levels_fraction[[i]]
-      pg <- polygons[[fr]]
-      
-      if (length(pg)) {
-        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
-      }
-      
-      df_poly[[i]] <- tibble::tibble(
-        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
-    }
-    
-    df_poly <- dplyr::bind_rows(df_poly) |>
-      dplyr::mutate(
-        !!col_fraction := 
-          factor(!!rlang::sym(col_fraction), levels = levels_fraction))
-    
-    p <- p + 
-      geom_polygon(
-        df_poly, 
-        mapping = aes(x = x, y = y), 
-        fill = NA, color = "black", linewidth = .2)
-    
-    # k <- 10/3; b <- -28/3; 1.5 * k + b
-    if (FALSE) {
-      p <- p + 
-        geom_segment(
-          # x = -0.2, y = -10, xend = 1.5, yend = -4.333
-          # x = 1.5, y = -4.333, xend = -0.2, yend = -10
-          data = data.frame(
-            x = poly_x_np_cha[[1]], y = poly_y_np_cha[[1]], 
-            xend = poly_x_np_cha[[2]], yend = poly_y_np_cha[[2]]),
-          aes(x = x, y = y, xend = xend, yend = yend),
-          linetype = "longdash",
-          color = "darkgray",
-          linewidth = 0.5)
-    }
-  }
-  
-  # Assume one fraction
-  fraction <- levels_fraction[[1]]
-  
-  if (draw_polygon) 
-    out_name <- paste0("umap_markers_", fraction, "_polygon.", ext)
-  else 
-    out_name <- paste0("umap_markers_", fraction, ".", ext)
-  
-  # rlang::exec(ggsave,filename = file.path(filepath, out_name),!!!dots)
-  
-  ggsave(filename = file.path(filepath, out_name), 
-         width = width, height = height, dpi = dpi)
-  
-  p
-}
-
 
 
 #' Helper remove tethered mitochondrial, ER proteins.

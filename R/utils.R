@@ -990,7 +990,7 @@ imputeNA <- function (id, overwrite = FALSE, ...)
 pepImp <- function (...) 
 {
   check_dots(c("id"), ...)
-  id <- match_call_arg("normPSM", group_psm_by)
+  id <- match_call_arg("normPSM", "group_psm_by")
   imputeNA(id = id, ...)
 }
 
@@ -1017,7 +1017,7 @@ pepImp <- function (...)
 prnImp <- function (...) 
 {
   check_dots(c("id"), ...)
-  id <- match_call_arg("normPSM", group_pep_by)
+  id <- match_call_arg("normPSM", "group_pep_by")
   imputeNA(id = !!id, ...)
 }
 
@@ -1933,7 +1933,7 @@ match_gset_nms <- function (gset_nms = NULL)
   
   if (is.null(gset_nms)) {
     if (file.exists(file)) {
-      gset_nms <- match_call_arg("anal_prnGSPA", gset_nms)
+      gset_nms <- match_call_arg("anal_prnGSPA", "gset_nms")
     } else {
       stop("`gset_nms` is NULL and ", file, " not found.", 
            call. = FALSE)
@@ -1941,7 +1941,7 @@ match_gset_nms <- function (gset_nms = NULL)
   } 
   else {
     if (file.exists(file)) {
-      gset_nms <- gset_nms %>% .[. %in% match_call_arg("anal_prnGSPA", .)]
+      gset_nms <- gset_nms[gset_nms %in% match_call_arg("anal_prnGSPA", "gset_nms")]
     } else {
       warning("File `", file, "`` not available for `gset_nms` matches.", 
               "\nUse the `gset_nms` value as it.")
@@ -3133,7 +3133,7 @@ count_phosphopeps <- function(filename = "Peptide.txt", collapses = c("mn"),
       dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   }
   
-  id <- match_call_arg("normPSM", group_psm_by)
+  id <- match_call_arg("normPSM", "group_psm_by")
   use_lowercase_aa <- match_call_arg("normPSM", "use_lowercase_aa")
   
   if (use_lowercase_aa) {

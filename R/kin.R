@@ -162,8 +162,8 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
   type <- match.arg(type)
   
   id <- switch(type, 
-               peptide = match_call_arg("normPSM", group_psm_by), 
-               protein = match_call_arg("normPSM", group_pep_by), 
+               peptide = match_call_arg("normPSM", "group_psm_by"), 
+               protein = match_call_arg("normPSM", "group_pep_by"), 
                stop("`type` need to be one of `peptide` or `protein`."))
   
   dir.create(

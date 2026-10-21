@@ -195,12 +195,12 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE,
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), 
+    match_call_arg("normPSM", "group_pep_by"), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   

@@ -704,7 +704,7 @@ pepPCA <- function (dat_dir = NULL,
   
   type <- match.arg(type)
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   stopifnot(type %in% c("obs", "feats"))
 
@@ -883,7 +883,7 @@ prnPCA <- function (dat_dir = NULL,
 
   type <- match.arg(type)
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   stopifnot(type %in% c("obs", "feats"))
   

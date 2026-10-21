@@ -1706,7 +1706,15 @@ pepVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE,
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), 
+    error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg("makePepDIANN", "group_psm_by"), 
+      error = function(e) "pep_seq_mod")
+  }
+
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   
   scale_log2r <-
@@ -1849,7 +1857,13 @@ prnVol <- function (dat_dir = NULL, scale_log2r = TRUE, complete_cases = FALSE,
   check_depreciated_args(list(c("show_labels", "topn_labels")), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
+  
+  if (is.na(id)) {
+    id <- tryCatch(
+      match_call_arg("makePepDIANN", "group_pep_by"), error = function(e) "gene")
+  }
+
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_prnSig_scale_log2r(
@@ -1909,12 +1923,12 @@ pepGSPAMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"),
          c("show_labels", "topn_labels")), ...)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), 
+    match_call_arg("normPSM", "group_psm_by"), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -2119,11 +2133,11 @@ prnGSPAMap <- function (dat_dir = NULL,
     scale_log2r = scale_log2r, impute_na = impute_na)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   

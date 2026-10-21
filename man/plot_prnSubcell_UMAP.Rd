@@ -7,26 +7,29 @@
 plot_prnSubcell_UMAP(
   dat_dir = NULL,
   label_scheme = NULL,
-  col_group = NULL,
   df_umap = NULL,
   id = "gene",
+  species = "human",
+  df_markers = NULL,
+  highlight_markers = FALSE,
   n_clust = 16:36,
   key_col = c("log2FC", "log10Int"),
-  pred_col = "sub_location",
-  method = c("unsupervised", "supervised"),
-  levels_ref_compartments = c("Cytosol", "ER", "Mitochondrion", "Nucleus", "Chromatin",
-    "Lysosome", "Plasma_membrane", "Proteasome", "Golgi", "Peroxisome", "Endosome",
-    "Ribosome", "Centrosome", "P_body", "Stress_granule"),
-  reorder_ref_levels = TRUE,
+  type_fraction = c("matched", "pseudo"),
+  levels_ref_compartments = NULL,
+  col_pred = "sub_location",
+  levels_pred = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
+  col_group = NULL,
+  levels_group = NULL,
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
   ext = "png",
-  use_cache = FALSE,
+  polygons = NULL,
+  exclude_inside = TRUE,
   overwrite_umap_res = TRUE,
   wrap_facets = TRUE,
   break_width = 5,
@@ -36,6 +39,7 @@ plot_prnSubcell_UMAP(
   height_combined = 4,
   width_sep = 14,
   height_sep = 6,
+  use_cache = TRUE,
   seed = 42,
   ...
 )
@@ -43,31 +47,71 @@ plot_prnSubcell_UMAP(
 \arguments{
 \item{dat_dir}{The current working directory.}
 
-\item{df_umap}{A matrix UMAP coordinates.}
+\item{label_scheme}{The metadata generated from \link{load_expts}.}
+
+\item{df_umap}{A matrix UMAP coordinates. Automatically determined at
+\code{NULL}.}
 
 \item{id}{An identifier.}
+
+\item{species}{The species.}
+
+\item{df_markers}{A data frame of reference markers. Automatically determined
+at \code{NULL}.}
+
+\item{highlight_markers}{Logical; highlight marker proteins or not.}
 
 \item{n_clust}{Not used. The number of clusters.}
 
 \item{key_col}{The key column where the values being used for UMAP.}
 
-\item{pred_col}{The prediction column.}
+\item{type_fraction}{The type of sub-cellular fraction. At the value of
+  \code{matched}, the experimental fractions matches biological compartments,
+  e.g., CP, NP and ChA. At the value of \code{pseudo}, the experimental
+  fractions (e.g., F1, F2 etc.) are different from biological compartments
+  (e.g. Centrosome, ER, etc.).
 
-\item{method}{The method of subcellular classification.}
+  The information will be used to decide which secondary file (df2) to used
+  and to join the encoding of sub-cellular locations therein for color
+  aesthetics.
 
-\item{levels_ref_compartments}{The factor levels of subcellular compartments.
-Set \code{levels_ref_compartments = NULL} for automatic determination.}
+  It is possible that users may exclude some levels from UMAP visualization
+  and thus a simple set difference assessment may not be adequate. For now,
+  the developer leave this argument for users own discretion.}
 
-\item{reorder_ref_levels}{Not used. Logical; if TRUE, reorder reference
-levles by the decreasing of category counts.}
+\item{levels_ref_compartments}{For uses at \code{highlight_markers = TRUE}.
+The factor levels of subcellular compartments for uses in marker
+visualization.}
+
+\item{col_pred}{The prediction column.}
+
+\item{col_fraction}{The column key in metadata to subcellular fractions.}
+
+\item{levels_fraction}{The levels of subcellular compartments.}
+
+\item{col_subtype}{Column key of sample types.}
+
+\item{levels_subtype}{The levels of sample subtypes or treatment conditions.}
+
+\item{col_group}{The column key in metadata linked to the information of
+sample groups.}
+
+\item{levels_group}{The levels of data group.}
 
 \item{df2}{Not used. The names of secondary input files.}
 
-\item{filepath}{A file path of inputs and outputs.}
+\item{filepath}{A file path of inputs and outputs. Automatically determined
+at \code{NULL}.}
 
 \item{filename}{An output filename.}
 
-\item{ext}{An extension of output filename.}
+\item{ext}{An extension of output filename, e.g., pdf or png.}
+
+\item{polygons}{The vertices of polygons.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 
 \item{overwrite_umap_res}{Logical; rewrite UMAP result files or not.}
 
@@ -81,9 +125,9 @@ levles by the decreasing of category counts.}
 
 \item{height_sep}{The height of a plot separated by compartments.}
 
-\item{seed}{A seed for umap.}
+\item{use_cache}{Logical; use cached results or not.}
 
-\item{df_expr}{A matrix of expression data.}
+\item{seed}{A seed for umap.}
 }
 \description{
 Inputs are expression data of normalized intensities.
@@ -91,7 +135,7 @@ Inputs are expression data of normalized intensities.
 \examples{
 \dontrun{
 plot_prnSubcell_UMAP(
-  dat_dir = dat_dir, df_expr = NULL, id = "gene",
+  dat_dir = dat_dir, id = "gene", species = "human",
   df2 = NULL, filepath = NULL, filename = NULL, ext = "pdf",
   wrap_facets = TRUE, seed = 123, nrow = 2, ncol = 7, width = 16, height = 6)
 }

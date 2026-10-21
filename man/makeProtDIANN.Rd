@@ -6,7 +6,6 @@
 \usage{
 makeProtDIANN(
   dat_dir = NULL,
-  group_pep_by = "gene",
   fasta = NULL,
   add_ibaq = TRUE,
   type_int = c("N_I", "I"),
@@ -16,12 +15,6 @@ makeProtDIANN(
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
-
-\item{group_pep_by}{A character string specifying the method in peptide
-grouping. At the \code{prot_acc} default, descriptive statistics will be
-calculated based on the same \code{prot_acc} groups. At the \code{gene}
-alternative, proteins with the same gene name but different accession
-numbers will be treated as one group.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those

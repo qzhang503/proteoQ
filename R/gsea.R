@@ -185,7 +185,7 @@ prnGSEA <- function (gset_nms = "go_sets",
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSEA/log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_call_arg("normPSM", group_pep_by)
+  id <- match_call_arg("normPSM", "group_pep_by")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)

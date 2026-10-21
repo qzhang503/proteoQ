@@ -134,7 +134,7 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt",
   purrr::map2(input_panel_indexes, n_clust, ~ {
     genes <- df %>% 
       dplyr::filter(cluster == .y) %>% 
-      .[[match_call_arg("normPSM", group_pep_by)]] %>% 
+      .[[match_call_arg("normPSM", "group_pep_by")]] %>% 
       unique() %>% 
       RJSONIO::toJSON()
 

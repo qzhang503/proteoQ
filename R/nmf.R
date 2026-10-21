@@ -915,10 +915,11 @@ anal_pepNMF <- function (
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
-  id <- tryCatch(match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", "group_psm_by"), 
+                 error = function(e) NA)
   
   if (is.na(id)) {
-    id <- tryCatch(match_call_arg("makeProtDIANN", group_psm_by), 
+    id <- tryCatch(match_call_arg("makeProtDIANN", "group_psm_by"), 
                    error = function(e) NA)
   }
   
@@ -974,11 +975,11 @@ anal_prnNMF <- function (
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_pep_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1108,11 +1109,11 @@ plot_pepNMFCon <- function (col_select = NULL,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_psm_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_psm_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1158,11 +1159,11 @@ plot_prnNMFCon <- function (col_select = NULL,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_pep_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1208,11 +1209,11 @@ plot_pepNMFCoef <- function (col_select = NULL,
              recursive = TRUE, showWarnings = FALSE)
 
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_psm_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_psm_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1258,11 +1259,11 @@ plot_prnNMFCoef <- function (col_select = NULL,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_pep_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {
@@ -1381,11 +1382,11 @@ plot_metaNMF <- function (col_select = NULL,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), error = function(e) NA)
+      match_call_arg("makeProtDIANN", "group_pep_by"), error = function(e) NA)
   }
   
   if (is.na(id)) {

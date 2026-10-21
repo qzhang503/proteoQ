@@ -6,7 +6,7 @@
 \usage{
 makePepDIANN(
   dat_dir = NULL,
-  group_pep_by = "gene",
+  group_pep_by = c("gene", "prot_acc"),
   fasta = NULL,
   entrez = NULL,
   use_lowercase_aa = FALSE,

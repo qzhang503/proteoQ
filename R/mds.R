@@ -949,7 +949,7 @@ pepMDS <- function (dat_dir = NULL,
   choice <- match.arg(choice)
 
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) "pep_seq_mod")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -1204,7 +1204,7 @@ prnMDS <- function (dat_dir = NULL,
   method <- rlang::enexpr(method)
   method <- if (length(method) > 1L) "euclidean" else as.character(method)
 
-  id <- tryCatch(match_call_arg(normPSM, group_pep_by), error = function(e) "gene")
+  id <- tryCatch(match_call_arg(normPSM, "group_pep_by"), error = function(e) "gene")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -1307,7 +1307,7 @@ pepEucDist <- function (col_select = NULL,
   check_formalArgs("prnEucDist", "dist")
 
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) "pep_seq_mod")
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) "pep_seq_mod")
 
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
             length(id) == 1L)
@@ -1447,7 +1447,7 @@ prnEucDist <- function (col_select = NULL,
   check_formalArgs("prnEucDist", "dist")
 
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) "gene")
 
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
             length(id) == 1L)

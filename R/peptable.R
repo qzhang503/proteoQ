@@ -426,8 +426,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq = FALSE,
                        use_spec_counts = FALSE, use_maxlfq = TRUE) 
 {
   dat_dir <- get_gl_dat_dir()
-  group_psm_by <- match_call_arg("normPSM", group_psm_by)
-  group_pep_by <- match_call_arg("normPSM", group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", "group_psm_by")
+  group_pep_by <- match_call_arg("normPSM", "group_pep_by")
 
   filelist <- 
     list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
@@ -662,8 +662,8 @@ pep_mf_lfq <- function(label_scheme, omit_single_lfq = FALSE, use_maxlfq = TRUE,
                        use_lowercase_aa = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
-  group_psm_by <- match_call_arg("normPSM", group_psm_by)
-  group_pep_by <- match_call_arg("normPSM", group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", "group_psm_by")
+  group_pep_by <- match_call_arg("normPSM", "group_pep_by")
   
   filelist <- if (group_psm_by == "pep_seq_mod") {
     list.files(path = file.path(dat_dir), 
@@ -3147,8 +3147,8 @@ mergePep <- function (
   dir.create(file.path(dat_dir, "Peptide/log"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  group_psm_by <- match_call_arg("normPSM", group_psm_by)
-  group_pep_by <- match_call_arg("normPSM", group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", "group_psm_by")
+  group_pep_by <- match_call_arg("normPSM", "group_pep_by")
   
   if (is.null(mbr_ret_tol)) {
     mbr_ret_tol  <- match_call_arg("normPSM", "mbr_ret_tol")
@@ -3398,9 +3398,9 @@ standPep <- function (dat_dir = NULL,
   reload_expts()
   
   group_psm_by <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) NULL)
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) NULL)
   group_pep_by <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) NULL)
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) NULL)
   if (is.null(group_psm_by)) { group_psm_by <- "pep_seq_mod" }
   if (is.null(group_pep_by)) { group_pep_by <- "gene" }
 
@@ -3590,7 +3590,7 @@ Pep2Prn <- function (use_unique_pep = TRUE, impute_prot_na = FALSE,
   tmt_plex <- TMT_plex(label_scheme_full)
   
   group_pep_by <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), error = function(e) "gene")
+    match_call_arg("normPSM", "group_pep_by"), error = function(e) "gene")
   use_spec_counts <- tryCatch(
     match_call_arg("normPSM", "use_spec_counts"), error = function(e) FALSE)
 
@@ -4032,8 +4032,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     warning("Values of \"pep_isunique\" are all NA and coerced to TRUE.")
   }
   
-  group_psm_by <- match_call_arg("normPSM", group_psm_by)
-  group_pep_by <- match_call_arg("normPSM", group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", "group_psm_by")
+  group_pep_by <- match_call_arg("normPSM", "group_pep_by")
   
   # add `prot_n_uniqpep` and `prot_n_uniqpsm`
   df <- local({
@@ -4524,10 +4524,12 @@ rm_diann_empties <- function (df, label_scheme_full)
   # Remove samples not in metadata and align sample IDs by metadata
   mts  <- match(label_scheme_full[["RAW_File"]], raws)
   dfx  <- df[, cols, drop = FALSE]
+  bads <- is.na(mts)
   
-  if (any(is.na(mts))) {
+  if (any(bads)) {
     warning("Not all RAW files matched to 'expt_smry'. ", 
             "Check for possible errors in file names.")
+    mts[is.na(mts)] <- 0L
   }
   
   dfx  <- dfx[, mts, drop = FALSE]
@@ -4535,7 +4537,7 @@ rm_diann_empties <- function (df, label_scheme_full)
   
   names(dfx) <- paste0("I000 (", label_scheme_full[["Sample_ID"]], ")")
   oks <- rowSums(is.na(dfx)) < ncol(dfx)
-  df   <- dplyr::bind_cols(df[oks, !cols, drop = FALSE], dfx[oks, ])
+  df  <- dplyr::bind_cols(df[oks, !cols, drop = FALSE], dfx[oks, ])
   
   df
 }
@@ -4546,8 +4548,10 @@ rm_diann_empties <- function (df, label_scheme_full)
 #' @inheritParams normPSM
 #' @param ... Additional arguments.
 #' @export
-makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
-                          entrez = NULL, use_lowercase_aa  = FALSE, ...)
+makePepDIANN <- function (
+    dat_dir = NULL, group_pep_by = c("gene", "prot_acc"), 
+    fasta = NULL, entrez = NULL, use_lowercase_aa  = FALSE, 
+    ...)
 {
   on.exit(
     if (exists(".saveCall", envir = environment()) && .saveCall) {
@@ -4555,6 +4559,8 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
         c(dots) |>
         save_call("makePepDIANN")
     }, add = TRUE)
+  
+  group_pep_by <- match.arg(group_pep_by)
   
   dots <- rlang::enexprs(...)
   
@@ -4574,9 +4580,17 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     stop("File not found: '", fn_meta, "'. Run 'load_expts' first.")
   }
   load(fn_meta)
+  
+  pat_diann <- "report.pr_matrix.*\\.tsv$"
+  fns_diann <- list.files(dat_dir, pattern = pat_diann)
+  
+  if (!length(fns_diann)) {
+    stop("File(s) not found: '", pat_diann, "'. Copy the file to ", dat_dir, ".")
+  }
 
-  if (!file.exists(fn_diann <- file.path(dat_dir, "report.pr_matrix.tsv"))) {
-    stop("File not found: '", fn_diann, "'. Copy the file to ", dat_dir, ".")
+  # Only one combined search results allowed since MBR
+  if (TRUE) {
+    fn_diann <- file.path(dat_dir, fns_diann[[1]])
   }
 
   df <- fn_diann |>
@@ -4732,7 +4746,8 @@ makePepDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
 #'   calculations. The value is either \code{I} or \code{N_I}.
 #' @param ... Additional arguments.
 #' @export
-makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL, 
+makeProtDIANN <- function (dat_dir = NULL, # group_pep_by = "gene", 
+                           fasta = NULL, 
                            add_ibaq = TRUE, type_int = c("N_I", "I"), ...)
 {
   on.exit(
@@ -4743,16 +4758,10 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
     }, add = TRUE)
   
   fmls <- formals()
-  type_int <- rlang::enexpr(type_int)
-  type_int <- if (length(type_int) > 1L) "I" else rlang::as_string(type_int)
-  oks <- eval(fmls[["type_int"]])
-  
-  if (!type_int %in% oks) {
-    stop("The `type_int` is not one of ", paste(oks, collapse = ", "))
-  }
-  
-  if (length(type_int) != 1L) {
-    stop("The length of `type_int` needs to be one.")
+  type_int <- match.arg(type_int)
+
+  if (is.null(group_pep_by <- match_call_arg("makePepDIANN", "group_pep_by"))) {
+    group_pep_by <- "gene"
   }
   
   dots <- rlang::enexprs(...)
@@ -4775,10 +4784,18 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   
   load(fn_meta)
   load(fn_acc)
-
+  
   if (group_pep_by == "gene") {
-    if (!file.exists(fn_prot <- file.path(dat_dir, "report.gg_matrix.tsv"))) {
-      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+    pat_diann <- "report.gg_matrix.*\\.tsv$"
+    fns_prot <- list.files(dat_dir, pattern = pat_diann)
+    
+    if (!length(fns_prot)) {
+      stop("File(s) not found: '", pat_diann, "'. Copy the file to ", dat_dir, ".")
+    }
+    
+    # One file only
+    if (TRUE) {
+      fn_prot <- file.path(dat_dir, fns_prot[[1]])
     }
     
     df <- fn_prot |>
@@ -4786,10 +4803,17 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
       dplyr::rename(genes = Genes,) |>
       dplyr::mutate(gene = gsub(";.*", "", genes)) |>
       reloc_col_before("gene", "genes")
-  }
-  else if (group_pep_by == "prot_acc") {
-    if (!file.exists(fn_prot <- file.path(dat_dir, "report.pg_matrix.tsv"))) {
-      stop("File not found: '", fn_prot, "'. \nCopy the file to ", dat_dir, ".")
+  } else if (group_pep_by == "prot_acc") {
+    pat_diann <- "report.pg_matrix.*\\.tsv$"
+    fns_prot <- list.files(dat_dir, pattern = pat_diann)
+    
+    if (!length(fns_prot)) {
+      stop("File(s) not found: '", pat_diann, "'. Copy the file to ", dat_dir, ".")
+    }
+    
+    # One file only
+    if (TRUE) {
+      fn_prot <- file.path(dat_dir, fns_prot[[1]])
     }
     
     df <- fn_prot |>
@@ -4861,6 +4885,12 @@ makeProtDIANN <- function (dat_dir = NULL, group_pep_by = "gene", fasta = NULL,
   df <- df[!is.na(df[[group_pep_by]]), ]
 
   prot_n_pep <- readr::read_tsv(file.path(dat_dir, "Peptide", "prot_n_pep.txt"))
+  
+  if (!group_pep_by %in% names(prot_n_pep)) {
+    stop("Column ", prot_n_pep, " not found in 'prot_n_pep.txt'. \n", 
+         "Check for mismatches by 'makePepDIANN' and 'makeProtDIANN'.")
+  }
+  
   df <- df |>
     dplyr::left_join(prot_n_pep, by = group_pep_by) |>
     reloc_col_after("prot_n_pep", "prot_acc")

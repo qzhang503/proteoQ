@@ -37,11 +37,11 @@ pepGSPA <- function (dat_dir = NULL,
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Peptide", "GSPA")
 
   id <- tryCatch(
-    match_call_arg("normPSM", group_psm_by), error = function(e) NA)
+    match_call_arg("normPSM", "group_psm_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makePepDIANN", group_psm_by), 
+      match_call_arg("makePepDIANN", "group_psm_by"), 
       error = function(e) NA)
   }
   
@@ -288,11 +288,11 @@ prnGSPA <- function (
   scale_log2r <- match_prnSig_scale_log2r(
     scale_log2r = scale_log2r, impute_na = impute_na)
   
-  id <- tryCatch(match_call_arg("normPSM", group_pep_by), error = function(e) NA)
+  id <- tryCatch(match_call_arg("normPSM", "group_pep_by"), error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   
@@ -1541,12 +1541,12 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- tryCatch(
-    match_call_arg("normPSM", group_pep_by), 
+    match_call_arg("normPSM", "group_pep_by"), 
     error = function(e) NA)
   
   if (is.na(id)) {
     id <- tryCatch(
-      match_call_arg("makeProtDIANN", group_pep_by), 
+      match_call_arg("makeProtDIANN", "group_pep_by"), 
       error = function(e) NA)
   }
   

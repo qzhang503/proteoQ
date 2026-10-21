@@ -548,7 +548,7 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 
   stopifnot(type %in% c("obs", "feats"))
   
-  id <- match_call_arg("normPSM", group_psm_by)
+  id <- match_call_arg("normPSM", "group_psm_by")
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"), length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -733,7 +733,7 @@ prnLDA <- function (
   type <- match.arg(type)
   stopifnot(type %in% c("obs", "feats"))
   
-  id <- match_call_arg("normPSM", group_pep_by)
+  id <- match_call_arg("normPSM", "group_pep_by")
   stopifnot(id %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)

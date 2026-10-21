@@ -4996,8 +4996,8 @@ PSM2Pep <- function(method_psm_pep =
   
   engine       <- find_search_engine(dat_dir)
   tmt_plex     <- TMT_plex(label_scheme_full)
-  group_psm_by <- match_call_arg("normPSM", group_psm_by)
-  group_pep_by <- match_call_arg("normPSM", group_pep_by)
+  group_psm_by <- match_call_arg("normPSM", "group_psm_by")
+  group_pep_by <- match_call_arg("normPSM", "group_pep_by")
   method_psm_pep <- if (tmt_plex) { "median" } else { "lfq_max" }
 
   ## Argument with multi-options -> non-NULL default, (quotation marks or not)
