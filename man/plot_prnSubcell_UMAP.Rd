@@ -5,25 +5,27 @@
 \title{Plot UMAP of sub-cellular scores.}
 \usage{
 plot_prnSubcell_UMAP(
-  dat_dir = NULL,
-  label_scheme = NULL,
   df_umap = NULL,
   id = "gene",
   species = "human",
-  df_markers = NULL,
+  df_ref = NULL,
+  col_ref = c("location", "location_slim3"),
   highlight_markers = FALSE,
+  levels_ref_compartments = NULL,
+  colors_ref = NULL,
   n_clust = 16:36,
   key_col = c("log2FC", "log10Int"),
   type_fraction = c("matched", "pseudo"),
-  levels_ref_compartments = NULL,
-  col_pred = "sub_location",
   levels_pred = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
+  colors_frac = NULL,
   col_subtype = NULL,
   levels_subtype = NULL,
   col_group = NULL,
   levels_group = NULL,
+  dat_dir = NULL,
+  label_scheme = NULL,
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
@@ -32,6 +34,8 @@ plot_prnSubcell_UMAP(
   exclude_inside = TRUE,
   overwrite_umap_res = TRUE,
   wrap_facets = TRUE,
+  wrap_facets_by = col_fraction,
+  alpha = 1,
   break_width = 5,
   hide_grids = TRUE,
   drop = FALSE,
@@ -39,16 +43,12 @@ plot_prnSubcell_UMAP(
   height_combined = 4,
   width_sep = 14,
   height_sep = 6,
-  use_cache = TRUE,
+  use_cache = FALSE,
   seed = 42,
   ...
 )
 }
 \arguments{
-\item{dat_dir}{The current working directory.}
-
-\item{label_scheme}{The metadata generated from \link{load_expts}.}
-
 \item{df_umap}{A matrix UMAP coordinates. Automatically determined at
 \code{NULL}.}
 
@@ -56,10 +56,14 @@ plot_prnSubcell_UMAP(
 
 \item{species}{The species.}
 
-\item{df_markers}{A data frame of reference markers. Automatically determined
+\item{df_ref}{A data frame of reference markers. Automatically determined
 at \code{NULL}.}
 
 \item{highlight_markers}{Logical; highlight marker proteins or not.}
+
+\item{levels_ref_compartments}{For uses at \code{highlight_markers = TRUE}.
+The factor levels of subcellular compartments for uses in marker
+visualization.}
 
 \item{n_clust}{Not used. The number of clusters.}
 
@@ -79,12 +83,6 @@ at \code{NULL}.}
   and thus a simple set difference assessment may not be adequate. For now,
   the developer leave this argument for users own discretion.}
 
-\item{levels_ref_compartments}{For uses at \code{highlight_markers = TRUE}.
-The factor levels of subcellular compartments for uses in marker
-visualization.}
-
-\item{col_pred}{The prediction column.}
-
 \item{col_fraction}{The column key in metadata to subcellular fractions.}
 
 \item{levels_fraction}{The levels of subcellular compartments.}
@@ -97,6 +95,10 @@ visualization.}
 sample groups.}
 
 \item{levels_group}{The levels of data group.}
+
+\item{dat_dir}{The current working directory.}
+
+\item{label_scheme}{The metadata generated from \link{load_expts}.}
 
 \item{df2}{Not used. The names of secondary input files.}
 
@@ -117,6 +119,8 @@ outside of the polygon.}
 
 \item{wrap_facets}{Wrap facets or not.}
 
+\item{alpha}{The levels of transparency for uses in ggplot2.}
+
 \item{width_combined}{The width of a combined plot.}
 
 \item{height_combined}{The height of a combined plot.}
@@ -125,9 +129,11 @@ outside of the polygon.}
 
 \item{height_sep}{The height of a plot separated by compartments.}
 
-\item{use_cache}{Logical; use cached results or not.}
+\item{use_cache}{Logical; when available, use cached results or not.}
 
 \item{seed}{A seed for umap.}
+
+\item{col_pred}{The prediction column.}
 }
 \description{
 Inputs are expression data of normalized intensities.

@@ -14,6 +14,7 @@ train_loc_svm(
   col_fraction = NULL,
   filepath = NULL,
   ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
+  adjust_weights = TRUE,
   use_cache = FALSE,
   seed = 42L,
   ...
@@ -35,6 +36,9 @@ that summed to one across fractions for each protein.}
 
 \item{ranges}{for \code{cost} and \code{gamma} for grid searching with
 \code{radial} kernel.}
+
+\item{adjust_weights}{Logical; adjust class weights by Bayesian's priors
+or not.}
 
 \item{use_cache}{Logical; use cache or not.}
 

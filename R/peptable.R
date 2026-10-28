@@ -4543,6 +4543,269 @@ rm_diann_empties <- function (df, label_scheme_full)
 }
 
 
+makePepDIANNs <- function (
+    dat_dir = NULL, group_pep_by = c("gene", "prot_acc"), 
+    fasta = NULL, entrez = NULL, use_lowercase_aa  = FALSE, 
+    ...)
+{
+  on.exit(
+    if (exists(".saveCall", envir = environment()) && .saveCall) {
+      mget(names(formals()), envir = environment(), inherits = FALSE) |>
+        c(dots) |>
+        save_call("makePepDIANN")
+    }, add = TRUE)
+  
+  group_pep_by <- match.arg(group_pep_by)
+  
+  dots <- rlang::enexprs(...)
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- get_gl_dat_dir()
+  }
+  
+  if (is.null(fasta)) {
+    stop("Argument 'fasta' cannot be NULL.")
+  }
+  
+  if (!dir.exists(out_path <- file.path(dat_dir, "Peptide"))) {
+    dir.create(out_path, showWarnings = FALSE)
+  }
+  
+  if (!file.exists(fn_meta <- file.path(dat_dir, "label_scheme_full.rda"))) {
+    stop("File not found: '", fn_meta, "'. Run 'load_expts' first.")
+  }
+  load(fn_meta)
+  
+  pat_diann <- "report.pr_matrix.*\\.tsv$"
+  fns_diann <- list.files(dat_dir, pattern = pat_diann)
+  
+  if (!length(fns_diann)) {
+    stop("File(s) not found: '", pat_diann, "'. Copy the file to ", dat_dir, ".")
+  }
+  
+  fns_diann <- file.path(dat_dir, fns_diann)
+  pat_raw <- "(\\.raw$|\\.d$|_uncalibrated\\.mzML$)"
+  
+  df <- mapply(function (fn_diann) {
+    df <- fn_diann |>
+      readr::read_tsv()
+    
+    cnms <- colnames(df)
+    cols <- grep(pat_raw, cnms)
+    basenames <- basename(cnms[cols])
+    colnames(df)[cols] <- basenames
+    
+    df <- df |>
+      tidyr::pivot_longer(
+        cols = dplyr::matches(pat_raw), 
+        values_to = "Intensity", 
+        names_to = "RAW")
+    
+    
+  }, fns_diann, SIMPLIFY = FALSE) |>
+    dplyr::bind_rows()
+  
+  # df <- unique(df)
+  
+  df <- df |>
+    dplyr::rename(
+      prot_acc  = Protein.Group, 
+      prot_accs = Protein.Ids, 
+      genes     = Genes,
+      pep_razor_unique = Proteotypic, 
+      pep_seq      = Stripped.Sequence, 
+      pep_seq_mod  = Modified.Sequence, 
+      pep_exp_z    = Precursor.Charge, 
+      pep_seq_modz = Precursor.Id) |>
+    # Unexpected ";"
+    dplyr::mutate(prot_acc = sub(";.*", "", .data[["prot_acc"]])) 
+  
+  df <- rm_diann_empties_long(
+    df = df, label_scheme_full = label_scheme_full, pat_raw = pat_raw)
+  
+  # Handles signal peptides
+  df <- local({
+    # Note: column 'gene' not yet available
+    rows <- grepl("\\.\\d+$", df[["prot_acc"]])
+    
+    if (sum(rows)) {
+      df[["pep_is_signal"]] <- FALSE
+      dfx <- df[rows, ]
+      dfx[["pep_is_signal"]] <- TRUE
+      dfx[["prot_acc"]] <- gsub("\\.\\d+$", "", dfx[["prot_acc"]])
+      dfx[["prot_accs"]] <- gsub("\\.[0-9]{3}", "", dfx[["prot_accs"]])
+      dfx[["genes"]] <- gsub("\\.[0-9]{3}", "", dfx[["genes"]])
+      
+      df[rows, ] <- dfx
+    }
+    
+    df
+  })
+  
+  # Annotate proteins
+  df[["All Mapped Proteins"]] <- df[["All Mapped Genes"]] <- NULL
+  df[["Protein.Names"]] <- df[["First.Protein.Description"]] <- NULL
+  
+  # Merge duplicated LCMS
+  # df <- aggrLCMS_DIANN(df)
+  
+  df <- annotPrn(df, fasta = fasta, entrez = entrez)
+  
+  ## Handling double-dipped peptides
+  df <- local({
+    # Should use 'pep_seq' but use 'pep_seq_mod' for safety
+    dup_peps <- df[, c(group_pep_by, "pep_seq_mod")] |>
+      unique() |>
+      dplyr::group_by_at("pep_seq_mod") |>
+      dplyr::filter(dplyr::n_distinct(!!rlang::sym(group_pep_by)) > 1) |>
+      ungroup()
+    
+    dup_peps <- dup_peps |>
+      dplyr::pull("pep_seq_mod") |>
+      unique()
+    
+    dfs <- split(df, df[["pep_seq_mod"]])
+    
+    rows <- names(dfs) %in% dup_peps
+    dfs_dup <- dfs[rows]
+    cols_dup <- which(!colnames(dfs_dup[[1]]) %in% c("RAW", "Intensity"))
+    
+    dfs_dup <- lapply(dfs_dup, function (df_dup) {
+      for (i in cols_dup) {
+        df_dup[[i]] <- df_dup[[i]][[1]]
+      }
+      
+      unique(df_dup)
+    })
+    
+    dfs[rows] <- dfs_dup
+    
+    df <- dplyr::bind_rows(dfs)
+  })
+  
+  df <- unique(df)
+  
+  zzz <- df |>
+    dplyr::summarise(n = dplyr::n(), .by = 
+                       c(prot_acc, prot_mass, prot_accs, genes, pep_razor_unique, pep_seq, pep_seq_mod,
+                         pep_exp_z, pep_seq_modz, gene, prot_desc, prot_len, fasta_name, uniprot_acc, 
+                         uniprot_id, refseq_acc, other_acc, entrez,species, acc_type, RAW)) |>
+    dplyr::filter(n > 1L)
+  
+  xxx <- df |> dplyr::filter(pep_seq_mod == "AAPGYHMAK")
+  uuu <- unique(xxx)
+  nrow(xxx); nrow(uuu)
+  
+  ddd <- xxx[duplicated(xxx) | duplicated(xxx, fromLast = TRUE), ]
+  
+  
+  z1 <- xxx |>
+    dplyr::summarise(n = dplyr::n(), .by = 
+                       c(prot_acc, prot_mass, prot_accs, genes, pep_razor_unique, pep_seq, pep_seq_mod,
+                         pep_exp_z, pep_seq_modz, gene, prot_desc, prot_len, fasta_name, uniprot_acc, 
+                         uniprot_id, refseq_acc, other_acc, entrez,species, acc_type, RAW)) |>
+    dplyr::filter(n > 1L)
+  
+  
+  zzz <- df |>
+    tidyr::pivot_wider(
+      names_from = "RAW",
+      values_from = "Intensity"
+    )
+  
+  # Annotate peptides
+  df <- df |>
+    annotPeppos() |> # NA pep_start if 'prot_acc' not found in FASTA
+    reloc_col_before("pep_seq", "pep_res_after") |>
+    reloc_col_before("pep_res_before", "pep_seq")
+  
+  df <- df |>
+    dplyr::mutate(
+      pep_seq_mod = ifelse(is.na(pep_seq_mod), pep_seq, pep_seq_mod)) |>
+    add_diann_pepseqmod(use_lowercase_aa) |>
+    dplyr::mutate(pep_seq_modz = paste0(pep_seq_mod, "@", pep_exp_z))
+  
+  # df <- df |> dplyr::filter(!duplicated(pep_seq_mod))
+  
+  # Collapse charge states (requires columns 'I000')
+  df <- groupMZPepZ2(df)
+  
+  # Add counts of non-NA values
+  pat_int <- "^I[0-9]{3}[NC]{0,1}"
+  count_nna <- df |>
+    dplyr::select(dplyr::matches(pat_int)) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Ref\\.[0-9]+\\)$"))) |>
+    dplyr::select(-dplyr::matches(paste0(pat_int, "\\s\\(Empty\\.[0-9]+\\)$")))
+  df$count_nna <- rowSums(!is.na(count_nna))
+  
+  # Move intensity columns to the last
+  cols <- dirname(colnames(df)) != "."
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  cols <- grepl("^I000 \\(", colnames(df))
+  df   <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  
+  # Add intensity and log2Ratio fields
+  cols <- grepl("^I000 \\(", colnames(df))
+  dfr  <- dfy <- df[, cols, drop = FALSE]
+  dfrz <- dfrn <- dfr <- sweep(dfr, 1,rowMeans(dfr, na.rm = TRUE), "/") |>
+    log2() |>
+    dplyr::mutate_all(function (x) replace(x, is.infinite(x), NA_real_))
+  
+  colnames(dfy)  <- paste0("N_", colnames(dfy))
+  colnames(dfr)  <- gsub("^I", "log2_R", names(dfr))
+  colnames(dfrn) <- paste0("N_", colnames(dfr))
+  colnames(dfrz) <- paste0("Z_", colnames(dfr))
+  
+  dfy <- dfy |>
+    dplyr::mutate(
+      mean_lint = log10(rowMeans(dfy, na.rm = TRUE)), 
+      mean_lint = ifelse(is.infinite(mean_lint), NA_real_, mean_lint), 
+      mean_lint = round(mean_lint, digits = 2L))
+  
+  df <- dplyr::bind_cols(df[, !cols, drop = FALSE], df[, cols, drop = FALSE])
+  df <- dplyr::bind_cols(df, dfy, dfr, dfrn, dfrz) |>
+    reloc_col_after("mean_lint", "pep_exp_z")
+  
+  df[["pep_seq_modz"]] <- NULL
+  # df[["pep_exp_z"]] <- NULL
+  
+  # Add quality columns
+  prot_n_pep <- df[, group_pep_by, drop = FALSE] |>
+    # unique() |>
+    dplyr::group_by(!!rlang::sym(group_pep_by)) |>
+    dplyr::summarise(prot_n_pep = dplyr::n())
+  
+  df <- df |>
+    dplyr::left_join(prot_n_pep, by = group_pep_by) |>
+    reloc_col_after("prot_n_pep", "prot_desc")
+  
+  ## Outputs
+  readr::write_tsv(df, file.path(out_path, "Peptide.txt"))
+  readr::write_tsv(prot_n_pep, file.path(out_path, "prot_n_pep.txt"))
+  
+  .saveCall <- TRUE
+  
+  invisible(df)
+}
+
+
+rm_diann_empties_long <- function (
+    df, label_scheme_full, pat_raw = "(\\.raw$|\\.d$|_uncalibrated\\.mzML$)")
+{
+  # Align DIA-NN sample IDs with lable_scheme
+  nms  <- colnames(df)
+  df[["RAW"]] <- gsub(pat_raw, "", df[["RAW"]])
+  
+  df <- df |>
+    dplyr::filter(.data[["RAW"]] %in% label_scheme_full[["RAW_File"]])
+  
+  df <- df |>
+    dplyr::mutate(
+      RAW = paste0("I000 (", .data[["RAW"]], ")")
+    )
+}
+
+
 #' Makes DIANN peptide table.
 #' 
 #' @inheritParams normPSM
@@ -4583,16 +4846,22 @@ makePepDIANN <- function (
   
   pat_diann <- "report.pr_matrix.*\\.tsv$"
   fns_diann <- list.files(dat_dir, pattern = pat_diann)
+  n_files <- length(fns_diann)
   
-  if (!length(fns_diann)) {
+  if (!n_files) {
     stop("File(s) not found: '", pat_diann, "'. Copy the file to ", dat_dir, ".")
+  } else if (n_files > 1L) {
+    stop("Multiple input files found. Need to perform a combined search.")
   }
 
+  fns_diann <- file.path(dat_dir, fns_diann)
+  pat_raw <- "(\\.raw$|\\.d$|_uncalibrated\\.mzML$)"
+  
   # Only one combined search results allowed since MBR
   if (TRUE) {
-    fn_diann <- file.path(dat_dir, fns_diann[[1]])
+    fn_diann <- fns_diann[[1]]
   }
-
+  
   df <- fn_diann |>
     readr::read_tsv() |>
     dplyr::rename(
@@ -4603,7 +4872,9 @@ makePepDIANN <- function (
       pep_seq      = Stripped.Sequence, 
       pep_seq_mod  = Modified.Sequence, 
       pep_exp_z    = Precursor.Charge, 
-      pep_seq_modz = Precursor.Id)
+      pep_seq_modz = Precursor.Id) |>
+    # Unexpected ";"
+    dplyr::mutate(prot_acc = sub(";.*", "", .data[["prot_acc"]])) 
   
   df <- rm_diann_empties(df, label_scheme_full)
   
@@ -4615,16 +4886,19 @@ makePepDIANN <- function (
   df <- aggrLCMS_DIANN(df)
   
   # Not expected
+  if (FALSE) {
+    df <- local({
+      rows <- grepl(";", df[["prot_acc"]])
+      dfx <- df[rows, ]
+      df[rows, "prot_acc"] <- sub(";.*?", "", dfx[["prot_acc"]])
+      
+      df
+    })
+  }
+
+  # Handles signal peptides
   df <- local({
-    rows <- grepl(";", df[["prot_acc"]])
-    dfx <- df[rows, ]
-    df[rows, "prot_acc"] <- sub(";.*", "", dfx[["prot_acc"]])
-    
-    df
-  })
-  
-  df <- local({
-    # Column 'gene' not yet available
+    # Note: column 'gene' not yet available
     rows <- grepl("\\.\\d+$", df[["prot_acc"]])
     
     if (sum(rows)) {

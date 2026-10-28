@@ -8,13 +8,14 @@ method.}
 cluster_svmprobs(
   df_prob = NULL,
   sub_type = NULL,
-  col_score = "loc_score",
+  col_score = c("loc_score", "purity"),
   col_fraction = NULL,
   dat_dir = NULL,
   filepath = NULL,
   id = "gene",
   n_clust = NULL,
   choice = c("cmeans", "clara", "kmeans", "pam", "fanny"),
+  scale = TRUE,
   use_cache = FALSE,
   ...
 )
@@ -36,6 +37,8 @@ probabilities (column \code{purity}) and localization scores (column
 \item{n_clust}{The number of clusters.}
 
 \item{choice}{A clustering method.}
+
+\item{scale}{Logical; scale data or not.}
 
 \item{use_cache}{Logical; use cache or not.}
 }

@@ -5,13 +5,11 @@
 \title{A wrapper of classifying subcellular locations.}
 \usage{
 classify_subcellular_supervised(
-  dat_dir = NULL,
-  filepath = NULL,
-  label_scheme = NULL,
   id = "gene",
   species = "human",
   n_clust = 16:36,
   df_ref = NULL,
+  col_ref = NULL,
   col_group = NULL,
   levels_group = NULL,
   col_fraction = NULL,
@@ -21,20 +19,21 @@ classify_subcellular_supervised(
   levels_subtype = NULL,
   col_select = NULL,
   col_order = NULL,
+  col_score = c("loc_score", "purity"),
   type_supervision = c("both", "sole"),
-  qt = 0.75,
+  qt = 0.5,
   min_prot_n_peps = 2L,
   ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
+  adjust_weights = FALSE,
+  dat_dir = NULL,
+  filepath = NULL,
+  label_scheme = NULL,
   make_plot = FALSE,
   seed = 42L,
   ...
 )
 }
 \arguments{
-\item{dat_dir}{The working directory.}
-
-\item{filepath}{A filepath for inputs and outputs.}
-
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
@@ -44,6 +43,11 @@ identifying the database of reference markers.}
 \item{n_clust}{The number of clusters.}
 
 \item{df_ref}{A data frame of reference markers.}
+
+\item{col_ref}{The column key in \code{df_ref} indicating the classes of
+subcellular compartments. The current available value is one of
+\code{location}, \code{location_slim3}. It will be automatically determined
+at the \code{NULL} default.}
 
 \item{levels_group}{The levels of data group for ordering on the X-axis in
 visualization.}
@@ -56,17 +60,27 @@ visualization.}
 
 \item{levels_subtype}{The levels of sample subtypes, e.g., Control, Treated.}
 
+\item{col_score}{The column key to score metrics. \code{loc_score} includes
+entropy effects. \code{purity} uses (pseudo) fraction purity.}
+
 \item{type_supervision}{\code{sole}, supervised learning only; \code{both},
 both supervised and unsupervised learning.}
 
-\item{qt}{The quantile of localization score for thresholding
-subcellular compartment specificity. The default is to use median.}
+\item{qt}{The quantile of localization score for thresholding subcellular
+compartment specificity. The default is to use median.}
 
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
 protein for consideration.}
 
 \item{ranges}{for \code{cost} and \code{gamma} for grid searching with
 \code{radial} kernel.}
+
+\item{adjust_weights}{Logical; adjust class weights by Bayesian's priors or
+not.}
+
+\item{dat_dir}{The working directory.}
+
+\item{filepath}{A filepath for inputs and outputs.}
 
 \item{make_plot}{Logical; an option to plot clusters of probabilities.}
 
@@ -76,51 +90,280 @@ protein for consideration.}
 
 \item{choice}{A clustering method.}
 
-\item{use_cache}{Logical; Should be FALSE. if TRUE, redo trend
-analysis.}
+\item{use_cache}{Logical; Should be FALSE. if TRUE, redo trend analysis.}
 }
 \description{
 A wrapper of classifying subcellular locations.
 }
 \examples{
 \donttest{
-dat_dir <- "my/working/directory"
+### 1. Prepare metadata to workspace
+library(proteoQ)
 
-# The names of organelle compartments can be either (1) coincide with or (2)
-# different to sample fractions.
+species <- "mouse"
+species_lookup <- c(human = "hs", mouse = "mm", rat = "rn")
+abbr_species <- species_lookup[[species]]
 
-## (1) Sample fractions coincide with organelle compartments
-levels_fraction <- c("CP", "NP", "ChA")
-levels_subtype <- c("Veh", "TG")
-levels_ref_compartments <- levels_fraction
+id <- "gene"
+fasta <- c("fasta/file_1.fasta","fasta/crap.fasta")
 
-# c("Veh_CP", "TG_CP", "Veh_NP", "TG_NP", "Veh_ChA", "TG_ChA")
-levels_group <- load_ls_group(dat_dir = dat_dir) |>
-  dplyr::arrange_at("Order") |>
-  dplyr::pull("Group") |>
-  unique()
+dat_dir <- "A/working/directory"
+load_expts()
 
-# 'levels_group' can be either users' provided or deduced automatically.
-classify_subcellular_supervised(
-  dat_dir = dat_dir, id = "gene", species = "human", n_clust = 16:36,
-  col_group = "Group", levels_group = levels_group,
-  col_fraction = "Fraction", levels_fraction = levels_fraction,
-  col_subtype = "Type", levels_subtype = levels_subtype,
-  levels_ref_compartments = levels_ref_compartments)
+### 2. Prepare peptide and protein tables
+## 2.1 Process DIANN inputs
+makePepDIANN(fasta = fasta, use_lowercase_aa = TRUE,)
+makeProtDIANN(fasta = fasta)
 
-## (2) Sample fractions are different to organelle compartments
-data("subcell_mm")
-compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
-levels_ref_compartments <- compartments
-levels_group <- compartments # Assume one 'subtype'
+## 2.2 Standardize peptide and protein data by human subset
+standPep(
+  method_align = "MC", 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_ = exprs(species == !!species),
+)
 
-classify_subcellular_supervised(
-  dat_dir = dat_dir, id = "gene", species = "mouse", n_clust = 16:36,
-  col_group = "Group", # for group summarization of raw expression data
-  levels_group = levels_group, # for the order on the X-axis in visualization
-  col_fraction = "Fraction", # for preparation of summarized expression data
-  levels_fraction = # to replace the colnames of summarized expression data
-    c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
-  levels_ref_compartments = levels_ref_compartments)
+standPrn(
+  method_align = "MC", 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_ = exprs(species == !!species),
+)
+
+### 3. Classification of protein subcellular locations (supervised)
+col_fraction <- "Fraction"
+col_subtype  <- "Type"
+levels_fraction <- c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN")
+levels_subtype  <- "Acute" # preferred a real setting over a NULL value
+
+col_select <- "Select"
+col_group  <- "Group"
+col_order  <- "Order"
+
+if (TRUE) {
+  levels_ref_compartments = c(
+    "Cytosol", "Endosome", "ER", "Golgi", "Nucleus", "Lysosome", 
+    "Mitochondrion", "Peroxisome", "PM", "Proteasome", "Ribosome", 
+    "Centrosome", "P_body", "Stress_granule") # "Chromatin", 
+} else {
+  data(list = paste0("subcell_", abbr_species))
+  levels_ref_compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
 }
+
+colors_ref <- c(
+  Cytosol = "#E41A1C", Nucleus = "#984EA3", Chromatin = "#FF7F00", 
+  Centrosome = "#00BFFF", ER = "#377EB8", Mitochondrion = "#4DAF4A", 
+  Lysosome = "#FFFF33", Golgi = "#008080", PM = "#A65628", 
+  Proteasome = "#F781BF", Peroxisome = "#3A1188", Endosome = "#808000", 
+  Ribosome = "#882255",P_body = "#99d8c9", Stress_granule = "#fee6ce")
+
+colors_ref <- colors_ref[names(colors_ref) \%in\% levels_ref_compartments]
+
+# Reference markers
+col_ref <- "location"
+
+df_ref <- load_ref_markers(
+  species = species, col_ref = col_ref, 
+  levels_ref_compartments = levels_ref_compartments
+)
+
+# Construct group levels at the format of "[levels_subtype]_[levels_fraction]"
+if (TRUE) {
+  grid <- expand.grid(subtype = levels_subtype, 
+                      levels_ref_compartments = levels_ref_compartments)
+  levels_group <- paste0(grid$subtype, "_", grid$levels_ref_compartments)
+  rm(list = "grid")
+} else {
+  if (FALSE) {
+    load(file.path(dat_dir, "label_scheme.rda")) # loaded object: label_scheme
+    levels_group <- c(outer(levels_subtype, levels_fraction, paste, sep = "_"))
+    stopifnot(all(levels_group \%in\% label_scheme[[col_group]]))
+  }
+}
+
+### 3. The first pass
+n_clust <- 16:36
+min_prot_n_peps <- 2
+
+## 3.1 Initial unsupervised classification by using the current maker database
+## Initial SVM classification to assess marker qualities
+classify_subcellular_supervised(
+  id = id, species = species, n_clust = n_clust,
+  col_group = col_group, levels_group = levels_group, 
+  col_fraction = col_fraction, levels_fraction = levels_fraction,
+  col_subtype = col_subtype, levels_subtype = levels_subtype, 
+  df_ref = df_ref, col_ref = col_ref, 
+  levels_ref_compartments = levels_ref_compartments, 
+  
+  # Sole SVM without prior weight adjustments
+  type_supervision = "sole", 
+  adjust_weights = FALSE, 
+)
+
+## 3.2 UMAP visualization of marker proteins
+# Each facet corresponding to a pseudo fraction
+plot_prnSubcell_UMAP(
+  species = species, 
+  
+  # Pseudo since sample fractions do not coincide with cellular compartments
+  type_fraction = "pseudo", 
+  
+  # "log10Int" for consistency with SVM learning in 'classify_subcellular_supervised'
+  key_col = "log10Int",
+  
+  col_group = col_group, levels_group = levels_group, 
+  col_subtype = col_subtype, levels_subtype = levels_subtype, 
+  
+  # 'col_fraction' encodes pseudo fraction at type_fraction = "pseudo"
+  col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  
+  levels_pred = levels_ref_compartments, 
+  
+  # Reference database
+  df_ref = df_ref, col_ref = col_ref, 
+
+  # Map markers to the full proteome 
+  highlight_markers = TRUE, colors_ref = colors_ref, 
+  
+  # Color-code markers by 'levels_ref_compartments'
+  levels_ref_compartments = levels_ref_compartments,
+
+  # Define the type of background; each facet correspond to a pseudo fraction
+  wrap_facets = TRUE, wrap_facets_by = col_fraction, 
+
+  # Control the aesthetics
+  xmin = -8, xmax = 10, ymin = -12, ymax = 8, nrow = 2, ncol = 7, 
+  break_width = 1L, hide_grids = FALSE, drop = TRUE, 
+  width_combined = 5.75, height_combined = 4, 
+  width_sep = 21, height_sep = 6, 
+  ext = "png", 
+  
+  # Use cache UMAP coordinates when available
+  use_cache = TRUE,
+  seed = 123,
+)
+
+## 3.3 User-defined polygons for identifying markers according to the above UMAP
+polygons <- list(
+  Acute = list(
+    Cytosol = list(x = c(-7, 4.5, 4.5, -7), y = c(1, 1, 8, 8)), 
+    Endosome = list(x = c(4.5, 8, 8, 4.5), y = c(1, 1, 5, 5)), 
+    ER = list(x = c(3, 7, 7, 3), y = c(-4.5, -4.5, 5, 5)), 
+    Golgi = list(x = c(3, 5, 5, 3), y = c(-4.5, -4.5, -1, -1)), 
+    Nucleus = list(x = c(-8, 6, 6, 2.5, -1, -8), y = c(-4.5, -4.5, -.5, -.5, 2.5, 2.5)), 
+    Lysosome = list(x = c(7.5, 10, 10, 7.5), y = c(-0.5, -0.5, 1.5, 1.5)), 
+    Mitochondrion = list(x = c(-1.5, 1.5, 1.5, -1.5), y = c(-12, -12, -8, -8)), 
+    Peroxisome = list(x = c(4.5, 6.5, 6.5, 4.5), y = c(-2, -2, 3.5, 3.5)), 
+    PM = list(x = c(-.5, 7.5, 7.5, -.5), y = c(1, 1, 4.5, 4.5)), 
+    Proteasome = list(x = c(-7, -4, -4, -7), y = c(2, 2, 3.5, 3.5)), 
+    Ribosome = list(x = c(-7, -4, -4, -7), y = c(-3, -3, -.5, -.5)), 
+    Centrosome = list(x = c(-4, 4, 4, -4), y = c(-4.5, -4.5, 0, 0)), 
+    P_body = list(x = c(-5, -2, -2, -5), y = c(-3, -3, 3, 3)), 
+    Stress_granule = list(x = c(-6.5, -3, -3, -6.5), y = c(-3, -3, 1, 1))
+  )
+)
+
+## 3.4 Confirmatory visualization of polygons
+plot_prnSubcell_UMAP(
+  species = species, type_fraction = "pseudo", key_col = "log10Int", 
+  col_group = col_group, levels_group = levels_group, 
+  col_subtype = col_subtype, levels_subtype = levels_subtype, 
+  col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  levels_pred = levels_ref_compartments, 
+  df_ref = df_ref, col_ref = col_ref, 
+  highlight_markers = TRUE, colors_ref = colors_ref, 
+  levels_ref_compartments = levels_ref_compartments,
+  
+  # Show confirmatory polygons
+  polygons = polygons,
+  
+  # Use polygon interiors for markers
+  exclude_inside = FALSE, 
+
+  wrap_facets = TRUE, wrap_facets_by = col_fraction, 
+  xmin = -8, xmax = 10, ymin = -12, ymax = 8, nrow = 2, ncol = 7, 
+  break_width = 1L, hide_grids = FALSE, drop = TRUE, 
+  width_combined = 5.75, height_combined = 4, 
+  width_sep = 21, height_sep = 6, 
+  ext = "png", 
+  use_cache = TRUE, 
+  seed = 123, 
+)
+
+## 3.5 Update reference database
+df_ref_0 <- df_ref
+
+df_ref <- update_ref_markers(
+    df_ref = df_ref, col_ref = col_ref, id = id, species = species, 
+    col_fraction = col_fraction)
+
+## 3.6 Classification at type_supervision = "both" against the updated reference
+classify_subcellular_supervised(
+  id = id, species = species, n_clust = n_clust,
+  col_group = col_group, levels_group = levels_group, 
+  col_fraction = col_fraction, levels_fraction = levels_fraction,
+  col_subtype = col_subtype, levels_subtype = levels_subtype, 
+  df_ref = df_ref, col_ref = col_ref, 
+  levels_ref_compartments = levels_ref_compartments, 
+  
+  # "both": supervised SVM + unsupervised clustering
+  type_supervision = "both", 
+)
+
+## 3.7 Visualize classification results
+# Separate UMAPs by pseudo fractions
+plot_prnSubcell_UMAP(
+  species = species, 
+  type_fraction = "pseudo", # For finding the input 'df2'
+  key_col = "log10Int",
+  col_group = col_group, levels_group = levels_group, 
+  col_subtype = col_subtype, levels_subtype = levels_subtype,
+  col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  col_pred = "sub_location", levels_pred = levels_ref_compartments, 
+  
+  # Highlight markers
+  highlight_markers = TRUE, 
+  levels_ref_compartments = levels_ref_compartments, colors_ref = colors_ref, 
+
+  alpah = .5, drop = TRUE, 
+  dat_dir = dat_dir, filename = NULL, ext = "png", seed = 123, 
+  xmin = -8, xmax = 10, ymin = -12, ymax = 10, 
+  wrap_facets = TRUE, nrow = 2, ncol = 7, 
+  width_sep = 14, height_sep = 4, 
+  
+  use_cache = TRUE, 
+)
+
+# Combined UMAP
+plot_prnSubcell_UMAP(
+  species = species, 
+  type_fraction = "pseudo", # For finding the input 'df2'
+  key_col = "log10Int",
+  col_group = col_group, levels_group = levels_group, 
+  col_subtype = col_subtype, levels_subtype = levels_subtype,
+  
+  col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  col_pred = "sub_location", levels_pred = levels_ref_compartments, 
+  
+  levels_ref_compartments = levels_ref_compartments, colors_ref = colors_ref, 
+  
+  alpah = .5, drop = TRUE, 
+  dat_dir = dat_dir, filename = NULL, ext = "png", seed = 123, 
+  xmin = -8, xmax = 10, ymin = -12, ymax = 10, 
+  wrap_facets = TRUE, nrow = 2, ncol = 7, 
+  width_sep = 14, height_sep = 4, 
+  width_combined = 5.5, height_combined = 4, 
+  
+  use_cache = TRUE, 
+)
+}
+
 }

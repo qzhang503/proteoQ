@@ -11,6 +11,7 @@ svmSubcell(
   filepath = NULL,
   label_scheme_sub = NULL,
   df_ref = NULL,
+  col_ref = NULL,
   n_clust = NULL,
   col_y = "location",
   col_group = NULL,
@@ -20,7 +21,9 @@ svmSubcell(
   u_subtypes = NULL,
   col_fraction = NULL,
   levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
+  levels_ref_compartments = NULL,
   ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
+  adjust_weights = TRUE,
   use_cache = FALSE,
   seed = 42,
   ...
@@ -55,6 +58,9 @@ only one subtype.}
 
 \item{ranges}{for \code{cost} and \code{gamma} for grid searching with
 \code{radial} kernel.}
+
+\item{adjust_weights}{Logical; adjust class weights by Bayesian's priors
+or not.}
 
 \item{use_cache}{Logical; use cache or not.}
 

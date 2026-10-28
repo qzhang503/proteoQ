@@ -4,10 +4,15 @@
 \alias{load_ref_markers}
 \title{Helper in loading data of marker proteins.}
 \usage{
-load_ref_markers(df_markers = NULL, species = "hs", levels_ref_compartments)
+load_ref_markers(
+  df_ref = NULL,
+  col_ref = c("location", "location_slim3"),
+  species = "human",
+  levels_ref_compartments = NULL
+)
 }
 \arguments{
-\item{df_markers}{A data frame of marker proteins.}
+\item{df_ref}{A data frame of marker proteins.}
 
 \item{species}{An species name.}
 

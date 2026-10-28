@@ -11,6 +11,7 @@ prepSubcell(
   filepath = NULL,
   label_scheme_sub = NULL,
   df_ref = NULL,
+  col_ref = NULL,
   n_clust = NULL,
   key_col = "log10Int",
   col_group = NULL,
@@ -19,6 +20,7 @@ prepSubcell(
   u_subtypes = NULL,
   col_fraction = NULL,
   levels_fraction = c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN"),
+  levels_ref_compartments = NULL,
   ...
 )
 }

@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -312,6 +313,8 @@
 # impPepNA
 # find_mbr_ms1files
 # rm_diann_empties
+# makePepDIANNs
+# rm_diann_empties_long
 # makePepDIANN
 # makeProtDIANN
 # rm_spn_empties
@@ -512,25 +515,34 @@
 #
 # $subcellular.R
 # plotSubcellular
+# make_sub_location
 # threshold_subcell_by_int
-# plot_prnSubcellular_UMAP
 # plotSubcellular_sub
 # make_subcell_plot
-# hclassify_trends
-# classify_trends
+# hassign_compartment_to_trend_cluster
+# assign_compartment_to_trend_cluster
 # plot_prnSubcellular
 # svmSubcell
 # train_loc_svm
 # prepSubcell
-# make_f10_umap
+# smake_f10_umap
 # hmake_subcell_expr
 # make_subcell_expr
 # cluster_svmprobs
+# join_subcell_group
 # classify_subcellular_supervised
 # classify_subcellular_unsupervised
 # check_subcell
 # plot_prnSubcell_UMAP
+# find_tethers
+# find_tethers_by_subtype
 # plot_umap
+# prep_subcell_colors
+# load_ref_markers
+# update_ref_markers
+# sep_data_by_subtype
+# plot_sc_markers
+# plot_sc_markers_by_subtype
 # update_subell_by_contr
 # update_subcell_by_fml
 # update_subcell
@@ -541,10 +553,6 @@
 # make_transloc_scatter
 # update_subcellular
 # hupdate_subcellular
-# plot_subcell_markers
-# find_tetherome_by_subtype
-# plot_subcell_markers_by_subtype
-# plot_subcell_markers_by_fraction
 # hremove_contams
 # remove_contams
 #

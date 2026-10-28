@@ -9,7 +9,6 @@ plot_sc_markers_by_subtype(
   subtype,
   polygons = NULL,
   draw_polygon = TRUE,
-  my_colors = NULL,
   id = "gene",
   col_x = "Group",
   col_fraction = "Fraction",
@@ -17,18 +16,26 @@ plot_sc_markers_by_subtype(
   col_subtype = "Type",
   levels_subtype = NULL,
   levels_ref_compartments = NULL,
+  colors_ref = NULL,
+  col_ref = c("location", "location_slim3"),
   dat_dir = NULL,
   filepath = NULL,
   ext = "png",
+  wrap_facet = TRUE,
+  wrap_facets_by = col_fraction,
+  alpha = 1,
+  break_width = 5L,
+  hide_grids = TRUE,
+  drop = FALSE,
+  xmin = -12,
+  xmax = 12,
+  ymin = -12,
+  ymax = 12,
   ncol = 7L,
   nrow = 2L,
   width = 14,
   height = 3,
   dpi = 600,
-  break_width = 5L,
-  hide_grids = TRUE,
-  wrap_facet = TRUE,
-  drop = FALSE,
   ...
 )
 }
@@ -40,8 +47,6 @@ plot_sc_markers_by_subtype(
 \item{polygons}{The vertices of polygons.}
 
 \item{draw_polygon}{Logical; draw polygon or not.}
-
-\item{my_colors}{A color scheme.}
 
 \item{id}{An identifier.}
 
@@ -59,17 +64,19 @@ plot_sc_markers_by_subtype(
 compartments. Set \code{levels_ref_compartments = NULL} for automatic
 determination.}
 
+\item{colors_ref}{A color scheme.}
+
 \item{dat_dir}{A workding directory.}
 
 \item{filepath}{A file path to inputs and outputs.}
 
 \item{ext}{An file name extension.}
 
+\item{wrap_facet}{Logical; wrap_facet or not.}
+
 \item{break_width}{The width of X and Y breaks.}
 
 \item{hide_grids}{Logical; hide grid lines or not.}
-
-\item{wrap_facet}{Logical; wrap_facet or not.}
 
 \item{drop}{Drop unknown levels or not.}
 }
