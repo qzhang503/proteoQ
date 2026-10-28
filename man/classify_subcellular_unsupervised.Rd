@@ -74,13 +74,8 @@ species <- "human"
 species_lookup <- c(human = "hs", mouse = "mm", rat = "rn")
 abbr_species <- species_lookup[[species]]
 
-# fasta <- c("fasta/file_1.fasta","fasta/crap.fasta")
-# dat_dir <- "A/working/directory"
-
-fasta <- c("D:/QZ/dbs/fasta/uniprot/uniprotkb_hs_2025_09_19.fasta",
-           "D:/QZ/dbs/fasta/crap/crap.fasta")
-
-dat_dir <- "D:/MSDATA/Exploris480/Yi_Wang/HEK293T_ChESS/proteoQ/CP_NP_ChA_tetherome_foo"
+fasta <- c("fasta/file_1.fasta","fasta/crap.fasta")
+dat_dir <- "A/working/directory"
 
 # Metadata file: expt_smry.txt; 
 # auto-generated frac_smry.txt if no peptide pre-fractionation
