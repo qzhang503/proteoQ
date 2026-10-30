@@ -13,7 +13,6 @@ svmSubcell(
   df_ref = NULL,
   col_ref = NULL,
   n_clust = NULL,
-  col_y = "location",
   col_group = NULL,
   levels_group = NULL,
   col_subtype = NULL,
@@ -40,9 +39,9 @@ svmSubcell(
 
 \item{df_ref}{A data frame of reference markers.}
 
-\item{n_clust}{The number of clusters.}
+\item{col_ref}{The column key in \code{df_ref} for training labels.}
 
-\item{col_y}{The column key in \code{df_ref} for training labels.}
+\item{n_clust}{The number of clusters.}
 
 \item{col_subtype}{Only applicable to subcellular data analysis for assessing
 sub-group fraction purity etc. Character string to a column key in

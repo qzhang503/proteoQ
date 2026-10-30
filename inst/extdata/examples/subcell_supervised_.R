@@ -7,9 +7,11 @@ species_lookup <- c(human = "hs", mouse = "mm", rat = "rn")
 abbr_species <- species_lookup[[species]]
 
 id <- "gene"
+
 fasta <- c("fasta/file_1.fasta","fasta/crap.fasta")
 
 dat_dir <- "A/working/directory"
+
 load_expts()
 
 ### 2. Prepare peptide and protein tables
@@ -42,23 +44,18 @@ standPrn(
 
 ### 3. Classification of protein subcellular locations (supervised)
 col_fraction <- "Fraction"
-col_subtype  <- "Type"
 levels_fraction <- c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN")
+
+col_subtype  <- "Type"
 levels_subtype  <- "Acute" # preferred a real setting over a NULL value
 
 col_select <- "Select"
-col_group  <- "Group"
 col_order  <- "Order"
 
-if (TRUE) {
-  levels_ref_compartments = c(
-    "Cytosol", "Endosome", "ER", "Golgi", "Nucleus", "Lysosome", 
-    "Mitochondrion", "Peroxisome", "PM", "Proteasome", "Ribosome", 
-    "Centrosome", "P_body", "Stress_granule") # "Chromatin", 
-} else {
-  data(list = paste0("subcell_", abbr_species))
-  levels_ref_compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
-}
+levels_ref_compartments = c(
+  "Cytosol", "Endosome", "ER", "Golgi", "Nucleus", "Lysosome", 
+  "Mitochondrion", "Peroxisome", "PM", "Proteasome", "Ribosome", 
+  "Centrosome", "P_body", "Stress_granule") # "Chromatin", 
 
 colors_ref <- c(
   Cytosol = "#E41A1C", Nucleus = "#984EA3", Chromatin = "#FF7F00", 
@@ -78,25 +75,16 @@ df_ref <- load_ref_markers(
 )
 
 # Construct group levels at the format of "[levels_subtype]_[levels_fraction]"
-if (TRUE) {
-  grid <- expand.grid(subtype = levels_subtype, 
-                      levels_ref_compartments = levels_ref_compartments)
-  levels_group <- paste0(grid$subtype, "_", grid$levels_ref_compartments)
-  rm(list = "grid")
-} else {
-  if (FALSE) {
-    load(file.path(dat_dir, "label_scheme.rda")) # loaded object: label_scheme
-    levels_group <- c(outer(levels_subtype, levels_fraction, paste, sep = "_"))
-    stopifnot(all(levels_group %in% label_scheme[[col_group]]))
-  }
-}
+col_group  <- "Group"
+levels_pred <- levels_ref_compartments
+levels_group <- c(outer(levels_subtype, levels_pred, paste, sep = "_"))
 
 ### 3. The first pass
+## 3.1 Initial unsupervised classification by using the current maker database
+## Initial SVM classification to assess marker qualities
 n_clust <- 16:36
 min_prot_n_peps <- 2
 
-## 3.1 Initial unsupervised classification by using the current maker database
-## Initial SVM classification to assess marker qualities
 classify_subcellular_supervised(
   id = id, species = species, n_clust = n_clust,
   col_group = col_group, levels_group = levels_group, 
@@ -112,11 +100,13 @@ classify_subcellular_supervised(
 
 ## 3.2 UMAP visualization of marker proteins
 # Each facet corresponding to a pseudo fraction
+method_supervision <- "supervised"
+
 plot_prnSubcell_UMAP(
   species = species, 
   
   # Pseudo since sample fractions do not coincide with cellular compartments
-  type_fraction = "pseudo", 
+  method_supervision = method_supervision, 
   
   # "log10Int" for consistency with SVM learning in 'classify_subcellular_supervised'
   key_col = "log10Int",
@@ -175,7 +165,8 @@ polygons <- list(
 
 ## 3.4 Confirmatory visualization of polygons
 plot_prnSubcell_UMAP(
-  species = species, type_fraction = "pseudo", key_col = "log10Int", 
+  species = species, method_supervision = method_supervision, 
+  key_col = "log10Int", 
   col_group = col_group, levels_group = levels_group, 
   col_subtype = col_subtype, levels_subtype = levels_subtype, 
   col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
@@ -224,7 +215,7 @@ classify_subcellular_supervised(
 # Separate UMAPs by pseudo fractions
 plot_prnSubcell_UMAP(
   species = species, 
-  type_fraction = "pseudo", # For finding the input 'df2'
+  method_supervision = method_supervision, 
   key_col = "log10Int",
   col_group = col_group, levels_group = levels_group, 
   col_subtype = col_subtype, levels_subtype = levels_subtype,
@@ -247,7 +238,7 @@ plot_prnSubcell_UMAP(
 # Combined UMAP
 plot_prnSubcell_UMAP(
   species = species, 
-  type_fraction = "pseudo", # For finding the input 'df2'
+  method_supervision = method_supervision, 
   key_col = "log10Int",
   col_group = col_group, levels_group = levels_group, 
   col_subtype = col_subtype, levels_subtype = levels_subtype,
@@ -266,5 +257,6 @@ plot_prnSubcell_UMAP(
   
   use_cache = TRUE, 
 )
+
 }
 

@@ -1047,7 +1047,7 @@ plot_prnSubcellular <- function (
 #'
 #' @param species Species in one of human, mouse and rat.
 #' @param id Identifier.
-#' @param col_y The column key in \code{df_ref} for training labels.
+#' @param col_ref The column key in \code{df_ref} for training labels.
 #' @param dat_dir The current working directory.
 #' @param filepath The filepath of inputs and outputs.
 #' @param n_clust The number of clusters.
@@ -1064,8 +1064,7 @@ plot_prnSubcellular <- function (
 #' @inheritParams anal_prnTrend col_subtype
 svmSubcell <- function (
     species = "human", id = "gene", dat_dir = NULL, filepath = NULL, 
-    label_scheme_sub = NULL, df_ref = NULL, col_ref = NULL, 
-    n_clust = NULL, col_y = "location", 
+    label_scheme_sub = NULL, df_ref = NULL, col_ref = NULL, n_clust = NULL, 
     col_group = NULL, levels_group = NULL, 
     col_subtype = NULL, levels_subtype = NULL, u_subtypes = NULL, 
     col_fraction = NULL, 
@@ -1107,11 +1106,11 @@ svmSubcell <- function (
   ## (2) Results by sub-types
   res <- vector("list", length(df_exprs))
   names(res) <- names(df_exprs)
-  
+
   for (i in seq_along(res)) {
     res[[i]] <- train_loc_svm(
       df_expr = df_exprs[[i]], sub_type = u_subtypes[[i]], 
-      df_ref = df_ref, id = id, col_y = col_y, col_subtype = col_subtype, 
+      df_ref = df_ref, col_y = col_ref, id = id, col_subtype = col_subtype, 
       col_fraction = col_fraction, filepath = filepath, ranges = ranges, 
       adjust_weights = adjust_weights, 
       use_cache = use_cache, seed = seed)
@@ -1360,10 +1359,6 @@ prepSubcell <- function (
   }
   
   if (!col_subtype %in% names(df)) {
-    if (length(u_subtypes) > 1L) {
-      stop("Developer: expect exactly one subtype.")
-    }
-
     df <- dplyr::bind_cols(df, sc_lookup[rows, col_subtype])
   }
   
@@ -1939,7 +1934,7 @@ classify_subcellular_supervised <- function (
 
   ### (5) Classify subcellular compartments by medium statistics
   plot_prnSubcellular(
-    col_order = "colnames", # X-axix ordered by compartment
+    col_order = "colnames", # X-axis ordered by compartment
     levels_group = levels_group, 
     col_subtype = col_subtype, 
     levels_subtype = levels_subtype,
@@ -2136,16 +2131,23 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #' @param label_scheme The metadata generated from \link{load_expts}.
 #' @param id An identifier.
 #' @param species The species.
-#' @param df_ref A data frame of reference markers. Automatically determined
-#'   at \code{NULL}.
+#' @param df_ref A data frame of reference markers. Automatically determined at
+#'   \code{NULL}.
 #' @param n_clust Not used. The number of clusters.
 #' @param key_col The key column where the values being used for UMAP.
 #' @param col_pred The prediction column.
-#' @param type_fraction The type of sub-cellular fraction. At the value of
-#'   \code{matched}, the experimental fractions matches biological compartments,
-#'   e.g., CP, NP and ChA. At the value of \code{pseudo}, the experimental
-#'   fractions (e.g., F1, F2 etc.) are different from biological compartments
-#'   (e.g. Centrosome, ER, etc.).
+#' @param method_supervision The method of learning at either \code{supervised}
+#'   or \code{unsupervised}.
+#'
+#'   At \code{unsupervised}, experimental fractions matches biological
+#'   compartments, e.g., CP, NP and ChA.
+#'
+#'   At \code{supervised}, experimental fractions (e.g. F1, F2, etc.) are
+#'   typically different from biological compartments (e.g. Centrosome, ER,
+#'   etc.). 
+#'   
+#'   Nevertheless, \code{supervised} learning (SVM) can still be applied where
+#'   experimental fractions coincide biological compartments. 
 #'
 #'   The information will be used to decide which secondary file (df2) to used
 #'   and to join the encoding of sub-cellular locations therein for color
@@ -2187,7 +2189,7 @@ plot_prnSubcell_UMAP <- function (
     df_ref = NULL, col_ref = c("location", "location_slim3"), 
     highlight_markers = FALSE, levels_ref_compartments = NULL, colors_ref = NULL, 
     n_clust = 16:36, key_col = c("log2FC", "log10Int"), 
-    type_fraction = c("matched", "pseudo"), 
+    method_supervision = c("unsupervised", "supervised"), 
     # col_pred = "sub_location", 
     levels_pred = NULL, 
     col_fraction = NULL, levels_fraction =  NULL, colors_frac = NULL, 
@@ -2236,7 +2238,7 @@ plot_prnSubcell_UMAP <- function (
   }
   
   ### 0. Metadata etc.
-  if (is.null(dat_dir)) dat_dir  <- get_gl_dat_dir()
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
   if (is.null(filepath)) filepath <- file.path(dat_dir, "Protein", "Trend")
   if (is.null(col_group)) col_group <- "Group"
   if (is.null(col_subtype)) col_subtype <- "Type"
@@ -2244,7 +2246,7 @@ plot_prnSubcell_UMAP <- function (
   
   message("The output path: ", filepath)
   
-  type_fraction <- match.arg(type_fraction)
+  method_supervision <- match.arg(method_supervision)
   key_col <- match.arg(key_col)
   col_x   <- col_group
   col_ref <- match.arg(col_ref)
@@ -2273,18 +2275,18 @@ plot_prnSubcell_UMAP <- function (
   #  may be excluded by users for UMAP visualization 
   # is_pseudo_fraction <- !setequal(levels_fraction, levels_ref_compartments)
 
-  ### 2. Find input `df2` of classication probabilities
-  files_2 <- if (type_fraction == "pseudo") {
+  ### 2. Find input `df2` of classification probabilities
+  files_2 <- if (method_supervision == "supervised") {
     find_trend_df2(
       df2 = df2, n_clust = NULL, 
       pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
       ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
-  } else if (type_fraction == "matched") {
+  } else if (method_supervision == "unsupervised") {
     find_trend_df2(
       df2 = df2, n_clust = NULL, 
       scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
   } else {
-    stop("Unknown 'type_fraction'.")
+    stop("Unknown 'method_supervision'.")
   }
   
   if (!length(files_2)) {
@@ -2305,7 +2307,7 @@ plot_prnSubcell_UMAP <- function (
     dplyr::left_join(df_ref, by = id)
   
   # Note: overrule the supplied 'col_pred = sub_location'
-  if (type_fraction == "pseudo") {
+  if (method_supervision == "supervised") {
     col_pred <- "svm"
     
     df <- df |>
@@ -2313,7 +2315,7 @@ plot_prnSubcell_UMAP <- function (
         dplyr::across(dplyr::all_of(c(id, col_subtype)))) |>
       dplyr::slice_max(order_by = purity, n = 1, with_ties = FALSE) |>
       dplyr::ungroup()
-  } else if (type_fraction == "matched") {
+  } else if (method_supervision == "unsupervised") {
     col_pred <- "sub_location"
     
     if (!is.null(levels_pred)) {
@@ -2337,7 +2339,7 @@ plot_prnSubcell_UMAP <- function (
           factor(!!rlang::sym(col_subtype), levels = levels_subtype))
   }
   
-  # 'col_fraction' encodes pseudo fraction at type_fraction = "pseudo"
+  # 'col_fraction' encodes pseudo fraction at method_supervision = "supervised"
   if (length(col_fraction) && length(levels_fraction)) {
     df <- df |>
       dplyr::filter(.data[[col_fraction]] %in% levels_fraction) |>
@@ -2347,11 +2349,31 @@ plot_prnSubcell_UMAP <- function (
   }
   
   if (col_group %in% cnms && length(levels_group)) {
+    local({
+      u_grps <- unique(df[[col_group]])
+      bads <- levels_group[!levels_group %in% u_grps]
+      
+      if (length(bads)) {
+        warning(
+          "The following 'levels_group' not found under the column '", 
+          paste(bads, collapse = ", "))
+        
+        warning(
+          "The following group levels were found in input data: ", 
+          paste(u_grps, collapse = ", ")
+        )
+      }
+    })
+
     df <- df |> 
       dplyr::filter(.data[[col_group]] %in% levels_group) |>
       dplyr::mutate(
         !!col_group := 
           factor(!!rlang::sym(col_group), levels = levels_group))
+    
+    if (!nrow(df)) {
+      stop("No data entries available after subsetting by 'levels_group.'")
+    }
   }
 
   if (length(col_pred) && length(levels_pred)) {
@@ -2367,15 +2389,15 @@ plot_prnSubcell_UMAP <- function (
   }
 
   if (is.null(filename)) {
-    fn_prefix <- if (type_fraction == "matched") {
+    fn_prefix <- if (method_supervision == "unsupervised") {
       paste0(tools::file_path_sans_ext(file_2), "_umap")
-    } else if (type_fraction == "pseudo") {
+    } else if (method_supervision == "supervised") {
       paste0(tools::file_path_sans_ext(file_2), "_sumap")
     } else {
-      stop("Unknown 'type_fraction'.")
+      stop("Unknown 'method_supervision'.")
     }
 
-    fn_suffix <- ext
+    fn_suffix <- "png"
     filename  <- paste0(fn_prefix, ".", fn_suffix)
   } else {
     fn_prefix <- tools::file_path_sans_ext(filename)
@@ -2465,7 +2487,7 @@ plot_prnSubcell_UMAP <- function (
       !!col_subtype := 
         factor(!!rlang::sym(col_subtype), levels = levels_subtype))
   
-  # 'col_fraction' encodes pseudo fractions at 'type_fraction' of 'pseudo'
+  # 'col_fraction' encodes pseudo fractions at 'method_supervision = supervised'
   df <- df |>
     dplyr::arrange_at(c(col_group, col_fraction, col_subtype))
 
@@ -2513,7 +2535,7 @@ plot_prnSubcell_UMAP <- function (
     alpha = alpha, 
     break_width = break_width, hide_grids = hide_grids, 
     wrap_facet = wrap_facet, wrap_facets_by = wrap_facets_by, 
-    drop = drop, ext = ext, 
+    drop = drop, ext = fn_suffix, 
     width_combined = width_combined, height_combined = height_combined, 
     width_sep = width_sep, height_sep = height_sep, 
     !!!dots)
@@ -2613,7 +2635,7 @@ find_tethers_by_subtype <- function (
 }
 
 
-#' Help of plotting UMAP results.
+#' Helper of plotting UMAP results.
 #'
 #' @param df A data frame combining UMAP, marker and trend results.
 #' @param id An identifier.
@@ -2625,6 +2647,7 @@ find_tethers_by_subtype <- function (
 #' @param fn_prefix A file name prefix.
 #' @param fn_suffix A file name suffix.
 #' @param ... Additional parameters for plot controls.
+#' @inheritParams plot_prnSubcell_UMAP
 plot_umap <- function (
     df, polygons = NULL, draw_polygon = FALSE, highlight_markers = FALSE, 
     id = "gene", 
@@ -2728,7 +2751,7 @@ plot_umap <- function (
       fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
       xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
       break_width = break_width, drop = drop, hide_grids = hide_grids, 
-      ncol = ncol, nrow = nrow, 
+      ncol = ncol, nrow = nrow, alpha = alpha, 
       width_sep = width_sep, height_sep = height_sep, 
       width_combined = width_combined, height = height_combined, dpi = dpi, 
       !!!dots)
@@ -2738,13 +2761,16 @@ plot_umap <- function (
 }
 
 
+#' Plot subcellular heat map without highlighting markers.
+#' 
+#' @inheritParams plot_umap
 plot_sc <- function (
     polygons = NULL, df = NULL, col_pred = NULL, levels_pred = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
     col_fraction = NULL, levels_fraction = NULL, colors_frac = NULL, 
     dat_dir = NULL, filepath = NULL, fn_prefix = NULL, fn_suffix = NULL, 
     xmin = -12, xmax = 12, ymin = -12, ymax = 12, ncol = 3, nrow = 1, 
-    break_width = 5, drop = TRUE, hide_grids = TRUE, 
+    break_width = 5, drop = TRUE, hide_grids = TRUE, alpha = 1, 
     width_sep = 12, height_sep = 4, 
     width_combined = 4, height_combined = 4, dpi = 600, ...)
 {
@@ -2765,7 +2791,7 @@ plot_sc <- function (
     geom_point(
       data = df, 
       aes(x = UMAP1, y = UMAP2, color = !!rlang::sym(col_pred)), 
-      shape = 46, size = 1, alpha = 1.0) +
+      shape = 46, size = 1, alpha = alpha) +
     scale_color_manual(values = colors_frac, breaks = levels_pred, 
                        drop = drop) + 
     scale_x_continuous(
@@ -2846,6 +2872,9 @@ plot_sc <- function (
 }
 
 
+#' Make a data frame of polygons.
+#' 
+#' @inheritParams plot_prnSubcell_UMAP
 make_polygons <- function (
     polygons = NULL, levels_subtype = NULL, n_subtypes = NULL, 
     levels_fraction = NULL, col_subtype = NULL)
@@ -2874,6 +2903,9 @@ make_polygons <- function (
 }
 
 
+#' Make a data frame of polygons by subtype.
+#' 
+#' @inheritParams plot_prnSubcell_UMAP
 make_polygons_by_subtype <- function (
     polygons = NULL, levels_fraction = NULL, n_fracs = NULL)
 {

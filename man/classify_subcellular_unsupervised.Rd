@@ -167,11 +167,13 @@ levels_ref_compartments <- names(colors_ref)
 stopifnot(all(levels_ref_compartments \%in\% unique(df_ref[["location"]])))
 
 # Map markers to the whole proteome
+method_supervision <- "unsupervised"
+
 plot_prnSubcell_UMAP(
   species = species, 
   
   # In this case, sample fractions match cellular compartments
-  type_fraction = "matched", 
+  method_supervision = method_supervision, 
   
   # Use "log2FC" for consistency with unsupervised learning in 
   # 'classify_subcellular_unsupervised'
@@ -243,6 +245,44 @@ if (FALSE) {
   )
 }
 
+## Plot TG / Veh only
+if (FALSE) {
+  for (i in seq_along(levels_subtype)) {
+    sub_type <- levels_subtype[[i]]
+    
+    plot_prnSubcell_UMAP(
+      species = species, 
+      method_supervision = method_supervision, 
+      key_col = "log2FC",
+      
+      # Map markers to the full proteome 
+      highlight_markers = FALSE, 
+      # levels_ref_compartments = levels_ref_compartments,
+      
+      col_fraction = col_fraction, levels_fraction = levels_fraction, 
+      colors_frac = colors_frac, 
+      
+      col_group = col_group, levels_group = levels_group, 
+      col_subtype = col_subtype, levels_subtype = sub_type, 
+      
+      wrap_facets = FALSE, wrap_facets_by = col_fraction, 
+      levels_pred = levels_fraction, 
+      
+      xmin = -12, xmax = 12, ymin = -12, ymax = 12, 
+      nrow = 2, ncol = 3, alpha = .5, 
+      break_width = 5, hide_grids = TRUE, drop = TRUE, 
+      width_combined = 3, height_combined = 2, 
+      width_sep = 10, height_sep = 3, 
+      filename = paste0("umap_", sub_type, ".png"), 
+      ext = "png", 
+      
+      use_cache = TRUE,
+      seed = 123,
+    )
+  }
+}
+
+
 ## 4.2 User-defined Polygons of tetherome according to the above marker UMAPs
 polygons <- list(
   Veh = list(
@@ -250,14 +290,14 @@ polygons <- list(
     CP = NULL, 
     # NP = list(x = c(-10, 8, 8, -10), y = c(0, 0, 12, 12)), 
     NP = list(x = c(-8, -4.5, 4, -.5), y = c(4, 2, 11.5, 11.5)), 
-    ChA = NULL
+    ChA = list(x = c(-6.5, -4.5, -1, -1, -4), y = c(-.5, -4, -2, 2, 2))
     ),
   TG = list(
     CP = NULL, 
     # CP = list(x = c(-7.5, 2.5, 2.5, -7.5), y = c(-7.5, -7.5, -5, 0)), 
     # NP = list(x = c(-10, 7.5, 7.5, -10), y = c(.28, 1.8, 10, 10)), 
     NP = list(x = c(-5, 7, -1, -5), y = c(-6.5, -5, -.5, -3)), 
-    ChA = NULL
+    ChA = list(x = c(-10, -5, -5, -6.5, -10), y = c(-1, -1, 4, 5, 1))
     )
 )
 
@@ -265,7 +305,7 @@ polygons <- list(
 # Tetherome identifications (marker_tetherome.tsv)
 plot_prnSubcell_UMAP(
   species = species, 
-  type_fraction = "matched", 
+  method_supervision = method_supervision, 
   key_col = "log2FC",
   highlight_markers = TRUE, 
   df_ref = df_ref, col_ref = "location", colors_ref = colors_ref, 
@@ -285,7 +325,7 @@ plot_prnSubcell_UMAP(
   break_width = 1, hide_grids = FALSE, drop = TRUE, 
   width_combined = 8, height_combined = 4, 
   width_sep = 12, height_sep = 4, 
-  ext = "png", 
+  # ext = "png", 
   
   use_cache = TRUE,
   seed = 123,
@@ -303,7 +343,6 @@ find_from_to_transloc(
   from_to = list(c("CP", "NP"), c("NP", "ChA")), 
   levels_subtype = levels_subtype[1:2], 
   width = 9, height = 3.4)
-
 
 ## 5. Assess statistical p-values at peptide and protein levels
 pepSig(
@@ -326,7 +365,7 @@ update_subcell_stat(rm_tetherome = TRUE)
 
 ### 7. Optional: visualize the updated results via volcano plot
 prnVol(
-  filter_ = exprs(prot_n_pep >= 2L, species == "human", !grepl("^Krt", gene)
+  filter_ = exprs(prot_n_pep >= 2L, species == !!species, !grepl("^Krt", gene)
   ), 
   topn_labels = 6, 
   add_id_table = FALSE, 
@@ -338,7 +377,7 @@ prnVol(
 )
 
 pepVol(
-  filter_ = exprs(species == "human", !grepl("^Krt", gene)), 
+  filter_ = exprs(species == !!species, !grepl("^Krt", gene)), 
   adjP = TRUE, 
   xco = 1.5, yco = 0.05,
   width = 16, height = 6,
@@ -366,9 +405,10 @@ prnGSPAMap(
   width = 11, height = 4.5,
   xmin = -6, xmax = 6, 
   ymin = 0, ymax = 16, 
-  filter_ = exprs(prot_n_pep >= 2L, species == "human", !grepl("^KRT", gene)), 
+  filter_ = exprs(prot_n_pep >= 2L, species == !!species, !grepl("^KRT", gene)), 
   is_subcellular = TRUE, 
 )
+
 }
 
 }

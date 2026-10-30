@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{plot_umap}
 \alias{plot_umap}
-\title{Help of plotting UMAP results.}
+\title{Helper of plotting UMAP results.}
 \usage{
 plot_umap(
   df,
@@ -42,7 +42,21 @@ plot_umap(
 \arguments{
 \item{df}{A data frame combining UMAP, marker and trend results.}
 
+\item{polygons}{The vertices of polygons.}
+
+\item{highlight_markers}{Logical; highlight marker proteins or not.}
+
 \item{id}{An identifier.}
+
+\item{col_pred}{The prediction column.}
+
+\item{col_fraction}{The column key in metadata to subcellular fractions.}
+
+\item{levels_fraction}{The levels of subcellular compartments.}
+
+\item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
+defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
+outside of the polygon.}
 
 \item{col_subtype}{Column key of sample types.}
 
@@ -52,12 +66,27 @@ plot_umap(
 compartments. Set \code{levels_ref_compartments = NULL} for automatic
 determination.}
 
+\item{filepath}{A file path of inputs and outputs. Automatically determined
+at \code{NULL}.}
+
 \item{fn_prefix}{A file name prefix.}
 
 \item{fn_suffix}{A file name suffix.}
 
+\item{alpha}{The levels of transparency for uses in ggplot2.}
+
+\item{width_combined}{The width of a combined plot.}
+
+\item{height_combined}{The height of a combined plot.}
+
+\item{ext}{An extension of output filename, e.g., pdf or png.}
+
+\item{width_sep}{The width of a plot separated by compartments.}
+
+\item{height_sep}{The height of a plot separated by compartments.}
+
 \item{...}{Additional parameters for plot controls.}
 }
 \description{
-Help of plotting UMAP results.
+Helper of plotting UMAP results.
 }

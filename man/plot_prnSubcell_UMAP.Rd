@@ -15,7 +15,7 @@ plot_prnSubcell_UMAP(
   colors_ref = NULL,
   n_clust = 16:36,
   key_col = c("log2FC", "log10Int"),
-  type_fraction = c("matched", "pseudo"),
+  method_supervision = c("unsupervised", "supervised"),
   levels_pred = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
@@ -56,8 +56,8 @@ plot_prnSubcell_UMAP(
 
 \item{species}{The species.}
 
-\item{df_ref}{A data frame of reference markers. Automatically determined
-at \code{NULL}.}
+\item{df_ref}{A data frame of reference markers. Automatically determined at
+\code{NULL}.}
 
 \item{highlight_markers}{Logical; highlight marker proteins or not.}
 
@@ -69,11 +69,18 @@ visualization.}
 
 \item{key_col}{The key column where the values being used for UMAP.}
 
-\item{type_fraction}{The type of sub-cellular fraction. At the value of
-  \code{matched}, the experimental fractions matches biological compartments,
-  e.g., CP, NP and ChA. At the value of \code{pseudo}, the experimental
-  fractions (e.g., F1, F2 etc.) are different from biological compartments
-  (e.g. Centrosome, ER, etc.).
+\item{method_supervision}{The method of learning at either \code{supervised}
+  or \code{unsupervised}.
+
+  At \code{unsupervised}, experimental fractions matches biological
+  compartments, e.g., CP, NP and ChA.
+
+  At \code{supervised}, experimental fractions (e.g. F1, F2, etc.) are
+  typically different from biological compartments (e.g. Centrosome, ER,
+  etc.). 
+  
+  Nevertheless, \code{supervised} learning (SVM) can still be applied where
+  experimental fractions coincide biological compartments. 
 
   The information will be used to decide which secondary file (df2) to used
   and to join the encoding of sub-cellular locations therein for color

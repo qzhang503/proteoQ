@@ -399,42 +399,43 @@ plot_marks_by_pq <- function (
 #' @param filename_ref Reference file name of UniProt and GO.
 #' @param filename_hpa Reference file name of HPA.
 #' @import ggplot2
-plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL, 
-                         sub_dir, db_path, df = NULL, 
-                         df_sc = NULL, subgrp_prefix = "", 
-                         filename_ref = NULL, filename_hpa = NULL, 
-                         file_umap = NULL, 
-                         FUN = umap::umap, 
-                         key_up_go = "location_slim3", 
-                         df_markers = NULL, 
-                         key_col = c("log2FC", "log10Int"), 
-                         pred_type = "bandle", col_subtype = "Type",  
-                         col_fraction = "Fraction", 
-                         levels_subtype = NULL, levels_group = NULL, 
-                         ext = "png", ncol = 3, remove_tethers = FALSE, 
-                         use_cache = TRUE, is_hpa = FALSE, 
-                         poly_x_cp_np = c(-10, 7.5, 7.5, -10), poly_y_cp_np = c(.28, 1.8, 3.0, 10), 
-                         poly_x_np_cha = c(1.5, -.2, 10, 10), poly_y_np_cha = c(-4.333, -10, -10, 10), 
-                         
-                         polygons = list(
-                           Veh = list(
-                             # CP = list(x = c(-5, 0, 0, -5), y = c(-5, -5, -2, -2)), 
-                             CP = NULL, 
-                             # NP = list(x = c(-10, 8, 8, -10), y = c(0, 0, 12, 12)), 
-                             NP = list(x = c(5.5, 8.5, .5, -3.5), y = c(.5, 2.5, 11, 11)), 
-                             ChA = NULL # ChA = list(x = c(1.5, -.2, 10, 10, 0), y = c(-5, -10, -10, 2, 2))
-                           ),
-                           TG = list(
-                             CP = NULL, 
-                             # CP = list(x = c(-7.5, 2.5, 2.5, -7.5), y = c(-7.5, -7.5, -5, 0)), 
-                             # NP = list(x = c(-10, 7.5, 7.5, -10), y = c(.28, 1.8, 10, 10)), 
-                             NP = list(x = c(1, 6, 2, -4.5, -4.5), y = c(.5, 3, 6, 6, 4)), 
-                             ChA = NULL # ChA = list(x = c(1.5, -.2, 10, 10, 5), y = c(-4.333, -10, -10, 10, 10))
-                           )
-                         ), 
-                         
-                         width_p = NULL, height_p = NULL, 
-                         width_px = 3, height_px = 2)
+plot_bandle <- function (
+    id = "gene", dat_dir, dat_dir_pqsvm = NULL, 
+    sub_dir, db_path, df = NULL, 
+    df_sc = NULL, subgrp_prefix = "", 
+    filename_ref = NULL, filename_hpa = NULL, 
+    file_umap = NULL, 
+    FUN = umap::umap, 
+    key_up_go = "location_slim3", 
+    df_markers = NULL, 
+    key_col = c("log2FC", "log10Int"), 
+    pred_type = "bandle", col_subtype = "Type",  
+    col_fraction = "Fraction", 
+    levels_subtype = NULL, levels_group = NULL, 
+    ext = "png", ncol = 3, remove_tethers = FALSE, 
+    use_cache = TRUE, is_hpa = FALSE, 
+    poly_x_cp_np = c(-10, 7.5, 7.5, -10), poly_y_cp_np = c(.28, 1.8, 3.0, 10), 
+    poly_x_np_cha = c(1.5, -.2, 10, 10), poly_y_np_cha = c(-4.333, -10, -10, 10), 
+    
+    polygons = list(
+      Veh = list(
+        # CP = list(x = c(-5, 0, 0, -5), y = c(-5, -5, -2, -2)), 
+        CP = NULL, 
+        # NP = list(x = c(-10, 8, 8, -10), y = c(0, 0, 12, 12)), 
+        NP = list(x = c(-8, -4.5, 4, -.5), y = c(4, 2, 11.5, 11.5)), 
+        ChA = NULL
+      ),
+      TG = list(
+        CP = NULL, 
+        # CP = list(x = c(-7.5, 2.5, 2.5, -7.5), y = c(-7.5, -7.5, -5, 0)), 
+        # NP = list(x = c(-10, 7.5, 7.5, -10), y = c(.28, 1.8, 10, 10)), 
+        NP = list(x = c(-5, 7, -1, -5), y = c(-6.5, -5, -.5, -3)), 
+        ChA = NULL
+      )
+    ), 
+    
+    width_p = NULL, height_p = NULL, 
+    width_px = 3, height_px = 2)
 {
   if (FALSE) {
     polygons = list(
@@ -448,7 +449,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
         ChA = list(x = c(1.5, -.2, 10, 10, 5), y = c(-4.333, -10, -10, 10, 10)))
     )
   }
-
+  
   key_col <- match.arg(key_col)
   col_x <- "Group"
   
@@ -457,7 +458,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
     df <- readr::read_tsv(
       file.path(dat_dir, "Protein", "Trend", proteoQ:::find_trend_df2()[[1]])) |>
       dplyr::filter(.data[[col_x]] %in% levels_group)
-
+    
     df <- df |>
       dplyr::mutate(
         !!col_x := factor(!!rlang::sym(col_x), levels = levels_group), 
@@ -465,7 +466,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
         !!col_fraction := factor(!!rlang::sym(col_fraction), levels = levels_fraction), ) |>
       dplyr::arrange_at(c(col_x, col_fraction, col_subtype))
   }
-
+  
   # Use log2FC
   label_scheme_sub <- load_ls_group(dat_dir = dat_dir) |>
     dplyr::filter(.data[[col_subtype]] %in% levels_subtype)
@@ -478,7 +479,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       dplyr::pull("Group") |>
       unique()
   }
-
+  
   if (key_col == "log10Int") {
     df_expr <- hmake_subcell_expr(
       df = df, id = id, label_scheme_sub = label_scheme_sub, 
@@ -494,10 +495,10 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
   }
   
   if (is.null(file_umap)) {
-    file_umap <- file.path(dat_dir, "Protein", "Trend", 
-                           paste0(key_col, "_", levels_subtype, "_bandle_umap.tsv"))
+    # file_umap <- file.path(dat_dir, "Protein", "Trend", paste0(key_col, "_", levels_subtype, "_bandle_umap.tsv"))
+    file_umap <- file.path(dat_dir, "Protein", "Trend", paste0("umap", "_", levels_subtype, ".tsv"))
   }
-
+  
   if (use_cache && file.exists(file_umap)) {
     df_umap <- readr::read_tsv(file_umap)
     df_umap[[col_subtype]] <- NULL
@@ -517,7 +518,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       df_umap
     })
   }
-
+  
   pred_col <- if (pred_type == "bandle") "tagm.map.allocation" else "svm"
   pval_col <- if (pred_type == "bandle") "tagm.map.probability" else "svm.scores"
   bandle_pred_col <- "pred_bandle"
@@ -544,13 +545,13 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
   
   df_pq <- df[, c(id, col_x, col_fraction, col_subtype, "sub_location")] |>
     dplyr::filter(!is.na(.data[["sub_location"]]))
-
+  
   df_pq <- df_umap |> dplyr::left_join(df_pq, by = id) |>
     dplyr::filter(!is.na(.data[["sub_location"]]))
   
   file_pq_svm <- file.path(dat_dir_pqsvm, "Protein", "Trend", "Protein_svmProb_Z_nclust16.tsv")
   # file_pq_svm <- file.path(dat_dir_pqsvm, "Protein", "Trend", "umap_Veh.tsv")
-
+  
   if (isTRUE(file.exists(file_pq_svm))) {
     df_pq_svm <- local({
       dat_dir_pqsvm <- paste0(dat_dir, '_svm')
@@ -558,7 +559,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       df_pq_svm <- file_pq_svm |>
         readr::read_tsv() |>
         dplyr::filter(.data[[col_subtype]] %in% levels_subtype) # |>
-        # dplyr::rename(!!col_fraction := "compartment")
+      # dplyr::rename(!!col_fraction := "compartment")
       
       df_pq_svm <- df_umap |> dplyr::left_join(df_pq_svm, by = id) |>
         dplyr::filter(!is.na(.data[["sub_location"]]))
@@ -566,7 +567,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
   } else {
     df_pq_svm <- NULL
   }
-
+  
   # Marker proteins
   levels_ref_compartments <- local({
     univ <- unique(df_markers[["location"]])
@@ -656,7 +657,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       }
     }
   })
-
+  
   ## Plot markers (has its own `remove_contams`)
   plot_marks_by_pq(
     df = df_pq, df_markers = df_markers, id = id, sub_dir = sub_dir, 
@@ -683,7 +684,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       key_up_go = key_up_go, col_subtype = col_subtype, 
       levels_subtype = levels_subtype, is_hpa = TRUE)
   }
-    
+  
   if (ok_ref) {
     df_plots <- list(df_ref, df_hpa, df_pq, df_pq_svm, df_bandle, ans_confu)
     key_col_pred <- c("location_slim3", "location_slim3", "sub_location", 
@@ -696,7 +697,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
   }
   
   df_plot_all <- vector("list", length(df_plots))
-
+  
   for (i in seq_along(df_plots)) {
     df_plot <- df_plots[[i]]
     
@@ -715,13 +716,13 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
     df_plot <- df_plot |> 
       dplyr::mutate(!!col_subtype := factor(!!rlang::sym(col_subtype), 
                                             levels = levels_subtype))
-
+    
     if (length(df_plot[[col_fraction]])) {
       n_frac <- length(unique(df_plot[[col_fraction]]))
     } else {
       n_frac <- length(unique(df_plot[[key_col_pred_i]]))
     }
-
+    
     if (n_frac < 1L) n_frac <- 1L
     
     df_plot_all[[i]] <- df_plot |> 
@@ -732,9 +733,9 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
       dplyr::mutate(!!rlang::sym(key_col_pred_i) := 
                       factor(!!rlang::sym(key_col_pred_i), 
                              levels = levels_fraction))
-
+    
     p <- ggplot(df_plot, aes(x = UMAP1, y = UMAP2, 
-                                   color = !!rlang::sym(key_col_pred_i))) +
+                             color = !!rlang::sym(key_col_pred_i))) +
       geom_point(shape = 46, alpha = .5, size = .02) +
       scale_color_manual(
         values = c("CP" = "#E41A1C", "NP" = "#377EB8", "ChA" = "#4DAF4A"),
@@ -765,7 +766,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
           ncol = n_subtype, 
           labeller = labeller(.default = label_value, .multi_line = FALSE))
     }
-
+    
     # No Fraction info from Bandle results; use confusion plot instead
     if (!out_nm_i %in% c("bandle", "Ref", "HPA")) {
       p <- p + 
@@ -854,7 +855,7 @@ plot_bandle <- function (id = "gene", dat_dir, dat_dir_pqsvm = NULL,
                                       "Location_")))
     }
   }
-
+  
   df_plot_all <- df_plot_all |>
     dplyr::bind_rows()
   

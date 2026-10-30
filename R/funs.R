@@ -29,8 +29,9 @@
 # calc_avgpep
 #
 # $funs.R
-# # # # # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
-# # # # # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # # # # [1] "#  [2] \"find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)\""
+# # # # # # # # # # # # # # # # # # # # # # # # # #  [2] "find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)"
+# # # # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
 # # # # # # # # # # # # # # # # # # # # # # find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL)
@@ -537,6 +538,9 @@
 # find_tethers
 # find_tethers_by_subtype
 # plot_umap
+# plot_sc
+# make_polygons
+# make_polygons_by_subtype
 # prep_subcell_colors
 # load_ref_markers
 # update_ref_markers
