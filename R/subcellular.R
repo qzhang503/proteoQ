@@ -27,7 +27,7 @@ plotSubcellular <- function(
     pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", data_type = "Trend", 
     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
     df2 = NULL, filepath = NULL, filename = NULL, 
-    type_supervision = "both", qt = .5, 
+    type_supervision = "both", qt = .5, prob_co = .2, 
     make_plot = TRUE, theme = NULL, ...) 
 {
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
@@ -67,6 +67,7 @@ plotSubcellular <- function(
       fn_suffix = fn_suffix, 
       id = id, 
       qt = qt, 
+      prob_co = prob_co, 
       levels_group = levels_group, 
       col_group = col_group, 
       col_order = col_order, 
@@ -106,6 +107,8 @@ plotSubcellular <- function(
     col_cluster = col_cluster, 
     col_x = col_x, 
     col_y = col_y, 
+    type_supervision = type_supervision, 
+    prob_co = prob_co, 
     tie_method = tie_method)
 
   res_score_co <- lapply(tempdata, `[[`, "res")
@@ -147,17 +150,17 @@ plotSubcellular <- function(
   dfs <- make_sub_location(
     df2 = df2, res_score_co = res_score_co, type_supervision = type_supervision, 
     id = id, dat_dir = dat_dir, filepath = filepath, data_type = data_type, 
-    col_fraction = col_fraction, col_subtype = col_subtype)
+    col_fraction = col_fraction, col_subtype = col_subtype, prob_co = prob_co)
 
   invisible(dfs)
 }
 
 
 #' Helper making the column sub_location in trend results.
-#' 
+#'
 #' @param df2 File names of trend results.
 #' @param res_score_co Score cut-offs of classes (with leading fractions).
-#' @param type_supervision Only for uses with supervised learning: \code{sole},
+#' @param type_supervision For uses with supervised learning: \code{sole},
 #'   supervised learning only; \code{both}, both supervised and unsupervised
 #'   learning.
 #' @param id An identifier.
@@ -169,7 +172,8 @@ plotSubcellular <- function(
 make_sub_location <- function (
     df2, res_score_co, type_supervision = "both", id = "gene", 
     dat_dir = NULL, filepath = NULL, data_type = "Trend", 
-    col_fraction = NULL, col_subtype = NULL)
+    col_fraction = NULL, col_subtype = NULL, 
+    prob_co = .2)
 {
   join_cols <- c(col_fraction, col_subtype)
   names(join_cols) <- c(col_fraction, col_subtype)
@@ -246,6 +250,9 @@ make_sub_location <- function (
     }
     
     # Update data
+    rows <- df[["purity"]] < prob_co & !is.na(df[["sub_location"]])
+    df[["sub_location"]][rows] <- NA_character_
+    
     readr::write_tsv(df, file.path(filepath, fn))
     
     df
@@ -317,7 +324,8 @@ plotSubcellular_sub <- function (
     col_cluster = "cluster", levels_group = NULL, col_fraction = NULL, 
     levels_fraction = NULL, col_subtype = NULL, levels_subtype = NULL, 
     data_type = "Trend", pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", 
-    tie_method = "none", qt = .5, complete_cases = FALSE, panel_ids = NULL, 
+    tie_method = "none", qt = .5, prob_co = .2, 
+    complete_cases = FALSE, panel_ids = NULL, 
     filepath = NULL, label_scheme_sub = NULL, theme = NULL, make_plot = TRUE, 
     dots = NULL)
 {
@@ -458,7 +466,7 @@ plotSubcellular_sub <- function (
   #  subcellular, sample type, etc.
   target_cols <- c("purity", "entropy", col_y)
   
-  # By each panel in a n_clust, e.g., 1:16 in n_clust = 16
+  # By each panel in a n_clust, e.g., 1:16 at n_clust = 16
   df_med <- lapply(split(df, df[[col_cluster]]), function(dfx) {
     dfx <- dfx |>
       dplyr::group_by(.data[[col_x]]) |>
@@ -712,8 +720,8 @@ hassign_compartment_to_trend_cluster <- function (
     df_med = NULL, col_subtype = NULL, col_fraction = NULL,
     levels_ref_compartments = NULL, 
     col_group = NULL, col_order = NULL, col_cluster = "cluster", 
-    col_x = NULL, col_y = NULL, tie_method = "none")
-  
+    col_x = NULL, col_y = NULL, 
+    type_supervision = "both", prob_co = .2, tie_method = "none")
 {
   if (length(col_subtype) && col_subtype %in% names(df_med)) {
     res <- lapply(split(df_med, df_med[[col_subtype]]), function (dfx) {
@@ -930,11 +938,13 @@ assign_compartment_to_trend_cluster <- function (
 #' @param ext The extension of input filenames.
 #' @param data_type The type of input data.
 #' @param tie_method Not used. A method for tie-breaking.
-#' @param type_supervision Only for uses with supervised learning: \code{sole},
+#' @param type_supervision For uses with supervised learning: \code{sole},
 #'   supervised learning only; \code{both}, both supervised and unsupervised
 #'   learning.
 #' @param qt The quantile of localization score for thresholding subcellular
 #'   compartment specificity. The default is to use median.
+#' @param prob_co A cut-off in probabilities at \code{type_supervision =
+#'   "both"}.
 #' @param make_plot Logical; to bypass the plotting at FALSE.
 #' @inheritParams anal_prnTrend
 #' @inheritParams plot_prnTrend
@@ -963,7 +973,7 @@ plot_prnSubcellular <- function (
     col_fraction = NULL, levels_fraction = NULL, 
     levels_ref_compartments = NULL, 
     col_subtype = NULL, levels_subtype = NULL, tie_method = "none", 
-    type_supervision = c("sole", "both"), qt = .5, 
+    type_supervision = c("sole", "both"), qt = .5, prob_co = .2, 
     n_clust = NULL, panel_ids = NULL, 
     pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", ext = "txt", data_type = "Trend", 
     scale_log2r = TRUE, complete_cases = FALSE, 
@@ -993,21 +1003,6 @@ plot_prnSubcellular <- function (
     stop("Value of 'id' need to be one of 'prot_acc', 'gene'.")
   }
   
-  if (FALSE) {
-    tie_method <- if (n_subcell_levs <- length(levels_fraction)) {
-      if (n_subcell_levs <= 3) {
-        "none"
-      }
-      else if (n_subcell_levs <= 6) {
-        "first"
-      } else {
-        "all"
-      }
-    } else {
-      "none"
-    }
-  }
-
   type_supervision <- match.arg(type_supervision)
   tie_method <- "none"
   
@@ -1037,7 +1032,7 @@ plot_prnSubcellular <- function (
               tie_method = tie_method, 
               n_clust = n_clust, 
               pat = pat, ext = ext, data_type = data_type, 
-              type_supervision = type_supervision, qt = qt, 
+              type_supervision = type_supervision, qt = qt, prob_co = prob_co, 
               panel_ids = panel_ids, make_plot = make_plot, 
               theme = theme, ...)
 }
@@ -1784,11 +1779,13 @@ join_subcell_group <- function (
 #' @param col_fraction The column key to subcellular fractions.
 #' @param levels_fraction The levels of subcellular compartments.
 #' @param col_score The column key to score metrics. \code{loc_score} includes
-#'   entropy effects. \code{purity} uses (pseudo) fraction purity.  
+#'   entropy effects. \code{purity} uses (pseudo) fraction purity.
 #' @param type_supervision \code{sole}, supervised learning only; \code{both},
 #'   both supervised and unsupervised learning.
+#' @param prob_co A cut-off in probabilities at \code{type_supervision =
+#'   "both"}. 
 #' @param qt The quantile of localization score for thresholding subcellular
-#'   compartment specificity. The default is to use median.
+#'   compartment specificity.
 #' @param adjust_weights Logical; adjust class weights by Bayesian's priors or
 #'   not.
 #' @param use_cache Logical; Should be FALSE. if TRUE, redo trend analysis.
@@ -1808,7 +1805,8 @@ classify_subcellular_supervised <- function (
     col_subtype = NULL, levels_subtype = NULL, 
     col_select = NULL, col_order = NULL, 
     col_score = c("loc_score", "purity"), 
-    type_supervision = c("both", "sole"), qt = .5, min_prot_n_peps = 2L, 
+    type_supervision = c("both", "sole"), qt = .5, prob_co = .2, 
+    min_prot_n_peps = 2L, 
     ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)), 
     # use_cache = FALSE, 
     adjust_weights = FALSE, 
@@ -1836,8 +1834,15 @@ classify_subcellular_supervised <- function (
   }
   
   col_score <- match.arg(col_score)
-  type_supervision <- match.arg(type_supervision)
   is_pseudo_fraction <- !setequal(levels_fraction, levels_ref_compartments)
+  
+  type_supervision <- match.arg(type_supervision)
+  
+  if (FALSE && type_supervision == "both" && qt < .75 && is_pseudo_fraction && 
+      length(levels_ref_compartments) >= 5) {
+    warning("The current quantile cut-off is set to ", qt, ".\n",
+            "Consider a value > 0.75.")
+  }
 
   check_subcell(
     levels_fraction = levels_fraction, levels_subtype = levels_subtype, 
@@ -1926,6 +1931,7 @@ classify_subcellular_supervised <- function (
     dplyr::select(dplyr::one_of(col_group, col_fraction, col_subtype)) |>
     unique()
 
+  # Join the information of group levels
   join_subcell_group(
     ans_cl = ans_cl, filepath = filepath, label_scheme_sub = label_scheme_sub, 
     col_group = col_group, levels_group = levels_group, 
@@ -1942,6 +1948,7 @@ classify_subcellular_supervised <- function (
     levels_fraction = levels_fraction,
     levels_ref_compartments = levels_ref_compartments,
     type_supervision = type_supervision, 
+    prob_co = prob_co, 
     qt = qt, 
     ncol = 6,
     pat = "svmProb_[ONZ]_.*nclust\\d+.*\\.tsv$", 
@@ -2064,6 +2071,7 @@ classify_subcellular_unsupervised <- function (
     col_fraction = col_fraction,
     levels_fraction = levels_fraction,
     levels_ref_compartments = levels_fraction,
+    type_supervision = "sole", # Corresponding to SVM alone or unsupervised
     qt = qt, 
     ncol = 6,
     pat = "Trend_[ONZ]_.*nclust\\d+\\.txt$", 
@@ -2139,29 +2147,30 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #' @param method_supervision The method of learning at either \code{supervised}
 #'   or \code{unsupervised}.
 #'
-#'   At \code{unsupervised}, experimental fractions matches biological
+#'   At \code{unsupervised}, experimental fractions must match biological
 #'   compartments, e.g., CP, NP and ChA.
 #'
 #'   At \code{supervised}, experimental fractions (e.g. F1, F2, etc.) are
 #'   typically different from biological compartments (e.g. Centrosome, ER,
-#'   etc.). 
-#'   
-#'   Nevertheless, \code{supervised} learning (SVM) can still be applied where
-#'   experimental fractions coincide biological compartments. 
+#'   etc.).
 #'
-#'   The information will be used to decide which secondary file (df2) to used
-#'   and to join the encoding of sub-cellular locations therein for color
+#'   Nevertheless, a \code{supervised} method can still be applied where
+#'   experimental fractions coincide biological compartments.
+#'
+#'   The information will be used to decide which secondary file, df2 (e.g., a
+#'   "Protein_Trend_Z_nclust16.txt" or "Protein_svmProb_Z_nclust16.tsv"), to
+#'   used and the column key therein encoding sub-cellular locations for color
 #'   aesthetics.
 #'
 #'   It is possible that users may exclude some levels from UMAP visualization
 #'   and thus a simple set difference assessment may not be adequate. For now,
 #'   the developer leave this argument for users own discretion.
 #'
-#' @param df2 Not used. The names of secondary input files.
+#' @param df2 Not used. The names of secondary input files; can be determined
+#'   from \code{method_supervision}.
 #' @param filepath A file path of inputs and outputs. Automatically determined
 #'   at \code{NULL}.
 #' @param filename An output filename.
-#' @param ext An extension of output filename, e.g., pdf or png.
 #' @param polygons The vertices of polygons.
 #' @param exclude_inside Logical; if TRUE, exclude points inside the polygon
 #'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
@@ -2196,7 +2205,7 @@ plot_prnSubcell_UMAP <- function (
     col_subtype = NULL, levels_subtype = NULL, 
     col_group = NULL, levels_group = NULL, 
     dat_dir = NULL, label_scheme = NULL, 
-    df2 = NULL, filepath = NULL, filename = NULL, ext = "png", 
+    df2 = NULL, filepath = NULL, filename = NULL, 
     polygons = NULL, exclude_inside = TRUE, 
     overwrite_umap_res = TRUE, 
     wrap_facets = TRUE, wrap_facets_by = col_fraction, 
@@ -2276,27 +2285,35 @@ plot_prnSubcell_UMAP <- function (
   # is_pseudo_fraction <- !setequal(levels_fraction, levels_ref_compartments)
 
   ### 2. Find input `df2` of classification probabilities
-  files_2 <- if (method_supervision == "supervised") {
-    find_trend_df2(
-      df2 = df2, n_clust = NULL, 
-      pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
-      ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
-  } else if (method_supervision == "unsupervised") {
-    find_trend_df2(
-      df2 = df2, n_clust = NULL, 
-      scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+  if (is.null(df2)) {
+    files_2 <- if (method_supervision == "supervised") {
+      find_trend_df2(
+        df2 = df2, n_clust = NULL, 
+        pat = "Protein_svmProb_Z_nclust\\d+[_]{0,1}.*\\.tsv", 
+        ext = "tsv", scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+    } else if (method_supervision == "unsupervised") {
+      find_trend_df2(
+        df2 = df2, n_clust = NULL, 
+        scale_log2r = TRUE, impute_na = FALSE, filepath = filepath)
+    } else {
+      stop("Unknown 'method_supervision'.")
+    }
+    
+    if (!length(files_2)) {
+      warning("No classification results found.")
+      return(NULL)
+    }
+    
+    file_2 <- files_2[[1]]
+    rm(list = c("files_2"))
   } else {
-    stop("Unknown 'method_supervision'.")
-  }
-  
-  if (!length(files_2)) {
-    warning("No classification results found.")
-    return(NULL)
+    if (!file.exists(file.path(filepath, df2))) {
+      stop("File not found", file.path(filepath, df2))
+    }
+    
+    file_2 <- df2
   }
 
-  file_2 <- files_2[[1]]
-  rm(list = c("files_2"))
-  
   ### 3. Load classification results (column sub_location for color aesthetics)
   # Don't filter data by is.na(sub_location) before UMAP; 
   # Otherwise, it can cause too many missing values for UMAP
@@ -2411,7 +2428,7 @@ plot_prnSubcell_UMAP <- function (
     use_cache <- FALSE
   }
   
-  # Better to 'bind_row' data since can always subset data by specifying 'levels_subtype'
+  # 'bind_row' UMAP since one can always subset data by specifying 'levels_subtype'
 
   ### Obtain UMAP coordinates
   if (use_cache) {
@@ -2534,8 +2551,7 @@ plot_prnSubcell_UMAP <- function (
     filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
     alpha = alpha, 
     break_width = break_width, hide_grids = hide_grids, 
-    wrap_facet = wrap_facet, wrap_facets_by = wrap_facets_by, 
-    drop = drop, ext = fn_suffix, 
+    wrap_facet = wrap_facet, wrap_facets_by = wrap_facets_by, drop = drop, 
     width_combined = width_combined, height_combined = height_combined, 
     width_sep = width_sep, height_sep = height_sep, 
     !!!dots)
@@ -2658,10 +2674,10 @@ plot_umap <- function (
     col_ref = c("location", "location_slim3"), levels_ref_compartments = NULL, 
     colors_ref = NULL, 
     write_tetherome_res = TRUE, 
-    filepath = NULL, fn_prefix, fn_suffix, 
+    filepath = NULL, fn_prefix = NULL, fn_suffix = "png", 
     alpha = 1, drop = FALSE, break_width = 5, hide_grids = TRUE, 
     wrap_facet = TRUE, wrap_facets_by = col_fraction, 
-    width_combined = 6, height_combined = 4, ext = "png", 
+    width_combined = 6, height_combined = 4, 
     width_sep = 14, height_sep = 6, 
     ...)
 {
@@ -2733,7 +2749,8 @@ plot_umap <- function (
       col_subtype = col_subtype, levels_subtype = levels_subtype, 
       col_ref = col_ref, levels_ref_compartments = levels_ref_compartments, 
       colors_ref = colors_ref, 
-      dat_dir = dat_dir, filepath = filepath, ext = ext, 
+      dat_dir = dat_dir, filepath = filepath, 
+      fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
       alpha = alpha, break_width = break_width, hide_grids = hide_grids, 
       wrap_facet = wrap_facet, wrap_facets_by = wrap_facets_by, drop = drop, 
       xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
@@ -2768,7 +2785,7 @@ plot_sc <- function (
     polygons = NULL, df = NULL, col_pred = NULL, levels_pred = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
     col_fraction = NULL, levels_fraction = NULL, colors_frac = NULL, 
-    dat_dir = NULL, filepath = NULL, fn_prefix = NULL, fn_suffix = NULL, 
+    dat_dir = NULL, filepath = NULL, fn_prefix = NULL, fn_suffix = "png", 
     xmin = -12, xmax = 12, ymin = -12, ymax = 12, ncol = 3, nrow = 1, 
     break_width = 5, drop = TRUE, hide_grids = TRUE, alpha = 1, 
     width_sep = 12, height_sep = 4, 
@@ -3150,7 +3167,7 @@ plot_sc_markers <- function (
     col_subtype = "Type", levels_subtype = NULL, 
     col_ref = c("location", "location_slim3"), levels_ref_compartments = NULL, 
     colors_ref = NULL, 
-    dat_dir = NULL, filepath = NULL, ext = "png", 
+    dat_dir = NULL, filepath = NULL, fn_prefix = NULL, fn_suffix = "png", 
     xmin = -12, xmax = 12, ymin = -12, ymax = 12, 
     ncol = 7L, nrow = 2L, width = 14, height = 3, dpi = 600, 
     alpha = 1, break_width = 5L, hide_grids = TRUE, drop = FALSE, 
@@ -3176,7 +3193,8 @@ plot_sc_markers <- function (
       col_subtype = col_subtype, levels_subtype = levels_subtype, 
       col_ref = col_ref, levels_ref_compartments = levels_ref_compartments, 
       colors_ref = colors_ref, 
-      dat_dir = dat_dir, filepath = filepath, ext = ext, 
+      dat_dir = dat_dir, filename = filename, filepath = filepath, 
+      fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
       xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
       ncol = ncol, nrow = nrow, alpha =  alpha, drop = drop, 
       width = width, height = height, dpi = dpi, 
@@ -3218,7 +3236,7 @@ plot_sc_markers_by_subtype <- function (
     col_subtype = "Type", levels_subtype = NULL, 
     levels_ref_compartments = NULL, colors_ref = NULL, 
     col_ref = c("location", "location_slim3"), 
-    dat_dir = NULL, filepath = NULL, ext = "png", 
+    dat_dir = NULL, filepath = NULL, fn_prefix = NULL, fn_suffix = "png", 
     wrap_facet = TRUE, wrap_facets_by = col_fraction, 
     alpha = 1, break_width = 5L, hide_grids = TRUE, drop = FALSE, 
     xmin = -12, xmax = 12, ymin = -12, ymax = 12, 
@@ -3242,8 +3260,6 @@ plot_sc_markers_by_subtype <- function (
   u_comps <- unique(df_loc[[col_ref]])
   n_comps <- length(u_comps)
   nms_ref <- names(colors_ref)
-
-  # df_loc <- df_loc |> dplyr::arrange(desc(!!rlang::sym(col_ref) == nms_ref))
 
   if (!nrow(df_loc)) {
     warning("No reference data under column '", col_ref, "'.\n", 
@@ -3274,14 +3290,6 @@ plot_sc_markers_by_subtype <- function (
       shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = alpha) + 
     scale_fill_manual(values = colors_ref, drop = drop)
   
-  if (FALSE) {
-    p <- p + 
-      geom_point(
-        data = df_loc, aes(x = UMAP1, y = UMAP2, fill = !!rlang::sym(col_ref)), 
-        shape = 21, color = "white", size = 1.5, , stroke = .1, alpha = alpha) + 
-      scale_fill_manual(values = colors_ref, drop = drop)
-  }
-
   p <- p + 
     scale_x_continuous(
       limits = c(xmin, xmax), breaks = scales::breaks_width(break_width)) +
@@ -3327,7 +3335,8 @@ plot_sc_markers_by_subtype <- function (
       facet_wrap(
         vars(!!rlang::sym(wrap_facets_by)), 
         ncol = ncol, 
-        labeller = labeller(.default = label_value, .multi_line = FALSE))
+        labeller = labeller(.default = label_value, .multi_line = FALSE), 
+        drop = drop)
   }
   
   if (draw_polygon) {
@@ -3356,12 +3365,16 @@ plot_sc_markers_by_subtype <- function (
     }
   }
   
-  if (draw_polygon) 
-    out_name <- paste0("umap_markers_", subtype, "_polygon.", ext)
-  else 
-    out_name <- paste0("umap_markers_", subtype, ".", ext)
+  if (is.null(fn_prefix) || is.null(fn_suffix)) {
+    filename <- if (draw_polygon) 
+      paste0("umap_markers_", subtype, "_polygon.", ext)
+    else 
+      paste0("umap_markers_", subtype, ".", ext)
+  } else {
+    filename <- paste0(fn_prefix, ".", fn_suffix)
+  }
   
-  ggsave(filename = file.path(filepath, out_name), 
+  ggsave(filename = file.path(filepath, filename), 
          width = width, height = height, dpi = dpi)
   
   p

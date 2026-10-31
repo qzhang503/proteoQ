@@ -23,8 +23,8 @@ plot_umap(
   colors_ref = NULL,
   write_tetherome_res = TRUE,
   filepath = NULL,
-  fn_prefix,
-  fn_suffix,
+  fn_prefix = NULL,
+  fn_suffix = "png",
   alpha = 1,
   drop = FALSE,
   break_width = 5,
@@ -33,7 +33,6 @@ plot_umap(
   wrap_facets_by = col_fraction,
   width_combined = 6,
   height_combined = 4,
-  ext = "png",
   width_sep = 14,
   height_sep = 6,
   ...
@@ -78,8 +77,6 @@ at \code{NULL}.}
 \item{width_combined}{The width of a combined plot.}
 
 \item{height_combined}{The height of a combined plot.}
-
-\item{ext}{An extension of output filename, e.g., pdf or png.}
 
 \item{width_sep}{The width of a plot separated by compartments.}
 

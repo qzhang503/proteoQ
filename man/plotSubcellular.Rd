@@ -31,6 +31,7 @@ plotSubcellular(
   filename = NULL,
   type_supervision = "both",
   qt = 0.5,
+  prob_co = 0.2,
   make_plot = TRUE,
   theme = NULL,
   ...

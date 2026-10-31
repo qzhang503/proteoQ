@@ -22,6 +22,7 @@ classify_subcellular_supervised(
   col_score = c("loc_score", "purity"),
   type_supervision = c("both", "sole"),
   qt = 0.5,
+  prob_co = 0.2,
   min_prot_n_peps = 2L,
   ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)),
   adjust_weights = FALSE,
@@ -67,7 +68,10 @@ entropy effects. \code{purity} uses (pseudo) fraction purity.}
 both supervised and unsupervised learning.}
 
 \item{qt}{The quantile of localization score for thresholding subcellular
-compartment specificity. The default is to use median.}
+compartment specificity.}
+
+\item{prob_co}{A cut-off in probabilities at \code{type_supervision =
+"both"}.}
 
 \item{min_prot_n_peps}{The minimum number of detected peptides under a
 protein for consideration.}

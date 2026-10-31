@@ -14,6 +14,8 @@ hassign_compartment_to_trend_cluster(
   col_cluster = "cluster",
   col_x = NULL,
   col_y = NULL,
+  type_supervision = "both",
+  prob_co = 0.2,
   tie_method = "none"
 )
 }

@@ -29,7 +29,6 @@ plot_prnSubcell_UMAP(
   df2 = NULL,
   filepath = NULL,
   filename = NULL,
-  ext = "png",
   polygons = NULL,
   exclude_inside = TRUE,
   overwrite_umap_res = TRUE,
@@ -72,18 +71,19 @@ visualization.}
 \item{method_supervision}{The method of learning at either \code{supervised}
   or \code{unsupervised}.
 
-  At \code{unsupervised}, experimental fractions matches biological
+  At \code{unsupervised}, experimental fractions must match biological
   compartments, e.g., CP, NP and ChA.
 
   At \code{supervised}, experimental fractions (e.g. F1, F2, etc.) are
   typically different from biological compartments (e.g. Centrosome, ER,
-  etc.). 
-  
-  Nevertheless, \code{supervised} learning (SVM) can still be applied where
-  experimental fractions coincide biological compartments. 
+  etc.).
 
-  The information will be used to decide which secondary file (df2) to used
-  and to join the encoding of sub-cellular locations therein for color
+  Nevertheless, a \code{supervised} method can still be applied where
+  experimental fractions coincide biological compartments.
+
+  The information will be used to decide which secondary file, df2 (e.g., a
+  "Protein_Trend_Z_nclust16.txt" or "Protein_svmProb_Z_nclust16.tsv"), to
+  used and the column key therein encoding sub-cellular locations for color
   aesthetics.
 
   It is possible that users may exclude some levels from UMAP visualization
@@ -107,14 +107,13 @@ sample groups.}
 
 \item{label_scheme}{The metadata generated from \link{load_expts}.}
 
-\item{df2}{Not used. The names of secondary input files.}
+\item{df2}{Not used. The names of secondary input files; can be determined
+from \code{method_supervision}.}
 
 \item{filepath}{A file path of inputs and outputs. Automatically determined
 at \code{NULL}.}
 
 \item{filename}{An output filename.}
-
-\item{ext}{An extension of output filename, e.g., pdf or png.}
 
 \item{polygons}{The vertices of polygons.}
 

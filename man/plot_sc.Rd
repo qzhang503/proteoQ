@@ -17,7 +17,7 @@ plot_sc(
   dat_dir = NULL,
   filepath = NULL,
   fn_prefix = NULL,
-  fn_suffix = NULL,
+  fn_suffix = "png",
   xmin = -12,
   xmax = 12,
   ymin = -12,

@@ -19,7 +19,8 @@ plot_sc_markers(
   colors_ref = NULL,
   dat_dir = NULL,
   filepath = NULL,
-  ext = "png",
+  fn_prefix = NULL,
+  fn_suffix = "png",
   xmin = -12,
   xmax = 12,
   ymin = -12,
@@ -67,8 +68,6 @@ determination.}
 
 \item{filepath}{A file path to inputs and outputs.}
 
-\item{ext}{An file name extension.}
-
 \item{break_width}{The width of X and Y breaks.}
 
 \item{hide_grids}{Logical; hide grid lines or not.}
@@ -76,6 +75,8 @@ determination.}
 \item{drop}{Drop unknown levels or not.}
 
 \item{wrap_facet}{Logical; wrap_facet or not.}
+
+\item{ext}{An file name extension.}
 }
 \description{
 Helper of plotting subcellular markers.

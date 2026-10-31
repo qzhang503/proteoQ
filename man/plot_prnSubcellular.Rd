@@ -18,6 +18,7 @@ plot_prnSubcellular(
   tie_method = "none",
   type_supervision = c("sole", "both"),
   qt = 0.5,
+  prob_co = 0.2,
   n_clust = NULL,
   panel_ids = NULL,
   pat = "Trend_[ONZ]_.*nclust\\\\d+\\\\.txt$",
@@ -73,12 +74,15 @@ independently.}
 
 \item{tie_method}{Not used. A method for tie-breaking.}
 
-\item{type_supervision}{Only for uses with supervised learning: \code{sole},
+\item{type_supervision}{For uses with supervised learning: \code{sole},
 supervised learning only; \code{both}, both supervised and unsupervised
 learning.}
 
 \item{qt}{The quantile of localization score for thresholding subcellular
 compartment specificity. The default is to use median.}
+
+\item{prob_co}{A cut-off in probabilities at \code{type_supervision =
+"both"}.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the gap method

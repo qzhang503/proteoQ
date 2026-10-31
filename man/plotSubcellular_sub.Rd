@@ -23,6 +23,7 @@ plotSubcellular_sub(
   ext = "txt",
   tie_method = "none",
   qt = 0.5,
+  prob_co = 0.2,
   complete_cases = FALSE,
   panel_ids = NULL,
   filepath = NULL,

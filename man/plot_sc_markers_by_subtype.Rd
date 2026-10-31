@@ -20,7 +20,8 @@ plot_sc_markers_by_subtype(
   col_ref = c("location", "location_slim3"),
   dat_dir = NULL,
   filepath = NULL,
-  ext = "png",
+  fn_prefix = NULL,
+  fn_suffix = "png",
   wrap_facet = TRUE,
   wrap_facets_by = col_fraction,
   alpha = 1,
@@ -70,8 +71,6 @@ determination.}
 
 \item{filepath}{A file path to inputs and outputs.}
 
-\item{ext}{An file name extension.}
-
 \item{wrap_facet}{Logical; wrap_facet or not.}
 
 \item{break_width}{The width of X and Y breaks.}
@@ -79,6 +78,8 @@ determination.}
 \item{hide_grids}{Logical; hide grid lines or not.}
 
 \item{drop}{Drop unknown levels or not.}
+
+\item{ext}{An file name extension.}
 }
 \description{
 Plot subcellular markers by subtype.

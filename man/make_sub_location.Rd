@@ -13,7 +13,8 @@ make_sub_location(
   filepath = NULL,
   data_type = "Trend",
   col_fraction = NULL,
-  col_subtype = NULL
+  col_subtype = NULL,
+  prob_co = 0.2
 )
 }
 \arguments{
@@ -21,7 +22,7 @@ make_sub_location(
 
 \item{res_score_co}{Score cut-offs of classes (with leading fractions).}
 
-\item{type_supervision}{Only for uses with supervised learning: \code{sole},
+\item{type_supervision}{For uses with supervised learning: \code{sole},
 supervised learning only; \code{both}, both supervised and unsupervised
 learning.}
 

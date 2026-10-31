@@ -748,7 +748,8 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
              col_fraction = NULL, levels_fraction = NULL, 
              levels_ref_compartments = NULL, 
              col_subtype = NULL, levels_subtype = NULL, 
-             tie_method = "none", type_supervision = "both", qt = .5, 
+             tie_method = "none", # not used
+             type_supervision = "both", qt = .5, prob_co = .5, 
              make_plot = TRUE, theme = NULL, 
              ...) {
       plotSubcellular(
@@ -766,6 +767,7 @@ info_anal <- function (id = "gene", id_gspa = "entrez", dat_dir = NULL,
         dat_dir = dat_dir,
         type_supervision = type_supervision, 
         qt = qt, # .5 -> median
+        prob_co = prob_co, 
         tie_method = tie_method, 
         label_scheme_sub = label_scheme_sub,
         n_clust = n_clust,
