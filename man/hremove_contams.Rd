@@ -5,26 +5,26 @@
 \title{Helper remove tethered mitochondrial, ER proteins.}
 \usage{
 hremove_contams(
+  polygons = NULL,
+  exclude_inside = TRUE,
   df,
   id = "gene",
   col_fraction = "Fraction",
-  tether_fraction = "NP",
-  polygons = NULL,
-  exclude_inside = TRUE
+  tether_fraction = "NP"
 )
 }
 \arguments{
-\item{df}{A data frame.}
-
-\item{col_fraction}{The column key in metadata to subcellular fractions.}
-
-\item{tether_fraction}{The fraction where tetherome will be considered.}
-
 \item{polygons}{The vertices of polygons.}
 
 \item{exclude_inside}{Logical; if TRUE, exclude points inside the polygon
 defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
 outside of the polygon.}
+
+\item{df}{A data frame.}
+
+\item{col_fraction}{The column key in metadata to subcellular fractions.}
+
+\item{tether_fraction}{The fraction where tetherome will be considered.}
 }
 \description{
 Helper remove tethered mitochondrial, ER proteins.

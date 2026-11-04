@@ -21,7 +21,6 @@ plot_umap(
   col_ref = c("location", "location_slim3"),
   levels_ref_compartments = NULL,
   colors_ref = NULL,
-  write_tetherome_res = TRUE,
   filepath = NULL,
   fn_prefix = NULL,
   fn_suffix = "png",

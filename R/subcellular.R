@@ -1774,6 +1774,10 @@ join_subcell_group <- function (
 #' @param make_plot Logical; an option to plot clusters of probabilities.
 #' @param levels_group The levels of data group for ordering on the X-axis in
 #'   visualization.
+#'
+#'   The values stand for pseudo group levels, which are typically different to
+#'   experimental group levels that are based on sample fractions.
+#'
 #' @param levels_subtype The levels of sample subtypes, e.g., Control, Treated.
 #' @param levels_ref_compartments Levels of reference compartments.
 #' @param col_fraction The column key to subcellular fractions.
@@ -1782,13 +1786,13 @@ join_subcell_group <- function (
 #'   entropy effects. \code{purity} uses (pseudo) fraction purity.
 #' @param type_supervision \code{sole}, supervised learning only; \code{both},
 #'   both supervised and unsupervised learning.
-#' @param prob_co A cut-off in probabilities at \code{type_supervision =
-#'   "both"}. 
+#' @param prob_co Automatically determined. A cut-off in probabilities at
+#'   \code{type_supervision = "both"}.
 #' @param qt The quantile of localization score for thresholding subcellular
 #'   compartment specificity.
 #' @param adjust_weights Logical; adjust class weights by Bayesian's priors or
 #'   not.
-#' @param use_cache Logical; Should be FALSE. if TRUE, redo trend analysis.
+#' @param use_cache Logical; Use cached results or not.
 #' @param ranges for \code{cost} and \code{gamma} for grid searching with
 #'   \code{radial} kernel.
 #' @param seed A random seed.
@@ -1797,15 +1801,14 @@ join_subcell_group <- function (
 #' @example inst/extdata/examples/subcell_supervised_.R
 #' @export
 classify_subcellular_supervised <- function (
-    id = "gene", species = "human", n_clust = 16:36, 
-    df_ref = NULL, col_ref = NULL, 
-    col_group = NULL, levels_group = NULL, 
+    id = "gene", species = "human", n_clust = 16:36, col_group = NULL, 
+    df_ref = NULL, col_ref = NULL, levels_group = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     levels_ref_compartments = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
     col_select = NULL, col_order = NULL, 
     col_score = c("loc_score", "purity"), 
-    type_supervision = c("both", "sole"), qt = .5, prob_co = .2, 
+    type_supervision = c("both", "sole"), qt = .5, prob_co = NA, 
     min_prot_n_peps = 2L, 
     ranges = list(cost = c(1, 10, 50, 100), gamma = c(0.01, 0.1, 0.5, 1)), 
     # use_cache = FALSE, 
@@ -1853,6 +1856,9 @@ classify_subcellular_supervised <- function (
   } else {
     label_scheme
   }
+  
+  u_fracs <- unique(label_scheme[[col_fraction]])
+  prob_co <- 2 / length(u_fracs)
   
   ### (1) Obtain aggregated expression data if no prior 'anal_prnTrend' execution
   use_cache <- dots[["use_cache"]]
@@ -2349,20 +2355,64 @@ plot_prnSubcell_UMAP <- function (
 
   cnms <- colnames(df)
   if (col_subtype %in% cnms && length(levels_subtype)) {
+    local({
+      u_subtypes <- unique(df[[col_subtype]])
+      bads <- levels_subtype[!levels_subtype %in% u_subtypes]
+      
+      if (length(bads)) {
+        warning(
+          "The following 'levels_subtype' not found under column '", 
+          col_subtype, "':\n", 
+          paste(bads, collapse = "\n "))
+        
+        warning(
+          "The following subtype levels were found under metadata column: '", 
+          col_subtype, "':\n", 
+          paste(u_subtypes, collapse = "\n ")
+        )
+      }
+    })
+
     df <- df |> 
       dplyr::filter(.data[[col_subtype]] %in% levels_subtype) |>
       dplyr::mutate(
         !!col_subtype := 
           factor(!!rlang::sym(col_subtype), levels = levels_subtype))
+    
+    if (!nrow(df)) {
+      stop("No data entries available after subsetting by 'levels_subtype'.")
+    }
   }
   
   # 'col_fraction' encodes pseudo fraction at method_supervision = "supervised"
   if (length(col_fraction) && length(levels_fraction)) {
+    local({
+      u_fracs <- unique(df[[col_fraction]])
+      bads <- levels_fraction[!levels_fraction %in% u_fracs]
+      
+      if (length(bads)) {
+        warning(
+          "The following 'levels_fraction' not found under column '", 
+          col_fraction, "':\n", 
+          paste(bads, collapse = "\n "))
+        
+        warning(
+          "The following fraction levels were found under metadata column: '", 
+          col_fraction, "':\n", 
+          paste(u_fracs, collapse = "\n ")
+        )
+      }
+    })
+    
     df <- df |>
       dplyr::filter(.data[[col_fraction]] %in% levels_fraction) |>
       dplyr::mutate(
         !!col_fraction := 
           factor(!!rlang::sym(col_fraction), levels = levels_fraction))
+    
+    if (!nrow(df)) {
+      stop("No data entries available after subsetting by 'levels_fraction'.")
+    }
   }
   
   if (col_group %in% cnms && length(levels_group)) {
@@ -2373,11 +2423,12 @@ plot_prnSubcell_UMAP <- function (
       if (length(bads)) {
         warning(
           "The following 'levels_group' not found under the column '", 
-          paste(bads, collapse = ", "))
+          col_group, "' in '", file_2, "':\n", 
+          paste(bads, collapse = "\n "))
         
         warning(
-          "The following group levels were found in input data: ", 
-          paste(u_grps, collapse = ", ")
+          "The following group levels were found in input data: \n", 
+          paste(u_grps, collapse = "\n ")
         )
       }
     })
@@ -2389,7 +2440,7 @@ plot_prnSubcell_UMAP <- function (
           factor(!!rlang::sym(col_group), levels = levels_group))
     
     if (!nrow(df)) {
-      stop("No data entries available after subsetting by 'levels_group.'")
+      stop("No data entries available after subsetting by 'levels_group'.")
     }
   }
 
@@ -2498,7 +2549,7 @@ plot_prnSubcell_UMAP <- function (
   df <- df_umap |>
     dplyr::left_join(df, by = key_join)
   
-  # Need re-factoring since col_subtype is part of the the 'key_join'
+  # Need re-factoring since 'col_subtype' is part of the the 'key_join'
   df <- df |> 
     dplyr::mutate(
       !!col_subtype := 
@@ -2522,7 +2573,20 @@ plot_prnSubcell_UMAP <- function (
   n_subtypes <- length(levels_subtype)
   draw_polygon <- lapply(polygons, function (x) !is.null(x))
   
-  if (!length(draw_polygon)) {
+  if (length(draw_polygon)) {
+    local({
+      nms_polygon <- names(polygons)
+      bads <- nms_polygon[!nms_polygon %in% levels_subtype]
+      
+      # Automatically ignored if names not matched
+      if (length(bads)) {
+        warning(
+          "Ignore polygons not found: \n", 
+          paste(bads, collapse = "\n")
+        )
+      }
+    })
+  } else {
     draw_polygon <- rep_len(FALSE, n_subtypes)
     names(draw_polygon) <- levels_subtype
     draw_polygon <- draw_polygon[levels_subtype]
@@ -2547,7 +2611,7 @@ plot_prnSubcell_UMAP <- function (
     col_fraction = col_fraction, levels_fraction = levels_fraction, 
     colors_frac = colors_frac, 
     exclude_inside = exclude_inside, 
-    write_tetherome_res = write_tetherome_res,
+    # write_tetherome_res = write_tetherome_res,
     filepath = filepath, fn_prefix = fn_prefix, fn_suffix = fn_suffix, 
     alpha = alpha, 
     break_width = break_width, hide_grids = hide_grids, 
@@ -2588,6 +2652,11 @@ find_tethers <- function (
   df_tether <- dplyr::bind_rows(df_tether)
   
   if (isTRUE(write_tetherome_res)) {
+    if (file.exists(file.path(filepath, out_name))) {
+      out_name <- 
+        paste0("marker_tetherome_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".tsv")
+    }
+    
     readr::write_tsv(df_tether, file.path(filepath, out_name))
   }
 }
@@ -2673,7 +2742,7 @@ plot_umap <- function (
     col_subtype = NULL, levels_subtype = NULL, 
     col_ref = c("location", "location_slim3"), levels_ref_compartments = NULL, 
     colors_ref = NULL, 
-    write_tetherome_res = TRUE, 
+    # write_tetherome_res = TRUE, 
     filepath = NULL, fn_prefix = NULL, fn_suffix = "png", 
     alpha = 1, drop = FALSE, break_width = 5, hide_grids = TRUE, 
     wrap_facet = TRUE, wrap_facets_by = col_fraction, 
@@ -2941,12 +3010,32 @@ make_polygons_by_subtype <- function (
     fr <- levels_fraction[[i]]
     pg <- polygons[[fr]]
     
-    if (length(pg)) {
-      stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
+    if (is.list(pg[[1]])) {
+      df_pl <- vector("list", length(pg))
+      names(df_pl) <- names(pg)
+      
+      for (j in seq_along(pg)) {
+        p <- pg[[j]]
+        
+        if (length(p)) {
+          stopifnot(length(p[["x"]]) == length(p[["y"]]))
+        }
+        
+        df_pl[[j]] <- tibble::tibble(
+          x = p[["x"]], y = p[["y"]], !!col_fraction := fr) |>
+          dplyr::mutate(panel = j)
+      }
+      
+      df_poly[[i]] <- dplyr::bind_rows(df_pl)
+    } else {
+      if (length(pg)) {
+        stopifnot(length(pg[["x"]]) == length(pg[["y"]]))
+      }
+      
+      df_poly[[i]] <- tibble::tibble(
+        x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr) |>
+        dplyr::mutate(panel = 1L)
     }
-    
-    df_poly[[i]] <- tibble::tibble(
-      x = pg[["x"]], y = pg[["y"]], !!col_fraction := fr)
   }
   
   df_poly <- dplyr::bind_rows(df_poly) |>
@@ -3343,12 +3432,22 @@ plot_sc_markers_by_subtype <- function (
     df_poly <- make_polygons_by_subtype(
       polygons = polygons, levels_fraction = levels_fraction)
     
-    p <- p + 
-      geom_polygon(
-        df_poly, 
-        mapping = aes(x = x, y = y), 
-        fill = NA, color = "black", linewidth = .2)
+    if (FALSE) {
+      p <- p + 
+        geom_polygon(
+          df_poly, 
+          mapping = aes(x = x, y = y), 
+          fill = NA, color = "black", linewidth = .2)
+    }
     
+    p <- p + geom_polygon(
+      data = df_poly, 
+      mapping = aes(x = x, y = y, group = interaction(Fraction, panel)), 
+      fill = NA, 
+      color = "black", 
+      linewidth = 0.2
+    )
+
     # k <- 10/3; b <- -28/3; 1.5 * k + b
     if (FALSE) {
       p <- p + 
@@ -4290,20 +4389,53 @@ hupdate_subcellular <- function (
 #'   defined by \code{poly_x} and \code{poly_y}. Otherwise, exclude points
 #'   outside of the polygon.
 hremove_contams <- function (
-    df, id = "gene", col_fraction = "Fraction", tether_fraction = "NP",
-    polygons = NULL, exclude_inside = TRUE)
+    polygons = NULL, exclude_inside = TRUE, df, id = "gene", 
+    col_fraction = "Fraction", tether_fraction = "NP")
 {
   rows <- df[[col_fraction]] == tether_fraction
   
-  dfx <- remove_contams(
-    df[rows, ], 
-    id = id, 
-    poly_x = polygons[["x"]], 
-    poly_y = polygons[["y"]], 
-    exclude_inside = exclude_inside)
-  
-  tethers <- attr(dfx, "tethers")
-  
+  if (is.list(polygons[[1]])) {
+    # Nested list
+    dfx <- tethers <- vector("list", length(polygons))
+    
+    for (i in seq_along(polygons)) {
+      pg <- polygons[[i]]
+      
+      dfx[[i]] <- remove_contams(
+        poly_x = pg[["x"]], 
+        poly_y = pg[["y"]], 
+        exclude_inside = exclude_inside, 
+        df[rows, ], id = id)
+      
+      tethers[[i]] <- attr(dfx[[i]], "tethers")
+    }
+    
+    ids <- c(dfx[[1]][[id]], tethers[[1]])
+    
+    if (exclude_inside) {
+      oks <- lapply(dfx, `[[`, id) |>
+        purrr::reduce(intersect)
+      dfx <- dfx[[1]] |> 
+        dplyr::filter(.data[[id]] %in% oks)
+      tethers <- ids[!ids %in% dfx[[id]]]
+    } else {
+      oks <- lapply(dfx, `[[`, id) |>
+        purrr::reduce(union)
+      tethers <- ids[!ids %in% oks]
+      dfx <- dplyr::bind_rows(dfx)
+    }
+    
+    # rm(list = c("ids", "oks"))
+  } else {
+    dfx <- remove_contams(
+      poly_x = polygons[["x"]], 
+      poly_y = polygons[["y"]], 
+      exclude_inside = exclude_inside, 
+      df[rows, ], id = id)
+    
+    tethers <- attr(dfx, "tethers")
+  }
+
   df <- dplyr::bind_rows(df[!rows, ], dfx)
   attr(df, "tethers") <- tethers
   
@@ -4319,7 +4451,7 @@ hremove_contams <- function (
 #' @param poly_x The vertices of Y coordinates of a polygon.
 #' @inheritParams hremove_contams
 remove_contams <- function (
-    df, id = "gene", poly_x = NULL, poly_y = NULL, exclude_inside = TRUE)
+    poly_x = NULL, poly_y = NULL, exclude_inside = TRUE, df, id = "gene")
 {
   if (is.null(poly_x) || is.null(poly_y)) {
     return(df)

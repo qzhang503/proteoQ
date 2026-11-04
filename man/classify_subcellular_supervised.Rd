@@ -8,9 +8,9 @@ classify_subcellular_supervised(
   id = "gene",
   species = "human",
   n_clust = 16:36,
+  col_group = NULL,
   df_ref = NULL,
   col_ref = NULL,
-  col_group = NULL,
   levels_group = NULL,
   col_fraction = NULL,
   levels_fraction = NULL,
@@ -51,7 +51,10 @@ subcellular compartments. The current available value is one of
 at the \code{NULL} default.}
 
 \item{levels_group}{The levels of data group for ordering on the X-axis in
-visualization.}
+  visualization.
+
+  The values stand for pseudo group levels, which are typically different to
+  experimental group levels that are based on sample fractions.}
 
 \item{col_fraction}{The column key to subcellular fractions.}
 
@@ -101,13 +104,12 @@ A wrapper of classifying subcellular locations.
 }
 \examples{
 \donttest{
-### 1. Prepare metadata to workspace
+### 1. Prepare metadata to work space
 library(proteoQ)
 
 species <- "mouse"
 species_lookup <- c(human = "hs", mouse = "mm", rat = "rn")
 abbr_species <- species_lookup[[species]]
-
 id <- "gene"
 
 fasta <- c("fasta/file_1.fasta","fasta/crap.fasta")
@@ -144,66 +146,77 @@ standPrn(
   slice_ = exprs(species == !!species),
 )
 
-### 3. Classification of protein subcellular locations (supervised)
+
+### 3. Metadata
+## 3.1 Link metadata column keys
+load(file.path(dat_dir, "label_scheme.rda"))
+
+col_select <- "Select"
+col_order  <- "Order"
+col_group  <- "Group" # For median summary of experimental expression data
+
 col_fraction <- "Fraction"
 levels_fraction <- c("1K", "3K", "5K", "9K", "12K", "15K", "30K", "79K", "120K", "SN")
 
 col_subtype  <- "Type"
-levels_subtype  <- "Acute" # preferred a real setting over a NULL value
+levels_subtype  <- "Acute_D2" # match the column key in metadata 'label_scheme'
 
-col_select <- "Select"
-col_order  <- "Order"
-
+## 3.2 Prepare reference markers
+# Reference marker compartments (pseudo fractions)
 levels_ref_compartments = c(
   "Cytosol", "Endosome", "ER", "Golgi", "Nucleus", "Lysosome", 
   "Mitochondrion", "Peroxisome", "PM", "Proteasome", "Ribosome", 
   "Centrosome", "P_body", "Stress_granule") # "Chromatin", 
 
+if (FALSE) {
+  data(list = paste0("subcell_", abbr_species))
+  levels_ref_compartments <- names(sort(table(subcell_mm$location), decreasing = TRUE))
+}
+
 colors_ref <- c(
-  Cytosol = "#E41A1C", Nucleus = "#984EA3", Chromatin = "#FF7F00", 
+  Cytosol = "#E41A1C", Nucleus = "#984EA3", # Chromatin = "#FF7F00", 
   Centrosome = "#00BFFF", ER = "#377EB8", Mitochondrion = "#4DAF4A", 
   Lysosome = "#FFFF33", Golgi = "#008080", PM = "#A65628", 
   Proteasome = "#F781BF", Peroxisome = "#3A1188", Endosome = "#808000", 
   Ribosome = "#882255",P_body = "#99d8c9", Stress_granule = "#fee6ce")
 
-colors_ref <- colors_ref[names(colors_ref) \%in\% levels_ref_compartments]
-
-# Reference markers
-col_ref <- "location"
+col_ref <- "location" # The column key in 'df_ref' encoding 'levels_ref_compartments'
 
 df_ref <- load_ref_markers(
   species = species, col_ref = col_ref, 
-  levels_ref_compartments = levels_ref_compartments
-)
+  levels_ref_compartments = levels_ref_compartments)
 
-# Construct group levels at the format of "[levels_subtype]_[levels_fraction]"
-col_group  <- "Group"
-levels_pred <- levels_ref_compartments
-levels_group <- c(outer(levels_subtype, levels_pred, paste, sep = "_"))
+## 3.3 Set up pseudo sample groups 
+# (typically different to experimental groups with supervised learning)
+# Use the format of [levels_subtype]_[levels_ref_compartments]
+levels_pseudo_group <- 
+  c(outer(levels_subtype, levels_ref_compartments, paste, sep = "_"))
 
-### 3. The first pass
-## 3.1 Initial unsupervised classification by using the current maker database
-## Initial SVM classification to assess marker qualities
+
+### 4. Classification of protein subcellular locations (supervised)
 n_clust <- 16:36
 min_prot_n_peps <- 2
 
+## 4.1 Initial unsupervised classification
+## SVM classification to assess marker qualities
 classify_subcellular_supervised(
-  id = id, species = species, n_clust = n_clust,
-  col_group = col_group, levels_group = levels_group, 
+  id = id, species = species, n_clust = n_clust, col_group = col_group, 
   col_fraction = col_fraction, levels_fraction = levels_fraction,
   col_subtype = col_subtype, levels_subtype = levels_subtype, 
-  df_ref = df_ref, col_ref = col_ref, 
+  df_ref = df_ref, col_ref = col_ref, levels_group = levels_pseudo_group, 
   levels_ref_compartments = levels_ref_compartments, 
   
   # Sole SVM without prior weight adjustments
-  type_supervision = "sole", 
-  adjust_weights = FALSE, 
+  type_supervision = "sole", adjust_weights = FALSE, 
 )
 
-## 3.2 UMAP visualization of marker proteins
-# Each facet corresponding to a pseudo fraction
+## 4.2 UMAP visualization of marker proteins
 method_supervision <- "supervised"
 
+# One-to-one correspondence between pseudo fractions and reference compartments
+colors_frac <- colors_ref
+
+# Each facet corresponding to a pseudo fraction
 plot_prnSubcell_UMAP(
   species = species, 
   
@@ -213,41 +226,40 @@ plot_prnSubcell_UMAP(
   # "log10Int" for consistency with SVM learning in 'classify_subcellular_supervised'
   key_col = "log10Int",
   
-  col_group = col_group, levels_group = levels_group, 
   col_subtype = col_subtype, levels_subtype = levels_subtype, 
   
   # 'col_fraction' encodes pseudo fraction at type_fraction = "pseudo"
   col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  colors_frac = colors_frac, 
   
-  levels_pred = levels_ref_compartments, 
+  levels_pred = levels_ref_compartments, levels_group = levels_pseudo_group, 
   
   # Reference database
   df_ref = df_ref, col_ref = col_ref, 
-
+  
   # Map markers to the full proteome 
   highlight_markers = TRUE, colors_ref = colors_ref, 
   
   # Color-code markers by 'levels_ref_compartments'
   levels_ref_compartments = levels_ref_compartments,
-
+  
   # Define the type of background; each facet correspond to a pseudo fraction
   wrap_facets = TRUE, wrap_facets_by = col_fraction, 
-
+  
   # Control the aesthetics
   xmin = -8, xmax = 10, ymin = -12, ymax = 8, nrow = 2, ncol = 7, 
   break_width = 1L, hide_grids = FALSE, drop = TRUE, 
   width_combined = 5.75, height_combined = 4, 
   width_sep = 21, height_sep = 6, 
-  ext = "png", 
   
   # Use cache UMAP coordinates when available
   use_cache = TRUE,
   seed = 123,
 )
 
-## 3.3 User-defined polygons for identifying markers according to the above UMAP
+## 4.3 User-defined polygons for identifying markers according to the above UMAP
 polygons <- list(
-  Acute = list(
+  Acute_D2 = list(
     Cytosol = list(x = c(-7, 4.5, 4.5, -7), y = c(1, 1, 8, 8)), 
     Endosome = list(x = c(4.5, 8, 8, 4.5), y = c(1, 1, 5, 5)), 
     ER = list(x = c(3, 7, 7, 3), y = c(-4.5, -4.5, 5, 5)), 
@@ -265,14 +277,16 @@ polygons <- list(
   )
 )
 
-## 3.4 Confirmatory visualization of polygons
+# polygons <- polygons[names(polygons) \%in\% levels_subtype]
+
+## 4.4 Confirmatory visualization of polygons
 plot_prnSubcell_UMAP(
   species = species, method_supervision = method_supervision, 
   key_col = "log10Int", 
-  col_group = col_group, levels_group = levels_group, 
   col_subtype = col_subtype, levels_subtype = levels_subtype, 
   col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
-  levels_pred = levels_ref_compartments, 
+  colors_frac = colors_frac, 
+  levels_pred = levels_ref_compartments, levels_group = levels_pseudo_group, 
   df_ref = df_ref, col_ref = col_ref, 
   highlight_markers = TRUE, colors_ref = colors_ref, 
   levels_ref_compartments = levels_ref_compartments,
@@ -282,54 +296,55 @@ plot_prnSubcell_UMAP(
   
   # Use polygon interiors for markers
   exclude_inside = FALSE, 
-
+  
   wrap_facets = TRUE, wrap_facets_by = col_fraction, 
   xmin = -8, xmax = 10, ymin = -12, ymax = 8, nrow = 2, ncol = 7, 
-  break_width = 1L, hide_grids = FALSE, drop = TRUE, 
+  break_width = 1L, hide_grids = FALSE, drop = FALSE, 
   width_combined = 5.75, height_combined = 4, 
   width_sep = 21, height_sep = 6, 
-  ext = "png", 
   use_cache = TRUE, 
   seed = 123, 
 )
 
-## 3.5 Update reference database
+## 4.5 Update reference database
 df_ref_0 <- df_ref
 
 df_ref <- update_ref_markers(
-    df_ref = df_ref, col_ref = col_ref, id = id, species = species, 
-    col_fraction = col_fraction)
+  df_ref = df_ref, col_ref = col_ref, id = id, species = species, 
+  col_fraction = col_fraction)
 
-## 3.6 Classification at type_supervision = "both" against the updated reference
+## 4.6 Classification at type_supervision = "both" against the updated reference
 classify_subcellular_supervised(
-  id = id, species = species, n_clust = n_clust,
-  col_group = col_group, levels_group = levels_group, 
+  id = id, species = species, n_clust = n_clust, col_group = col_group, 
   col_fraction = col_fraction, levels_fraction = levels_fraction,
   col_subtype = col_subtype, levels_subtype = levels_subtype, 
   df_ref = df_ref, col_ref = col_ref, 
   levels_ref_compartments = levels_ref_compartments, 
+  levels_group = levels_pseudo_group, 
   
   # "both": supervised SVM + unsupervised clustering
   type_supervision = "both", 
 )
 
-## 3.7 Visualize classification results
-# Separate UMAPs by pseudo fractions
+## 4.7 Visualize classification results
+# Separate UMAP panels by pseudo fractions
 plot_prnSubcell_UMAP(
   species = species, 
   method_supervision = method_supervision, 
   key_col = "log10Int",
-  col_group = col_group, levels_group = levels_group, 
+  
   col_subtype = col_subtype, levels_subtype = levels_subtype,
   col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  colors_frac = colors_frac, 
   col_pred = "sub_location", levels_pred = levels_ref_compartments, 
+  levels_group = levels_pseudo_group, 
   
   # Highlight markers
   highlight_markers = TRUE, 
   levels_ref_compartments = levels_ref_compartments, colors_ref = colors_ref, 
-
-  alpah = .5, drop = TRUE, 
-  dat_dir = dat_dir, filename = NULL, ext = "png", seed = 123, 
+  
+  alpha = 1, drop = FALSE, 
+  dat_dir = dat_dir, filename = "sep_markers.png", seed = 123, 
   xmin = -8, xmax = 10, ymin = -12, ymax = 10, 
   wrap_facets = TRUE, nrow = 2, ncol = 7, 
   width_sep = 14, height_sep = 4, 
@@ -342,15 +357,17 @@ plot_prnSubcell_UMAP(
   species = species, 
   method_supervision = method_supervision, 
   key_col = "log10Int",
-  col_group = col_group, levels_group = levels_group, 
-  col_subtype = col_subtype, levels_subtype = levels_subtype,
+  col_group = col_group, 
   
+  col_subtype = col_subtype, levels_subtype = levels_subtype,
   col_fraction = col_fraction, levels_fraction = levels_ref_compartments, 
+  colors_frac = colors_frac, 
   col_pred = "sub_location", levels_pred = levels_ref_compartments, 
   
   levels_ref_compartments = levels_ref_compartments, colors_ref = colors_ref, 
+  levels_group = levels_pseudo_group, 
   
-  alpah = .5, drop = TRUE, 
+  alpha = 1, drop = TRUE, 
   dat_dir = dat_dir, filename = NULL, ext = "png", seed = 123, 
   xmin = -8, xmax = 10, ymin = -12, ymax = 10, 
   wrap_facets = TRUE, nrow = 2, ncol = 7, 
@@ -361,5 +378,4 @@ plot_prnSubcell_UMAP(
 )
 
 }
-
 }
