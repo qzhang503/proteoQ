@@ -7,18 +7,16 @@ localization scores.}
 \usage{
 assign_compartment_to_trend_cluster(
   df_med = NULL,
-  tie_method = "none",
   col_y = "score",
   col_cluster = "cluster",
   col_fraction = NULL,
   col_subtype = NULL,
-  levels_ref_compartments = NULL
+  levels_ref_compartments = NULL,
+  tie_method = "none"
 )
 }
 \arguments{
 \item{df_med}{A median description of localization scores by modules.}
-
-\item{tie_method}{A method handling ties in localization scores.}
 
 \item{col_y}{The column name of Y values for summarization.}
 
@@ -37,6 +35,8 @@ sub-group fraction purity etc. Character string to a column key in
 fractions. This is needed, e.g., when each subcellular fraction contain
 multiple subtypes of control, treated etc. and purity will be asssessed
 independently.}
+
+\item{tie_method}{A method handling ties in localization scores.}
 }
 \description{
 For one \code{col_subtype}.

@@ -6,8 +6,9 @@
 \usage{
 update_subcell(
   data_type = c("Protein", "Peptide"),
-  rm_tetherome = FALSE,
   df = NULL,
+  exclude_tetherome = FALSE,
+  exclude_chess_np_mito = FALSE,
   dat_dir = NULL,
   filepath = NULL,
   fml_nms = NULL,
@@ -18,11 +19,11 @@ update_subcell(
 \arguments{
 \item{data_type}{The type of data in either \code{Protein} or \code{Peptide}.}
 
-\item{rm_tetherome}{Logical; remove tetherome entries or not by nullifying
-pVals.}
-
 \item{df}{Automatically determined: a data frame from
 \code{Protein_pVals.txt} or \code{Peptide_pVals.txt}.}
+
+\item{exclude_tetherome}{Logical; remove tetherome entries or not by nullifying
+pVals.}
 
 \item{dat_dir}{The working directory.}
 

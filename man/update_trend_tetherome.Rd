@@ -6,7 +6,8 @@
 \usage{
 update_trend_tetherome(
   files_trend,
-  df_tether,
+  df_tether = NULL,
+  df_np_mito = NULL,
   filepath,
   group_pep_by,
   update_trend_res = FALSE,

@@ -4,11 +4,14 @@
 \alias{update_subcell_stat}
 \title{Update pVals and log2Ratios by incorporating subcellular specificity.}
 \usage{
-update_subcell_stat(rm_tetherome = TRUE)
+update_subcell_stat(exclude_tetherome = TRUE, exclude_chess_np_mito = FALSE)
 }
 \arguments{
-\item{rm_tetherome}{Logical; if TRUE, nullify additionally pVals and
+\item{exclude_tetherome}{Logical; if TRUE, nullify additionally pVals and
 log2Ratios of tetherome entries.}
+
+\item{exclude_chess_np_mito}{Logical; if TRUE, nullify additionally pVals and
+log2Ratios of mitochondrial entries under an NP fraction.}
 }
 \description{
 Nullifying p-values and log2Ratios of protein and peptides

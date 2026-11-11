@@ -12,6 +12,7 @@ update_subcell_metrics(
   col_select = NULL,
   col_order = NULL,
   levels_subtype = NULL,
+  df_ref = NULL,
   scale_log2r = TRUE,
   impute_na = FALSE,
   ...
@@ -30,6 +31,8 @@ update_subcell_metrics(
 information of sample being selected.}
 
 \item{levels_subtype}{The levels of sample subtypes.}
+
+\item{df_ref}{A data frame of marker proteins.}
 
 \item{scale_log2r}{Not used. Logical; scale log2Ratio values or not.}
 
@@ -53,6 +56,9 @@ sample subcellular fractions.}
 sample subtypes or treatment conditions.
 
 Not used. See also parameter \code{col_group}.}
+
+\item{exclude_chess_np_mito}{Logical; exclude mitochondrial proteins that
+were found in an NP fraction in ChESS.}
 }
 \description{
 Also update trend results under sub directory \code{subcell_update}.

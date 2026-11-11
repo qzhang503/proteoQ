@@ -349,7 +349,7 @@ prnGSPA <- function (
 #' @param df A data frame.
 #' @param dat_dir The working directory.
 #' @param is_subcellular Logical; is subcellular data type or not.
-#' @param rm_tetherome Logical; remove tetherome entries or not by nullifying
+#' @param exclude_tetherome Logical; remove tetherome entries or not by nullifying
 #'   pVals.
 #' @param update_trend_res Logical; rewrite trend results or not.
 #' @param col_subtype The column key in metadata to smple subtypes.
@@ -364,7 +364,8 @@ prnGSPA <- function (
 add_subcell <- function (
     df = NULL, dat_dir, group_pep_by = "gene", is_subcellular = FALSE, 
     col_subtype = NULL, col_fraction = NULL, 
-    rm_tetherome = FALSE, update_trend_res = FALSE, 
+    exclude_tetherome = FALSE, exclude_chess_np_mito = FALSE, 
+    update_trend_res = FALSE, 
     scale_log2r = TRUE, impute_na = FALSE)
 {
   if (!is_subcellular) {
@@ -404,26 +405,35 @@ add_subcell <- function (
   ## Add tethome
   fi_tether <- file.path(path_trend, "marker_tetherome.tsv")
   
-  if (rm_tetherome && !file.exists(fi_tether)) {
+  if (exclude_tetherome && !file.exists(fi_tether)) {
     warning("Tetherome results not found.")
-    rm_tetherome <- FALSE
+    exclude_tetherome <- FALSE
   }
   
-  if (rm_tetherome) {
+  if (exclude_tetherome) {
     df_tether <- readr::read_tsv(fi_tether) |>
       dplyr::mutate(is_tetherome = TRUE)
     
     # 'Empty' data with only columns `col_subtype` and `col_fraction`
     if (!group_pep_by %in% names(df_tether)) {
-      rm_tetherome <- FALSE
+      exclude_tetherome <- FALSE
     }
   }
   
-  if (rm_tetherome && update_trend_res) {
+  if (exclude_chess_np_mito) {
+    fi_np_mito <- file.path(dat_dir, "Protein", "Trend", "chess_np_mito.tsv")
+    df_np_mito <- readr::read_tsv(fi_np_mito)
+  } else {
+    df_np_mito <- NULL
+  }
+  
+  if (exclude_tetherome && update_trend_res) {
     res_tether <- update_trend_tetherome(
-      files_trend = files_2, df_tether = df_tether, filepath = path_trend, 
+      files_trend = files_2, filepath = path_trend, 
+      df_tether = df_tether, df_np_mito = df_np_mito, 
       group_pep_by = group_pep_by, col_subtype = col_subtype, 
       col_fraction = col_fraction, update_trend_res = update_trend_res)
+    
     df_trend_updated <- res_tether[[1]]
     
     rm(list = c("df_tether", "rows", "res_tether"))
@@ -462,7 +472,8 @@ add_subcell <- function (
 #' @param filepath The file path to trend results.
 #' @inheritParams add_subcell
 update_trend_tetherome <- function (
-    files_trend, df_tether, filepath, group_pep_by, update_trend_res = FALSE, 
+    files_trend, df_tether = NULL, df_np_mito = NULL, filepath, 
+    group_pep_by, update_trend_res = FALSE, 
     col_subtype, col_fraction)
 {
   dfs <- vector("list", length(files_trend))
@@ -477,6 +488,14 @@ update_trend_tetherome <- function (
     rows <- df[["is_tetherome"]] & !is.na(df[["is_tetherome"]])
     df[["sub_location"]][rows] <- NA_character_
     df[["is_tetherome"]] <- NULL
+    
+    if (is.data.frame(df_np_mito) && nrow(df_np_mito)) {
+      rows <- (!is.na(df[["sub_location"]])) & 
+        df[["sub_location"]] == "NP" & 
+        df[[group_pep_by]] %in% df_np_mito[[group_pep_by]]
+      df[["sub_location"]][rows] <- NA_character_
+    }
+    
     dfs[[i]] <- df
     
     if (update_trend_res) {

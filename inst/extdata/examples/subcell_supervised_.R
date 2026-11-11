@@ -190,6 +190,7 @@ plot_prnSubcell_UMAP(
   polygons = polygons,
   
   # Use polygon interiors for markers
+  # CONFIRM that the setting of 'exclude_inside' is intended
   exclude_inside = FALSE, 
   
   wrap_facets = TRUE, wrap_facets_by = col_fraction, 

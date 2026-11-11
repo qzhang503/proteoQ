@@ -11,7 +11,7 @@ classify_subcellular_unsupervised(
   id = "gene",
   species = "human",
   n_clust = 16:36,
-  qt = 0.5,
+  qt = 0.75,
   col_group = NULL,
   levels_group = NULL,
   col_fraction = NULL,
@@ -310,8 +310,9 @@ plot_prnSubcell_UMAP(
   highlight_markers = TRUE, 
   df_ref = df_ref, col_ref = "location", colors_ref = colors_ref, 
   
-  # Draw polygons
-  polygons = polygons, 
+  # Draw polygons; 
+  # CONFIRM that the setting of 'exclude_inside' is intended
+  polygons = polygons, exclude_inside = TRUE, 
   
   levels_ref_compartments = levels_ref_compartments,
   col_fraction = col_fraction, levels_fraction = levels_fraction, 
@@ -359,8 +360,45 @@ prnSig()
 #  (by nullifying p-values and log2Ratios for location unspecific entries)
 
 # Choose one of the two
-update_subcell_stat(rm_tetherome = TRUE)
-# update_subcell_stat(rm_tetherome = FALSE)
+update_subcell_stat(exclude_tetherome = TRUE)
+# update_subcell_stat(exclude_tetherome = FALSE)
+
+# Confirm the correct retention of protein entries of interest
+# (the setting of 'exclude_inside' may not be intended)
+plot_prnSubcell_UMAP(
+  species = species, 
+  method_supervision = method_supervision, 
+  key_col = "log2FC",
+  highlight_markers = TRUE, 
+  df_ref = df_ref, col_ref = "location", colors_ref = colors_ref, 
+  
+  # Draw polygons; CONFIRM that the setting of 'exclude_inside' is intended
+  polygons = polygons, exclude_inside = TRUE, 
+  
+  # exclude_chess_np_mito = TRUE, 
+  exclude_chess_np_mito = FALSE, 
+  
+  levels_ref_compartments = levels_ref_compartments,
+  col_fraction = col_fraction, levels_fraction = levels_fraction, 
+  col_group = col_group, levels_group = levels_group, 
+  col_subtype = col_subtype, levels_subtype = levels_subtype, 
+  wrap_facets = TRUE, wrap_facets_by = col_fraction, 
+  levels_pred = levels_fraction, 
+  
+  xmin = -12, xmax = 12, ymin = -12, ymax = 12, 
+  nrow = 2, ncol = 3, alpha = 1, drop = TRUE, 
+  # break_width = 1, hide_grids = FALSE, 
+  break_width = 5, hide_grids = TRUE, 
+  width_combined = 8, height_combined = 4, 
+  width_sep = 12, height_sep = 4, 
+  ext = "png", 
+  
+  use_cache = TRUE,
+  seed = 123,
+  
+  write_tetherome_res = FALSE, 
+  filename = "foo.png", 
+)
 
 
 ### 7. Optional: visualize the updated results via volcano plot

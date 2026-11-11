@@ -11,7 +11,8 @@ add_subcell(
   is_subcellular = FALSE,
   col_subtype = NULL,
   col_fraction = NULL,
-  rm_tetherome = FALSE,
+  exclude_tetherome = FALSE,
+  exclude_chess_np_mito = FALSE,
   update_trend_res = FALSE,
   scale_log2r = TRUE,
   impute_na = FALSE
@@ -34,7 +35,7 @@ numbers will be treated as one group.}
 
 \item{col_fraction}{The column key in metadata to subcellular fractions.}
 
-\item{rm_tetherome}{Logical; remove tetherome entries or not by nullifying
+\item{exclude_tetherome}{Logical; remove tetherome entries or not by nullifying
 pVals.}
 
 \item{update_trend_res}{Logical; rewrite trend results or not.}

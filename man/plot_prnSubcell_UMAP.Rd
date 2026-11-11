@@ -13,6 +13,7 @@ plot_prnSubcell_UMAP(
   highlight_markers = FALSE,
   levels_ref_compartments = NULL,
   colors_ref = NULL,
+  exclude_chess_np_mito = FALSE,
   n_clust = 16:36,
   key_col = c("log2FC", "log10Int"),
   method_supervision = c("unsupervised", "supervised"),
@@ -63,6 +64,9 @@ plot_prnSubcell_UMAP(
 \item{levels_ref_compartments}{For uses at \code{highlight_markers = TRUE}.
 The factor levels of subcellular compartments for uses in marker
 visualization.}
+
+\item{exclude_chess_np_mito}{Logical; exclude mitochondrial proteins that
+were found in an NP fraction in ChESS.}
 
 \item{n_clust}{Not used. The number of clusters.}
 

@@ -57,7 +57,8 @@ plotSubcellular <- function(
   ## Plot data
   if (is.null(theme)) theme <- theme_bw()
 
-  # Obtain quantile-summarized localization scores by each n_clust
+  ## Obtain quantile-summarized localization scores 
+  #  for each group at each panel at each 'n_clust'
   tempsub <- mapply(
     plotSubcellular_sub, 
     df2 = df2, 
@@ -95,7 +96,7 @@ plotSubcellular <- function(
   col_x <- tempsub[[1]][["col_x"]]
   col_y <- tempsub[[1]][["col_y"]]
 
-  ## Classify trends at each n_clust
+  ## Assign the primary compartment for each panel at each 'n_clust'
   tempdata <- lapply(
     df_meds, 
     hassign_compartment_to_trend_cluster, 
@@ -115,12 +116,21 @@ plotSubcellular <- function(
   col_group <- tempdata[[1]][["col_group"]]
   col_order <- tempdata[[1]][["col_order"]]
   col_fraction <- tempdata[[1]][["col_fraction"]]
-  col_subtype <- tempdata[[1]][["col_subtype"]]
+  col_subtype  <- tempdata[[1]][["col_subtype"]]
   col_x <- tempdata[[1]][["col_x"]]
   col_y <- tempdata[[1]][["col_y"]]
 
-  ## Update subcellular locations
-  # Some compartments may have no corresponding primary clusters. 
+  ## Obtain the best subcellular score cut-offs
+  #  Some compartments/fractions may have no corresponding primary clusters. 
+  
+  # n_clust Type  cluster purity entropy score_co Fraction is_leading_fraction
+  #     32  Veh   32       0.344   0.473    0.182 CP       TRUE
+  #     35  TG    15       0.352   0.474    0.185 NP       TRUE
+  #     16  Veh   10       0.363   0.468    0.191 NP       TRUE
+  #     21  TG    14       0.402   0.456    0.218 CP       TRUE
+  #     33  Veh   10       0.428   0.455    0.232 ChA      TRUE
+  #     33  TG    10       0.433   0.449    0.237 ChA      TRUE
+  
   res_score_co <- res_score_co |>
     dplyr::bind_rows(.id = "n_clust") |>
     dplyr::mutate(
@@ -130,7 +140,7 @@ plotSubcellular <- function(
     dplyr::arrange(!!rlang::sym(col_fraction), !!rlang::sym(col_y))
   
   readr::write_tsv(res_score_co, file.path(filepath, "all_loc_scores.tsv"))
-  
+
   res_score_co <- res_score_co |>
     dplyr::group_by_at(c(col_fraction, col_subtype)) |>
     dplyr::slice(1L) |>
@@ -147,6 +157,7 @@ plotSubcellular <- function(
       unique()
   )
   
+  ## Assign subcellular locations based on the best cut-offs
   dfs <- make_sub_location(
     df2 = df2, res_score_co = res_score_co, type_supervision = type_supervision, 
     id = id, dat_dir = dat_dir, filepath = filepath, data_type = data_type, 
@@ -156,8 +167,10 @@ plotSubcellular <- function(
 }
 
 
-#' Helper making the column sub_location in trend results.
-#'
+#' Helper making the column \code{sub_location} in trend results.
+#' 
+#' Based on \code{score_co}. 
+#' 
 #' @param df2 File names of trend results.
 #' @param res_score_co Score cut-offs of classes (with leading fractions).
 #' @param type_supervision For uses with supervised learning: \code{sole},
@@ -784,16 +797,17 @@ hassign_compartment_to_trend_cluster <- function (
 #' @param df_med A median description of localization scores by modules.
 #' @inheritParams anal_prnTrend
 assign_compartment_to_trend_cluster <- function (
-    df_med = NULL, tie_method = "none", col_y = "score", col_cluster = "cluster", 
-    col_fraction = NULL, col_subtype = NULL, levels_ref_compartments = NULL)
+    df_med = NULL, col_y = "score", col_cluster = "cluster", 
+    col_fraction = NULL, col_subtype = NULL, levels_ref_compartments = NULL, 
+    tie_method = "none")
 {
   df_med <- df_med |>
     dplyr::mutate(
       !!col_fraction := 
         factor(!!rlang::sym(col_fraction), levels = levels_ref_compartments), )
   
-  subcell_levs <- unique(df_med[[col_fraction]])
-  subcell_levs <- factor(subcell_levs, levels = levels_ref_compartments)
+  subcell_levs <- factor(
+    unique(df_med[[col_fraction]]), levels = levels_ref_compartments)
   
   ## 1. Assign the primary subcellular fraction for each cluster
   df_pri <- df_med |>
@@ -803,8 +817,8 @@ assign_compartment_to_trend_cluster <- function (
     dplyr::arrange(!!rlang::sym(col_cluster), -!!rlang::sym(col_y))
   
   # Keep the first combination among multiple col_subtype of Ctrl, Treatment...
-  combs <- interaction(df_pri[[col_cluster]], df_pri[[col_fraction]], 
-                       drop = TRUE)
+  combs <- interaction(
+    df_pri[[col_cluster]], df_pri[[col_fraction]], drop = TRUE)
   df_pri <- lapply(
     split(df_pri, combs), 
     function(x) x[1, , drop = FALSE]
@@ -915,6 +929,11 @@ assign_compartment_to_trend_cluster <- function (
     df_pri_min[["subcellular..."]] <- NULL
     df_pri_min[["is_leading_fraction"]] <- TRUE
   }
+  
+  # cluster purity entropy loc_score Fraction is_leading_fraction
+  # 12       0.441   0.452     0.239 CP       TRUE
+  # 10       0.372   0.465     0.199 NP       TRUE
+  # 16       0.502   0.352     0.314 ChA      TRUE
   
   return(df_pri_min)
 }
@@ -2012,7 +2031,7 @@ classify_subcellular_supervised <- function (
 #' @export
 classify_subcellular_unsupervised <- function (
     dat_dir = NULL, filepath = NULL, label_scheme = NULL, 
-    id = "gene", species = "human", n_clust = 16:36, qt = .5, 
+    id = "gene", species = "human", n_clust = 16:36, qt = .75, 
     col_group = NULL, levels_group = NULL, 
     col_fraction = NULL, levels_fraction = NULL, 
     col_subtype = NULL, levels_subtype = NULL, 
@@ -2142,6 +2161,8 @@ check_subcell <- function (levels_fraction = NULL, levels_subtype = NULL,
 #'   The factor levels of subcellular compartments for uses in marker
 #'   visualization.
 #'
+#' @param exclude_chess_np_mito Logical; exclude mitochondrial proteins that
+#'   were found in an NP fraction in ChESS.
 #' @param label_scheme The metadata generated from \link{load_expts}.
 #' @param id An identifier.
 #' @param species The species.
@@ -2203,6 +2224,7 @@ plot_prnSubcell_UMAP <- function (
     df_umap = NULL, id = "gene", species = "human", 
     df_ref = NULL, col_ref = c("location", "location_slim3"), 
     highlight_markers = FALSE, levels_ref_compartments = NULL, colors_ref = NULL, 
+    exclude_chess_np_mito = FALSE, 
     n_clust = 16:36, key_col = c("log2FC", "log10Int"), 
     method_supervision = c("unsupervised", "supervised"), 
     # col_pred = "sub_location", 
@@ -2555,6 +2577,18 @@ plot_prnSubcell_UMAP <- function (
       !!col_subtype := 
         factor(!!rlang::sym(col_subtype), levels = levels_subtype))
   
+  if (exclude_chess_np_mito) {
+    df <- local({
+      rows <- (!is.na(df[["location"]])) & 
+        df[["location"]] == "Mitochondrion" & 
+        df[["sub_location"]] == "NP"
+      
+      readr::write_tsv(df[rows, ], file.path(filepath, "chess_np_mito.tsv"))
+      
+      df <- df[!rows, ]
+    })
+  }
+  
   # 'col_fraction' encodes pseudo fractions at 'method_supervision = supervised'
   df <- df |>
     dplyr::arrange_at(c(col_group, col_fraction, col_subtype))
@@ -2651,13 +2685,18 @@ find_tethers <- function (
   
   df_tether <- dplyr::bind_rows(df_tether)
   
-  if (isTRUE(write_tetherome_res)) {
-    if (file.exists(file.path(filepath, out_name))) {
-      out_name <- 
+  if (isTRUE(write_tetherome_res) && !all(is.na(df_tether[[id]]))) {
+    out_path <- file.path(filepath, out_name)
+    
+    if (file.exists(out_path)) {
+      out_name2 <- 
         paste0("marker_tetherome_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".tsv")
+      out_path2 <- file.path(filepath, out_name2)
+      
+      file.copy(out_path, out_path2)
     }
     
-    readr::write_tsv(df_tether, file.path(filepath, out_name))
+    readr::write_tsv(df_tether, out_path)
   }
 }
 
@@ -3577,7 +3616,7 @@ update_subcell_by_fml <- function (
 #'
 #' @param df Automatically determined: a data frame from
 #'   \code{Protein_pVals.txt} or \code{Peptide_pVals.txt}.
-#' @param rm_tetherome Logical; remove tetherome entries or not by nullifying
+#' @param exclude_tetherome Logical; remove tetherome entries or not by nullifying
 #'   pVals.
 #' @param dat_dir The working directory.
 #' @param data_type The type of data in either \code{Protein} or \code{Peptide}.
@@ -3588,7 +3627,8 @@ update_subcell_by_fml <- function (
 #' @param label_scheme_sub Automatically determined: metadata.
 #' @export
 update_subcell <- function (
-    data_type = c("Protein", "Peptide"), rm_tetherome = FALSE, df = NULL, 
+    data_type = c("Protein", "Peptide"), df = NULL, 
+    exclude_tetherome = FALSE, exclude_chess_np_mito = FALSE, 
     dat_dir = NULL, filepath = NULL, fml_nms = NULL, label_scheme_sub = NULL, 
     ...)
 {
@@ -3672,7 +3712,8 @@ update_subcell <- function (
   
   res_subcell <- add_subcell(
     df= df, dat_dir = dat_dir, group_pep_by = group_pep_by, 
-    is_subcellular = TRUE, rm_tetherome = rm_tetherome, 
+    is_subcellular = TRUE, exclude_tetherome = exclude_tetherome, 
+    exclude_chess_np_mito = exclude_chess_np_mito, 
     update_trend_res = if (data_type == "Protein") TRUE else FALSE, 
     scale_log2r = TRUE, impute_na = FALSE)
   df <- res_subcell[["df"]]
@@ -3703,13 +3744,17 @@ update_subcell <- function (
 #'
 #' Nullifying p-values and log2Ratios of protein and peptides
 #'
-#' @param rm_tetherome Logical; if TRUE, nullify additionally pVals and
+#' @param exclude_tetherome Logical; if TRUE, nullify additionally pVals and
 #'   log2Ratios of tetherome entries.
+#' @param exclude_chess_np_mito Logical; if TRUE, nullify additionally pVals and
+#'   log2Ratios of mitochondrial entries under an NP fraction.
 #' @export
-update_subcell_stat <- function (rm_tetherome = TRUE)
+update_subcell_stat <- function (exclude_tetherome = TRUE, exclude_chess_np_mito = FALSE)
 {
-  update_subcell(data_type = "Protein", rm_tetherome = rm_tetherome)
-  update_subcell(data_type = "Peptide", rm_tetherome = rm_tetherome)
+  update_subcell(data_type = "Protein", exclude_tetherome = exclude_tetherome, 
+                 exclude_chess_np_mito = exclude_chess_np_mito)
+  update_subcell(data_type = "Peptide", exclude_tetherome = exclude_tetherome, 
+                 exclude_chess_np_mito = exclude_chess_np_mito)
 }
 
 
@@ -4022,8 +4067,11 @@ find_from_to_transloc <- function (
 #' @param levels_subtype The levels of sample subtypes.
 #' @param scale_log2r Not used. Logical; scale log2Ratio values or not.
 #' @param impute_na Not used. Loigcal; impute missing values or not.
+#' @param exclude_chess_np_mito Logical; exclude mitochondrial proteins that
+#'   were found in an NP fraction in ChESS.
 #' @param ... Additional arguments.
-#'
+#' 
+#' @inheritParams load_ref_markers
 #' @examples \donttest{
 #' update_subcell_metrics(col_group = "Group", levels_subtype = c("Veh", "TG"))
 #' }
@@ -4034,6 +4082,7 @@ update_subcell_metrics <- function (
     col_select = NULL, col_order = NULL, 
     # col_group = NULL, col_fraction = NULL, col_subtype = NULL, 
     levels_subtype = NULL, 
+    df_ref = NULL, # exclude_chess_np_mito = FALSE, 
     scale_log2r = TRUE, impute_na = FALSE, ...)
 {
   dots <- rlang::enexprs(...)
@@ -4052,9 +4101,39 @@ update_subcell_metrics <- function (
   
   df <- readr::read_tsv(file.path(filepath, files[[1]]))
   
+  if (exclude_chess_np_mito <- FALSE) {
+    df <- local({
+      fi_np_mito <- file.path(filepath, "chess_np_mito.tsv")
+      
+      if (file.exists(fi_np_mito)) {
+        df_np_mito <- readr::read_tsv(fi_np_mito)
+
+        rows <- (!is.na(df[["sub_location"]])) & 
+          df[["sub_location"]] == "NP" & 
+          df[[id]] %in% df_np_mito[[id]]
+        
+        df <- df[!rows, ]
+      } else {
+        if (is.null(df_ref)) {
+          return(df)
+        }
+        
+        df <- df |>
+          dplyr::left_join(df_ref, by = id)
+        
+        rows <- (!is.na(df[["location"]])) & 
+          df[["location"]] == "Mitochondrion" & 
+          df[["sub_location"]] == "NP"
+        
+        # Contains additional columns of 'location' and 'location_slim3'
+        df <- df[!rows, ]
+      }
+    })
+  }
+
   # Retain only proteins with subcellular assignments
-  df <- df |>
-    dplyr::filter(!is.na(sub_location))
+  df <- df |> 
+    dplyr::filter(!is.na(.data[["sub_location"]]))
   
   col_group    <- df[["col_group"]][[1]]
   col_fraction <- df[["col_fraction"]][[1]]

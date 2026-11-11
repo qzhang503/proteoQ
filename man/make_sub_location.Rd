@@ -2,7 +2,7 @@
 % Please edit documentation in R/subcellular.R
 \name{make_sub_location}
 \alias{make_sub_location}
-\title{Helper making the column sub_location in trend results.}
+\title{Helper making the column \code{sub_location} in trend results.}
 \usage{
 make_sub_location(
   df2,
@@ -39,5 +39,5 @@ learning.}
 \item{col_subtype}{The column key to sample sub-types.}
 }
 \description{
-Helper making the column sub_location in trend results.
+Based on \code{score_co}.
 }
